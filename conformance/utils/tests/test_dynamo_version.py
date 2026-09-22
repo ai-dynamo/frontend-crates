@@ -57,7 +57,6 @@ def test_release_capture_uses_a_semantic_label_and_compact_origin(release_repo):
     provenance = identity.dynamo_v2_provenance(release_repo)
 
     assert identity.dynamo_v2_label(release_repo) == "0.6.0"
-    assert identity.select_capture_label(release_repo, {}) == "0.6.0"
     assert identity.validate_capture_provenance(release_repo, provenance) == {
         "crate_version": "0.6.0",
         "source_sha256": identity.source_fingerprint(release_repo),
@@ -74,42 +73,6 @@ def test_changed_same_version_is_capturable_but_not_a_new_consumer_identity(rele
 
     assert producer["label"].startswith("0.6.0+source.")
     assert identity.dynamo_v2_label(release_repo) == "0.6.0"
-    assert identity.select_capture_label(release_repo, {"0.6.0": [producer]}) == "0.6.0"
-
-
-def test_reader_keeps_legacy_capture_directories_readable(release_repo):
-    assert identity.select_capture_label(release_repo, {"0.6.0.patch2": []}) == "0.6.0.patch2"
-    assert identity.select_capture_label(
-        release_repo,
-        {"0.6.0": {"records": {"gemma4/UNIFIED.1-1": {"format": "schema_v3"}}}},
-    ) == "0.6.0"
-
-    (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed() {}\n", encoding="utf-8")
-    source_label = identity.dynamo_v2_provenance(release_repo, "current")["label"]
-    assert identity.select_capture_label(release_repo, {source_label: []}) == source_label
-
-
-def test_reader_rejects_an_unverified_legacy_release_in_a_tagless_checkout(release_repo, monkeypatch):
-    recorded = identity.dynamo_v2_provenance(release_repo)
-    git(release_repo, "tag", "-d", "dynamo-parsers-v2-v0.6.0")
-
-    current = identity.dynamo_v2_provenance(release_repo)
-    assert current["label"].startswith("0.6.0+source.")
-    captures = {
-        "0.6.0": {"records": {"gemma4/UNIFIED.1-1": recorded}},
-    }
-    assert identity.select_capture_label(release_repo, captures) == "0.6.0"
-    monkeypatch.setenv(identity.ENV_OVERRIDE, "current")
-    assert identity.select_capture_label(release_repo, captures) == current["label"]
-    monkeypatch.delenv(identity.ENV_OVERRIDE)
-    wrong = {**recorded, "source_id": "wrong"}
-    assert identity.select_capture_label(
-        release_repo,
-        {
-            "0.6.0": {"records": {"gemma4/UNIFIED.1-1": recorded}},
-            "0.6.0.patch1": {"records": {"gemma4/UNIFIED.1-1": wrong}},
-        },
-    ) == current["label"]
 
 
 def test_capture_origin_rejects_a_different_producer_source(release_repo):
@@ -120,7 +83,7 @@ def test_capture_origin_rejects_a_different_producer_source(release_repo):
         identity.validate_capture_provenance(release_repo, recorded)
 
 
-def test_cli_select_capture_reports_only_the_semantic_version(release_repo):
+def test_cli_reports_only_the_semantic_version(release_repo):
     result = subprocess.run(
         [
             sys.executable,
@@ -129,9 +92,7 @@ def test_cli_select_capture_reports_only_the_semantic_version(release_repo):
             str(release_repo),
             "--format",
             "label",
-            "--select-capture",
         ],
-        input="{}",
         text=True,
         check=True,
         capture_output=True,

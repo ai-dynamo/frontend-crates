@@ -1,0 +1,21 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.27.1
+document:
+  mode: unified
+changes:
+  retired__50_a:
+    absent: true
+  retired__50_b:
+    absent: true
+  retired__50_c:
+    absent: true
+  retired__51_a:
+    absent: true
+  retired__51_b:
+    absent: true
+  retired__muse_1:
+    absent: true
+metadata_changes: {}
+document_overrides: {}

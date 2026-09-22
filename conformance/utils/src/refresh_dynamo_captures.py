@@ -10,10 +10,9 @@ parser output changes — the parity tests compare the live parsers against them
 Modes (any subset; default all):
   batch            fixtures-batch-v1/dynamo_v1-<v1 crate ver>/    (expected.dynamo_v1,
                    via the record_dynamo_batch bin — the v1 batch parser).
-  stream           fixtures-stream-v2/dynamo_v2-<source identity>/ (per-chunk
+  stream           fixtures-stream-v2/dynamo_v2-<crate version>/ (per-chunk
                    expected, via record_dynamo_stream — the v2 stream parser).
-                   V1 uses its crate version; V2 verifies release source or uses
-                   an unpublished source-qualified label. Other version dirs
+                   Both paths use their crate version. Other version dirs
                    remain as historical comparison candidates.
   batch-on-stream  fixtures-batch-on-stream-v2/<family>/*.yaml    (the dynamo_v2
                    case blocks + captured_with stamp, via record_batch_via_stream —
@@ -338,9 +337,7 @@ def main() -> int:
     )
     ap.add_argument(
         "--label", default=None,
-        help="verified published version, 'current', or exact source-qualified "
-             "identity; defaults to the tagged release when source matches, "
-             "otherwise an unpublished source-qualified capture.",
+        help="current crate version or 'current'; source-qualified labels are rejected.",
     )
     args = ap.parse_args()
     modes = args.modes or ["batch", "stream", "batch-on-stream"]

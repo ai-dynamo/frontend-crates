@@ -1,0 +1,211 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.27.1
+document:
+  mode: unified
+changes:
+  prefilled_reasoning_then_text:
+    stimulus:
+      inline:
+        input: no tool needed</think>The answer is 42.
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: no tool needed
+        - delta_text: </think>
+        - delta_text: The answer is 42.
+        - delta_text: ‹finish›
+      semantic_sha256: c87985e9e8482bb4719d32cadff8be7e01e824d142d81535661f166836155d54
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    case_key: UNIFIED.40-4
+  prefilled_reasoning_then_text_then_tool:
+    stimulus:
+      inline:
+        input: 'weighing options</think>Here''s what I found: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: weighing options
+        - delta_text: </think>
+        - delta_text: 'Here''s what I found: '
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: 42ca86432ea240c9189feb81163559881fd880ea813b92c5c5d442c244c897d8
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    case_key: UNIFIED.40-3
+  prefilled_reasoning_with_tool:
+    stimulus:
+      inline:
+        input: checking weather</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: checking weather
+        - delta_text: </think>
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: f5e9972b0e37d55110facd78625152e1924867b9045dac5349e07b1cf1fe7724
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    case_key: UNIFIED.40-1
+metadata_changes: {}
+document_overrides: {}

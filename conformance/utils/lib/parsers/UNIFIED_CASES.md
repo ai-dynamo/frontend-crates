@@ -8,7 +8,7 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 ## Capture version policy
 
-Follow [the v2 storage contract](../../../README.md#v2-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. Old archive/hash readers do not permit new legacy-format captures. Changing an existing input requires rerunning and updating every prior affected version.
+Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. Old archive/hash readers do not permit new legacy-format captures. This migration does not change the older stream or batch-on-stream storage. Changing an existing input requires rerunning and updating every prior affected version.
 
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 
@@ -58,11 +58,11 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The Dynamo column is a per-family mixture. The current corpus families — `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `kimi_k2`, `kimi_k3`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
+The Dynamo column is a per-family mixture. The current corpus families — `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
 
 ## Quick reference — numbered taxonomy (`UNIFIED.<num>-<num>` / `UNIFIED.<letters/num>-<num>`)
 
-New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<letters>-<num>` for model-specific groups such as `kimi-1`. Existing legacy IDs remain historical fixture identifiers and are translated on read; do not create new ones. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`gemma`, `kimi`, `muse`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
+New case IDs always use a numeric suffix: `<num>-<num>` for shared behavioral groups or `<family>-<num>` for model-specific groups such as `qwen3-1` and `kimi_k2-1`. Existing legacy IDs remain historical fixture identifiers and are translated on read; do not create new ones. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`deepseek_v4`, `deepseek_v41`, `gemma`, `kimi`, `kimi_k2`, `muse`, and `qwen3`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
 
 ### Group 1 — TC Single call
 - **`1-1`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
@@ -123,12 +123,13 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 80 of the 91 taxonomy cases for this family.
-- Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 11 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; and `muse-1`, whose non-Muse variant is a duplication of `35-1`. This duplicate does not imply that quoted or malformed model output cannot occur.
-- `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 82 of the 107 taxonomy cases for this family.
+- Every taxonomy scenario declared for DeepSeek V4.1 is generated, except `40-1`, `40-3`, and `40-4`: each repeats an existing native Reasoning-to-call/text boundary with only different literal prose. The applicable cases include `30-13`, `30-14`, `34-8`, `34-9`, `deepseek_v41-1`, `deepseek_v41-2`, the marker-discriminating Response row `50-4`, and `40-2` plus `41-1` through `41-2`.
+- The 25 intentional not-applicable cases are `kimi_k2-1`; `kimi-1` through `kimi-8`; `gemma-1` through `gemma-3`; `muse-1` through `muse-3`; `qwen3-1` through `qwen3-3`; `deepseek_v4-1`; `35-3` through `35-4`; and the three redundant DeepSeek V4.1 rows above. These declarations include grammar-specific cases, narrowly scoped regressions, and literal-only duplicates. A scoped regression does not prove that omitted families need no equivalent test; that coverage assessment remains part of this follow-up.
+- GLM47 intentionally omits `30-14`, `34-8`, and `34-9`: its current Unified parser does not support those named or nested native-envelope guided-header shapes, so publishing them would create known-red rows rather than a valid GLM capture.
+- `30-13` retains the historical bare header with no tool name. `30-14` adds a tool name before the intentionally missing header terminator; the later `>` in its JSON string argument must remain payload data. Distinct IDs keep historical results attached to the input that was actually captured. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
-<!-- TODO: Restore the 15 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 7-3, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
+The 15 cases restored from PR #241 remain readable under their former IDs: `1-2`, `7-3`, `30-14`, `31-31` through `31-40`, and `50-1/2`. Current display IDs place shared behavior in groups 30, 34, and 35 and single-family behavior in named model groups.
 
 ## End-to-end test cases (`End-to-end:` tags)
 
@@ -268,6 +269,7 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`30-7`** (`guided_json_marker_inside_argument`) A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`); re-reading it as a channel token corrupts the call the tool receives while still looking like a successful dispatch. The golden argument is the family's own marker, not a placeholder — a stand-in would pass whatever the parser did.
 
 - **`30-11`** (`guided_json_gt_in_argument_trailing_close`), **`30-12`** (`guided_json_gt_in_argument_wrapped`), and **`30-13`** (`guided_json_gt_in_argument_bare_opener`) keep a literal `>` inside a guided argument while crossing each tool-markup surrounding. They pin that a header scan cannot borrow the argument character as its terminator.
+- **`30-14`** (`guided_json_gt_in_argument_named_bare_opener`) adds the tool name to the unfinished guided invoke header while keeping the same `>` argument stress. The named header is a distinct historical case from `30-13`, not a second label for the same input.
 
 ### Group 31 — Guided Decoding: invalid JSON or call structure
 - **`31-1`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text under the guided malformed-payload policy; no call dispatched.
@@ -292,10 +294,14 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`34-3`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
 - **`34-6`** (`guided_json_unterminated_reasoning_then_wrapped_payload`) A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. `32-3` pins a wrapper around the payload OUTSIDE reasoning and `41.*` pins an unterminated thought on its own; neither asks what happens when the two meet, and that crossing is where both native families emitted the payload as REASONING and dispatched nothing. The client sees a plausible answer and never learns a call was lost. Contrast with `34-1`, where the same markup has PROSE behind it and is narration — what separates them is whether the guided payload follows, not which marker appeared.
 - **`34-7`** (`guided_json_bare_tool_header_recovers_inside_a_thought`) starts in Reasoning and routes through a native tool boundary into guided JSON. Both cases are generated for every supported family, with its own marker grammar; neither absence nor an `UNSUPPORTED` cell can hide a missing family input.
+- **`34-8`** (`guided_json_native_parameter_body_inside_reasoning`) suppresses a complete native invocation inside reasoning before dispatching the following guided call. Each family uses its own native argument framing.
+- **`34-9`** (`guided_json_reasoning_markers_inside_native_parameter`) puts the family's reasoning markers inside that native invocation's parameter value. The parameter owns those bytes; they cannot close the surrounding thought.
 
 ### Group 35 — Guided Decoding: markers in visible answers
 - **`35-1`** (`guided_json_quoted_bare_header_in_answer`) A response that already has a visible channel open contains its family's reasoning marker before the guided payload. The marker must not reopen a private channel, and the following JSON must still dispatch.
 - **`35-2`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text.
+- **`35-3`** (`guided_json_native_parameter_object_before_payload`) keeps a JSON object inside a Qwen or Muse native parameter from being mistaken for the later guided payload while Response is prefilled.
+- **`35-4`** (`guided_json_native_parameter_array_before_payload`) exercises the same Response-state ownership boundary with an array-shaped native parameter value.
 
 `31-3` and `31-4` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-1` through `31-4` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
 
@@ -318,17 +324,41 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 
 The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. Group 50 retains reasoning-marker stimuli that distinguish Response from default initialization; the ordinary native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
 
+### DeepSeek V4-specific
+
+- **`deepseek_v4-1`** (`deepseek_v4_guided_reasoning_opener_inside_native_body`) covers a repeated reasoning opener inside a parameterless DSML invocation while guided output starts in Reasoning.
+
+### DeepSeek V4.1-specific
+
+- **`deepseek_v41-1`** (`deepseek_v41_mixed_control_text_in_string`) combines reasoning markers, tool markers, an entity spelling, quotes, a backslash, a newline, and surrounding whitespace inside one DSML string parameter.
+- **`deepseek_v41-2`** (`prefilled_response_guided_pending_invoke_header`) follows visible reasoning-marker text with an unfinished DSML invoke header and a guided call while Response is prefilled.
+
 ### Gemma-specific
 
-- **`gemma-1`** and **`gemma-2`** cover Gemma 4 guided call-prefix boundaries.
+- **`gemma-1`** through **`gemma-3`** cover Gemma 4 guided call-prefix boundaries, including a repeated thought opener after a bare `call:` prefix.
+
+### GLM 5-specific
+
+- **`glm5-1`** (`glm47_parameterless_call_shape_inside_argument`) places an offered parameterless-call shape inside an open GLM argument value. The embedded close/open markers remain argument data and must not dispatch a second call.
 
 ### Kimi-specific
 
 - **`kimi-1`** through **`kimi-8`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
 
+### Kimi K2-specific
+
+- **`kimi_k2-1`** (`kimi_k2_optional_prefix_name_overlap`) uses `functions.` as both the optional namespace prefix and the complete declared tool name, with the colon/index boundary delivered separately.
+
 ### Muse-specific
 
 - **`muse-1`** is the Muse tool-recipient header inside visible answer text. Its old `31-26` capture key remains a historical alias; this column is intentionally absent for non-Muse families because it would duplicate `35-1`.
+- **`muse-2`** (`muse_glimmer_guided_message_end_inside_native_header`) places a message-end marker inside an unfinished ATEM invoke header before a guided call.
+- **`muse-3`** (`prefilled_response_guided_closer_inside_invoke_quote`) places an ATEM invoke closer inside an unfinished quoted header before a guided call while Response is prefilled.
+
+### Qwen3-specific
+
+- **`qwen3-1`** and **`qwen3-2`** cover a non-ASCII Qwen function header at truncated and closed reasoning boundaries.
+- **`qwen3-3`** (`qwen3_guided_reasoning_opener_inside_native_header`) places a reasoning opener inside an unfinished native function header before guided JSON.
 
 ## Authoring a case: what to check BEFORE adding one
 

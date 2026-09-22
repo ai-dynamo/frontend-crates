@@ -35,7 +35,7 @@ Tool-call families:
 | Family | Grammar | Batch impl (`parsers/v1/src/tool_calling/`) | Examples |
 | -- | -- | -- | -- |
 | **DSML** | `<｜DSML｜tool_calls>...` with typed `string="true\|false"` parameters | `dsml/parser.rs` | DeepSeek V3.2, V4 |
-| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, glm47 (own file), kimi_k2 (own file, special-token XML) |
+| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, GLM-4.7/5.x via `glm47` (shared implementation), kimi_k2 (own file, special-token XML) |
 | **JSON** | Start sentinel + JSON `{name, arguments}` (single object or array) | `json/base_json_parser.rs` (+ variant files) | deepseek_v3, deepseek_v3_1, nemotron_deci, nemotron_nano, jamba, mistral, phi4, llama3_json, qwen25 |
 | **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
 | **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
@@ -211,7 +211,7 @@ In order:
 
 ### Unified parser hard gate
 
-Capture publication follows [the v2 plain-version YAML contract](../../conformance/README.md#v2-storage-contract-plain-versioned-yaml-only). Existing archive/hash consumers must be migrated; they do not permit new legacy-format captures.
+Unified capture publication follows [the plain-version YAML contract](../../conformance/README.md#unified-storage-contract-plain-versioned-yaml-only). The older tool-calling stream and batch-on-stream tests keep their existing storage; they are outside this migration.
 
 Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 

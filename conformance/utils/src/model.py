@@ -81,6 +81,7 @@ cell = {
   "facts": [ fact, ... ],            # structured per-impl comparison facts
   "known_divergence": bool,          # ≠ corner mark (v1-vs-v2 by design)
   "tooltip": tooltip | None,         # raw popup data (view builds the DOM lazily)
+  "duplicate_of": str | None,         # canonical case ID when this is an intentional duplicate
 }
 
 fact = { "impl","status","present","agrees","intentional","reason","leak","error_kind" }
@@ -98,6 +99,7 @@ tooltip = {
   "dynamo_notes": [ [label, text] ], "refs": [ [label, value] ],
   "leak_note": str | None,
   "na_note": str | None,             # n/a-stub cells: the explanation-only note
+  "duplicate_of": str | None,        # canonical case ID for an intentional duplicate
 }
 
 output_block = {"calls":[...], "normal_text":str, "error":..., "unavailable":str,
@@ -176,6 +178,7 @@ def make_cell(**fields: Any) -> dict:
         "cmp": None,
         "facts": [],
         "known_divergence": False,
+        "duplicate_of": None,
         "tooltip": None,
     }
     cell.update(fields)
@@ -239,6 +242,7 @@ def _iter_intern_slots(page: dict) -> Iterator[tuple[Any, Any]]:
             continue
         yield tip, "description"
         yield tip, "na_note"
+        yield tip, "duplicate_of"
         yield tip, "leak_note"
         if tip.get("input"):
             yield tip["input"], "text"

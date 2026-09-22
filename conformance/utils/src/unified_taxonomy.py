@@ -13,9 +13,9 @@ Groups 30-39 are Guided Decoding, split by the behavior under test. Groups 40/41
 cover prefilled reasoning and 50/51 prefilled response. Model-specific cases use
 named groups and sort after every numeric group.
 There is no separate "input stream mode" axis: which channel the prompt pre-opened IS
-`init.starting_state`, so a case that varied only that duplicated groups 31-33, and one that
-varied nothing but a finish_reason label duplicated groups 1-12 (the parser cannot see
-that value — `finish()` takes no argument).
+`init.starting_state`, so a case that varies only that duplicates an existing behavioral
+case, and one that varies nothing but a finish_reason label duplicates groups 1-12 (the
+parser cannot see that value — `finish()` takes no argument).
 """
 
 import re
@@ -27,7 +27,7 @@ import markers
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "1"),
-    # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
+    "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv2.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
     # Group 3 — No call (streamv2.3)
@@ -43,7 +43,7 @@ UNIFIED_TAX = {
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
-    # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
+    "deepseek_v41_mixed_control_text_in_string": ("deepseek_v41", "1"),
     # Group 8 — Content / narration position (streamv2.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
@@ -104,7 +104,7 @@ UNIFIED_TAX = {
     "guided_json_gt_in_argument_trailing_close": (30, "11"),
     "guided_json_gt_in_argument_wrapped": (30, "12"),
     "guided_json_gt_in_argument_bare_opener": (30, "13"),
-    # TODO: restore 30-14 in the follow-up to PR #232 (deferred-cases).
+    "guided_json_gt_in_argument_named_bare_opener": (30, "14"),
 
     # Marker OWNERSHIP: which control marker owns a `>` when two compete. The
     # corpus had no such case, and the gap leaked private reasoning as text.
@@ -120,10 +120,19 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_header_in_answer": (35, "1"),
     "guided_json_quoted_bare_header_after_payload": (35, "2"),
     "guided_json_quoted_bare_tool_header_in_answer": ("muse", "1"),
-    # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
-    # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
+    "qwen3_guided_non_ascii_header_in_truncated_reasoning": ("qwen3", "1"),
+    "qwen3_guided_non_ascii_header_in_closed_reasoning": ("qwen3", "2"),
+    "guided_json_native_parameter_body_inside_reasoning": (34, "8"),
+    "guided_json_native_parameter_object_before_payload": (35, "3"),
+    "guided_json_native_parameter_array_before_payload": (35, "4"),
+    "qwen3_guided_reasoning_opener_inside_native_header": ("qwen3", "3"),
+    "muse_glimmer_guided_message_end_inside_native_header": ("muse", "2"),
+    "deepseek_v4_guided_reasoning_opener_inside_native_body": ("deepseek_v4", "1"),
+    "gemma4_guided_reasoning_opener_after_call_prefix": ("gemma", "3"),
+    "guided_json_reasoning_markers_inside_native_parameter": (34, "9"),
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
+    "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -131,7 +140,8 @@ UNIFIED_TAX = {
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "1"), "prefilled_reasoning_truncated": (41, "2"),
     "prefilled_response_reasoning_markers_literal": (50, "4"),
-    # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases).
+    "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
+    "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "3"),
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
@@ -150,9 +160,14 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
+    "deepseek_v4": "DeepSeek V4 guided native boundaries",
+    "deepseek_v41": "DeepSeek V4.1 DSML boundaries",
     "gemma": "Gemma 4 guided call-prefix boundaries",
+    "glm5": "GLM 5 argument-marker boundaries",
     "kimi": "Kimi K3 XTML",
+    "kimi_k2": "Kimi K2 native identifier boundaries",
     "muse": "Muse-specific",
+    "qwen3": "Qwen3 XML header boundaries",
 }
 
 
@@ -240,6 +255,10 @@ LEGACY_CASE_LABELS = {
     "31-26": "guided_json_quoted_bare_tool_header_in_answer",
     "31-27": "guided_json_quoted_bare_header_after_payload",
     "31-28": "guided_json_bare_tool_header_recovers_inside_a_thought",
+    "31-33": "guided_json_native_parameter_body_inside_reasoning",
+    "31-34": "guided_json_native_parameter_object_before_payload",
+    "31-35": "guided_json_native_parameter_array_before_payload",
+    "31-40": "guided_json_reasoning_markers_inside_native_parameter",
     "g4-1": "gemma4_guided_json_visible_call_prose_before_reasoning",
     "g4-2": "gemma4_guided_json_malformed_call_prefix_before_reasoning",
     "40.a": "prefilled_reasoning_with_tool", "40.b": "prefilled_reasoning_with_guided_json",
@@ -249,12 +268,28 @@ LEGACY_CASE_LABELS = {
 }
 
 
-def historical_case_label(label):
+FAMILY_LEGACY_CASE_LABELS = {
+    ("deepseek_v4", "31-38"): "deepseek_v4_guided_reasoning_opener_inside_native_body",
+    ("deepseek_v41", "7-3"): "deepseek_v41_mixed_control_text_in_string",
+    ("deepseek_v41", "50-1"): "prefilled_response_guided_pending_invoke_header",
+    ("gemma4", "31-29"): "gemma4_guided_json_visible_call_prose_before_reasoning",
+    ("gemma4", "31-30"): "gemma4_guided_json_malformed_call_prefix_before_reasoning",
+    ("gemma4", "31-39"): "gemma4_guided_reasoning_opener_after_call_prefix",
+    ("kimi_k2", "1-2"): "kimi_k2_optional_prefix_name_overlap",
+    ("muse_glimmer", "31-37"): "muse_glimmer_guided_message_end_inside_native_header",
+    ("muse_glimmer", "50-2"): "prefilled_response_guided_closer_inside_invoke_quote",
+    ("qwen3", "31-31"): "qwen3_guided_non_ascii_header_in_truncated_reasoning",
+    ("qwen3", "31-32"): "qwen3_guided_non_ascii_header_in_closed_reasoning",
+    ("qwen3", "31-36"): "qwen3_guided_reasoning_opener_inside_native_header",
+}
+
+
+def historical_case_label(label, family=None):
     """Translate a pre-reorganization case label while leaving current labels unchanged."""
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"
-    scenario = LEGACY_CASE_LABELS.get(label)
+    scenario = FAMILY_LEGACY_CASE_LABELS.get((family, label), LEGACY_CASE_LABELS.get(label))
     return case_label(scenario) if scenario is not None else label
 
 

@@ -42,6 +42,28 @@ FAMILY_PARSERS = {
     "kimi_k2": ("combined", "KimiReasoningParser", "KimiK2ToolParser"),
 }
 
+
+def _unsupported_request(case: dict) -> tuple[str, str] | None:
+    """Classify request state the Rust parser API cannot receive."""
+    init = case.get("init") or {}
+    if init.get("tool_output_mode", "Native") == "GuidedJson":
+        return (
+            "vllm_rust_guided_json_unsupported",
+            "vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.",
+        )
+    starting_state = init.get("starting_state", "None")
+    if starting_state != "None":
+        return (
+            "vllm_rust_starting_state_unsupported",
+            f"vLLM Rust UnifiedParser has no request-prefilled {starting_state} starting-state API.",
+        )
+    if case.get("finish_reason", "stop") != "stop":
+        return (
+            "vllm_rust_finish_reason_unsupported",
+            "vLLM Rust UnifiedParser capture supports only stop termination.",
+        )
+    return None
+
 RUST_MAIN = r'''
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -250,6 +272,14 @@ def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
     )
     if tag.returncode == 0 and re.fullmatch(r"v?\d+\.\d+\.\d+", tag.stdout.strip()):
         return tag.stdout.strip().removeprefix("v")
+    # Some release source snapshots carry no exact git tag and the parser crate
+    # keeps its independent 0.1.x package version.  The checkout directory is
+    # still named after the vLLM release (for example ``vllm-0.26.0``), which is
+    # the version shown by the peer column and the capture filename.
+    source_name = vllm_rust_source.parent.name
+    match = re.fullmatch(r"vllm-(\d+\.\d+\.\d+)", source_name)
+    if match:
+        return match.group(1)
     parser_manifest = tomllib.loads((parser_crate / "Cargo.toml").read_text())
     version = (parser_manifest.get("package") or {}).get("version")
     if isinstance(version, str):
@@ -319,8 +349,14 @@ def capture_job(vllm_rust_source, job):
         feed.update(json.loads(build_and_run(vllm_rust_source, json.dumps({"cases": cases}))))
         return feed["results"]
 
-    results = capture_peer_results(job.get("cases", []), FAMILY_PARSERS, capture,
-                                   tools=json.loads(schema_bytes), supports_finish=True)
+    results = capture_peer_results(
+        job.get("cases", []),
+        FAMILY_PARSERS,
+        capture,
+        tools=json.loads(schema_bytes),
+        supports_finish=True,
+        unsupported_reason=_unsupported_request,
+    )
     if SCHEMA_PATH.read_bytes() != schema_bytes:
         raise ValueError("tool schema changed during peer capture")
     if not feed:

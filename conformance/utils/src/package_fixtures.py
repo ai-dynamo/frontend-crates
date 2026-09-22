@@ -48,6 +48,8 @@ UNIFIED_HISTORY_DIR = ROOT / "conformance" / "fixtures-unified-v2"
 # its loose capture tree is staged, then is written to the separate YAML history store.
 PER_SUBDIR_TREES = [
     "toolcalling/fixtures-batch-v1",
+    # TODO: Misnamed convention: this is older, non-Unified streaming. Rename the
+    # fixture path to v1 later; this does not rename the parser crate or its versions.
     "toolcalling/fixtures-stream-v2",
     "reasoning/fixtures-v1",
     "unified",

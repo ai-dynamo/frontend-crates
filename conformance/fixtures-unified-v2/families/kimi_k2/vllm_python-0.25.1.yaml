@@ -6,10 +6,7 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.7-2
     observation:
       value:
         assembled:
@@ -29,11 +26,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  arg_unicode:
-    case_key: UNIFIED.7.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 9995000ae114cbc20557862214c42688797c373e078f6aad8551a4bd80ec8bcb
+  arg_unicode:
+    case_key: UNIFIED.7-1
     observation:
       value:
         assembled:
@@ -55,11 +53,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  content_then_reason:
-    case_key: UNIFIED.11.g
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: ee45b41d8ccbc3e610debc8a4c1f1cd395dfeba63858642a4f158c712442ad79
+  content_then_reason:
+    case_key: UNIFIED.11-7
     observation:
       value:
         assembled:
@@ -75,11 +74,12 @@ changes:
         - expected:
           - kind: text
             text: The capital is Paris.
-  content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-6
     observation:
       value:
         assembled:
@@ -107,11 +107,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  empty_args:
-    case_key: UNIFIED.6.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 0e77d189eb5ad4a70d82ae8336390044042ffafed2adcf70e6e318cf0e6c59da
+  empty_args:
+    case_key: UNIFIED.6-1
     observation:
       value:
         assembled:
@@ -132,573 +133,382 @@ changes:
             name: null
             arguments: '}'
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: d2761c739bde9eaab650fd411ae41a6a3c4262f25cc330ca378b463777b2003c
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
+    case_key: UNIFIED.30-6
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
+    case_key: UNIFIED.30-5
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
+    case_key: UNIFIED.34-7
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
+    case_key: UNIFIED.30-4
+    observation:
+      unavailable:
+        code: vllm_named_tool_unsupported
+        detail: vLLM request capture requires named_tool to be paired with GuidedJson.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
-        chunks:
-        - expected: []
+        code: vllm_named_tool_unsupported
+        detail: vLLM request capture requires named_tool to be paired with GuidedJson.
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
+    case_key: UNIFIED.30-13
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
+    case_key: UNIFIED.30-11
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
+    case_key: UNIFIED.30-12
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "a > b"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_invalid_call:
     case_key: UNIFIED.31-1
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '{"unexpected": "shape"}'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_list_with_broken_element:
     case_key: UNIFIED.31-4
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_malformed_json:
     case_key: UNIFIED.31-2
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '{"name": "get_weather", "arguments": {"city": "Par'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
+    case_key: UNIFIED.30-7
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "log", "arguments": {"note": "'
-        - kind: text
-          text: '"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '"}}]'
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
+    case_key: UNIFIED.30-1
+    observation:
+      unavailable:
+        code: vllm_named_tool_unsupported
+        detail: vLLM request capture requires named_tool to be paired with GuidedJson.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '{"city": "Paris"}'
-        chunks:
-        - expected: []
+        code: vllm_named_tool_unsupported
+        detail: vLLM request capture requires named_tool to be paired with GuidedJson.
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31-8
+    case_key: UNIFIED.34-1
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I'll use
-        - kind: text
-          text: '<|tool_calls_section_begin|> next[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
+    case_key: UNIFIED.34-5
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I'll call <|tool_call_begin|>functions.get_weather
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected:
-          - kind: text
-            text: ‹finish›
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
+    case_key: UNIFIED.32-5
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31-10
+    case_key: UNIFIED.34-3
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31-11
+    case_key: UNIFIED.32-4
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '<|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_partial_calls:
     case_key: UNIFIED.31-3
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31-9
+    case_key: UNIFIED.34-2
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Sure. checking
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_quoted_bare_header_after_payload:
-    case_key: UNIFIED.31-27
+    case_key: UNIFIED.35-2
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean self literal'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.31-25
+    case_key: UNIFIED.35-1
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I mean self literal
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
+    case_key: UNIFIED.30-2
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
+    case_key: UNIFIED.33-9
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31-18
+    case_key: UNIFIED.33-7
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31-19
+    case_key: UNIFIED.33-8
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
+    case_key: UNIFIED.33-6
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '<|tool_call_begin|>functions.{"unexpected": "shape"}'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31-15
+    case_key: UNIFIED.33-4
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '{"unexpected": "shape"}<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31-16
+    case_key: UNIFIED.33-5
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>{"unexpected": "shape"}<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
+    case_key: UNIFIED.34-4
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: <|tool_call_begin|>functions.secret
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected:
-          - kind: text
-            text: ‹finish›
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
+    case_key: UNIFIED.33-3
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city":'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.31-12
+    case_key: UNIFIED.33-1
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": <|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.31-13
+    case_key: UNIFIED.33-2
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": <|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31-6
+    case_key: UNIFIED.32-2
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31-5
+    case_key: UNIFIED.32-1
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
+    case_key: UNIFIED.30-3
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
-        chunks:
-        - expected: []
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
+    case_key: UNIFIED.34-6
+    observation:
+      unavailable:
+        code: vllm_finish_reason_unsupported
+        detail: vLLM Python parser API capture supports only stop termination.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        code: vllm_finish_reason_unsupported
+        detail: vLLM Python parser API capture supports only stop termination.
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31-7
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.32-3
     observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-  interstitial_text:
-    case_key: UNIFIED.11.e
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+  interstitial_text:
+    case_key: UNIFIED.11-5
     observation:
       value:
         assembled:
@@ -730,11 +540,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  narrated_calls:
-    case_key: UNIFIED.8.e
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 579c6803df0644e679cad4713051378c60a1a0945d5f82f4623cd71f77297b20
+  narrated_calls:
+    case_key: UNIFIED.8-5
     observation:
       value:
         assembled:
@@ -792,11 +603,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  orphan_close_after_prose:
-    case_key: UNIFIED.5.c
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 692be312b95c20a4b3ddb76d0e04c1eed2b19589c0168902ab090586747e6c31
+  orphan_close_after_prose:
+    case_key: UNIFIED.5-3
     observation:
       value:
         assembled:
@@ -805,203 +617,82 @@ changes:
         chunks:
         - expected: []
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: ae48231edad7d7b785c97b98eed4fc1c15c20121968458ec49bb8d9be357421c
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
+    case_key: UNIFIED.41-1
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: London
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "London"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
+    case_key: UNIFIED.40-4
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: no tool needed
-        - kind: text
-          text: The answer is 42.
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: The answer is 42.
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
+    case_key: UNIFIED.40-3
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: weighing options
-        - kind: text
-          text: 'Here''s what I found: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here''s what I found: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
+    case_key: UNIFIED.41-2
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: analyzing data
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Par'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Par'
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
+    case_key: UNIFIED.40-2
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
+    case_key: UNIFIED.40-1
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.50-4
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: literal
-        - kind: text
-          text: ' then a call'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then a call'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-  reason_after_tool:
-    case_key: UNIFIED.11.b
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
+  reason_after_tool:
+    case_key: UNIFIED.11-2
     observation:
       value:
         assembled:
@@ -1032,11 +723,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  reason_between_calls:
-    case_key: UNIFIED.11.i
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 89c8ebf04631e4af7ce9e569cb79b2c57c080dcb6c6f7b5a1a76b632ecf65b86
+  reason_between_calls:
+    case_key: UNIFIED.11-9
     observation:
       value:
         assembled:
@@ -1078,11 +770,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  reason_interleaved:
-    case_key: UNIFIED.11.c
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: dc5d9c2bc8408a7a24c00a67e18c23cdd7b5187372a88422323282b54452be29
+  reason_interleaved:
+    case_key: UNIFIED.11-3
     observation:
       value:
         assembled:
@@ -1129,11 +822,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  reason_markup_in_arg:
-    case_key: UNIFIED.12.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 131c41167248835ef876a5ffde416bfa00d81ddbaa8e736f62f5eedc13916133
+  reason_markup_in_arg:
+    case_key: UNIFIED.12-1
     observation:
       value:
         assembled:
@@ -1171,11 +865,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 86092167bc0afc2ed79dee9a19ed62e613b032fd1b16c4cc10e0bbc104b6df26
+  reason_markup_in_arg_with_text:
+    case_key: UNIFIED.12-3
     observation:
       value:
         assembled:
@@ -1217,11 +912,12 @@ changes:
             arguments: '}'
         - expected: []
         - expected: []
-  reason_only:
-    case_key: UNIFIED.10.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 546a5e26a91ce2a4678638dfb29053d6894c0fe7645948ca40be6656e84212a6
+  reason_only:
+    case_key: UNIFIED.10-1
     observation:
       value:
         assembled:
@@ -1231,11 +927,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  reason_then_content:
-    case_key: UNIFIED.10.b
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
+  reason_then_content:
+    case_key: UNIFIED.10-2
     observation:
       value:
         assembled:
@@ -1250,11 +947,12 @@ changes:
         - expected:
           - kind: text
             text: The answer is 42.
-  reason_then_tool:
-    case_key: UNIFIED.11.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
+  reason_then_tool:
+    case_key: UNIFIED.11-1
     observation:
       value:
         assembled:
@@ -1281,11 +979,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 1b1f7686f66b3ab75367c952fef9b11037e82d337ceef3228fab1b87758217bf
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.11-8
     observation:
       value:
         assembled:
@@ -1335,11 +1034,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 0665a15855c21c14b320df29af2c14e5728c8c1d81a3fb8a5419448123091901
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.11-4
     observation:
       value:
         assembled:
@@ -1387,11 +1087,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  reason_unterminated:
-    case_key: UNIFIED.10.d
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 8d6e921ece5ccd14242dfd58d05d8954a26e503239c2051d3128b97d8c38374b
+  reason_unterminated:
+    case_key: UNIFIED.10-4
     observation:
       value:
         assembled:
@@ -1400,11 +1101,61 @@ changes:
         chunks:
         - expected: []
         - expected: []
-  retired__50_a:
-    case_key: UNIFIED.50.a
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
+  retired__1_2:
+    case_key: UNIFIED.kimi_k2-1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 5e4d9afd9d6c3f1d36affc9a1fcd89672ad7278af0c4283cf1db10b7ce93b30d
+  retired__30_14:
+    case_key: UNIFIED.30-14
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
     stimulus:
       unavailable:
-        code: original_request_not_retained
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+  retired__31_33:
+    case_key: UNIFIED.34-8
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+    stimulus:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+  retired__31_40:
+    case_key: UNIFIED.34-9
+    observation:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+    stimulus:
+      unavailable:
+        code: vllm_guided_json_unsupported
+        detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
+  retired__50_a:
+    case_key: UNIFIED.50.a
     observation:
       value:
         assembled:
@@ -1429,11 +1180,11 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  retired__50_b:
-    case_key: UNIFIED.50.b
     stimulus:
       unavailable:
         code: original_request_not_retained
+  retired__50_b:
+    case_key: UNIFIED.50.b
     observation:
       value:
         assembled:
@@ -1441,11 +1192,11 @@ changes:
           text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         chunks:
         - expected: []
-  retired__50_c:
-    case_key: UNIFIED.50.c
     stimulus:
       unavailable:
         code: original_request_not_retained
+  retired__50_c:
+    case_key: UNIFIED.50.c
     observation:
       value:
         assembled:
@@ -1453,11 +1204,11 @@ changes:
           text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
         chunks:
         - expected: []
-  retired__51_a:
-    case_key: UNIFIED.51.a
     stimulus:
       unavailable:
         code: original_request_not_retained
+  retired__51_a:
+    case_key: UNIFIED.51.a
     observation:
       value:
         assembled:
@@ -1476,11 +1227,11 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city": "Par'
-  retired__51_b:
-    case_key: UNIFIED.51.b
     stimulus:
       unavailable:
         code: original_request_not_retained
+  retired__51_b:
+    case_key: UNIFIED.51.b
     observation:
       value:
         assembled:
@@ -1488,11 +1239,11 @@ changes:
           text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
         chunks:
         - expected: []
-  retired__muse_1:
-    case_key: UNIFIED.31-26
     stimulus:
       unavailable:
         code: original_request_not_retained
+  retired__muse_1:
+    case_key: UNIFIED.31-26
     observation:
       value:
         assembled:
@@ -1508,11 +1259,11 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-  text_before_tool:
-    case_key: UNIFIED.8.a
     stimulus:
       unavailable:
         code: original_request_not_retained
+  text_before_tool:
+    case_key: UNIFIED.8-1
     observation:
       value:
         assembled:
@@ -1537,11 +1288,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  text_between_calls:
-    case_key: UNIFIED.8.d
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: c4512cac1954019e598de1821fd0069d25bbbd5f8c6424f673462e40d4d405e8
+  text_between_calls:
+    case_key: UNIFIED.8-4
     observation:
       value:
         assembled:
@@ -1581,11 +1333,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  text_only:
-    case_key: UNIFIED.3.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 700e8ec57bd49dfc3722514e58cb33afbe59f9fbca51d03d45053a135cf84859
+  text_only:
+    case_key: UNIFIED.3-1
     observation:
       value:
         assembled:
@@ -1593,11 +1346,12 @@ changes:
           text: The answer is 42, no tools needed.
         chunks:
         - expected: []
-  text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
+  text_reason_tool_text_reason_tool:
+    case_key: UNIFIED.11-10
     observation:
       value:
         assembled:
@@ -1646,11 +1400,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  text_sandwich:
-    case_key: UNIFIED.8.c
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 7de8d8cba1570c9e50dd062fa7bdc658d8653d7ed335e2a46320b1df2f487dc7
+  text_sandwich:
+    case_key: UNIFIED.8-3
     observation:
       value:
         assembled:
@@ -1676,11 +1431,12 @@ changes:
             arguments: '}'
         - expected: []
         - expected: []
-  tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 44fff81211c2b2951a37082a6bfdc0d9204a4cbf66427c99111c6d0ebfbe30ee
+  tool_block_never_closed_then_text:
+    case_key: UNIFIED.4-1
     observation:
       value:
         assembled:
@@ -1689,11 +1445,12 @@ changes:
         chunks:
         - expected: []
         - expected: []
-  tool_in_reason:
-    case_key: UNIFIED.12.b
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: dc25342f14680ef2331b9285e1543b4364644009f89781115c25e0099f86bcff
+  tool_in_reason:
+    case_key: UNIFIED.12-2
     observation:
       value:
         assembled:
@@ -1721,11 +1478,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: f784b9faba0feefc5060d750e490cab999c80f02b0db8e38f8813a8c0f12e839
+  tool_in_reason_with_text:
+    case_key: UNIFIED.12-4
     observation:
       value:
         assembled:
@@ -1755,11 +1513,12 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: ce739746bf940b3ed7a2d20e11c8ee3736facea7029f09d1a31227fa9d5f784c
+  tool_markup_only_emits_nothing:
+    case_key: UNIFIED.4-2
     observation:
       value:
         assembled:
@@ -1767,11 +1526,12 @@ changes:
           text: <|tool_calls_section_end|>
         chunks:
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: c208f212d4e9af751d43b668461c16f7a01c53b6de6671e3ae013a7af4f54afd
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.5-2
     observation:
       value:
         assembled:
@@ -1788,14 +1548,15 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city": "Paris"'
+        - expected:
           - kind: tool_call
             name: null
             arguments: '}'
+    stimulus:
+      ref: current
+      semantic_sha256: 640462e15b52c18446fc42a149a1d809a12b7cf55400afac83bf365783efbf65
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.1-1
     observation:
       value:
         assembled:
@@ -1817,11 +1578,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: d3eb0373fcab5690b0e58dc3a1ea632504ae409bd77c2facb162cfcf74dd41a5
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+    case_key: UNIFIED.8-2
     observation:
       value:
         assembled:
@@ -1844,11 +1606,12 @@ changes:
             arguments: '}'
         - expected: []
         - expected: []
-  truncated_tool_eof:
-    case_key: UNIFIED.5.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 1c948928376e477a85a2cc447fa8fc8a2666feed4b7e4a676984a17f98c96553
+  truncated_tool_eof:
+    case_key: UNIFIED.5-1
     observation:
       value:
         assembled:
@@ -1869,11 +1632,12 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city": "Par'
-  two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 2b3b01aaf775f7f68879e1563d597ebb195f207599e873bf452a031ecb26bf9f
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10-5
     observation:
       value:
         assembled:
@@ -1899,14 +1663,12 @@ changes:
         - expected:
           - kind: text
             text: done
-        - expected:
-          - kind: text
-            text: ‹finish›
-  two_calls:
-    case_key: UNIFIED.2.a
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: e3ee307214ba9614e2905612a2d4d90cf08d1589d7dfa821915934f730bd48cf
+  two_calls:
+    case_key: UNIFIED.2-1
     observation:
       value:
         assembled:
@@ -1945,11 +1707,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  two_calls_same_name:
-    case_key: UNIFIED.2.b
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: cedae3e2633fefcad0017d9e79a7934da90df4b83c60248f8426c30678631565
+  two_calls_same_name:
+    case_key: UNIFIED.2-2
     observation:
       value:
         assembled:
@@ -1988,11 +1751,12 @@ changes:
             name: null
             arguments: '}'
         - expected: []
-  two_reason_spans:
-    case_key: UNIFIED.10.c
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: b9eef05d6760bbde3814d00bd130d448373b60d0b16c45958f8270b15a7fc8de
+  two_reason_spans:
+    case_key: UNIFIED.10-3
     observation:
       value:
         assembled:
@@ -2017,5 +1781,9 @@ changes:
         - expected:
           - kind: text
             text: done
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
 metadata_changes: {}
 document_overrides: {}

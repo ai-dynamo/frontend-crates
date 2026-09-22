@@ -836,7 +836,7 @@ impl ToolCallConfig {
     }
 
     pub fn glm47() -> Self {
-        // GLM-4.7 format:
+        // GLM-4.7 and GLM-5.x format:
         // <tool_call>function_name<arg_key>param1</arg_key><arg_value>value1</arg_value></tool_call>
         // Reference: https://huggingface.co/zai-org/GLM-4.7/blob/main/chat_template.jinja
         Self {
