@@ -224,8 +224,6 @@ impl Encoder for CachedTokenizer {
         let matched = match self.l1.lookup_prefix(input) {
             PrefixLookup::Hit(matched) => matched,
             PrefixLookup::Miss(prefix_hashes) => {
-                // Reuse lookup's boundaries and digests while tokenizing each segment
-                // once and caching its cumulative prefix. No second scan or hash pass.
                 let encoding = Encoding::Sp(self.l1.populate_and_encode_with_hashes(
                     input,
                     prefix_hashes.into_iter(),
@@ -238,9 +236,6 @@ impl Encoder for CachedTokenizer {
 
         let cached_tokens = matched.tokens.len();
         let encoding = if self.extend_on_hit {
-            // Cache the new suffix at its deepest boundary so the next turn hits
-            // deeper, then return the full merged tokens. Reuse both the deepest
-            // boundary and its digest from lookup, avoiding another prefix scan.
             Encoding::Sp(self.l1.extend_after_match_with_hash(
                 input,
                 matched,
