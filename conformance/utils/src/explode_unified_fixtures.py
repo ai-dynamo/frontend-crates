@@ -13,7 +13,7 @@ Source (loose build tree, conformance/unified/):
 Output (conformance/unified/, one YAML per case per family per version-dir):
   inputs/<family>/UNIFIED.<scenario>.yaml         {description, policy, chunks:[{delta_text}]}
   golden/<family>/UNIFIED.<scenario>.yaml         {captured_with:{golden}, assembled}
-  dynamo_v2-<ver>/<family>/UNIFIED.<scenario>.yaml {captured_with, assembled, chunks:[{expected}]}
+  dynamo_v2-<ver>/<family>/UNIFIED.<scenario>.yaml {captured_with, capture_origin, assembled, chunks:[{expected}]}
   vllm_python-<ver>/<family>/...
   vllm_rust-<ver>/<family>/...
   sglang_python-<ver>/<family>/...
@@ -21,7 +21,6 @@ Output (conformance/unified/, one YAML per case per family per version-dir):
 Same schema shape as toolcalling/fixtures-stream-v2 (family/mode/captured_with/cases).
 Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 """
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -29,6 +28,8 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from dynamo_version import validate_capture_provenance  # noqa: E402
+from capture_stimulus import capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
 
 CONF = Path(__file__).resolve().parents[2]   # <repo>/conformance
@@ -45,7 +46,7 @@ def _dump(doc, path):
 
 
 def _case_key(case_id):
-    # "UNIFIED.arg_marker_in_string.gemma4" -> numbered id "UNIFIED.7.b", family, slug
+    # "UNIFIED.arg_marker_in_string.gemma4" -> numbered id "UNIFIED.7-2", family, slug
     fam = case_id.rsplit(".", 1)[1]
     scenario = case_id[len("UNIFIED."):].rsplit(".", 1)[0]
     return numbered_id(scenario), fam, scenario
@@ -53,39 +54,37 @@ def _case_key(case_id):
 
 def _peer_cell(result):
     """Store a peer failure instead of its partial output."""
-    if result.get("error"):
-        return {"error": result["error"]}
-    return {
-        "assembled": result.get("assembled") or [],
-        "chunks": [{"expected": events or []} for events in (result.get("chunks") or [])],
-    }
+    if result.get("unavailable"):
+        record = {"unavailable": result["unavailable"]}
+    elif result.get("error"):
+        record = {"error": result["error"]}
+    else:
+        record = {
+            "assembled": result.get("assembled") or [],
+            "chunks": [{"expected": events or []} for events in (result.get("chunks") or [])],
+        }
+    if "capture_input" in result:
+        record["capture_input"] = result["capture_input"]
+    return record
 
 
 def _clear_generated_dirs():
-    """Remove generated captures but retain append-only sparse patch layers."""
+    """Remove every generated view before materializing canonical YAML captures."""
     for sub in ("inputs", "golden"):
         shutil.rmtree(BUILD / sub, ignore_errors=True)
     for d in BUILD.glob("*-*"):
-        if d.is_dir() and ".patch" not in d.name:
+        if d.is_dir():
             shutil.rmtree(d, ignore_errors=True)
 
 
-def _shared_overlay_dirs():
-    """Map cases in a PR Dynamo patch capture to their shared sparse overlay."""
-    overlays = {}
-    for patch in BUILD.glob("dynamo_v2-*+pr*.patch*"):
-        suffix = re.search(r"(\+pr\d+\.patch\d+)$", patch.name)
-        if suffix is None:
-            continue
-        for fp in patch.glob("*/*.yaml"):
-            doc = yaml.safe_load(fp.read_text()) or {}
-            for key in doc.get("cases") or {}:
-                overlays[(fp.parent.name, key)] = suffix.group(1)
-    return overlays
+def _canonical_dynamo_capture_version(provenance):
+    """Use the semantic crate version as the only Dynamo capture filename."""
+    return provenance["crate_version"]
 
 
 def main():
     feed = yaml.safe_load((BUILD / "unified_results.yaml").read_text())
+    provenance = validate_capture_provenance(REPO, feed.get("capture_provenance"))
     caps = {}
     for impl, fname in (
         ("vllm_python", "vllm_capture.yaml"),
@@ -99,9 +98,8 @@ def main():
         "vllm_python": caps["vllm_python"].get("vllm_version") or "0.25.x",
         "vllm_rust": caps["vllm_rust"].get("vllm_rust_version") or "0.25.x",
         "sglang_python": caps["sglang_python"].get("sglang_version") or "0.5.x",
-        "dynamo_v2": _dynamo_v2_version(),
+        "dynamo_v2": _canonical_dynamo_capture_version(provenance),
     }
-    shared_overlays = _shared_overlay_dirs()
 
     # A version dir is written once; accumulate cases into per-(dir, family) docs.
     docs = {}  # (dirname, family) -> {family, mode, [model_label|captured_with], cases:{}}
@@ -114,6 +112,11 @@ def main():
                 d["model_label"] = model_label
             if captured_with is not None:
                 d["captured_with"] = captured_with
+                if "dynamo_v2" in captured_with:
+                    d["capture_origin"] = {
+                        key: provenance[key]
+                        for key in ("crate_version", "source_sha256", "git_commit")
+                    }
             d["cases"] = {}
             docs[k] = d
         return docs[k]["cases"]
@@ -123,29 +126,28 @@ def main():
         key, fam, scenario = _case_key(cid)
         chunks = c.get("chunks") or []
 
-        # A PR patch capture owns new shared cases in a sparse overlay. The released
-        # shared shards remain byte-identical when this generated tree is repackaged.
-        shared_suffix = shared_overlays.get((fam, key), "")
-        slot(f"inputs{shared_suffix}", fam, model_label=fam)[key] = {
+        slot("inputs", fam, model_label=fam)[key] = {
             "scenario": scenario,
             "description": c.get("description", ""),
             "policy": c.get("policy") or [],
             "init": c.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": c.get("finish_reason") or "stop",
             "input": c.get("input", ""),
+            "tools": c.get("tools"),
             "chunks": [
                 {"delta_text": ch.get("delta_text", "")} for ch in chunks
             ],
         }
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
-        slot(f"golden{shared_suffix}", fam, captured_with={"golden": "v1"})[key] = {
+        slot("golden", fam, captured_with={"golden": "v1"})[key] = {
             "assembled": c.get("golden") or [],
         }
 
         # dynamo_v2-<ver>/<family>/<key>.yaml — LIVE dynamo (assembled + per-chunk)
         ddir = f"dynamo_v2-{ver['dynamo_v2']}"
-        slot(ddir, fam, captured_with={"dynamo_v2": ver["dynamo_v2"]})[key] = {
+        slot(ddir, fam, captured_with={"dynamo_v2": provenance["crate_version"]})[key] = {
+            "capture_input": capture_input(c),
             "assembled": c.get("dynamo") or [],
             "chunks": [{"expected": ch.get("dynamo") or []} for ch in chunks],
         }
@@ -159,7 +161,7 @@ def main():
             entry = slot(vdir, fam, captured_with={impl: ver[impl]})
             entry[key] = _peer_cell(res)
 
-    # Rebuild generated captures while retaining append-only sparse patch layers.
+    # Rebuild generated views from canonical captures.
     _clear_generated_dirs()
 
     n = 0
@@ -170,14 +172,6 @@ def main():
             _dump(one, BUILD / dirname / family / f"{key}.yaml")
             n += 1
     print(f"wrote {n} case files across {len({d for d, _ in docs})} version dirs")
-
-
-def _dynamo_v2_version():
-    # Shared with refresh_dynamo_captures so the dir this writes is the dir that
-    # one created. No fallback: a guessed label files cases under a version that
-    # was never captured.
-    from dynamo_version import dynamo_v2_label
-    return dynamo_v2_label(REPO)
 
 
 if __name__ == "__main__":

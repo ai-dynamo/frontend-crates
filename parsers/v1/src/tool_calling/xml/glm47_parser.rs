@@ -6,7 +6,6 @@
 // Reference: https://huggingface.co/zai-org/GLM-4.7/blob/main/chat_template.jinja
 
 use regex::Regex;
-use serde::ser::{Serialize, SerializeMap, Serializer};
 use serde_json::Value;
 use std::collections::HashMap;
 use tracing::warn;
@@ -14,6 +13,7 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::Glm47ParserConfig;
+use super::OrderedArguments;
 use super::parsed_value::{ParsedValue, coerce_integer_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
@@ -680,21 +680,6 @@ fn parse_tool_call_block(
             arguments: serde_json::to_string(&OrderedArguments(&arguments))?,
         },
     })
-}
-
-/// Serializes parsed arguments as a JSON object in source `<arg_key>` order.
-/// A `HashMap` would scramble keys on every call, while clients (and the
-/// engine-side parsers) expect the order the model emitted.
-struct OrderedArguments<'a>(&'a [(String, ParsedValue)]);
-
-impl Serialize for OrderedArguments<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for (key, value) in self.0 {
-            map.serialize_entry(key, value)?;
-        }
-        map.end()
-    }
 }
 
 #[cfg(test)]

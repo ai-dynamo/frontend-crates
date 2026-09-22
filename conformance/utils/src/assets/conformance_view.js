@@ -714,7 +714,7 @@
 
   function columnGrammarModel(tab, col) {
     var rows = [];
-    var caseId = null;   // numbered id (e.g. "UNIFIED.7.b") — the cells' own id, not the slug
+    var caseId = null;   // numbered id (e.g. "UNIFIED.7-2") — the cells' own id, not the slug
     var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
     (tab.rows || []).forEach(function (row) {
       if (!row || row.section) { return; }              // section banners are not families
@@ -751,6 +751,7 @@
       rows.push({
         family: row.family || '',
         label: row.model_label || row.family || '',
+        init: tip ? tip.init : null,
         text: text ? text : null,
         chunks: (inp.chunks && inp.chunks.length) ? inp.chunks : null,
         blocks: blocks,
@@ -758,8 +759,6 @@
                                            : 'n/a — ' + naReason(cell, tip)),
       });
     });
-    // `init` rides along so the column popup lists the SAME parser inputs as the
-    // cells under it — the config list is built from this by the shared builder.
     return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', init: col.init,
              grammar: rows, cands: colDefs || [] };
   }
@@ -781,8 +780,6 @@
     var h = '<div class="ttip-head">' + escapeHtml(m.head || '')
       + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
-    // Same builder as the cell popup: a column header and the cells under it describe
-    // one configuration, so they cannot drift into showing different knobs.
     h += buildConfigHtml(m.init);
     var cands = m.cands || [];
     var body = '';
@@ -839,8 +836,9 @@
       // exactly like V4; the family is kept alongside since it names the grammar.
       var fam = (r.family && r.family !== r.label)
         ? '<span class="grfam">' + escapeHtml(r.family) + '</span>' : '';
+      const config = m.init ? '' : buildConfigHtml(r.init);
       body += '<tr' + cls + '><td class="grf">' + escapeHtml(r.label || r.family)
-        + fam + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
+        + fam + config + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
     });
     // One output header per candidate; applyCtl shows golden + the active columns,
     // flags the Reference (★) and orders golden -> REF -> rest.

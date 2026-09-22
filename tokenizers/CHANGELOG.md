@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.9.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.9.0...dynamo-tokenizers-v1.9.1) - 2026-09-22
+
+### Performance
+
+- *(tokenizers)* Reuse prefix hashes on cache hits and misses ([#244](https://github.com/ai-dynamo/frontend-crates/pull/244))
+
+## [1.9.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.8.2...dynamo-tokenizers-v1.9.0) - 2026-09-22
+
+### Features
+
+- *(tokenizers)* Expose vocab introspection on the Tokenizer trait ([#230](https://github.com/ai-dynamo/frontend-crates/pull/230))
+
+## [1.8.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.8.1...dynamo-tokenizers-v1.8.2) - 2026-09-11
+
+### Bug fixes
+
+- *(tokenizers)* Bypass cache for overlapping special tokens ([#216](https://github.com/ai-dynamo/frontend-crates/pull/216))
+
 ## [1.8.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.8.0...dynamo-tokenizers-v1.8.1) - 2026-08-25
 
 ### Bug fixes

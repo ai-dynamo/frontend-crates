@@ -123,12 +123,12 @@ fn native_id_len(text: &str, flush: bool) -> NativeId {
 ///
 /// Two things follow from that ordering:
 /// - A `call_end`-looking byte sequence embedded INSIDE the JSON string
-///   argument is data, not the real closer (`UNIFIED.7.b`,
+///   argument is data, not the real closer (`UNIFIED.7-2`,
 ///   `arg_marker_in_string`) — the naive whole-buffer search matched the
 ///   embedded copy first and truncated the argument there.
 /// - At true EOF (`flush`), a body whose JSON is syntactically complete but
 ///   whose `call_end` never streamed (max_tokens / EOS) is recoverable
-///   (`UNIFIED.5.b`, `tool_no_close`, the same best-effort-recovery contract
+///   (`UNIFIED.5-2`, `tool_no_close`, the same best-effort-recovery contract
 ///   as policy P2) instead of being dropped as if it were genuinely
 ///   truncated. `K2Emitter` synthesizes the missing closer before typing it.
 ///   BUT only for `tool_index == 0`: the captured batch contract
@@ -219,9 +219,10 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // delimiters that will never come left the whole header + payload
         // leaking as visible text.
         //
-        // Bound the invoke to the STRUCTURAL part only: the literal
-        // `functions.` prefix, plus a complete `NAME:IDX` id when one
-        // actually follows it. A bare name with no index
+        // The batch grammar makes `functions.` optional: it can also be
+        // the entire name in `functions.:17`. Scan the full identifier
+        // before falling back to stripping only that structural prefix.
+        // A bare name with no index
         // (`functions.get_weather` narrated inside a thought,
         // `guided_json_narrated_prefix_inside_reasoning`) is prose the model
         // wrote, not a real id -- swallowing it as control markup drops it
@@ -229,24 +230,13 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // in. Whatever isn't consumed here -- JSON, `<think>`, a bare name,
         // or nothing -- is scanned fresh on its own terms.
         let after_start = &text[CALL_START.len()..];
-        let Some(after_prefix) = after_start.strip_prefix(FUNCTIONS_PREFIX) else {
-            // Not (yet) the literal `functions.` prefix. If what's buffered
-            // is a proper prefix of it, more input could still complete the
-            // match -- wait rather than deciding early.
-            if !flush
-                && after_start.len() < FUNCTIONS_PREFIX.len()
-                && FUNCTIONS_PREFIX.starts_with(after_start)
-            {
-                return None;
-            }
-            // Genuinely not the expected shape: nothing here is header
-            // markup, so bound the invoke to the bare opener marker itself.
-            return Some(CALL_START.len());
-        };
-        let end = match native_id_len(after_prefix, flush) {
-            NativeId::Complete(id_len) => CALL_START.len() + FUNCTIONS_PREFIX.len() + id_len,
+        let end = match native_id_len(after_start, flush) {
+            NativeId::Complete(id_len) => CALL_START.len() + id_len,
             NativeId::Pending => return None,
-            NativeId::None => CALL_START.len() + FUNCTIONS_PREFIX.len(),
+            NativeId::None if after_start.starts_with(FUNCTIONS_PREFIX) => {
+                CALL_START.len() + FUNCTIONS_PREFIX.len()
+            }
+            NativeId::None => CALL_START.len(),
         };
         // The byte right after `end` may be the start of a real
         // `argument_begin` or `call_end` that just hasn't finished
@@ -323,7 +313,7 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // `json_value_end` returning `None` does NOT mean "malformed" --
         // most of the time it means "not balanced YET", e.g. a chunk split
         // lands mid-string with a `call_end`-looking byte sequence sitting
-        // inside the still-open quote (`UNIFIED.7.b`, `arg_marker_in_string`).
+        // inside the still-open quote (`UNIFIED.7-2`, `arg_marker_in_string`).
         // Falling back to a raw `call_end` search there re-matches that
         // EMBEDDED fake closer and truncates the argument -- exactly the I7
         // corruption this whole JSON-boundary approach exists to prevent.
@@ -412,7 +402,7 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
             return Some(json_end + rel + CALL_END.len());
         }
     }
-    // Best-effort recovery (`UNIFIED.5.b`, policy P2 sibling): the argument
+    // Best-effort recovery (`UNIFIED.5-2`, policy P2 sibling): the argument
     // body is syntactically complete but the model stopped before emitting
     // the closer. Only at true EOF -- otherwise wait for more input.
     //
@@ -537,7 +527,7 @@ impl InvokeEmitter for K2Emitter {
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
         // `kimi_invoke_end` may hand back a call recovered at EOF whose JSON
-        // body is complete but whose `call_end` never streamed (`UNIFIED.5.b`).
+        // body is complete but whose `call_end` never streamed (`UNIFIED.5-2`).
         // Normalize it here: the regex-based v1 parser requires the literal
         // closer to delimit the arguments capture, so synthesize it rather
         // than re-feeding the raw, still-unclosed bytes.
@@ -630,6 +620,10 @@ impl ToolParser for KimiK2ToolStreamParser {
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
         self.scanner.finish()
     }
+
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.scanner.tool_call_id(tool_index)
+    }
 }
 
 #[cfg(test)]
@@ -658,6 +652,104 @@ mod tests {
         out
     }
 
+    fn assert_native_header_schedules(header: &str, expected_name: Option<&str>) {
+        let input = format!(
+            "<|tool_calls_section_begin|>{CALL_START}{header}{ARGUMENT_BEGIN}{{}}{CALL_END}{SECTION_END_PLURAL}"
+        );
+        let (batch, _) =
+            try_tool_call_parse_kimi_k2(&input, &KimiK2ParserConfig::default(), None).unwrap();
+        assert_eq!(
+            batch.len(),
+            usize::from(expected_name.is_some()),
+            "{header:?}"
+        );
+        if let Some(name) = expected_name {
+            assert_eq!(batch[0].function.name, name, "{header:?}");
+            assert_eq!(batch[0].function.arguments, "{}");
+        }
+        let whole = parse_chunks(&[], &[&input]);
+        let mut schedules: Vec<Vec<&str>> = input
+            .char_indices()
+            .map(|(at, _)| vec![&input[..at], &input[at..]])
+            .collect();
+        schedules.push(vec![&input]);
+        schedules.push(
+            input
+                .char_indices()
+                .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                .collect(),
+        );
+        for chunks in schedules {
+            let mut parser = KimiK2ToolStreamParser::new(&[]);
+            for _ in 0..2 {
+                let mut output = ToolParseResult::default();
+                for chunk in &chunks {
+                    output.append(parser.push(chunk).unwrap());
+                }
+                // These inputs have a real closing marker: completion must not wait for EOF.
+                assert_eq!(output.calls.len(), batch.len(), "{header:?}, {chunks:?}");
+                for (index, (call, expected)) in output.calls.iter().zip(&batch).enumerate() {
+                    assert_eq!(call.name.as_deref(), Some(expected.function.name.as_str()));
+                    assert_eq!(call.arguments, expected.function.arguments);
+                    assert!(call.complete);
+                    assert_eq!(call.tool_index, index);
+                    assert_eq!(parser.tool_call_id(index), Some(expected.id.as_str()));
+                }
+                output.append(parser.finish().unwrap());
+                assert_eq!(output, whole, "{header:?}, {chunks:?}");
+                parser.scanner.reset();
+                assert_eq!(parser.tool_call_id(0), None);
+            }
+        }
+    }
+
+    #[test]
+    fn native_header_empty_suffix_keeps_full_identifier_at_every_split() {
+        assert_native_header_schedules("functions.:17", Some("functions."));
+    }
+
+    #[test]
+    fn native_header_optional_prefix_and_index_match_batch_at_every_split() {
+        for prefix in ["", FUNCTIONS_PREFIX] {
+            for name in ["f", "_", "-", ".", "f_g", "f-g", "f.g", "é"] {
+                for index in ["0", "17", "0017"] {
+                    for whitespace in ["", " ", "\n\t"] {
+                        assert_native_header_schedules(
+                            &format!("{prefix}{name}:{index}{whitespace}"),
+                            Some(name),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn native_header_malformed_colon_and_index_remain_rejected() {
+        for header in [
+            "",
+            ":17",
+            "functions.",
+            "functions.:",
+            "functions.::17",
+            "functions.f",
+            "functions.f:",
+            "functions.f:x",
+            "functions.f:-1",
+            "functions.f:17x",
+            "functions.f: 17",
+            "functions.f::17",
+            "f:",
+            "f:x",
+            "f:-1",
+            "f:17x",
+            "f: 17",
+            "f::17",
+        ] {
+            assert_native_header_schedules(header, None);
+        }
+    }
+
     #[test]
     fn hardcoded_markers_mirror_the_config_default() {
         // `CALL_START`/`CALL_END`/`ARGUMENT_BEGIN`/`SECTION_END_PLURAL`/
@@ -679,6 +771,39 @@ mod tests {
                 SECTION_END_SINGULAR.to_string()
             ],
         );
+    }
+
+    #[test]
+    fn native_tool_call_id_is_delegated_from_the_scanner() {
+        let input = concat!(
+            "<|tool_calls_section_begin|>",
+            "<|tool_call_begin|>functions.get_weather:7",
+            "<|tool_call_argument_begin|>{\"location\":\"NYC\"}",
+            "<|tool_call_end|><|tool_calls_section_end|>"
+        );
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        let result = parser.parse_complete(input).expect("parse complete");
+        assert_eq!(result.calls.len(), 1);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
+        assert_eq!(parser.tool_call_id(1), None);
+    }
+
+    #[test]
+    fn native_tool_call_id_state_resets_for_reuse() {
+        let input = concat!(
+            "<|tool_calls_section_begin|>",
+            "<|tool_call_begin|>functions.get_weather:7",
+            "<|tool_call_argument_begin|>{\"location\":\"NYC\"}",
+            "<|tool_call_end|><|tool_calls_section_end|>"
+        );
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        parser.parse_complete(input).expect("first parse");
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
+        parser.scanner.reset();
+        assert_eq!(parser.tool_call_id(0), None);
+        parser.parse_complete(input).expect("second parse");
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
     }
 
     #[test]
@@ -971,7 +1096,7 @@ mod tests {
 
     /// Sibling positive control: the SAME shape but with genuinely valid
     /// JSON still recovers normally -- this fix must not regress the
-    /// existing `UNIFIED.5.b`/`tool_no_close` best-effort recovery contract.
+    /// existing `UNIFIED.5-2`/`tool_no_close` best-effort recovery contract.
     #[test]
     fn eof_recovery_still_recovers_genuinely_valid_json_with_no_call_end() {
         let text =

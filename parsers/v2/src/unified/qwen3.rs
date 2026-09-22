@@ -32,15 +32,200 @@
 use crate::tool_calling::qwen3_coder::qwen3_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
+use crate::unified::{
+    GuidedPrefix, GuidedPrefixContext, GuidedPrefixScanner, GuidedRouted, ScannerUnified,
+    UnifiedParser, count_guided_prefix_bytes,
+};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
+fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
+    let suffix = &context.text[context.at..];
+    let Some(after_prefix) = suffix.strip_prefix("<function=") else {
+        return if "<function=".starts_with(suffix) {
+            GuidedPrefix::Pending
+        } else {
+            GuidedPrefix::NoMatch
+        };
+    };
+    let header_len = after_prefix.char_indices().find_map(|(at, ch)| {
+        if ch != '>' {
+            return None;
+        }
+        let name = &after_prefix[..at];
+        (name.is_empty()
+            || name
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')))
+        .then_some("<function=".len() + at + 1)
+    });
+    let payload_at = after_prefix.find(['{', '[']);
+    let strip_len = after_prefix
+        .find("</function>")
+        .filter(|end| payload_at.is_none_or(|payload| *end < payload))
+        .map(|end| "<function=".len() + end + "</function>".len())
+        .or(header_len)
+        .unwrap_or("<function=".len());
+    if context.followed_by_competing_marker {
+        return GuidedPrefix::Strip(strip_len);
+    }
+    if header_len.is_some_and(|header_len| {
+        let after_header = &suffix[header_len..];
+        !after_header.is_empty() && "</function>".starts_with(after_header)
+    }) {
+        return GuidedPrefix::Pending;
+    }
+    if !context.outside_reasoning {
+        return header_len
+            .or_else(|| {
+                after_prefix
+                    .find("</function>")
+                    .map(|end| "<function=".len() + end + "</function>".len())
+            })
+            .map(GuidedPrefix::Strip)
+            .unwrap_or(GuidedPrefix::Pending);
+    }
+    if after_prefix.starts_with('>') {
+        return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
+    }
+    let name_len = after_prefix.char_indices().find_map(|(at, ch)| {
+        (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-')).then_some(at)
+    });
+    match name_len {
+        None => GuidedPrefix::Pending,
+        Some(at) if at > 0 && matches!(after_prefix.as_bytes()[at], b'{' | b'[') => {
+            GuidedPrefix::Match
+        }
+        Some(_) => GuidedPrefix::NoMatch,
+    }
+}
+
+struct QwenGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+    payload_at: Option<usize>,
+    header_end: Option<usize>,
+    header_name_valid: bool,
+    close_at: Option<usize>,
+    close_scan_from: usize,
+}
+
+impl Default for QwenGuidedPrefix {
+    fn default() -> Self {
+        Self {
+            scan_from: 0,
+            name_end: None,
+            payload_at: None,
+            header_end: None,
+            header_name_valid: true,
+            close_at: None,
+            close_scan_from: 0,
+        }
+    }
+}
+
+fn qwen_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(QwenGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for QwenGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        const PREFIX: &str = "<function=";
+        const CLOSE: &str = "</function>";
+        let Some(after_prefix) = candidate.strip_prefix(PREFIX) else {
+            return guided_function_prefix(context);
+        };
+        let append_start = candidate.len() - append.len();
+        let append_after_prefix = append_start.saturating_sub(PREFIX.len());
+        if self.close_at.is_none() {
+            let scan_from = after_prefix.floor_char_boundary(
+                self.close_scan_from
+                    .max(append_after_prefix.saturating_sub(CLOSE.len() - 1)),
+            );
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.close_at = scanned.find(CLOSE).map(|at| scan_from + at);
+            self.close_scan_from = after_prefix.len().saturating_sub(CLOSE.len() - 1);
+        }
+        if self.header_end.is_none() || self.name_end.is_none() || self.payload_at.is_none() {
+            let scan_from = self.scan_from.max(append_after_prefix);
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            for (relative, ch) in scanned.char_indices() {
+                let at = scan_from + relative;
+                if self.payload_at.is_none() && matches!(ch, '{' | '[') {
+                    self.payload_at = Some(at);
+                }
+                if self.name_end.is_none()
+                    && (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-'))
+                {
+                    self.name_end = Some(at);
+                }
+                if self.header_end.is_none() {
+                    if ch == '>' {
+                        self.header_end = Some(at);
+                    } else if !ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-') {
+                        self.header_name_valid = false;
+                    }
+                }
+            }
+            self.scan_from = after_prefix.len();
+        }
+        let header_len = self
+            .header_end
+            .filter(|_| self.header_name_valid)
+            .map(|at| PREFIX.len() + at + 1);
+        let strip_len = self
+            .close_at
+            .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
+            .map(|end| PREFIX.len() + end + CLOSE.len())
+            .or(header_len)
+            .unwrap_or(PREFIX.len());
+        if context.followed_by_competing_marker {
+            return GuidedPrefix::Strip(strip_len);
+        }
+        if !context.outside_reasoning {
+            if self.header_end.is_some_and(|header_end| {
+                let after_header = &after_prefix[header_end + 1..];
+                !after_header.is_empty() && CLOSE.starts_with(after_header)
+            }) {
+                return GuidedPrefix::Pending;
+            }
+            return self
+                .close_at
+                .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
+                .map(|end| PREFIX.len() + end + CLOSE.len())
+                .or(header_len)
+                .map(GuidedPrefix::Strip)
+                .unwrap_or(GuidedPrefix::Pending);
+        }
+        if after_prefix.starts_with('>') {
+            return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(at) if at > 0 && matches!(after_prefix.as_bytes()[at], b'{' | b'[') => {
+                GuidedPrefix::Match
+            }
+            Some(_) => GuidedPrefix::NoMatch,
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(GuidedRouted::new(ScannerUnified::new(
-        qwen3_scanner(tools).with_reasoning(ReasoningSpec {
+    Box::new(GuidedRouted::new(
+        ScannerUnified::new(qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             // Qwen3 emits its own `<think>`; the template does not pre-fill one,
@@ -49,8 +234,9 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // `<think>` is not a special token for this family; the OR comes from the grammar.
             preserve_special_tokens: false,
             ..Default::default()
-        }),
-    )))
+        }))
+        .with_guided_prefix_policy(guided_function_prefix, qwen_guided_prefix),
+    ))
 }
 
 #[cfg(test)]
@@ -59,6 +245,7 @@ mod tests {
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserEvent, UnifiedParserExt,
         UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        guided_prefix_examined_bytes, reset_guided_prefix_examined_bytes,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -165,6 +352,29 @@ mod tests {
         UnifiedEvent::ToolCall {
             name: name.into(),
             arguments,
+        }
+    }
+
+    #[test]
+    fn guided_reasoning_with_an_empty_native_function_header_is_split_invariant() {
+        let input = concat!(
+            "<think>x <function=get_weather></function>",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]</think>"#,
+        );
+        let want = vec![
+            reasoning("x "),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::None,
+            None,
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split at byte {split}");
         }
     }
 
@@ -1095,8 +1305,20 @@ mod tests {
             let native = events(&weather_tools(), &[&format!("{thought}tail")]);
             let guided = guided_reasoning(&format!("{thought}{GUIDED_CALL}"));
             if equal_payload.contains(thought) {
+                let reasoning_payloads = |events: &[UnifiedEvent]| {
+                    events
+                        .iter()
+                        .filter_map(|event| match event {
+                            UnifiedEvent::Reasoning { text } => Some(text.clone()),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>()
+                };
+                let native_reasoning = reasoning_payloads(&native);
+                assert!(!native_reasoning.is_empty(), "no reasoning for {thought:?}");
                 assert_eq!(
-                    native[0], guided[0],
+                    native_reasoning,
+                    reasoning_payloads(&guided),
                     "request mode changed the reasoning payload for {thought:?}"
                 );
             }
@@ -1469,7 +1691,7 @@ mod tests {
     #[test]
     fn required_choice_recovers_the_whole_array_when_any_call_is_invalid() {
         // Invalid = missing `name` (the one required field). A missing ARGUMENT key is
-        // not invalid — that is a parameterless call, per `UNIFIED.6.a`.
+        // not invalid — that is a parameterless call, per `UNIFIED.6-1`.
         let input = r#"[{"name":"get_weather","parameters":{"city":"Paris"}},{"parameters":{"city":"Tokyo"}}]"#;
         let out = configured_events(
             &weather_tools(),
@@ -1693,6 +1915,67 @@ mod tests {
             got,
             vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
             "bare opener swallowed the payload: {got:?}"
+        );
+    }
+
+    #[test]
+    fn guided_header_lookbehind_preserves_utf8_boundaries_at_every_split() {
+        for character in ['a', 'é', '猫', '🦀'] {
+            for padding in 0..=12 {
+                for suffix in ["x", "x</function></think>"] {
+                    let input = format!(
+                        "<think><function={character}{}{suffix}",
+                        "a".repeat(padding)
+                    );
+                    for named_tool in [None, Some("get_weather".to_string())] {
+                        let mode = UnifiedToolOutputMode::GuidedJson { named_tool };
+                        let want = configured_events(
+                            &weather_tools(),
+                            UnifiedParserStartingState::None,
+                            mode.clone(),
+                            &[&input],
+                        );
+                        for got in configured_events_at_every_split(
+                            &weather_tools(),
+                            UnifiedParserStartingState::None,
+                            mode,
+                            &input,
+                        ) {
+                            assert_eq!(got, want, "input={input:?}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_function_header_scans_each_name_byte_once() {
+        let input = format!("<function={}", "a".repeat(4096));
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 13,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
         );
     }
 
@@ -2352,8 +2635,7 @@ mod tests {
         );
     }
 
-    /// Whole-input and every valid split must assemble identically, and the split
-    /// runs must show intermediate progress rather than one terminal burst.
+    /// Whole-input and every valid split must preserve names and argument bytes.
     #[test]
     fn required_guided_streaming_is_split_invariant() {
         let whole = streamed(GUIDED_CALL, &[GUIDED_CALL]).0;
@@ -3071,7 +3353,7 @@ mod reset_and_payload_tests {
         }
     }
 
-    /// Guided must agree with native on `UNIFIED.6.a`: a call with no argument key
+    /// Guided must agree with native on `UNIFIED.6-1`: a call with no argument key
     /// is a parameterless call, not a malformed one — and inside an array it must not
     /// take its siblings down with it.
     #[test]

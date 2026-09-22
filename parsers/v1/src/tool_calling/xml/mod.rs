@@ -7,6 +7,22 @@ mod minimax_m3_parser;
 mod parsed_value;
 mod parser;
 
+use serde::ser::{Serialize, SerializeMap, Serializer};
+
+use parsed_value::ParsedValue;
+
+struct OrderedArguments<'a>(&'a [(String, ParsedValue)]);
+
+impl Serialize for OrderedArguments<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (key, value) in self.0 {
+            map.serialize_entry(key, value)?;
+        }
+        map.end()
+    }
+}
+
 pub use super::response;
 pub use glm47_parser::{
     detect_tool_call_start_glm47, find_tool_call_end_position_glm47, try_tool_call_parse_glm47,

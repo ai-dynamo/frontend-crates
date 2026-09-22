@@ -89,7 +89,7 @@ src/
 - `ToolParseResult`
 - `ToolParser`
 
-Keep these names and field meanings aligned with vLLM Rust unless Dynamo explicitly needs a small extension. Current Dynamo extension: a parser may accept decoded text chunks or token-id chunks through `ToolParserInput`, `push_tokens`, and `push_input`.
+Keep these names and field meanings aligned with vLLM Rust unless Dynamo explicitly needs a small extension. Dynamo extensions are token-id input through `ToolParserInput`, `push_tokens`, and `push_input`, plus `ToolCallDelta::complete` so adapters can suppress provisional calls that never become valid.
 
 ```rust
 // Mirrors vLLM Rust `Tool` verbatim.
@@ -100,11 +100,12 @@ pub struct Tool {
     pub strict: Option<bool>,
 }
 
-// Mirrors vLLM Rust `ToolCallDelta` verbatim.
+// Dynamo extension: `complete` records whether this update commits the call.
 pub struct ToolCallDelta {
     pub tool_index: usize,
     pub name: Option<String>,
     pub arguments: String,
+    pub complete: bool,
 }
 
 // Mirrors vLLM Rust `ToolParseResult` verbatim.
@@ -141,7 +142,7 @@ Rules:
 - Keep parser recovery from leaking tool markers into `normal_text` when the grammar can recover or safely suppress malformed tool syntax.
 - Text and token input should not be mixed for one parser run. Use all text chunks or all token chunks for a fixture capture.
 
-**Do not drift from vLLM Rust here.** These four types intentionally mirror the vLLM Rust `ToolParser` contract, not vLLM Python wire deltas — vLLM Rust may later depend on this frontend crate, so Dynamo keeps a small duplicated contract that stays shaped like vLLM Rust. The one allowed Dynamo-only extension is token input (`push_tokens` / `push_input` / `prefers_tokens`), which token-native parsers like Harmony need; everything else should match vLLM Rust field-for-field.
+**Do not drift from vLLM Rust here without an explicit contract reason.** These types follow the vLLM Rust `ToolParser` shape, not vLLM Python wire deltas. Dynamo currently adds token input (`push_tokens` / `push_input` / `prefers_tokens`) and `ToolCallDelta::complete`; keep other fields aligned.
 
 ## Fixture Files To Add
 
@@ -152,6 +153,8 @@ For a new streaming parser family, add or update these files:
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
+
+New conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
@@ -208,12 +211,14 @@ In order:
 
 ### Unified parser hard gate
 
+Capture publication follows [the v2 plain-version YAML contract](../../conformance/README.md#v2-storage-contract-plain-versioned-yaml-only). Existing archive/hash consumers must be migrated; they do not permit new legacy-format captures.
+
 Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 
 1. **Write:** make the parser or fixture change.
 2. **Read:** render `conformance/CONFORMANCE_v2.html` and inspect every affected Unified popup, including its input, initialization, chunks, GOLDEN events, and current Dynamo events.
 3. **Fix:** an empty current cell means capture data is missing. A red current cell means the parser differs from GOLDEN unless the authored oracle is demonstrably wrong.
-4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+4. **Regenerate:** publish the current plain-version YAML and required manifest changes, then rerender from the same worktree.
 5. **Re-read:** inspect the rendered current column and repeat until both counts are zero.
 
 Do not hide a failure with `reason:`, `unavailable:`, a historical capture, stale HTML, or an unsupported GOLDEN edit. Run the standard gate `conformance/utils/check.sh status --model <family> --tab unified`; it rerenders, reads the same model as the browser, names every empty or red case, and exits nonzero until the selected row is clear. Finish with `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.

@@ -48,9 +48,12 @@
 //! adopted without a translation layer. Where it diverges from the peer shape, the
 //! divergence is stated at the item.
 
+pub mod deepseek_v4;
+pub mod deepseek_v41;
 pub mod gemma4;
 mod guided_cursor;
 pub mod kimi_k2;
+pub mod kimi_k3;
 pub mod muse_glimmer;
 pub mod qwen3;
 
@@ -62,8 +65,9 @@ pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 use serde::{Deserialize, Serialize};
 
 use crate::tool_calling::scan::{
-    InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec, WrappedBlockScanner,
-    marker_prefix_suffix_len, push_run, reasoning_opener_len,
+    GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
+    InvokeEmitter, ReasoningSpec, WrappedBlockScanner, marker_prefix_suffix_len, push_run,
+    reasoning_opener_len,
 };
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 
@@ -711,6 +715,7 @@ impl ToolParseResult {
 pub(crate) struct ScannerUnified<E: InvokeEmitter> {
     pub(crate) scanner: WrappedBlockScanner<E>,
     guided_prefix_policy: Option<GuidedPrefixPolicy>,
+    guided_prefix_factory: Option<GuidedPrefixFactory>,
 }
 
 impl<E: InvokeEmitter> ScannerUnified<E> {
@@ -718,11 +723,17 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
         Self {
             scanner,
             guided_prefix_policy: None,
+            guided_prefix_factory: None,
         }
     }
 
-    pub(crate) fn with_guided_prefix_policy(mut self, policy: GuidedPrefixPolicy) -> Self {
+    pub(crate) fn with_guided_prefix_policy(
+        mut self,
+        policy: GuidedPrefixPolicy,
+        factory: GuidedPrefixFactory,
+    ) -> Self {
         self.guided_prefix_policy = Some(policy);
+        self.guided_prefix_factory = Some(factory);
         self
     }
 }
@@ -749,6 +760,7 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
             invoke_end: self.scanner.invoke_end().to_string(),
             invoke_boundary_factory: self.scanner.invoke_boundary_factory(),
             guided_prefix_policy: self.guided_prefix_policy,
+            guided_prefix_factory: self.guided_prefix_factory,
         }
     }
 
@@ -1168,6 +1180,9 @@ pub(crate) struct GuidedChannel {
     pub(crate) competitors: &'static [&'static str],
     /// The subset of `competitors` that CLOSES a thought.
     pub(crate) close_markers: &'static [&'static str],
+    /// Channel markers that stay literal after a response prefill has routed the
+    /// turn to visible content.
+    pub(crate) response_literal_markers: &'static [&'static str],
 }
 
 impl GuidedReasoning {
@@ -1336,12 +1351,24 @@ impl GuidedReasoning {
         }
     }
 
+    fn preserves_response_markers(&self) -> bool {
+        matches!(self, Self::Channel(channel) if !channel.response_literal_markers.is_empty())
+    }
+
+    fn response_literal_markers(&self) -> &'static [&'static str] {
+        match self {
+            Self::Pair(_) => &[],
+            Self::Channel(channel) => channel.response_literal_markers,
+        }
+    }
+
     /// The earliest fixed framing marker that must stay attached to response prose.
     /// Pair-based reasoning markers are literal in Response; channel framing is still
     /// normalized when the later guided payload establishes the response boundary.
     fn response_marker_at(&self, haystack: &str) -> Option<(usize, usize)> {
         match self {
             Self::Pair(_) => None,
+            Self::Channel(channel) if !channel.response_literal_markers.is_empty() => None,
             Self::Channel(channel) => channel
                 .competitors
                 .iter()
@@ -1373,6 +1400,7 @@ pub(crate) struct GuidedGrammar {
     pub(crate) invoke_end: String,
     pub(crate) invoke_boundary_factory: Option<InvokeBoundaryFactory>,
     pub(crate) guided_prefix_policy: Option<GuidedPrefixPolicy>,
+    pub(crate) guided_prefix_factory: Option<GuidedPrefixFactory>,
 }
 
 /// Family-owned recognition of syntax immediately before a guided JSON payload.
@@ -1380,12 +1408,25 @@ pub(crate) struct GuidedGrammar {
 /// guided output framing.
 pub(crate) type GuidedPrefixPolicy = fn(GuidedPrefixContext<'_>) -> GuidedPrefix;
 
+pub(crate) trait GuidedPrefixScanner: Send {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix;
+
+    fn reset(&mut self) {}
+}
+
+pub(crate) type GuidedPrefixFactory = fn() -> Box<dyn GuidedPrefixScanner>;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum GuidedPrefix {
     NoMatch,
     Pending,
     Match,
-    Strip,
+    Strip(usize),
 }
 
 /// Context supplied to a family policy without exposing guided parser state.
@@ -1428,10 +1469,14 @@ struct GuidedState {
     grammar: GuidedGrammar,
     /// Guided decoding owns a separate request-local boundary from native parsing.
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
-    /// Candidate currently bound to `invoke_boundary`. Guided drains can revisit
-    /// retained bytes as reasoning/control state changes; this keeps the boundary
-    /// append-aware instead of starting its scan at byte zero each time.
-    invoke_candidate: String,
+    guided_prefix: Option<Box<dyn GuidedPrefixScanner>>,
+    /// Append cursors for the native-envelope and prefix views of the current
+    /// retained candidate. The bytes already belong to `input`; retaining only
+    /// their length avoids copying or comparing the growing prefix on every push.
+    invoke_candidate: GuidedAppendCursor,
+    invoke_prefix_candidate: GuidedAppendCursor,
+    guided_prefix_candidate: GuidedAppendCursor,
+    native_header: GuidedNativeHeader,
     named_tool: Option<String>,
     invalid_payload: InvalidGuidedPayloadPolicy,
     /// Response starting_state disables reasoning markers, but tool control markers
@@ -1465,6 +1510,209 @@ struct GuidedState {
     response_prefill_after_marker: bool,
     input: String,
     json: String,
+}
+
+#[derive(Default)]
+struct GuidedAppendCursor {
+    len: usize,
+}
+
+/// Prefix recovery cannot decide ownership until a native header terminates or
+/// a payload/competing marker proves it cannot terminate. All family hooks and
+/// channel states use this decision before discarding any part of an invocation.
+#[derive(Default)]
+#[cfg_attr(test, derive(Clone, Debug, PartialEq, Eq))]
+struct GuidedNativeHeader {
+    scanned: usize,
+    native: Option<bool>,
+    body_channel_checked: bool,
+    holdback_len: usize,
+    body_scanned: usize,
+    body_content: Option<bool>,
+    body_is_markup: bool,
+    body_end: Option<usize>,
+    body_competitors: Vec<String>,
+    body_pending: bool,
+    trailing_whitespace_pending: bool,
+}
+
+impl GuidedNativeHeader {
+    fn append(&mut self, candidate: &str, prefix: &str) -> Option<bool> {
+        if !is_prefix_form(prefix) || !candidate.starts_with(prefix) {
+            return Some(false);
+        }
+        if candidate.len() < self.scanned {
+            *self = Self::default();
+        }
+        if self.native.is_some() {
+            return self.native;
+        }
+        self.scanned = self.scanned.max(prefix.len());
+        for ch in candidate[self.scanned..].chars() {
+            self.scanned += ch.len_utf8();
+            count_guided_prefix_bytes(ch.len_utf8());
+            match ch {
+                '>' => self.native = Some(true),
+                '<' | '{' | '[' => self.native = Some(false),
+                _ => continue,
+            }
+            break;
+        }
+        self.native
+    }
+
+    fn begin_body(&mut self, competing: &[&str]) {
+        if self.body_scanned == 0 {
+            self.body_scanned = self.scanned;
+            self.body_competitors = competing
+                .iter()
+                .map(|marker| (*marker).to_string())
+                .collect();
+        }
+    }
+
+    fn waits_for_following_content(&mut self, candidate: &str, end: usize, flush: bool) -> bool {
+        if !flush && candidate[end..].trim().is_empty() {
+            // Reasoning recovery needs to know whether JSON follows this
+            // envelope. Keep its completed boundary while that is undecided.
+            self.trailing_whitespace_pending = true;
+            self.holdback_len = candidate.len();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn body_end(&mut self, candidate: &str, invoke_end: &str, flush: bool) -> Option<usize> {
+        if let Some(end) = self.body_end {
+            return Some(end);
+        }
+        // A JSON value immediately after the header is a guided wrapper, not a
+        // native parameter body. Braces after native content starts are data.
+        if self.body_content.is_none() {
+            for ch in candidate[self.body_scanned..].chars() {
+                count_guided_prefix_bytes(ch.len_utf8());
+                if !ch.is_whitespace() {
+                    self.body_content = Some(!matches!(ch, '{' | '['));
+                    self.body_is_markup = ch == '<';
+                    break;
+                }
+                self.body_scanned += ch.len_utf8();
+            }
+        }
+        if self.body_content == Some(false) {
+            self.body_end = Some(self.scanned);
+        } else {
+            let tail = &candidate[self.body_scanned..];
+            if !self.body_channel_checked {
+                // A channel marker before native content competes for the
+                // header. Tagged native content owns channel-looking bytes
+                // inside its parameter values; untagged narration does not.
+                for marker in &self.body_competitors {
+                    count_guided_prefix_bytes(tail.len().min(marker.len()));
+                    if tail.starts_with(marker) {
+                        self.body_end = Some(self.scanned);
+                        self.body_pending = false;
+                        return self.body_end;
+                    }
+                    if !flush && marker.starts_with(tail) {
+                        self.body_pending = true;
+                        return None;
+                    }
+                }
+                self.body_channel_checked = self.body_content.is_some();
+            }
+            let mut bound = tail.len();
+            if !self.body_is_markup {
+                for marker in &self.body_competitors {
+                    count_guided_prefix_bytes(tail.len());
+                    if let Some(at) = tail.find(marker) {
+                        bound = bound.min(at);
+                    }
+                }
+            }
+            count_guided_prefix_bytes(bound);
+            if let Some(at) = tail[..bound].find(invoke_end) {
+                self.body_end = Some(self.body_scanned + at + invoke_end.len());
+            } else if bound < tail.len() || flush {
+                self.body_end = Some(self.scanned);
+            } else {
+                let lookbehind = self
+                    .body_competitors
+                    .iter()
+                    .filter(|_| !self.body_is_markup)
+                    .map(String::len)
+                    .chain(std::iter::once(invoke_end.len()))
+                    .max()
+                    .unwrap_or(1)
+                    .saturating_sub(1);
+                self.body_scanned = self
+                    .body_scanned
+                    .max(candidate.floor_char_boundary(candidate.len().saturating_sub(lookbehind)));
+            }
+        }
+        self.body_pending = self.body_end.is_none();
+        self.body_end
+    }
+}
+
+impl GuidedAppendCursor {
+    fn append<'a>(&mut self, candidate: &'a str) -> Option<&'a str> {
+        if candidate.len() < self.len || !candidate.is_char_boundary(self.len) {
+            return None;
+        }
+        let append = &candidate[self.len..];
+        self.len = candidate.len();
+        Some(append)
+    }
+
+    fn replace<'a>(&mut self, candidate: &'a str) -> &'a str {
+        self.len = candidate.len();
+        count_guided_append_replacement();
+        candidate
+    }
+
+    fn reset(&mut self) {
+        self.len = 0;
+    }
+}
+
+#[cfg(test)]
+std::thread_local! {
+    static GUIDED_APPEND_REPLACEMENTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static GUIDED_PREFIX_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+fn count_guided_append_replacement() {
+    #[cfg(test)]
+    GUIDED_APPEND_REPLACEMENTS.with(|replacements| replacements.set(replacements.get() + 1));
+}
+
+#[cfg(test)]
+pub(crate) fn reset_guided_append_work() {
+    GUIDED_APPEND_REPLACEMENTS.with(|replacements| replacements.set(0));
+}
+
+pub(crate) fn count_guided_prefix_bytes(bytes: usize) {
+    #[cfg(test)]
+    GUIDED_PREFIX_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(test))]
+    let _ = bytes;
+}
+
+#[cfg(test)]
+pub(crate) fn reset_guided_prefix_examined_bytes() {
+    GUIDED_PREFIX_EXAMINED_BYTES.with(|examined| examined.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn guided_prefix_examined_bytes() -> usize {
+    GUIDED_PREFIX_EXAMINED_BYTES.with(std::cell::Cell::get)
+}
+
+#[cfg(test)]
+pub(crate) fn guided_append_work() -> usize {
+    GUIDED_APPEND_REPLACEMENTS.with(std::cell::Cell::get)
 }
 
 /// Tracks complete JSON values in response-prefilled prose without reparsing the
@@ -1956,6 +2204,7 @@ fn control_marker_at(
     limit: Option<usize>,
     competing: &[&str],
     flush: bool,
+    boundary_owned: Option<&str>,
 ) -> Option<(usize, usize)> {
     let competitors: Vec<&str> = competing
         .iter()
@@ -1964,6 +2213,7 @@ fn control_marker_at(
         .collect();
     markers
         .iter()
+        .filter(|marker| boundary_owned != Some(marker.as_str()))
         .filter_map(|m| {
             let at = haystack.find(m.as_str())?;
             control_marker_len_at(haystack, at, m, invoke_end, limit, &competitors, flush)
@@ -2105,6 +2355,7 @@ fn guided_holdback_len(
     invoke_start: &str,
     start_label: Option<(&str, &str)>,
     guided_prefix_policy: Option<GuidedPrefixPolicy>,
+    boundary_owned: bool,
     flush: bool,
 ) -> usize {
     if flush {
@@ -2133,7 +2384,7 @@ fn guided_holdback_len(
         .collect();
     let pending_prefix_form = control
         .iter()
-        .filter(|m| is_prefix_form(m))
+        .filter(|m| is_prefix_form(m) && !(boundary_owned && m.as_str() == invoke_start))
         .filter_map(|m| input.rfind(m.as_str()).map(|at| (at, m.as_str())))
         .filter(|(at, marker)| {
             // SAME owner as `control_marker_at`: retain both an incomplete header
@@ -2182,12 +2433,15 @@ fn guided_holdback_len(
                         marker_prefix_suffix_len(tail, reasoning_markers.iter().copied());
                     (marker_tail == tail.len()
                         && marker_tail > 0
-                        && policy(GuidedPrefixContext {
-                            at,
-                            followed_by_competing_marker: true,
-                            ..context
-                        }) == GuidedPrefix::Strip)
-                        .then_some(input.len() - at)
+                        && matches!(
+                            policy(GuidedPrefixContext {
+                                at,
+                                followed_by_competing_marker: true,
+                                ..context
+                            }),
+                            GuidedPrefix::Strip(_)
+                        ))
+                    .then_some(input.len() - at)
                 })
                 .max()
                 .unwrap_or(0)
@@ -2315,12 +2569,17 @@ impl GuidedState {
         let invoke_boundary = grammar
             .invoke_boundary_factory
             .map(InvokeBoundaryFactory::create);
+        let guided_prefix = grammar.guided_prefix_factory.map(|factory| factory());
         Self {
             stripped_markup: false,
             reasoning,
             grammar,
             invoke_boundary,
-            invoke_candidate: String::new(),
+            guided_prefix,
+            invoke_candidate: GuidedAppendCursor::default(),
+            invoke_prefix_candidate: GuidedAppendCursor::default(),
+            guided_prefix_candidate: GuidedAppendCursor::default(),
+            native_header: GuidedNativeHeader::default(),
             named_tool,
             invalid_payload,
             reasoning_enabled: starting_state != UnifiedParserStartingState::Response,
@@ -2355,10 +2614,40 @@ impl GuidedState {
     }
 
     fn push_into(&mut self, chunk: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+        let retained_at = self
+            .input
+            .len()
+            .saturating_sub(self.native_header.holdback_len);
+        let retained_body = self.invoke_boundary.is_none()
+            && (self.native_header.body_pending || self.native_header.trailing_whitespace_pending)
+            && self.native_header.holdback_len <= self.input.len()
+            && self.json.is_empty()
+            && self.input[retained_at..].starts_with(&self.grammar.invoke_start);
         if self.mode == GuidedMode::VisibleOnly {
             self.json.push_str(chunk);
         } else {
             self.input.push_str(chunk);
+        }
+        // The envelope owns this entire retained suffix. Until its incremental
+        // scanner finds a boundary, neither JSON probing nor channel searches
+        // may reinterpret its parameter bytes or rescan the growing buffer.
+        if retained_body {
+            if self.native_header.trailing_whitespace_pending {
+                count_guided_prefix_bytes(chunk.len());
+                if chunk.trim().is_empty() {
+                    self.native_header.holdback_len = self.input.len() - retained_at;
+                    return Ok(());
+                }
+                self.native_header.trailing_whitespace_pending = false;
+            }
+            if self
+                .native_header
+                .body_end(&self.input[retained_at..], &self.grammar.invoke_end, false)
+                .is_none()
+            {
+                self.native_header.holdback_len = self.input.len() - retained_at;
+                return Ok(());
+            }
         }
         for event in self.drain(false) {
             output.push_event(event);
@@ -2403,8 +2692,12 @@ impl GuidedState {
         {
             self.json.push_str(&self.input);
             self.input.clear();
+            self.reset_invoke_candidate();
         }
         let mut output = self.drain(true);
+        // EOF may resolve a retained native envelope and expose its guided
+        // payload for the first time. Apply the same commit rules as push.
+        self.emit_incremental(&mut output);
         output.extend(self.emit_completed_json()?);
         if self.payload_emitted {
             output.extend(self.drain(true));
@@ -2419,6 +2712,7 @@ impl GuidedState {
                 let payload_end = self.json.trim_end().len();
                 self.json.truncate(payload_end);
                 self.input.push_str(&tail);
+                self.reset_invoke_candidate();
             }
             output.extend(self.finish_json()?);
             self.payload_emitted = true;
@@ -2450,7 +2744,10 @@ impl GuidedState {
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.reset();
         }
-        self.invoke_candidate.clear();
+        self.invoke_candidate.reset();
+        self.invoke_prefix_candidate.reset();
+        self.reset_guided_prefix_candidate();
+        self.native_header = GuidedNativeHeader::default();
         self.response_prefill_probe.reset();
         self.response_prefill_text_emitted = false;
         self.response_prefill_after_marker = false;
@@ -2519,6 +2816,7 @@ impl GuidedState {
             self.turn_routed = true;
             self.mode = GuidedMode::OutsideReasoning;
             self.input.push_str(&tail);
+            self.reset_invoke_candidate();
             return Ok(out);
         }
         let mut output = match self.finish_json() {
@@ -2534,6 +2832,7 @@ impl GuidedState {
         self.turn_routed = true;
         self.mode = GuidedMode::OutsideReasoning;
         self.input.push_str(&tail);
+        self.reset_invoke_candidate();
         Ok(std::mem::take(&mut output))
     }
 
@@ -2643,23 +2942,79 @@ impl GuidedState {
     }
 
     fn invoke_end_append(&mut self, candidate: &str, flush: bool) -> Option<usize> {
-        let boundary = self.invoke_boundary.as_mut()?;
-        let append = if let Some(append) = candidate.strip_prefix(&self.invoke_candidate) {
-            append
-        } else {
-            boundary.reset();
-            self.invoke_candidate.clear();
-            candidate
+        let context = GuidedInvokePrefixContext {
+            outside_reasoning: self.mode == GuidedMode::OutsideReasoning,
+            payload_is_empty: !json_payload_started(&self.json),
+            followed_by_competing_marker: false,
         };
-        self.invoke_candidate.push_str(append);
+        let boundary = self.invoke_boundary.as_mut()?;
+        let append = self.invoke_candidate.append(candidate).unwrap_or_else(|| {
+            boundary.reset();
+            self.invoke_candidate.replace(candidate)
+        });
+        boundary.set_guided_context(context);
         boundary.end_append(candidate, append, flush, 0)
+    }
+
+    fn invoke_prefix_append(
+        &mut self,
+        candidate: &str,
+        context: GuidedInvokePrefixContext,
+    ) -> Option<GuidedInvokePrefix> {
+        let boundary = self.invoke_boundary.as_mut()?;
+        let append = self
+            .invoke_prefix_candidate
+            .append(candidate)
+            .unwrap_or_else(|| {
+                boundary.reset();
+                self.invoke_prefix_candidate.replace(candidate)
+            });
+        boundary.guided_prefix_append(candidate, append, context)
+    }
+
+    fn guided_prefix_append(
+        &mut self,
+        candidate: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> Option<GuidedPrefix> {
+        let append = self
+            .guided_prefix_candidate
+            .append(candidate)
+            .unwrap_or_else(|| {
+                if let Some(prefix) = self.guided_prefix.as_mut() {
+                    prefix.reset();
+                }
+                self.guided_prefix_candidate.replace(candidate)
+            });
+        self.guided_prefix
+            .as_mut()
+            .map(|prefix| prefix.append(candidate, append, context))
     }
 
     fn reset_invoke_candidate(&mut self) {
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.reset();
         }
-        self.invoke_candidate.clear();
+        self.reset_guided_prefix_candidate();
+        self.invoke_candidate.reset();
+        self.invoke_prefix_candidate.reset();
+        self.native_header = GuidedNativeHeader::default();
+    }
+
+    /// A drained prose prefix can leave an invocation candidate at the start of
+    /// `input`. Its append state still describes those retained bytes, so clear it
+    /// only after the candidate itself was consumed.
+    fn reset_invoke_candidate_if_input_empty(&mut self) {
+        if self.input.is_empty() {
+            self.reset_invoke_candidate();
+        }
+    }
+
+    fn reset_guided_prefix_candidate(&mut self) {
+        if let Some(prefix) = self.guided_prefix.as_mut() {
+            prefix.reset();
+        }
+        self.guided_prefix_candidate.reset();
     }
 
     /// Return the bytes owned by the append-aware native-envelope candidate.
@@ -2671,12 +3026,12 @@ impl GuidedState {
             .as_ref()
             .map(|boundary| boundary.holdback(&self.input))
             .unwrap_or(0);
-        let candidate = if self.invoke_candidate.is_empty() {
-            0
-        } else {
-            self.invoke_candidate.len()
-        };
-        native.max(candidate)
+        let candidate = self.invoke_candidate.len;
+        native
+            .max(candidate)
+            .max(self.native_header.holdback_len)
+            .max(self.invoke_prefix_candidate.len)
+            .max(self.guided_prefix_candidate.len)
     }
 
     /// Whether the bytes at `from` reach the guided payload through nothing but
@@ -2725,59 +3080,260 @@ impl GuidedState {
         competing: &[&str],
         flush: bool,
     ) -> Option<(usize, usize)> {
+        let guided_prefix_at_payload_boundary =
+            self.mode == GuidedMode::OutsideReasoning && !json_payload_started(&self.json);
+        let response_controls;
+        let mut controls = if self.answer_only() && self.reasoning.preserves_response_markers() {
+            let literal_markers = self.reasoning.response_literal_markers();
+            response_controls = self
+                .grammar
+                .control_markers
+                .iter()
+                .filter(|marker| !literal_markers.contains(&marker.as_str()))
+                .cloned()
+                .collect::<Vec<_>>();
+            response_controls
+        } else {
+            self.grammar.control_markers.clone()
+        };
+        if let Some(boundary) = self.invoke_boundary.as_ref() {
+            controls.retain(|marker| !boundary.is_guided_invoke_marker(marker));
+        }
+        let prefix_competitors = self.reasoning.competitors();
         let regular = control_marker_at(
             haystack,
-            &self.grammar.control_markers,
+            &controls,
             &self.grammar.invoke_end,
             limit,
-            competing,
+            if self.invoke_boundary.is_none() {
+                &prefix_competitors
+            } else {
+                competing
+            },
             flush,
+            None,
         );
-        if self.invoke_boundary.is_none() {
+        if self.invoke_boundary.is_none() && self.grammar.guided_prefix_policy.is_none() {
             return regular;
         }
 
         let mut cursor = 0;
-        let guided_prefix_at_payload_boundary =
-            self.mode == GuidedMode::OutsideReasoning && self.json.trim().is_empty();
-        while let Some(relative) = haystack[cursor..].find(&self.grammar.invoke_start) {
+        while let Some((relative, invoke_len)) = self
+            .invoke_boundary
+            .as_ref()
+            .and_then(|boundary| boundary.guided_invoke_at(&haystack[cursor..]))
+            .or_else(|| {
+                haystack[cursor..]
+                    .find(&self.grammar.invoke_start)
+                    .map(|relative| (relative, self.grammar.invoke_start.len()))
+            })
+        {
             let at = cursor + relative;
             let suffix = &haystack[at..];
             if limit.is_some_and(|limit| at >= limit) {
                 break;
             }
-            let prefix = self.grammar.guided_prefix_policy.map(|policy| {
-                policy(GuidedPrefixContext {
-                    text: haystack,
-                    at,
-                    outside_reasoning: self.mode == GuidedMode::OutsideReasoning,
-                    payload_is_empty: self.json.trim().is_empty(),
-                    followed_by_competing_marker: competing.iter().any(|marker| {
-                        suffix[self.grammar.invoke_start.len()..].starts_with(marker)
-                    }),
+            let mut native_header = self
+                .native_header
+                .append(suffix, &self.grammar.invoke_start);
+            if let Some(boundary) = self.invoke_boundary.as_ref()
+                && !boundary.owns_guided_prefix()
+            {
+                // Lexical grammars such as Gemma recognize a native body before
+                // their narration hook can safely discard the opener alone.
+                if boundary.opens(haystack, at) {
+                    native_header = Some(true);
+                } else if boundary.holdback(suffix) == suffix.len() {
+                    native_header = None;
+                }
+            }
+            if native_header.is_none() && !flush {
+                self.native_header.holdback_len = suffix.len();
+                return regular.filter(|(regular_at, _)| *regular_at < at);
+            }
+            if native_header == Some(true)
+                && self.reasoning_enabled
+                && self.invoke_boundary.is_some()
+                && is_prefix_form(&self.grammar.invoke_start)
+                && !self.native_header.body_channel_checked
+            {
+                let body = suffix[self.native_header.scanned..].trim_start();
+                if self
+                    .reasoning
+                    .find_open(body, flush, self.channel_state())
+                    .is_some_and(|(at, _)| at == 0)
+                {
+                    // A channel opener before any native body is narration,
+                    // not a parameter value owned by the invocation. The family
+                    // prefix hook decides which header bytes are syntax.
+                    let complete = self.invoke_end_append(suffix, flush).is_some();
+                    if !complete && !flush && limit.is_none() {
+                        self.native_header.holdback_len = suffix.len();
+                        return regular.filter(|(regular_at, _)| *regular_at < at);
+                    }
+                    if complete {
+                        if let Some(boundary) = self.invoke_boundary.as_mut() {
+                            boundary.reset();
+                        }
+                        self.invoke_candidate.reset();
+                        self.invoke_prefix_candidate.reset();
+                        native_header = Some(false);
+                        self.native_header.native = native_header;
+                    }
+                } else if !flush
+                    && self.reasoning.find_close(body).is_none()
+                    && self
+                        .reasoning
+                        .find_transition(body, flush, self.channel_state())
+                        .is_none()
+                    && (body.is_empty() || self.reasoning.open_pending(body, self.channel_state()))
+                {
+                    self.native_header.holdback_len = suffix.len();
+                    return regular.filter(|(regular_at, _)| *regular_at < at);
+                }
+                self.native_header.body_channel_checked = true;
+            }
+            if native_header == Some(true) && self.invoke_boundary.is_none() {
+                self.native_header.begin_body(if self.reasoning_enabled {
+                    &prefix_competitors
+                } else {
+                    &[]
+                });
+                let len = self
+                    .native_header
+                    .body_end(suffix, &self.grammar.invoke_end, flush);
+                if let Some(len) = len {
+                    if self
+                        .native_header
+                        .waits_for_following_content(suffix, len, flush)
+                    {
+                        return regular.filter(|(regular_at, _)| *regular_at < at);
+                    }
+                    self.reset_invoke_candidate();
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, len)));
+                }
+                self.native_header.holdback_len = suffix.len();
+                return regular.filter(|(regular_at, _)| *regular_at < at);
+            }
+            // A malformed prefix cannot borrow its terminator from beyond a
+            // channel boundary. Bound both the incremental and batch hooks to
+            // the same region; a valid native envelope keeps its body owner.
+            let prefix_boundary = (native_header == Some(false)
+                && is_prefix_form(&self.grammar.invoke_start))
+            .then(|| {
+                self.reasoning
+                    .find_open(suffix, flush, self.channel_state())
+                    .into_iter()
+                    .chain(self.reasoning.find_close(suffix))
+                    .chain(
+                        self.reasoning
+                            .find_transition(suffix, flush, self.channel_state()),
+                    )
+                    .map(|(pos, _)| pos)
+                    .chain(
+                        prefix_competitors
+                            .iter()
+                            .filter_map(|marker| suffix.find(marker)),
+                    )
+                    .filter(|pos| *pos >= invoke_len)
+                    .min()
+            })
+            .flatten();
+            let prefix_suffix = if self.invoke_boundary.is_none() {
+                &suffix[..prefix_boundary.unwrap_or(suffix.len())]
+            } else {
+                suffix
+            };
+            let prefix_context = GuidedPrefixContext {
+                text: &haystack[..at + prefix_suffix.len()],
+                at,
+                outside_reasoning: self.mode == GuidedMode::OutsideReasoning,
+                payload_is_empty: self.json.trim().is_empty(),
+                followed_by_competing_marker: competing
+                    .iter()
+                    .any(|marker| suffix[invoke_len..].starts_with(marker))
+                    || prefix_boundary == Some(invoke_len)
+                    || (self.native_header.body_channel_checked
+                        && self.native_header.native == Some(false)),
+            };
+            let boundary_prefix = if native_header == Some(true) {
+                Some(GuidedInvokePrefix::NoMatch)
+            } else {
+                self.invoke_prefix_append(
+                    prefix_suffix,
+                    GuidedInvokePrefixContext {
+                        outside_reasoning: prefix_context.outside_reasoning,
+                        payload_is_empty: prefix_context.payload_is_empty,
+                        followed_by_competing_marker: prefix_context.followed_by_competing_marker,
+                    },
+                )
+            };
+            let stateful_prefix = boundary_prefix
+                .is_none()
+                .then(|| self.guided_prefix_append(prefix_suffix, prefix_context))
+                .flatten();
+            if let Some(GuidedInvokePrefix::Match(len) | GuidedInvokePrefix::Strip(len)) =
+                boundary_prefix
+            {
+                self.reset_invoke_candidate();
+                return regular
+                    .filter(|(regular_at, _)| *regular_at < at)
+                    .or(Some((at, len)));
+            }
+            let prefix = boundary_prefix
+                .map(|prefix| match prefix {
+                    GuidedInvokePrefix::NoMatch => GuidedPrefix::NoMatch,
+                    GuidedInvokePrefix::Pending => GuidedPrefix::Pending,
+                    GuidedInvokePrefix::Match(_) | GuidedInvokePrefix::Strip(_) => unreachable!(),
                 })
-            });
+                .or(stateful_prefix)
+                .or_else(|| {
+                    self.grammar
+                        .guided_prefix_policy
+                        .map(|policy| policy(prefix_context))
+                });
+            if boundary_prefix == Some(GuidedInvokePrefix::NoMatch) {
+                // A completed native header is not a guided prefix, but its
+                // append-aware native scan can still be waiting for a terminator.
+                // Resetting the shared boundary here made that decision disappear
+                // on the next chunk and let malformed DSML header bytes leak.
+                self.invoke_prefix_candidate.reset();
+            } else if stateful_prefix == Some(GuidedPrefix::NoMatch) {
+                self.reset_guided_prefix_candidate();
+            }
             match prefix {
                 Some(GuidedPrefix::Match) => {
                     if !guided_prefix_at_payload_boundary {
-                        cursor = at + self.grammar.invoke_start.len();
+                        cursor = at + invoke_len;
                         continue;
                     }
+                    // A family policy may recognize a complete tool name before an
+                    // intentionally missing native header terminator. Remove every
+                    // byte before the JSON payload, not just the marker literal.
+                    let prefix_len = suffix
+                        .find(['{', '['])
+                        .filter(|payload_at| *payload_at >= invoke_len)
+                        .unwrap_or(invoke_len);
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
-                        .or(Some((at, self.grammar.invoke_start.len())));
+                        .or(Some((at, prefix_len)));
                 }
                 Some(GuidedPrefix::Pending) if !flush => {
+                    if prefix_boundary.is_some() {
+                        return regular;
+                    }
                     if !guided_prefix_at_payload_boundary {
-                        cursor = at + self.grammar.invoke_start.len();
+                        cursor = at + invoke_len;
                         continue;
                     }
                     return regular.filter(|(regular_at, _)| *regular_at < at);
                 }
-                Some(GuidedPrefix::Strip) => {
+                Some(GuidedPrefix::Strip(len)) => {
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
-                        .or(Some((at, self.grammar.invoke_start.len())));
+                        .or(Some((at, len)));
                 }
                 Some(GuidedPrefix::Pending | GuidedPrefix::NoMatch) | None => {}
             }
@@ -2800,17 +3356,83 @@ impl GuidedState {
                 // end-to-end, including a properly closed first marker and
                 // an incomplete second marker, by the Kimi guided-reasoning
                 // every-split tests in `unified/kimi_k2.rs`.
-                let competing_boundary = limit.filter(|boundary| {
-                    *boundary > at
-                        && competing
-                            .iter()
-                            .any(|marker| haystack[*boundary..].starts_with(marker))
+                let competing_boundary = prefix_boundary.map(|pos| at + pos).or_else(|| {
+                    limit.filter(|boundary| {
+                        *boundary > at
+                            && competing
+                                .iter()
+                                .any(|marker| haystack[*boundary..].starts_with(marker))
+                    })
                 });
+                // Native scanners decide whether a channel-looking token is
+                // argument data. A non-EOF completion is authoritative even
+                // across that token; an undecided body retains it until more
+                // bytes or EOF establish ownership.
+                let native_flush = flush
+                    && self
+                        .invoke_boundary
+                        .as_ref()
+                        .is_some_and(|boundary| boundary.owns_guided_prefix());
+                let native_end =
+                    competing_boundary.and_then(|_| self.invoke_end_append(suffix, native_flush));
+                if let Some(len) = native_end
+                    && competing_boundary.is_some_and(|end| at + len > end)
+                {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, len)));
+                }
+                if competing_boundary.is_some() && native_end.is_none() && !flush {
+                    self.native_header.holdback_len = suffix.len();
+                    return regular.filter(|(regular_at, _)| *regular_at < at);
+                }
                 let local_flush = flush || competing_boundary.is_some();
-                if let Some(len) = self.invoke_end_append(suffix, local_flush)
+                // Include the competing marker as boundary evidence, but not
+                // bytes beyond it: native body scanners need that evidence to
+                // distinguish a real closer from marker-looking argument data.
+                let native_suffix = &suffix[..competing_boundary.map_or(suffix.len(), |end| {
+                    let marker_len = competing
+                        .iter()
+                        .chain(prefix_competitors.iter())
+                        .filter(|marker| haystack[end..].starts_with(**marker))
+                        .map(|marker| marker.len())
+                        .max()
+                        .unwrap_or(0);
+                    end - at + marker_len
+                })];
+                // A JSON opener can settle a bare header before a later native
+                // closer arrives. Consult the same append owner at that boundary
+                // first; a real native body remains pending and sees the suffix.
+                let prefix_end = limit
+                    .filter(|end| {
+                        !self.reasoning_enabled
+                            && *end > at
+                            && haystack[*end..].starts_with(['{', '['])
+                            && self.invoke_candidate.len <= end - at + 1
+                    })
+                    .and_then(|end| {
+                        self.invoke_end_append(&haystack[at..end + 1], false)
+                            .filter(|len| {
+                                *len <= end - at
+                                    && json_payload_started(&haystack[at + len..end + 1])
+                            })
+                    });
+                if let Some(len) = native_end
+                    .or(prefix_end)
+                    .or_else(|| self.invoke_end_append(native_suffix, local_flush))
                     && competing_boundary.is_none_or(|boundary| at + len <= boundary)
                 {
-                    self.reset_invoke_candidate();
+                    if !flush
+                        && competing_boundary.is_none()
+                        && native_header == Some(true)
+                        && !suffix[..len].contains(&self.grammar.invoke_end)
+                        && !json_payload_started(&suffix[len..])
+                    {
+                        return regular.filter(|(regular_at, _)| *regular_at < at);
+                    }
+                    // Keep ownership until drain consumes the envelope. Its
+                    // closer alone does not decide missing-channel-end recovery:
+                    // the following chunk may still start the guided payload.
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
                         .or(Some((at, len)));
@@ -2845,7 +3467,7 @@ impl GuidedState {
                 return regular.filter(|(regular_at, _)| *regular_at < at);
             }
             self.reset_invoke_candidate();
-            cursor = at + self.grammar.invoke_start.len();
+            cursor = at + invoke_len;
         }
         regular
     }
@@ -2899,6 +3521,79 @@ impl GuidedState {
                     // Whitespace stays buffered because it may still be the leading
                     // structural whitespace of a payload split across chunks.
                     if !self.reasoning_enabled && !self.payload_emitted {
+                        // Native parameter values can themselves be valid guided
+                        // JSON. Resolve their envelope before the response probe
+                        // is allowed to select a payload from those bytes.
+                        if self.invoke_boundary.is_none()
+                            && is_prefix_form(&self.grammar.invoke_start)
+                            && (!flush || self.json.is_empty())
+                        {
+                            if !self.json.is_empty() {
+                                let mut input = std::mem::take(&mut self.json);
+                                input.push_str(&self.input);
+                                self.input = input;
+                            }
+                            if let Some(at) = self.input.find(&self.grammar.invoke_start)
+                                && self
+                                    .input
+                                    .find(['{', '['])
+                                    .is_none_or(|payload| at < payload)
+                                && self
+                                    .native_header
+                                    .append(&self.input[at..], &self.grammar.invoke_start)
+                                    == Some(true)
+                            {
+                                self.native_header.begin_body(&[]);
+                                if let Some(len) = self.native_header.body_end(
+                                    &self.input[at..],
+                                    &self.grammar.invoke_end,
+                                    flush,
+                                ) {
+                                    let end = at + len;
+                                    if self.native_header.waits_for_following_content(
+                                        &self.input[at..],
+                                        len,
+                                        flush,
+                                    ) {
+                                        break;
+                                    }
+                                    let whitespace = self.input[end..].len()
+                                        - self.input[end..].trim_start().len();
+                                    self.input.drain(at..end + whitespace);
+                                    self.stripped_markup = true;
+                                    self.reset_invoke_candidate();
+                                    self.response_prefill_probe.reset();
+                                    continue;
+                                }
+                                self.native_header.holdback_len = self.input.len() - at;
+                                break;
+                            }
+                        }
+                        if self.reasoning.preserves_response_markers() {
+                            let mut combined = std::mem::take(&mut self.json);
+                            combined.push_str(&self.input);
+                            self.input.clear();
+                            if let Some(payload) = self
+                                .response_prefill_probe
+                                .next_complete_value(&combined)
+                                .filter(|payload| {
+                                    self.is_guided_payload(&combined[payload.clone()])
+                                })
+                            {
+                                self.push_visible_text(&mut output, &combined[..payload.start]);
+                                self.response_prefill_probe.reset();
+                                self.json = combined[payload.start..].to_string();
+                                self.mode = GuidedMode::VisibleOnly;
+                                continue;
+                            }
+                            let safe_len = self.response_prefill_probe.safe_prefix_len(&combined);
+                            if safe_len > 0 {
+                                self.push_visible_text(&mut output, &combined[..safe_len]);
+                                self.response_prefill_probe.discard_prefix(safe_len);
+                            }
+                            self.input = combined[safe_len..].to_string();
+                            break;
+                        }
                         let reject_buffering = self.invalid_payload
                             == InvalidGuidedPayloadPolicy::Reject
                             && self.json.is_empty();
@@ -2968,6 +3663,9 @@ impl GuidedState {
                                 &self.grammar.invoke_start,
                                 self.start_label(),
                                 self.grammar.guided_prefix_policy,
+                                self.invoke_boundary
+                                    .as_ref()
+                                    .is_some_and(|boundary| boundary.owns_guided_prefix()),
                                 flush,
                             )
                             .max(
@@ -2986,6 +3684,16 @@ impl GuidedState {
                             );
                             let response_marker =
                                 self.reasoning.response_marker_at(&combined[..safe_len]);
+                            let control_marker = self.control_marker_at(
+                                &combined[..safe_len + usize::from(safe_len < combined.len())],
+                                Some(combined[..safe_len].find(['{', '[']).unwrap_or(safe_len)),
+                                &[],
+                                flush,
+                            );
+                            let response_marker = response_marker
+                                .into_iter()
+                                .chain(control_marker)
+                                .min_by_key(|(at, _)| *at);
                             let visible_end = response_marker.map_or(safe_len, |(at, _)| at);
                             let visible_len = visible_end.saturating_sub(keep);
                             if let Some((marker_at, marker_len)) = response_marker
@@ -2996,8 +3704,15 @@ impl GuidedState {
                                 self.stripped_markup = true;
                                 self.response_prefill_after_marker = true;
                                 let consumed = marker_at + marker_len;
-                                self.response_prefill_probe.discard_prefix(consumed);
+                                if consumed > safe_len {
+                                    // Native syntax consumed the JSON candidate's
+                                    // opener; its lexical state no longer owns the tail.
+                                    self.response_prefill_probe.reset();
+                                } else {
+                                    self.response_prefill_probe.discard_prefix(consumed);
+                                }
                                 self.json = combined[consumed..].to_string();
+                                self.reset_invoke_candidate();
                                 continue;
                             }
                             if visible_len == 0
@@ -3016,25 +3731,19 @@ impl GuidedState {
                                     }
                                     self.response_prefill_after_marker = false;
                                 }
-                                if let Some((marker_at, marker_len)) = self.control_marker_at(
-                                    &combined[..visible_len],
-                                    Some(visible_len),
-                                    &[],
-                                    flush,
-                                ) {
-                                    self.push_visible_text(&mut output, &combined[..marker_at]);
-                                    self.response_prefill_text_emitted = true;
-                                    self.stripped_markup = true;
-                                    self.response_prefill_after_marker = true;
-                                    let consumed = marker_at + marker_len;
-                                    self.response_prefill_probe.discard_prefix(consumed);
-                                    self.json = combined[consumed..].to_string();
-                                    continue;
-                                }
+                                // The family may have retained an undecided invocation
+                                // while classifying the visible prefix above. It is not
+                                // prose merely because no consumable marker exists yet.
+                                let visible_len = if flush {
+                                    visible_len
+                                } else {
+                                    visible_len.saturating_sub(self.invoke_holdback_len())
+                                };
                                 self.push_visible_text(&mut output, &combined[..visible_len]);
-                                self.response_prefill_text_emitted = true;
+                                self.response_prefill_text_emitted |= visible_len > 0;
                                 self.response_prefill_probe.discard_prefix(visible_len);
                                 self.input = combined[visible_len..].to_string();
+                                self.reset_invoke_candidate_if_input_empty();
                             }
                             break;
                         };
@@ -3066,30 +3775,25 @@ impl GuidedState {
                                 }
                             }
                             let prefix = &combined[prefix_at..payload.start];
-                            if let Some((marker_at, marker_len)) =
-                                self.reasoning.response_marker_at(prefix)
-                            {
-                                let marker_at = prefix_at + marker_at;
-                                self.push_visible_text(
-                                    &mut output,
-                                    &combined[prefix_at..marker_at],
-                                );
-                                self.response_prefill_text_emitted = true;
-                                self.stripped_markup = true;
-                                prefix_at = marker_at + marker_len;
-                                self.response_prefill_after_marker = true;
-                                continue;
-                            }
-                            let marker = self.control_marker_at(
-                                prefix,
-                                Some(prefix.len()),
-                                &[],
-                                // The probe already found a complete guided value after
-                                // this prefix, so the prefix-form header cannot grow into
-                                // a native invoke. Let the shared marker owner consume its
-                                // complete header even when the current push is not EOF.
-                                true,
-                            );
+                            let marker = self
+                                .control_marker_at(
+                                    // Include the opening JSON delimiter as boundary
+                                    // evidence, exactly as when it arrives alone in a
+                                    // streamed chunk. It is never part of the prefix.
+                                    &combined[prefix_at..payload.start + 1],
+                                    Some(prefix.find(['{', '[']).unwrap_or(prefix.len())),
+                                    &[],
+                                    // The probe already found a complete guided value after
+                                    // this prefix, so the prefix-form header cannot grow into
+                                    // a native invoke. Let the shared marker owner consume its
+                                    // complete header even when the current push is not EOF.
+                                    true,
+                                )
+                                .map(|(at, len)| (at, len.min(prefix.len() - at)));
+                            let marker = marker
+                                .into_iter()
+                                .chain(self.reasoning.response_marker_at(prefix))
+                                .min_by_key(|(at, _)| *at);
                             let Some((marker_at, marker_len)) = marker else {
                                 let text = &combined[prefix_at..payload.start];
                                 if self.response_prefill_text_emitted || !text.trim().is_empty() {
@@ -3106,6 +3810,7 @@ impl GuidedState {
                             }
                             self.stripped_markup = true;
                             prefix_at = text_end + marker_len;
+                            self.reset_invoke_candidate();
                             self.response_prefill_after_marker = true;
                         }
                         self.response_prefill_probe.reset();
@@ -3119,7 +3824,7 @@ impl GuidedState {
                     // not the beginning of the JSON payload. Requiring a
                     // whitespace-only prefix here meant a turn that said anything
                     // before it began thinking (`content_then_reason`, the shape
-                    // `UNIFIED.11.f`/`11.g` pin natively) fell through to the payload
+                    // `UNIFIED.11-6`/`11-7` pin natively) fell through to the payload
                     // buffer, latched VisibleOnly, and then surfaced the markers AND
                     // the model's private thinking to the user as the answer, with the
                     // call never emitted.
@@ -3129,8 +3834,9 @@ impl GuidedState {
                     // text, and an opener beside a stripped closer survive into the
                     // payload. One set from the scanner covers both lookup and the
                     // holdback below, so the two cannot drift apart again.
-                    let open = self
-                        .reasoning_enabled
+                    let scan_reasoning = self.reasoning_enabled
+                        && (!self.content_routed || !self.reasoning.preserves_response_markers());
+                    let open = scan_reasoning
                         .then(|| {
                             self.reasoning
                                 .find_open(&self.input, flush, self.channel_state())
@@ -3139,8 +3845,7 @@ impl GuidedState {
                     // Position only: an opener still waiting on its label or its
                     // recipient is not YET an opener, but it already proves the
                     // bytes ahead of it are visible text rather than payload.
-                    let open_at = self
-                        .reasoning_enabled
+                    let open_at = scan_reasoning
                         .then(|| {
                             self.reasoning
                                 .find_open(&self.input, true, self.channel_state())
@@ -3161,6 +3866,17 @@ impl GuidedState {
                         flush,
                     );
                     self.input = input;
+                    let owned_len = if self.grammar.invoke_start.starts_with('<') {
+                        self.invoke_candidate
+                            .len
+                            .max(self.native_header.holdback_len)
+                    } else {
+                        0
+                    };
+                    let pending_at = self.input.len().saturating_sub(owned_len);
+                    let owns = |at: usize| owned_len > 0 && at > pending_at;
+                    let open = open.filter(|(at, _)| !owns(*at));
+                    let open_at = open_at.filter(|at| !owns(*at));
                     let stray_close = marker
                         .into_iter()
                         .chain(
@@ -3194,6 +3910,7 @@ impl GuidedState {
                                 })
                                 .flatten(),
                         )
+                        .filter(|(at, _)| !owns(*at))
                         .min_by_key(|(at, _)| *at);
                     let close_at = stray_close.map(|(at, _)| at);
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
@@ -3216,6 +3933,7 @@ impl GuidedState {
                         }
                         self.note_consumed(at, open_len);
                         self.input.drain(..at + open_len);
+                        self.reset_invoke_candidate();
                         self.mode = GuidedMode::Reasoning;
                         self.accept_redundant_reasoning_start = false;
                         continue;
@@ -3244,6 +3962,7 @@ impl GuidedState {
                         self.note_consumed(at, close_len);
                         self.note_content_transition(at, close_len);
                         self.input.drain(..at + close_len);
+                        self.reset_invoke_candidate();
                         // A competing marker was stripped while the native-looking
                         // candidate stayed buffered. It is not a candidate discard,
                         // so keep its boundary progress for the next drain.
@@ -3275,6 +3994,9 @@ impl GuidedState {
                                 .as_ref()
                                 .map(|(start, label)| (start.as_str(), label.as_str())),
                             self.grammar.guided_prefix_policy,
+                            self.invoke_boundary
+                                .as_ref()
+                                .is_some_and(|boundary| boundary.owns_guided_prefix()),
                             flush,
                         )
                         .max(self.invoke_holdback_len())
@@ -3352,6 +4074,7 @@ impl GuidedState {
                             self.json.push_str(&self.input[..visible_len]);
                         }
                         self.input.drain(..visible_len);
+                        self.reset_invoke_candidate_if_input_empty();
                         // Latch onto the payload only once it actually LOOKS like
                         // one. Guided decoding constrains the call to bare JSON, so a
                         // run that has not opened a value is prose, and a thought may
@@ -3371,6 +4094,7 @@ impl GuidedState {
                             self.json.push_str(&self.input);
                         }
                         self.input.clear();
+                        self.reset_invoke_candidate();
                     }
                     break;
                 }
@@ -3382,6 +4106,7 @@ impl GuidedState {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
                             self.note_consumed(leading, open_len);
                             self.input.drain(..leading + open_len);
+                            self.reset_invoke_candidate();
                             self.accept_redundant_reasoning_start = false;
                             continue;
                         }
@@ -3392,6 +4117,7 @@ impl GuidedState {
                         {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
                             self.input.drain(..leading);
+                            self.reset_invoke_candidate();
                             break;
                         }
                         self.accept_redundant_reasoning_start = false;
@@ -3457,11 +4183,37 @@ impl GuidedState {
                         flush,
                     );
                     self.input = input;
+                    // A native envelope that is still waiting for its own end owns
+                    // any repeated reasoning opener inside it. Treating that opener
+                    // as a stray reset the envelope between chunks, so the next
+                    // append released its raw header as reasoning instead of taking
+                    // the same EOF recovery path as a whole input. The native scan is
+                    // advanced above, so decide this only after it has seen the chunk.
+                    let owned_len = self
+                        .invoke_candidate
+                        .len
+                        .max(self.native_header.holdback_len);
+                    let marker_owns = |at: usize| {
+                        marker.is_some_and(|(start, len)| start < at && at < start + len)
+                    };
+                    let ends = ends.filter(|(at, _)| {
+                        !marker_owns(*at)
+                            && !(((marker.is_none() && self.invoke_boundary.is_some())
+                                || self.native_header.body_pending
+                                || self.native_header.trailing_whitespace_pending)
+                                && owned_len > 0
+                                && *at >= self.input.len().saturating_sub(owned_len))
+                    });
+                    let reopen = reopen.filter(|(at, _)| {
+                        !marker_owns(*at)
+                            && (owned_len == 0 || *at < self.input.len().saturating_sub(owned_len))
+                    });
                     let interrupt = marker
                         .into_iter()
                         .chain(
                             self.reasoning
-                                .find_stray(&self.input, flush, self.channel_state()),
+                                .find_stray(&self.input, flush, self.channel_state())
+                                .filter(|(at, _)| !marker_owns(*at)),
                         )
                         .min_by_key(|(at, _)| *at);
 
@@ -3481,7 +4233,19 @@ impl GuidedState {
                     // One rule in the shared owner, so no family carries its own copy.
                     let recovers = interrupt
                         .filter(|hit| Some(*hit) != reopen)
-                        .map(|(at, len)| (at, len, self.leads_into_payload(at + len, flush)));
+                        .map(|(at, len)| {
+                            let follows = self.leads_into_payload(at + len, flush);
+                            // A resolved channel marker already settles a preceding
+                            // envelope as stray markup. Waiting for a future payload
+                            // must not let that marker release the envelope as prose.
+                            let follows = follows.or_else(|| {
+                                ends.into_iter()
+                                    .chain(reopen)
+                                    .find(|(end_at, _)| *end_at >= at + len)
+                                    .map(|_| false)
+                            });
+                            (at, len, follows)
+                        });
                     // Where an UNDECIDED interrupt begins. Everything from here on has
                     // to stay buffered: the marker is complete, so no split-marker rule
                     // retains it, and releasing it as reasoning is the very reading the
@@ -3523,6 +4287,7 @@ impl GuidedState {
                         self.note_consumed(at, consume);
                         self.note_content_transition(at, consume);
                         self.input.drain(..at + consume);
+                        self.reset_invoke_candidate();
                         if closes {
                             // Back to OutsideReasoning, NOT straight to VisibleOnly. The
                             // old latch was justified by keeping marker-like bytes inside
@@ -3571,6 +4336,9 @@ impl GuidedState {
                                 .as_ref()
                                 .map(|(start, label)| (start.as_str(), label.as_str())),
                             self.grammar.guided_prefix_policy,
+                            self.invoke_boundary
+                                .as_ref()
+                                .is_some_and(|boundary| boundary.owns_guided_prefix()),
                             flush,
                         )
                         .max(self.invoke_holdback_len())
@@ -3581,6 +4349,7 @@ impl GuidedState {
                     if reasoning_len > 0 {
                         push_run(&mut output, Kind::Reasoning, &self.input[..reasoning_len]);
                         self.input.drain(..reasoning_len);
+                        self.reset_invoke_candidate_if_input_empty();
                     }
                     break;
                 }
@@ -3607,8 +4376,8 @@ impl GuidedState {
     /// so a fragment is never half a UTF-8 codepoint and never has to be taken back.
     /// Settle the elements streaming did NOT put on the wire.
     ///
-    /// For a NAMED choice there are none — that payload is one call and the cursor
-    /// released all of it — so this delegates to [`Self::settle_streamed_named`].
+    /// For a NAMED choice the cursor released the argument bytes, but completion
+    /// still needs validation, so this delegates to [`Self::settle_streamed_named`].
     /// Everything below is the required-choice, per-element reconciliation.
     ///
     /// Recovery here is PER CALL, which is the difference
@@ -3620,7 +4389,7 @@ impl GuidedState {
         let payload = self.json.trim().to_string();
         let mut out = Vec::new();
 
-        // A named choice is ONE call and it is already fully on the wire.
+        // Named argument fragments are already on the wire, without completion.
         if self.named_tool.is_some() {
             return self.settle_streamed_named();
         }
@@ -3709,32 +4478,39 @@ impl GuidedState {
     /// Settle a NAMED choice whose call the cursor already streamed.
     ///
     /// The cursor put the name on the first delta and released every byte of the
-    /// argument object, up to and including its closing brace. So there is nothing
-    /// left to settle: running the assembled path as well would deliver the whole
+    /// argument object, up to and including its closing brace. Re-emitting the
+    /// assembled arguments would deliver the whole
     /// argument object a SECOND time, and `assemble` would concatenate the two into
     /// `{…}{…}`. That is the one failure this path exists to prevent, which is why
     /// BOTH completion routes — [`Self::finish_streamed_remainder`] and
     /// [`Self::finish_json`] — go through this single rule rather than each
     /// deciding for itself.
     ///
-    /// What it still owes the caller: the envelope warning the buffered path emits
-    /// (the bytes are already out, so it can only report the suspicion), and any
+    /// What it still owes the caller: a completion delta after the object validates,
+    /// the envelope warning the buffered path emits, and any
     /// bytes that fell OUTSIDE the argument object, which were never released and
     /// are not arguments.
     fn settle_streamed_named(&self) -> Vec<UnifiedParserEvent> {
         let Some(named_tool) = self.named_tool.as_deref() else {
             return Vec::new();
         };
+        let mut output = Vec::new();
         if let Ok(obj) =
             serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(self.json.trim())
         {
             warn_if_named_payload_looks_like_an_envelope(named_tool, &obj);
+            output.push(UnifiedParserEvent::ToolCall(ToolCallDelta {
+                tool_index: 0,
+                name: None,
+                arguments: String::new(),
+                complete: true,
+            }));
         }
         // The cursor lexes `self.json`, so its offset slices that buffer directly.
         let released_end = self.cursor.released_end().min(self.json.len());
         let remainder = self.json[released_end..].trim().to_string();
         if remainder.is_empty() {
-            return Vec::new();
+            return output;
         }
         tracing::warn!(
             why = "unified_guided_named_payload_has_trailing_bytes",
@@ -3742,7 +4518,8 @@ impl GuidedState {
             remainder_bytes = remainder.len(),
             "bytes followed the named-choice argument object; emitting them as text"
         );
-        vec![UnifiedParserEvent::Text(remainder)]
+        output.push(UnifiedParserEvent::Text(remainder));
+        output
     }
 
     /// Drive the cursor over the payload accumulated so far.
@@ -3987,7 +4764,7 @@ fn warn_if_named_payload_looks_like_an_envelope(
 /// streaming contract uses ([`parse_required_guided_elements`]). Two copies of this
 /// judgement would let the two recovery modes disagree about the same bytes.
 fn convert_guided_call(call: GuidedToolCall) -> Option<GuidedCall> {
-    // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6.a`
+    // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6-1`
     // already fixes that semantic on the native path — same tool, no parameter
     // block, golden `arguments: {}` — so voiding it here made guided disagree with
     // native on an identical shape and made a parameterless tool uncallable. What
@@ -4270,10 +5047,13 @@ macro_rules! unified_registry {
 }
 
 unified_registry! {
+    "deepseek_v4" => deepseek_v4::deepseek_v4_unified,
+    "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,
+    "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.
@@ -4291,6 +5071,9 @@ struct DebugUnifiedParser {
 
 impl DebugUnifiedParser {
     fn wrap(family: impl Into<String>, inner: Box<dyn UnifiedParser>) -> Box<dyn UnifiedParser> {
+        if !crate::tool_calling::debug::debug_enabled() {
+            return inner;
+        }
         let family = family.into();
         crate::tool_calling::debug::emit(format_args!("UNIFIED family={family} created"));
         Box::new(Self { family, inner })
@@ -4382,6 +5165,894 @@ impl UnifiedParser for DebugUnifiedParser {
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    fn competing_observation(
+        parser: &mut dyn UnifiedParser,
+        init: &UnifiedParserInit,
+        chunks: &[&str],
+    ) -> (Vec<UnifiedEvent>, Vec<String>, Vec<usize>) {
+        parser.reset();
+        parser.initialize_request(init.clone()).unwrap();
+        let mut out = UnifiedParserOutput::default();
+        let mut errors = Vec::new();
+        for chunk in chunks {
+            if let Err(error) = parser.parse_into(chunk, &mut out) {
+                errors.push(error.to_string());
+                break;
+            }
+        }
+        match parser.finish() {
+            Ok(mut tail) => out.append(&mut tail),
+            Err(error) => errors.push(error.to_string()),
+        }
+        let completed = out
+            .events
+            .iter()
+            .filter_map(|event| match event {
+                UnifiedParserEvent::ToolCall(delta) if delta.complete => Some(delta.tool_index),
+                _ => None,
+            })
+            .collect();
+        (out.assembled(), errors, completed)
+    }
+
+    #[test]
+    fn guided_competing_marker_property_matrix() {
+        let mut failures = 0;
+        let mut examples = Vec::new();
+        for (family, open, header, close, thought, end, parameter) in [
+            (
+                "qwen3",
+                "<function=",
+                "f>",
+                "</function>",
+                "<think>",
+                "</think>",
+                "<parameter=x>",
+            ),
+            (
+                "muse_glimmer",
+                "<atem:invoke name=\"",
+                "f\">",
+                "</atem:invoke>",
+                "<|start|>assistant to=self<|message|>",
+                "<|eom|>",
+                "<atem:parameter name=\"x\">",
+            ),
+            (
+                "deepseek_v4",
+                "<｜DSML｜invoke name=\"",
+                "f\">",
+                "</｜DSML｜invoke>",
+                "<think>",
+                "</think>",
+                "<｜DSML｜parameter name=\"x\" string=\"true\">",
+            ),
+            (
+                "deepseek_v41",
+                "<｜DSML｜ invoke name=\"",
+                "f\">",
+                "</｜DSML｜ invoke>",
+                "<think>",
+                "</think>",
+                "<｜DSML｜ parameter name=\"x\" string=\"true\">",
+            ),
+            (
+                "gemma4",
+                "call:",
+                "f{",
+                "<tool_call|>",
+                "<|channel>thought\n",
+                "<channel|>",
+                "x:",
+            ),
+            (
+                "kimi_k2",
+                "<|tool_call_begin|>",
+                "functions.f:0<|tool_call_argument_begin|>",
+                "<|tool_call_end|>",
+                "<think>",
+                "</think>",
+                "{\"x\":\"",
+            ),
+            (
+                "kimi_k3",
+                "<|open|>call tool=\"",
+                "f\" index=\"0\"<|sep|>",
+                "<|close|>call<|sep|>",
+                "<|open|>think<|sep|>",
+                "<|close|>think<|sep|>",
+                "<|open|>argument key=\"x\" type=\"string\"<|sep|>",
+            ),
+        ] {
+            let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
+            let mut checks = 0;
+            let before_failures = failures;
+            for head in [
+                open.to_string(),
+                format!("{open}{header}"),
+                format!("{open}f\""),
+            ] {
+                for body in [
+                    String::new(),
+                    "é🙂".into(),
+                    "{".into(),
+                    "[".into(),
+                    format!("{parameter}x"),
+                    format!("{thought}x"),
+                    format!("{thought}{thought}x"),
+                    end.into(),
+                    thought[..thought.len() - 1].into(),
+                ] {
+                    for tail in ["", close, end] {
+                        for state in [
+                            UnifiedParserStartingState::None,
+                            UnifiedParserStartingState::Reasoning,
+                            UnifiedParserStartingState::Response,
+                        ] {
+                            for policy in [
+                                InvalidGuidedPayloadPolicy::RecoverAsText,
+                                InvalidGuidedPayloadPolicy::Reject,
+                                InvalidGuidedPayloadPolicy::StreamBestEffort,
+                            ] {
+                                for mode in [
+                                    UnifiedToolOutputMode::Native,
+                                    UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                                    UnifiedToolOutputMode::GuidedJson {
+                                        named_tool: Some("f".into()),
+                                    },
+                                ] {
+                                    let named = matches!(
+                                        &mode,
+                                        UnifiedToolOutputMode::GuidedJson {
+                                            named_tool: Some(_)
+                                        }
+                                    );
+                                    let payload = if named {
+                                        r#"{"x":"ok"}"#
+                                    } else {
+                                        r#"[{"name":"f","arguments":{"x":"ok"}}]"#
+                                    };
+                                    let input = format!("{head}{body}{tail}{payload}");
+                                    let init = UnifiedParserInit {
+                                        starting_state: state,
+                                        tool_output_mode: mode.clone(),
+                                        invalid_guided_payload: policy,
+                                        ..Default::default()
+                                    };
+                                    let whole =
+                                        competing_observation(parser.as_mut(), &init, &[&input]);
+                                    for (at, _) in input.char_indices() {
+                                        let split = competing_observation(
+                                            parser.as_mut(),
+                                            &init,
+                                            &[&input[..at], &input[at..]],
+                                        );
+                                        checks += 1;
+                                        if split != whole {
+                                            failures += 1;
+                                            if examples.len() < 30 {
+                                                examples.push(format!("{family} {state:?} {policy:?} {mode:?} split={at} input={input:?} whole={whole:?} split={split:?}"));
+                                            }
+                                        }
+                                    }
+                                    let chars: Vec<_> = input
+                                        .char_indices()
+                                        .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                                        .collect();
+                                    let scalar =
+                                        competing_observation(parser.as_mut(), &init, &chars);
+                                    checks += 1;
+                                    if scalar != whole {
+                                        failures += 1;
+                                        if examples.len() < 30 {
+                                            examples.push(format!("{family} {state:?} {policy:?} {mode:?} scalar input={input:?} whole={whole:?} scalar={scalar:?}"));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            println!(
+                "competing matrix {family}: {checks} schedules, {} mismatches",
+                failures - before_failures
+            );
+        }
+        assert_eq!(failures, 0, "{}", examples.join("\n"));
+    }
+
+    #[test]
+    fn guided_competing_channel_regressions_preserve_full_output() {
+        for (family, prefix, state, reasoning, text, has_call) in [
+            (
+                "qwen3",
+                "<function=<think>x</function>",
+                UnifiedParserStartingState::None,
+                "x</function>",
+                "",
+                false,
+            ),
+            (
+                "muse_glimmer",
+                "<atem:invoke name=\"x<|eom|>",
+                UnifiedParserStartingState::None,
+                "",
+                "x",
+                true,
+            ),
+            (
+                "deepseek_v4",
+                "<｜DSML｜invoke name=\"f\"><think>x</｜DSML｜invoke>",
+                UnifiedParserStartingState::Reasoning,
+                "f\">x",
+                "",
+                true,
+            ),
+            (
+                "gemma4",
+                "call:<|channel>thought\nx<channel|>",
+                UnifiedParserStartingState::Reasoning,
+                "call:x",
+                "",
+                true,
+            ),
+            (
+                "kimi_k2",
+                "<|tool_call_begin|>é🙂<|tool_call_end|>",
+                UnifiedParserStartingState::Response,
+                "",
+                "",
+                true,
+            ),
+            (
+                "kimi_k2",
+                "<|tool_call_begin|><think>x<|tool_call_end|>",
+                UnifiedParserStartingState::Response,
+                "",
+                "",
+                true,
+            ),
+            (
+                "kimi_k2",
+                "<|tool_call_begin|>f\"</think><|tool_call_end|>",
+                UnifiedParserStartingState::Reasoning,
+                "f\"",
+                "",
+                true,
+            ),
+            (
+                "kimi_k2",
+                "<|tool_call_begin|>{<|tool_call_end|>",
+                UnifiedParserStartingState::Response,
+                "",
+                "{",
+                true,
+            ),
+            (
+                "qwen3",
+                "<function={</function>",
+                UnifiedParserStartingState::Response,
+                "",
+                "{</function>",
+                true,
+            ),
+        ] {
+            for policy in [
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+                InvalidGuidedPayloadPolicy::Reject,
+                InvalidGuidedPayloadPolicy::StreamBestEffort,
+            ] {
+                for named in [false, true] {
+                    let payload = if named {
+                        "{}"
+                    } else {
+                        r#"[{"name":"f","arguments":{}}]"#
+                    };
+                    let input = format!("{prefix}{payload}");
+                    let mut expected = Vec::new();
+                    if !text.is_empty() {
+                        expected.push(UnifiedEvent::Text { text: text.into() });
+                    }
+                    if !reasoning.is_empty() {
+                        expected.push(UnifiedEvent::Reasoning {
+                            text: if has_call {
+                                reasoning.into()
+                            } else {
+                                format!("{reasoning}{payload}")
+                            },
+                        });
+                    }
+                    if has_call {
+                        expected.push(UnifiedEvent::ToolCall {
+                            name: "f".into(),
+                            arguments: serde_json::json!({}),
+                        });
+                    }
+                    let init = UnifiedParserInit {
+                        starting_state: state,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                            named_tool: named.then(|| "f".into()),
+                        },
+                        invalid_guided_payload: policy,
+                        ..Default::default()
+                    };
+                    let mut schedules: Vec<Vec<&str>> = input
+                        .char_indices()
+                        .map(|(at, _)| vec![&input[..at], &input[at..]])
+                        .collect();
+                    schedules.push(vec![&input]);
+                    schedules.push(
+                        input
+                            .char_indices()
+                            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                            .collect(),
+                    );
+                    let mut plain = create_unified_parser_for_family(family, &[]).unwrap();
+                    let mut debug = crate::tool_calling::debug::debug_enabled().then(|| {
+                        DebugUnifiedParser::wrap(
+                            family,
+                            create_unified_parser_for_family(family, &[]).unwrap(),
+                        )
+                    });
+                    for chunks in schedules {
+                        let run = |parser: &mut Box<dyn UnifiedParser>| {
+                            parser.reset();
+                            parser.initialize_request(init.clone()).unwrap();
+                            let mut out = UnifiedParserOutput::default();
+                            for chunk in &chunks {
+                                parser.parse_into(chunk, &mut out).unwrap();
+                            }
+                            let finish = parser.finish();
+                            if !has_call && policy == InvalidGuidedPayloadPolicy::Reject {
+                                assert!(finish.unwrap_err().to_string().contains("Missing"));
+                            } else {
+                                out.append(&mut finish.unwrap());
+                            }
+                            assert_eq!(
+                                out.assembled(),
+                                expected,
+                                "{family} {policy:?} named={named} chunks={chunks:?}"
+                            );
+                            assert_eq!(out.events.iter().filter(|e| matches!(e, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), usize::from(has_call));
+                            out.events
+                        };
+                        let plain_events = run(&mut plain);
+                        if let Some(debug) = debug.as_mut() {
+                            assert_eq!(run(debug), plain_events);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn assert_guided_envelope_matrix(
+        family: &str,
+        prefix: &str,
+        state: UnifiedParserStartingState,
+        before_call: &[UnifiedEvent],
+    ) {
+        let tools = [Tool {
+            name: "get_weather".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"object","properties":{"city":{"type":"string"}}}),
+            strict: None,
+        }];
+        for policy in [
+            InvalidGuidedPayloadPolicy::RecoverAsText,
+            InvalidGuidedPayloadPolicy::Reject,
+            InvalidGuidedPayloadPolicy::StreamBestEffort,
+        ] {
+            for named in [false, true] {
+                let payload = if named {
+                    r#"{"city":"Paris"}"#
+                } else {
+                    r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#
+                };
+                let input = format!("{prefix}{payload}");
+                let init = UnifiedParserInit {
+                    starting_state: state,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                        named_tool: named.then(|| "get_weather".into()),
+                    },
+                    invalid_guided_payload: policy,
+                    ..Default::default()
+                };
+                let mut want = before_call.to_vec();
+                want.push(UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                });
+                let mut schedules: Vec<Vec<&str>> = input
+                    .char_indices()
+                    .map(|(at, _)| vec![&input[..at], &input[at..]])
+                    .collect();
+                schedules.push(vec![&input]);
+                schedules.push(
+                    input
+                        .char_indices()
+                        .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                        .collect(),
+                );
+                let mut plain = create_unified_parser_for_family(family, &tools).unwrap();
+                let mut debug = crate::tool_calling::debug::debug_enabled().then(|| {
+                    DebugUnifiedParser::wrap(
+                        family,
+                        create_unified_parser_for_family(family, &tools).unwrap(),
+                    )
+                });
+                for (schedule, chunks) in schedules.iter().enumerate() {
+                    let run = |parser: &mut Box<dyn UnifiedParser>| {
+                        parser.reset();
+                        parser.initialize_request(init.clone()).unwrap();
+                        let mut out = UnifiedParserOutput::default();
+                        for chunk in chunks {
+                            parser.parse_into(chunk, &mut out).unwrap();
+                        }
+                        let before_finish = out.events.len();
+                        out.append(&mut parser.finish().unwrap());
+                        assert_eq!(
+                            out.assembled(),
+                            want,
+                            "{family} {state:?} {policy:?} named={named} schedule={schedule}"
+                        );
+                        assert_eq!(out.events.iter().filter(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), 1);
+                        assert!(
+                            before_finish > 0,
+                            "completed input must make pre-finish progress"
+                        );
+                        assert!(parser.finish().is_err());
+                        assert!(
+                            parser
+                                .parse_into("", &mut UnifiedParserOutput::default())
+                                .is_err()
+                        );
+                        out.events
+                    };
+                    let plain_events = run(&mut plain);
+                    if let Some(debug) = debug.as_mut() {
+                        assert_eq!(run(debug), plain_events, "debug wrapper changed deltas");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_complete_native_body_is_owned_before_prefix_recovery() {
+        for (family, prefix) in [
+            (
+                "qwen3",
+                "<think>before <function=get_weather><parameter=city>Paris</parameter></function> after</think>",
+            ),
+            (
+                "muse_glimmer",
+                "<|start|>assistant to=self<|message|>before <atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris</atem:parameter></atem:invoke> after<|eom|>",
+            ),
+            (
+                "deepseek_v41",
+                "<think>before <｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris</｜DSML｜ parameter></｜DSML｜ invoke> after</think>",
+            ),
+            (
+                "deepseek_v4",
+                "<think>before <｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke> after</think>",
+            ),
+            (
+                "kimi_k2",
+                "<think>before <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\":\"Paris\"}<|tool_call_end|> after</think>",
+            ),
+            (
+                "kimi_k3",
+                "<|open|>think<|sep|>before <|open|>call tool=\"get_weather\" index=\"0\"<|sep|><|open|>argument key=\"city\" type=\"string\"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>",
+            ),
+            (
+                "gemma4",
+                "<|channel>thought\nbefore call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> after<channel|>",
+            ),
+        ] {
+            // The native body must not substitute for the guided call.
+            let prefix = prefix.replace("Paris", "Rome");
+            let quoted_markers = match family {
+                "muse_glimmer" => "to=self<|message|>quoted<|eom|>",
+                "kimi_k3" => "<|open|>think<|sep|>quoted<|close|>think<|sep|>",
+                "gemma4" => "<|channel>thought\nquoted<channel|>",
+                _ => "<think>quoted</think>",
+            };
+            for state in [
+                UnifiedParserStartingState::None,
+                UnifiedParserStartingState::Reasoning,
+            ] {
+                assert_guided_envelope_matrix(
+                    family,
+                    &prefix,
+                    state,
+                    &[UnifiedEvent::Reasoning {
+                        text: "before  after".into(),
+                    }],
+                );
+                assert_guided_envelope_matrix(
+                    family,
+                    &prefix.replace("Rome", quoted_markers),
+                    state,
+                    &[UnifiedEvent::Reasoning {
+                        text: "before  after".into(),
+                    }],
+                );
+                let unicode = prefix.replace("before ", "前é ").replace(" after", " 後🙂");
+                assert_guided_envelope_matrix(
+                    family,
+                    &unicode,
+                    state,
+                    &[UnifiedEvent::Reasoning {
+                        text: "前é  後🙂".into(),
+                    }],
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn guided_pending_response_headers_preserve_state_counterfactual() {
+        for (family, prefix, visible, prose, thought) in [
+            (
+                "deepseek_v41",
+                "I mean <think>self literal</think><｜DSML｜ invoke name=\"",
+                "I mean <think>self literal</think>",
+                "I mean ",
+                "self literal",
+            ),
+            (
+                "muse_glimmer",
+                "I mean to=self<|message|>literal<|eom|><atem:invoke name=\"</atem:invoke>",
+                "I mean to=selfliteral",
+                "I mean",
+                "literal",
+            ),
+        ] {
+            assert_guided_envelope_matrix(
+                family,
+                prefix,
+                UnifiedParserStartingState::Response,
+                &[UnifiedEvent::Text {
+                    text: visible.into(),
+                }],
+            );
+            assert_guided_envelope_matrix(
+                family,
+                prefix,
+                UnifiedParserStartingState::None,
+                &[
+                    UnifiedEvent::Text { text: prose.into() },
+                    UnifiedEvent::Reasoning {
+                        text: thought.into(),
+                    },
+                ],
+            );
+        }
+        for (family, prefix) in [
+            ("deepseek_v41", "<｜DSML｜ invoke name=\""),
+            ("muse_glimmer", "<atem:invoke name=\"</atem:invoke>"),
+        ] {
+            assert_guided_envelope_matrix(
+                family,
+                prefix,
+                UnifiedParserStartingState::Response,
+                &[],
+            );
+        }
+    }
+
+    // The corpus observes events, not how often a retained native body is scanned.
+    #[test]
+    fn guided_native_body_scans_only_new_bytes() {
+        for (family, open, close) in [
+            (
+                "qwen3",
+                "<function=f><parameter=x>",
+                "</parameter></function>",
+            ),
+            (
+                "muse_glimmer",
+                "<atem:invoke name=\"f\"><atem:parameter name=\"x\">",
+                "</atem:parameter></atem:invoke>",
+            ),
+        ] {
+            for state in [
+                UnifiedParserStartingState::None,
+                UnifiedParserStartingState::Reasoning,
+                UnifiedParserStartingState::Response,
+            ] {
+                for policy in [
+                    InvalidGuidedPayloadPolicy::Reject,
+                    InvalidGuidedPayloadPolicy::RecoverAsText,
+                    InvalidGuidedPayloadPolicy::StreamBestEffort,
+                ] {
+                    let mut previous_work = 0;
+                    for repeats in [256, 512] {
+                        let body = "é🙂<par{value}".repeat(repeats);
+                        let whitespace = " ".repeat(repeats);
+                        let input = format!(
+                            "{open}{body}{close}{whitespace}[{{\"name\":\"f\",\"arguments\":{{\"x\":\"ok\"}}}}]"
+                        );
+                        let init = UnifiedParserInit {
+                            starting_state: state,
+                            tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                named_tool: None,
+                            },
+                            invalid_guided_payload: policy,
+                            ..Default::default()
+                        };
+                        let mut whole = create_unified_parser_for_family(family, &[]).unwrap();
+                        whole.initialize_request(init.clone()).unwrap();
+                        let want = whole.parse_complete(&input).unwrap_or_else(|error| {
+                            panic!("{family} {state:?} whole input: {error}")
+                        });
+                        assert_eq!(
+                            want,
+                            vec![UnifiedEvent::ToolCall {
+                                name: "f".into(),
+                                arguments: serde_json::json!({"x":"ok"})
+                            }]
+                        );
+                        let mut streamed = create_unified_parser_for_family(family, &[]).unwrap();
+                        streamed.initialize_request(init).unwrap();
+                        reset_guided_prefix_examined_bytes();
+                        let mut events = Vec::new();
+                        for character in input.chars() {
+                            events.extend(streamed.push(&character.to_string()).unwrap());
+                        }
+                        events.extend(streamed.finish().unwrap().events);
+                        assert_eq!(assemble(&events), want, "{family} {state:?}");
+                        let work = guided_prefix_examined_bytes();
+                        println!(
+                            "{family} {state:?} {policy:?}: {work} examined bytes for {} input bytes (body {})",
+                            input.len(),
+                            body.len()
+                        );
+                        assert!(work >= body.len(), "native-body bytes were not measured");
+                        assert!(
+                            work < input.len() * 200,
+                            "{family} {state:?}: {work} examined bytes for {} input bytes",
+                            input.len()
+                        );
+                        if previous_work > 0 {
+                            assert!(
+                                work <= previous_work * 2 + 256,
+                                "body scan is not linear: {previous_work} -> {work}"
+                            );
+                        }
+                        previous_work = work;
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_native_parameter_braces_remain_owned_at_every_split() {
+        for (family, prefix) in [
+            (
+                "qwen3",
+                "<function=f><parameter=x>é🙂<par{value}</parameter></function>",
+            ),
+            (
+                "muse_glimmer",
+                "<atem:invoke name=\"f\"><atem:parameter name=\"x\">é🙂<par{value}</atem:parameter></atem:invoke>",
+            ),
+        ] {
+            for state in [
+                UnifiedParserStartingState::None,
+                UnifiedParserStartingState::Reasoning,
+                UnifiedParserStartingState::Response,
+            ] {
+                assert_guided_envelope_matrix(family, prefix, state, &[]);
+                for body in [
+                    r#"{"city":"Rome"}"#,
+                    r#"[{"name":"get_weather","arguments":{"city":"Rome"}}]"#,
+                ] {
+                    let input = prefix.replace("é🙂<par{value}", body);
+                    assert_guided_envelope_matrix(family, &input, state, &[]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_competing_channel_markers_do_not_bypass_native_ownership() {
+        for state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+        ] {
+            assert_guided_envelope_matrix(
+                "qwen3",
+                "<function=<think>reason</think>",
+                state,
+                &[UnifiedEvent::Reasoning {
+                    text: "reason".into(),
+                }],
+            );
+        }
+        assert_guided_envelope_matrix(
+            "muse_glimmer",
+            "<|start|>assistant to=self<|message|>before <atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Rome</atem:parameter></atem:invoke> after<|eom|>",
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: "assistant to=selfbefore after".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn guided_pending_header_reset_does_not_contaminate_next_request() {
+        for (family, prefix) in [
+            ("qwen3", "<function=abé"),
+            ("qwen3", "<function=f><parameter=x>é🙂<par{value}"),
+            ("muse_glimmer", "<atem:invoke name=\"abc"),
+            (
+                "muse_glimmer",
+                "<atem:invoke name=\"f\"><atem:parameter name=\"x\">é🙂<par{value}",
+            ),
+            ("deepseek_v41", "<｜DSML｜ invoke name=\"abc"),
+            ("deepseek_v4", "<｜DSML｜invoke name=\"abc"),
+            ("gemma4", "call:abc"),
+            ("kimi_k2", "<|tool_call_begin|>functions.abc"),
+            ("kimi_k3", "<|open|>call tool=\"abc"),
+        ] {
+            for state in [
+                UnifiedParserStartingState::None,
+                UnifiedParserStartingState::Reasoning,
+                UnifiedParserStartingState::Response,
+            ] {
+                let init = UnifiedParserInit {
+                    starting_state: state,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    ..Default::default()
+                };
+                let wrapped_modes = std::iter::once(false)
+                    .chain(crate::tool_calling::debug::debug_enabled().then_some(true));
+                for wrapped in wrapped_modes {
+                    let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
+                    if wrapped {
+                        parser = DebugUnifiedParser::wrap(family, parser);
+                    }
+                    parser.initialize_request(init.clone()).unwrap();
+                    for ch in prefix.chars() {
+                        parser.push(&ch.to_string()).unwrap();
+                    }
+                    assert!(parser.initialize_request(init.clone()).is_err());
+                    parser.reset();
+                    parser
+                        .initialize_request(UnifiedParserInit::default())
+                        .unwrap();
+                    assert_eq!(
+                        parser.parse_complete("answer").unwrap(),
+                        vec![UnifiedEvent::Text {
+                            text: "answer".into()
+                        }]
+                    );
+                    parser.reset();
+                    parser
+                        .initialize_request(UnifiedParserInit {
+                            tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                named_tool: Some("get_weather".into()),
+                            },
+                            invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
+                            ..Default::default()
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        parser.parse_complete(r#"{"city":"Paris"}"#).unwrap(),
+                        vec![UnifiedEvent::ToolCall {
+                            name: "get_weather".into(),
+                            arguments: serde_json::json!({"city":"Paris"})
+                        }]
+                    );
+                }
+            }
+        }
+    }
+
+    // Corpus Init cannot select StreamBestEffort. EOF must apply its provisional
+    // commit contract even when native-envelope lookahead delayed the payload.
+    #[test]
+    fn guided_eof_exposed_named_payload_preserves_provisional_bytes() {
+        let payload = r#"{<|close|>think<|sep|>{"x":"ok"}"#;
+        let input =
+            format!("<|open|>call tool=\"f\" index=\"0\"<|sep|><|close|>call<|sep|>{payload}");
+        let init = UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Reasoning,
+            tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("f".into()),
+            },
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
+            ..Default::default()
+        };
+        let mut schedules: Vec<Vec<&str>> = input
+            .char_indices()
+            .map(|(at, _)| vec![&input[..at], &input[at..]])
+            .collect();
+        schedules.push(vec![&input]);
+        schedules.push(
+            input
+                .char_indices()
+                .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                .collect(),
+        );
+        let wrapped_modes = std::iter::once(false)
+            .chain(crate::tool_calling::debug::debug_enabled().then_some(true));
+        for wrapped in wrapped_modes {
+            let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+            if wrapped {
+                parser = DebugUnifiedParser::wrap("kimi_k3", parser);
+            }
+            for chunks in &schedules {
+                parser.reset();
+                parser.initialize_request(init.clone()).unwrap();
+                let mut out = UnifiedParserOutput::default();
+                for chunk in chunks {
+                    parser.parse_into(chunk, &mut out).unwrap();
+                }
+                out.append(&mut parser.finish().unwrap());
+                let deltas: Vec<_> = out
+                    .events
+                    .iter()
+                    .filter_map(|event| match event {
+                        UnifiedParserEvent::ToolCall(delta) => Some(delta),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(
+                    deltas
+                        .iter()
+                        .filter_map(|delta| delta.name.as_deref())
+                        .collect::<Vec<_>>(),
+                    vec!["f"]
+                );
+                assert_eq!(
+                    deltas
+                        .iter()
+                        .map(|delta| delta.arguments.as_str())
+                        .collect::<String>(),
+                    payload
+                );
+                assert!(
+                    deltas
+                        .iter()
+                        .all(|delta| delta.tool_index == 0 && !delta.complete)
+                );
+                assert_eq!(
+                    out.assembled(),
+                    vec![UnifiedEvent::Text {
+                        text: r#"{"x":"ok"}"#.into()
+                    }]
+                );
+            }
+        }
+    }
+
+    // Corpus Init cannot select StreamBestEffort, so this terminal-delta contract
+    // needs a Rust regression rather than a generated corpus row.
+    #[test]
+    fn streamed_named_completion_requires_a_valid_object() {
+        for payload in [r#"{"city":"Paris"}"#, r#"{"city":"Par"#] {
+            let mut parser = create_unified_parser_for_family("qwen3", &[]).unwrap();
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some("get_weather".into()),
+                    },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
+                    ..Default::default()
+                })
+                .unwrap();
+            let mut events = parser.push(payload).unwrap();
+            assert!(events.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if !delta.arguments.is_empty())));
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(events.iter().filter(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), usize::from(payload.ends_with('}')));
+        }
+    }
 
     fn call(tool_index: usize, name: Option<&str>, arguments: &str) -> UnifiedParserEvent {
         UnifiedParserEvent::ToolCall(ToolCallDelta {
@@ -4742,6 +6413,12 @@ mod tests {
     }
 
     #[test]
+    fn kimi_k3_hyphen_alias_is_canonical_and_creates() {
+        assert_eq!(canonical_unified_family("kimi-k3"), Some("kimi_k3"));
+        assert!(create_unified_parser_for_family("kimi-k3", &[]).is_ok());
+    }
+
+    #[test]
     fn guided_reset_restores_all_request_scoped_flags() {
         let mut guided = GuidedState::new(
             GuidedReasoning::Pair(ReasoningSpec {
@@ -4757,16 +6434,45 @@ mod tests {
                 invoke_end: "</function>".into(),
                 invoke_boundary_factory: None,
                 guided_prefix_policy: None,
+                guided_prefix_factory: None,
             },
             None,
             UnifiedParserStartingState::None,
             InvalidGuidedPayloadPolicy::RecoverAsText,
         );
+        assert_eq!(guided.native_header, GuidedNativeHeader::default());
+        // Exhaustive construction makes a new field require an explicit lifecycle
+        // assertion. The retained candidate is its checkpoint: rebasing prose
+        // preserves it, consuming the candidate or resetting the request clears it.
+        let checkpoint = GuidedNativeHeader {
+            scanned: 13,
+            native: Some(true),
+            body_channel_checked: true,
+            holdback_len: 27,
+            body_scanned: 19,
+            body_content: Some(true),
+            body_is_markup: true,
+            body_end: Some(23),
+            body_competitors: vec!["</think>".into()],
+            body_pending: true,
+            trailing_whitespace_pending: true,
+        };
+        guided.native_header = checkpoint.clone();
+        guided.input.push_str("retained candidate");
+        guided.reset_invoke_candidate_if_input_empty();
+        assert_eq!(guided.native_header, checkpoint);
+        guided.input.clear();
+        guided.reset_invoke_candidate_if_input_empty();
+        assert_eq!(guided.native_header, GuidedNativeHeader::default());
+        guided.native_header = checkpoint.clone();
+        guided.reset_invoke_candidate();
+        assert_eq!(guided.native_header, GuidedNativeHeader::default());
         guided
             .push_into("</tool_call>", &mut UnifiedParserOutput::default())
             .unwrap();
         assert!(guided.stripped_markup, "fixture did not mutate the flag");
         guided.payload_emitted = true;
+        guided.native_header = checkpoint;
 
         guided.reset(UnifiedParserStartingState::None);
 
@@ -4775,6 +6481,7 @@ mod tests {
         assert_eq!(guided.mode, GuidedMode::OutsideReasoning);
         assert!(guided.input.is_empty());
         assert!(guided.json.is_empty());
+        assert_eq!(guided.native_header, GuidedNativeHeader::default());
     }
 
     /// The returning and appending spellings are one implementation, so they
@@ -4971,8 +6678,18 @@ mod tests {
             call(0, Some("f"), "{}"),
             UnifiedParserEvent::Text("b".into()),
         ]);
-        assert_eq!(result.normal_text, "ab");
-        assert_eq!(result.calls.len(), 1);
+        assert_eq!(
+            result,
+            ToolParseResult {
+                normal_text: "ab".into(),
+                calls: vec![ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("f".into()),
+                    arguments: "{}".into(),
+                    complete: true,
+                }],
+            }
+        );
     }
 
     #[test]

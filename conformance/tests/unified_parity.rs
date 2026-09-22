@@ -17,19 +17,19 @@
 
 mod common;
 
-use common::Init;
+use common::{Init, unified_tools as tools};
 
 use std::collections::BTreeMap;
 
 use dynamo_parsers_v2::{
-    REGISTERED_UNIFIED_FAMILIES, Tool, UnifiedEvent, UnifiedParserExt, assemble,
+    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParserExt, assemble,
     create_unified_parser_for_family,
 };
 use serde::Deserialize;
-use serde_json::json;
 
 #[derive(Deserialize)]
 struct GoldenFile {
+    #[serde(default)]
     family: String,
     cases: BTreeMap<String, GoldenCase>,
 }
@@ -43,26 +43,6 @@ struct GoldenCase {
     /// identically; see that type for why it is declared and not inferred.
     #[serde(default)]
     init: Init,
-}
-
-/// Tool schemas the corpus is written against (string params, so a value like
-/// `1` stays the string `"1"` exactly as the golden records it). Mirrors
-/// `tools()` in `unified_render.rs`.
-fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("sum_values", "values"),
-        mk("log", "note"),
-    ]
 }
 
 fn load_golden() -> Vec<GoldenFile> {
@@ -349,10 +329,17 @@ fn manifest_and_parser_registry_agree_on_native_families() {
     let declared: std::collections::BTreeSet<String> = common::unified_families()
         .iter()
         .filter(|(_, row)| row.native)
-        .flat_map(|(family, row)| [family.clone(), row.registry_key(family).to_string()])
+        .flat_map(|(family, row)| {
+            [family.as_str(), row.registry_key(family)]
+                .into_iter()
+                .filter_map(dynamo_parsers_v2::canonical_unified_family)
+                .map(str::to_string)
+        })
         .collect();
     for registered in REGISTERED_UNIFIED_FAMILIES {
-        if !declared.contains(*registered) {
+        let canonical =
+            dynamo_parsers_v2::canonical_unified_family(registered).unwrap_or(registered);
+        if !declared.contains(canonical) {
             wrong.push(format!(
                 "{registered}: in `unified_registry!` but no native `unified:` row declares it \
                  — add one in conformance/utils/src/parser_families.yaml, or it gets no \

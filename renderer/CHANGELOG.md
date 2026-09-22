@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.3.1...dynamo-renderer-v5.3.2) - 2026-09-22
+
+### Bug fixes
+
+- *(renderer)* Support DeepSeek V4.1 image inputs ([#254](https://github.com/ai-dynamo/frontend-crates/pull/254))
+
+## [5.3.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.3.0...dynamo-renderer-v5.3.1) - 2026-09-17
+
+### Bug fixes
+
+- *(renderer)* Reject unsupported extensions in DeepSeek V4.1 ([#240](https://github.com/ai-dynamo/frontend-crates/pull/240))
+
+## [5.3.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.2.0...dynamo-renderer-v5.3.0) - 2026-09-11
+
+### Features
+
+- *(protocols)* Support Kimi system tools and Partial Mode ([#205](https://github.com/ai-dynamo/frontend-crates/pull/205))
+
+## [5.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.1.2...dynamo-renderer-v5.2.0) - 2026-09-11
+
+### Features
+
+- *(frontend)* Add native DeepSeek V4.1 support ([#228](https://github.com/ai-dynamo/frontend-crates/pull/228))
+
 ## [5.1.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.1.1...dynamo-renderer-v5.1.2) - 2026-09-03
 
 ### Bug fixes

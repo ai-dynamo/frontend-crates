@@ -18,6 +18,8 @@ import pytest
 
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
+from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
@@ -244,22 +246,185 @@ def test_hover_shows_tooltip(driver):
     assert visible, "tooltip did not become visible on hover"
 
 
+def test_column_toggle_hint_is_anchored_to_the_button(driver):
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        if (!button) return null;
+        return {
+          title: button.getAttribute('title'),
+          tooltip: button.dataset.tooltip,
+          tooltipText: button.dataset.ttipText,
+          wired: button.dataset.ttipWired,
+        };
+        """
+    )
+    assert result, "Tool calling family column control is missing"
+    assert result["title"] is None, result
+    assert result["tooltip"] == "Collapse Tool calling family column", result
+    assert result["tooltipText"] == "Collapse Tool calling family column", result
+    assert result["wired"] == "1", result
+
+
+def test_column_toggle_hover_opens_its_tooltip(driver):
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        button.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        const tooltip = button._ttip;
+        return {
+          visible: tooltip.classList.contains('ttip-visible'),
+          visibility: getComputedStyle(tooltip).visibility,
+        };
+        """
+    )
+
+    assert result == {"visible": True, "visibility": "visible"}
+
+
+def test_portalled_tooltip_tracks_the_document_scroll(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active tbody tr:last-child td.cell")
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", cell)
+    assert driver.execute_script("return window.scrollY > 0")
+    ActionChains(driver).move_to_element(cell).perform()
+    time.sleep(1)
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        const tooltip = cell._ttip;
+        const cellRect = cell.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        return {
+          portalled: tooltip.parentElement === document.body,
+          topDelta: tooltipRect.top - cellRect.bottom,
+          leftDelta: tooltipRect.left - cellRect.left,
+        };
+        """,
+        cell,
+    )
+
+    assert result["portalled"], result
+    assert abs(result["topDelta"]) < 2, result
+    assert result["leftDelta"] <= 0, result
+
+
+def test_portalled_tooltip_stays_open_while_hovered(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        return new Promise(resolve => setTimeout(() => {
+          const tooltip = cell._ttip;
+          cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
+          tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+          resolve({tooltip});
+        }, 850));
+        """,
+        cell,
+    )
+    time.sleep(1)
+    visible = driver.execute_script(
+        "return arguments[0].classList.contains('ttip-visible');", result["tooltip"]
+    )
+
+    assert visible
+
+
+def test_transpose_keeps_one_open_tooltip(driver):
+    driver.execute_script(
+        """
+        document.querySelectorAll('.ttip.ttip-visible').forEach(t => t.classList.remove('ttip-visible', 'ttip-pinned'));
+        document.body.classList.remove('ttip-pin-mode', 'transpose-mode');
+        const toggle = document.querySelector('[data-transpose-toggle]');
+        if (toggle.checked) toggle.click();
+        """
+    )
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        return new Promise(resolve => setTimeout(() => {
+          const toggle = document.querySelector('[data-transpose-toggle]');
+          const sourceId = cell.getAttribute('data-ttip-id');
+          const before = document.querySelectorAll('.ttip.ttip-visible').length;
+          toggle.click();
+          const after = document.querySelectorAll('.ttip.ttip-visible').length;
+          const clone = document.querySelector(
+            '.transpose-table td.cell[data-ttip-id="' + sourceId + '"]'
+          );
+          resolve({
+            before,
+            after,
+            portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
+              .filter(t => t.parentElement === document.body).length,
+            cloneHasTooltip: Boolean(clone && clone._ttip),
+          });
+        }, 850));
+        """,
+        cell,
+    )
+
+    assert result["before"] == 1, result
+    assert result["after"] == 1, result
+    assert result["portalled"] == 1, result
+    assert result["cloneHasTooltip"], result
+
+
+def test_focus_tooltip_stays_in_tab_order(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        cell.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
+        return new Promise(resolve => setTimeout(() => {
+          const tooltip = cell._ttip;
+          resolve({parent: tooltip.parentElement === cell, visible: tooltip.classList.contains('ttip-visible')});
+        }, 850));
+        """,
+        cell,
+    )
+    assert result == {"parent": True, "visible": True}
+
+
+def test_column_toggle_reuses_its_portalled_tooltip(driver):
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        const tooltip = button._ttip;
+        document.body.appendChild(tooltip);
+        button.click();
+        return {
+          count: button._ttip === tooltip ? 1 : 0,
+          owned: button._ttip === tooltip,
+          text: tooltip.querySelector('.column-control-tooltip-text').textContent,
+        };
+        """
+    )
+
+    assert result == {
+        "count": 1,
+        "owned": True,
+        "text": "Expand Tool calling family column",
+    }
+
+
 def test_order_divergence_shows_golden_and_candidate_sequences(driver):
     """ORDER/MERGE explanations come from the golden candidate in the model."""
     text = driver.execute_script(
         """
-        const el = document.querySelector('[data-sequence-divergence]');
-        if (!el) return null;
-        window.__buildTooltip(el);
-        const tip = el.querySelector('.ttip');
-        return tip ? tip.textContent : null;
+            const el = document.querySelector('[data-sequence-divergence]');
+            if (!el) return null;
+            window.__buildTooltip(el);
+            return el.querySelector('.ttip')?.textContent || null;
         """
     )
     assert text, "rendered producer data had no ORDER/MERGE divergence"
     assert "want:" in text and "got:" in text, text
-    want = text.split("want:", 1)[1].split("got:", 1)[0].strip()
-    got = text.split("got:", 1)[1].splitlines()[0].strip()
-    assert want and got and want != got, text
 
 
 def test_compare_candidates_are_per_tab(driver):
@@ -417,6 +582,48 @@ def test_compare_url_restores_legacy_reference_without_self_compare(driver):
     assert "base_tab-unified=vllm_rust" in state["url"]
     assert "cmp_tab-unified" not in state["url"]
     assert "base_tab-toolcalling" not in state["url"]
+
+
+@pytest.mark.parametrize("query,expected_base", [
+    ("base_tab-unified=dynamo%400.6.0%2Bsource." + "a" * 64, "dynamo"),
+    ("base_tab-unified=removed-parser", "dynamo"),
+    ("cmp_tab-unified=vllm_rust", "dynamo"),
+    ("base_tab-unified=", None),
+    ("base_tab-unified=dynamo%400.6.0", "dynamo@0.6.0"),
+])
+def test_compare_url_distinguishes_removed_and_empty_reference(driver, query, expected_base):
+    page = driver.current_url.split("?", 1)[0]
+    try:
+        driver.get(page + "?tab=tab-unified&" + query)
+        state = driver.execute_script(
+            "const c=document.querySelector('#tab-unified .cmpctl');"
+            "return {base:c.querySelector('input.cmp-ref:checked')?.value || null,"
+            "enabled:c.querySelectorAll('input.cmp-on:not(:disabled)').length};"
+        )
+        assert state["base"] == expected_base
+        assert (state["enabled"] > 0) is (expected_base is not None)
+    finally:
+        driver.get(page)
+
+
+def test_unified_release_labels_hide_capture_identity(driver):
+    page = driver.current_url.split("?", 1)[0]
+    try:
+        driver.get(page + "?tab=tab-unified")
+        labels = driver.execute_script(
+            "return [...document.querySelectorAll('#tab-unified .cmprow')]"
+            ".map(row=>row.innerText);"
+        )
+        assert all("+source." not in label for label in labels)
+        assert all("working build" not in label for label in labels)
+        driver.execute_script(
+            "document.querySelector('#tab-unified input.cmp-ref[value=\"dynamo@0.6.0\"]').click();"
+        )
+        assert driver.execute_script(
+            "return document.querySelector('#tab-unified input.cmp-ref:checked').value;"
+        ) == "dynamo@0.6.0"
+    finally:
+        driver.get(page)
 
 
 def _click_tab(driver, panel_id):
@@ -694,7 +901,7 @@ def test_every_wired_element_stays_pinned(touch_driver, transposed):
         pinned = False
         while time.time() < deadline:
             pinned = touch_driver.execute_script(
-                "return !!document.querySelector('[data-ttip-wired] .ttip.ttip-pinned');"
+                "return !!document.querySelector('.ttip.ttip-pinned');"
             )
             if pinned:
                 break

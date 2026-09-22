@@ -303,6 +303,8 @@ impl crate::OAIPromptFormatter for DeepSeekV32Formatter {
         // Convert minijinja Value to serde_json Value
         let messages_json =
             serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        crate::reject_unsupported_partial_assistant(&messages_json)?;
+        crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
 
         let mut messages_array = messages_json
             .as_array()
@@ -379,6 +381,65 @@ mod tests {
         let result = formatter.render(&request).unwrap();
 
         assert!(result.contains(r#"{"foo": "bar"}"#));
+    }
+
+    #[test]
+    fn test_formatter_rejects_unsupported_partial_assistant() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "user", "content": "Continue"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        let error = DeepSeekV32Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+    }
+
+    #[test]
+    fn test_formatter_rejects_system_tools_before_injection() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "system", "tools": [
+                {"type": "function", "function": {"name": "dynamic_tool"}}
+            ]},
+            {"role": "user", "content": "Use a tool"}
+        ]))
+        .with_tools(json!([{"type": "function", "function": {"name": "top_level_tool"}}]));
+        let error = DeepSeekV32Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`") && message.contains("system")
+        ));
+    }
+
+    #[test]
+    fn test_formatter_preserves_developer_tools_with_top_level_tools() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "developer", "content": "Use a tool", "tools": [
+                {"type": "function", "function": {"name": "developer_tool"}}
+            ]}
+        ]))
+        .with_tools(json!([{"type": "function", "function": {"name": "top_level_tool"}}]));
+        let rendered = DeepSeekV32Formatter::new_thinking()
+            .render(&request)
+            .unwrap();
+
+        assert!(rendered.contains("developer_tool"));
+        assert!(rendered.contains("top_level_tool"));
     }
 
     #[test]

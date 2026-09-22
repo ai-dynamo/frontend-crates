@@ -9,6 +9,7 @@ pub mod harmony;
 mod harmony_grammar;
 mod harmony_recovery;
 pub mod kimi_k2;
+pub mod kimi_k3;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;

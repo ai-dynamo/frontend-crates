@@ -1,0 +1,185 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.3.2
+document:
+  mode: unified
+changes:
+  retired__50_a:
+    case_key: UNIFIED.50.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: output
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: output
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+        - expected: []
+  retired__50_b:
+    case_key: UNIFIED.50.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  retired__50_c:
+    case_key: UNIFIED.50.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+  retired__51_a:
+    case_key: UNIFIED.51.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Working on it... '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Working on it... '
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__51_b:
+    case_key: UNIFIED.51.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  tool_in_reason:
+    case_key: UNIFIED.12.b
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think>'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected: []
+  tool_in_reason_with_text:
+    case_key: UNIFIED.12.d
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think> Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+metadata_changes: {}
+document_overrides: {}

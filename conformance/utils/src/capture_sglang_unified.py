@@ -16,6 +16,10 @@ import inspect
 import json
 import sys
 import yaml
+import sglang
+
+from capture_stimulus import capture_peer_results
+from unified_tools import unified_tools
 
 from sglang.srt.entrypoints.openai.protocol import Function, Tool
 from sglang.srt.function_call.function_call_parser import FunctionCallParser
@@ -33,15 +37,8 @@ FAMILY_PARSERS = {
     "muse_glimmer": ("muse", "muse"),
 }
 
-TOOLS = [
-    Tool(type="function", function=Function(
-        name=n, parameters={"type": "object", "properties": {k: {"type": "string"}}}))
-    # Must match `tools()` in conformance/tests/unified_parity.rs: an engine that
-    # drops calls to unregistered functions would otherwise record a
-    # harness-induced divergence for the `log` cases (UNIFIED.12.a / 12.c).
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
-                 ("log", "note"))
-]
+TOOL_SCHEMAS = unified_tools()
+TOOLS = [Tool(type="function", function=Function(**tool)) for tool in TOOL_SCHEMAS]
 
 
 # Here the reasoning parser's normal text always feeds a tool parser, which is exactly
@@ -103,11 +100,9 @@ def _stream_chunks(family, chunks):
     return rows
 
 
-def main():
-    job = json.load(sys.stdin)
-    import sglang
+def _capture_cases(cases):
     results = {}
-    for case in job.get("cases", []):
+    for case in cases:
         fam = case["family"]
         if fam not in FAMILY_PARSERS:
             continue
@@ -118,6 +113,12 @@ def main():
             entry["chunks"] = []
             entry["error"] = f"{type(exc).__name__}: {exc}"
         results[case["id"]] = entry
+    return results
+
+
+def main():
+    job = json.load(sys.stdin)
+    results = capture_peer_results(job.get("cases", []), FAMILY_PARSERS, _capture_cases, tools=TOOL_SCHEMAS)
     # YAML to match the conformance fixture corpus. Container stdout is log-polluted,
     # so a recapture writes this to a file (or strips lines before the first top-level
     # key) rather than grepping a single JSON line.
