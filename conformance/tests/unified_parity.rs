@@ -355,10 +355,7 @@ fn manifest_and_parser_registry_agree_on_native_families() {
     );
 }
 
-/// The existing tool-only selector must extract both DSML dialects' native calls.
-/// Reuse the authored golden corpus rather than inventing a second V4.1 family
-/// in the tool registry. Compare tool calls because the tool-only API does not
-/// expose a separate reasoning channel.
+/// Compare only tool calls because the tool-only API has no separate reasoning channel.
 #[test]
 fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
     use dynamo_parsers_v2::{ToolParseResult, create_tool_parser_for_family};
