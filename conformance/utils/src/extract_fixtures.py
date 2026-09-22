@@ -39,6 +39,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import fixture_disposition
+import stream_history
 import unified_history
 
 # The only errnos `Path.rename()` onto an existing directory is expected to
@@ -380,6 +381,8 @@ def materialize_shard(
             dest_dir / "unified",
             derived_release_versions=derived_release_versions,
         )
+    elif source.suffix == ".yaml":
+        stream_history.materialize(source, shard["path"], dest_dir)
     else:
         extract_tarball(source, dest_dir, verbose=verbose)
 

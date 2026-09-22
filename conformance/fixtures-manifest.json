@@ -141,9 +141,9 @@
       "size": 8263
     },
     {
-      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.6.1+source.e8edaa1bc2b5dc4cafb1fa81af4164adcf8ddbf02f8a12e0fd82d8d617e59d81.tar.gz",
-      "sha256": "d09e88793a4b2e2ba7177672db6efb728b725179ad252920cdfcb300a59b1c11",
-      "size": 11895
+      "path": "toolcalling/fixtures-stream-v2/families/glm47/dynamo_v2-0.6.1.yaml",
+      "sha256": "1bf90e657b1d40f82c351f3ed335d84cd878e88ea5144188fb0ac74441014c25",
+      "size": 12708
     },
     {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
