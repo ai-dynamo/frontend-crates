@@ -186,7 +186,7 @@ let layout: TokenLayout = family.layout(&input_ids, &items)?;
 let feature_token_counts: Vec<usize> =
     items.iter().map(|item| item.feature_token_count).collect();
 let expanded: ExpandedPrompt =
-    token_layout::apply_layout(&input_ids, &layout, &feature_token_counts)?;
+    token_layout::apply_layout(&input_ids, &layout, &feature_token_counts, max_tokens)?;
 let positions: PositionOutput =
     family.positions(expanded.input_ids.len(), &expanded.offsets, &items)?;
 ```
@@ -245,7 +245,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
-| `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact; also rejects the degenerate 0-side case Python leaves to PIL |
+| `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
 

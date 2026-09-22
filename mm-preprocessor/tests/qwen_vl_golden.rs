@@ -82,8 +82,9 @@ fn pipeline_output_matches_golden_fixtures() {
             .iter()
             .map(|item| item.feature_token_count)
             .collect::<Vec<_>>();
-        let expanded = token_layout::apply_layout(&case.prompt_ids, &layout, &counts)
-            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        let expanded =
+            token_layout::apply_layout(&case.prompt_ids, &layout, &counts, case.input_ids.len())
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
         assert_eq!(expanded.input_ids, case.input_ids, "{name}: input_ids");
         assert_eq!(expanded.offsets, case.offsets, "{name}: offsets");
         // Image expansions are a single `Feature` part: each item's feature

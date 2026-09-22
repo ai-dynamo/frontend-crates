@@ -154,8 +154,7 @@ impl QwenVlProcessor {
                         let y0 = (i * m + mh) * ps;
                         let x0 = (j * m + mw) * ps;
                         let patch = &mut chunk[p * dim..(p + 1) * dim];
-                        for c in 0..3 {
-                            let ch = &mut patch[c * tps * ps * ps..];
+                        for (c, ch) in patch.chunks_exact_mut(tps * ps * ps).enumerate() {
                             for py in 0..ps {
                                 let src = ((y0 + py) * w + x0) * 3 + c;
                                 for px in 0..ps {
@@ -164,8 +163,8 @@ impl QwenVlProcessor {
                             }
                             // Temporal copies of a still are duplicates.
                             let (t0, rest) = ch.split_at_mut(ps * ps);
-                            for t in 0..tps - 1 {
-                                rest[t * ps * ps..(t + 1) * ps * ps].copy_from_slice(t0);
+                            for frame in rest.chunks_exact_mut(ps * ps) {
+                                frame.copy_from_slice(t0);
                             }
                         }
                         p += 1;
@@ -215,16 +214,6 @@ impl MmFamilyProcessor for QwenVlProcessor {
             rgb.as_slice()
         };
         let (gh, gw) = (th / self.spec.patch_size, tw / self.spec.patch_size);
-        // `smart_resize` guarantees both: dims are positive and divisible by
-        // `patch_size * merge_size`. `patchify` indexes on that (and the `dim`
-        // division below needs a non-empty grid), so fail loudly rather than
-        // panic if a future spec change breaks the guarantee.
-        if gh == 0 || gw == 0 || gh % self.spec.merge_size != 0 || gw % self.spec.merge_size != 0 {
-            return Err(MmError::internal(format!(
-                "qwen_vl: patch grid {gh}x{gw} is empty or not a multiple of merge_size {}",
-                self.spec.merge_size
-            )));
-        }
         let pixel_values = self.patchify(data, th, tw);
         let dim = pixel_values.len() / (gh * gw);
         let grid = [1, gh as u32, gw as u32];
@@ -260,6 +249,9 @@ impl MmFamilyProcessor for QwenVlProcessor {
         offsets: &[(u32, u32)],
         items: &[ProcessedItem],
     ) -> Result<PositionOutput> {
+        if offsets.len() != items.len() {
+            return Err(MmError::internal("qwen_vl: offset and item counts differ"));
+        }
         let mrope_items = offsets
             .iter()
             .zip(items)
@@ -277,19 +269,8 @@ impl MmFamilyProcessor for QwenVlProcessor {
     }
 }
 
-/// Python-`round()` (round-half-to-even), which `round_by_factor` relies on.
-fn round_half_even(x: f64) -> f64 {
-    if (x - x.trunc()).abs() == 0.5 {
-        (x / 2.0).round() * 2.0
-    } else {
-        x.round()
-    }
-}
-
-/// Qwen's `smart_resize`: dims divisible by `factor`, total pixels within
-/// `[min_pixels, max_pixels]`, aspect ratio preserved as closely as possible.
-/// Matches the Python reference exactly (including round-half-to-even);
-/// `Err` when a very thin image would floor a side to 0.
+/// HF's `smart_resize`: round to multiples of `factor`, then adjust toward
+/// the pixel budget. Clamping thin images can exceed `max_pixels`.
 pub fn smart_resize(
     height: usize,
     width: usize,
@@ -297,6 +278,11 @@ pub fn smart_resize(
     min_pixels: usize,
     max_pixels: usize,
 ) -> Result<(usize, usize)> {
+    if factor == 0 || min_pixels == 0 || min_pixels > max_pixels {
+        return Err(MmError::invalid_input(
+            "smart_resize: invalid factor or pixel bounds",
+        ));
+    }
     let (h, w) = (height as f64, width as f64);
     if height == 0 || width == 0 {
         return Err(MmError::invalid_input("empty image"));
@@ -308,27 +294,16 @@ pub fn smart_resize(
         )));
     }
     let f = factor as f64;
-    let mut h_bar = ((round_half_even(h / f) * f) as usize).max(factor);
-    let mut w_bar = ((round_half_even(w / f) * f) as usize).max(factor);
+    let mut h_bar = ((h / f).round_ties_even() * f) as usize;
+    let mut w_bar = ((w / f).round_ties_even() * f) as usize;
     if h_bar * w_bar > max_pixels {
         let beta = (h * w / max_pixels as f64).sqrt();
-        h_bar = ((h / beta / f).floor() * f) as usize;
-        w_bar = ((w / beta / f).floor() * f) as usize;
+        h_bar = (((h / beta / f).floor() * f) as usize).max(factor);
+        w_bar = (((w / beta / f).floor() * f) as usize).max(factor);
     } else if h_bar * w_bar < min_pixels {
         let beta = (min_pixels as f64 / (h * w)).sqrt();
         h_bar = ((h * beta / f).ceil() * f) as usize;
         w_bar = ((w * beta / f).ceil() * f) as usize;
-    }
-    // The downscale branch floors without a lower clamp (as Python does), so a
-    // very thin image against a small `max_pixels` can floor a side to 0.
-    // Python then fails inside PIL's resize; here it would reach the resize
-    // coefficient math (overflow panic in debug, garbage in release) and the
-    // `dim = len / (gh * gw)` division, so reject it as a request error.
-    if h_bar == 0 || w_bar == 0 {
-        return Err(MmError::invalid_input(format!(
-            "smart_resize: {height}x{width} degenerates to {h_bar}x{w_bar} at \
-             max_pixels={max_pixels}; image is too thin for this pixel budget"
-        )));
     }
     Ok((h_bar, w_bar))
 }
@@ -343,6 +318,9 @@ pub fn mrope_image_only(
     items: &[MropeItem],
     merge_size: usize,
 ) -> Result<(Vec<i64>, i64)> {
+    if merge_size == 0 {
+        return Err(MmError::invalid_input("mrope: merge_size must be positive"));
+    }
     let len = input_len;
     let mut pos = vec![0i64; 3 * len];
     let fill_text = |st: usize, n: usize, base: i64, pos: &mut [i64]| {
@@ -357,7 +335,7 @@ pub fn mrope_image_only(
     let mut next_pos = 0i64;
     for item in items {
         let (start, end) = (item.start as usize, item.end as usize);
-        if start < st || end >= len {
+        if start < st || end < start || end >= len {
             return Err(MmError::internal(format!(
                 "mrope: item range ({start},{end}) out of order/bounds"
             )));
@@ -365,23 +343,26 @@ pub fn mrope_image_only(
         fill_text(st, start - st, next_pos, &mut pos);
         next_pos += (start - st) as i64;
 
-        let t = item.grid[0] as usize;
+        if item.grid[0] != 1
+            || !(item.grid[1] as usize).is_multiple_of(merge_size)
+            || !(item.grid[2] as usize).is_multiple_of(merge_size)
+        {
+            return Err(MmError::internal("mrope: invalid image grid"));
+        }
         let gh = item.grid[1] as usize / merge_size;
         let gw = item.grid[2] as usize / merge_size;
-        if t * gh * gw != end - start + 1 {
+        if gh * gw != end - start + 1 {
             return Err(MmError::internal("mrope: token span does not match grid"));
         }
-        for ti in 0..t {
-            for hi in 0..gh {
-                for wi in 0..gw {
-                    let idx = start + (ti * gh + hi) * gw + wi;
-                    pos[idx] = next_pos + ti as i64;
-                    pos[len + idx] = next_pos + hi as i64;
-                    pos[2 * len + idx] = next_pos + wi as i64;
-                }
+        for hi in 0..gh {
+            for wi in 0..gw {
+                let idx = start + hi * gw + wi;
+                pos[idx] = next_pos;
+                pos[len + idx] = next_pos + hi as i64;
+                pos[2 * len + idx] = next_pos + wi as i64;
             }
         }
-        next_pos += (t.max(gh).max(gw)) as i64;
+        next_pos += gh.max(gw) as i64;
         st = end + 1;
     }
     if st < len {
@@ -508,32 +489,10 @@ mod tests {
         assert!(smart_resize(10000, 10, 28, 3136, 12845056).is_err());
     }
 
-    /// A thin image against a small `max_pixels` floors one side to 0. That
-    /// must reject the request, never reach the resize coefficient math and
-    /// panic on a worker thread (`attempt to multiply with overflow`).
     #[test]
-    fn degenerate_target_is_rejected_not_panicked() {
-        // Aspect ratio 200 is exactly at MAX_RATIO, so it passes that guard;
-        // 10 / beta then floors to 0 with factor 28.
-        assert!(smart_resize(10, 2000, 28, 3136, 3136).is_err());
-
-        let mut spec = tiny_spec();
-        spec.patch_size = 14;
-        spec.min_pixels = 3136;
-        spec.max_pixels = 3136;
-        let proc = QwenVlProcessor::new(spec).unwrap();
-        let err = proc
-            .process_item(&DecodedMedia::Image {
-                rgb: vec![0u8; 10 * 2000 * 3],
-                height: 10,
-                width: 2000,
-            })
-            .err()
-            .expect("degenerate geometry must be an Err, never a panic");
-        assert!(
-            err.to_string().contains("smart_resize"),
-            "unexpected error: {err}"
-        );
+    fn smart_resize_thin_images_match_hf() {
+        assert_eq!(smart_resize(10, 2000, 28, 3136, 3136).unwrap(), (28, 812));
+        assert_eq!(smart_resize(28, 5600, 28, 3136, 3136).unwrap(), (28, 784));
     }
 
     /// The consumer's message layer gates modalities on what a family
@@ -568,6 +527,7 @@ mod tests {
             .unwrap();
         assert_eq!(item.feature_token_count, counted);
         assert_eq!(item.feature.shape, vec![48, 1176]);
+        assert!(proc.positions(0, &[], &[item]).is_err());
     }
 
     #[test]
@@ -632,5 +592,17 @@ mod tests {
         assert_eq!((pos[10], pos[len + 10], pos[2 * len + 10]), (7, 7, 7));
         // delta = max + 1 - len = 7 + 1 - 11.
         assert_eq!(delta, -3);
+    }
+
+    #[test]
+    fn mrope_rejects_invalid_geometry() {
+        for (start, end, grid, merge) in [
+            (2, 1, [1, 2, 2], 2),
+            (0, 0, [1, 2, 2], 0),
+            (0, 0, [1, 3, 2], 2),
+            (0, 1, [2, 2, 2], 2),
+        ] {
+            assert!(mrope_image_only(3, &[MropeItem { start, end, grid }], merge).is_err());
+        }
     }
 }
