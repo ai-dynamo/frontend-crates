@@ -1,0 +1,165 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_rust: 0.26.0
+document:
+  mode: unified
+changes:
+  guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.30.m
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'call:[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'call:[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.31-22
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call call:get_weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll call call:get_weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_native_markup_only:
+    case_key: UNIFIED.31-23
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.31-20
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.31-17
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'call:{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'call:{"unexpected": "shape"}'
+  guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.31-21
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'call:'
+        - kind: reasoning
+          text: secret
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'call:'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: secret
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.31-14
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'call:[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'call:[{"name": "get_weather", "arguments": {"city": '
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '
+
+              second'
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+metadata_changes: {}
+document_overrides: {}

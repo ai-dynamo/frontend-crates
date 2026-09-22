@@ -1,0 +1,58 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.3.4
+document:
+  mode: unified
+changes:
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: UNIFIED.31-28
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'thinking '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'thinking '
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: UNIFIED.31-24
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

@@ -211,12 +211,14 @@ In order:
 
 ### Unified parser hard gate
 
+Capture publication follows [the v2 plain-version YAML contract](../../conformance/README.md#v2-storage-contract-plain-versioned-yaml-only). Existing archive/hash consumers must be migrated; they do not permit new legacy-format captures.
+
 Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 
 1. **Write:** make the parser or fixture change.
 2. **Read:** render `conformance/CONFORMANCE_v2.html` and inspect every affected Unified popup, including its input, initialization, chunks, GOLDEN events, and current Dynamo events.
 3. **Fix:** an empty current cell means capture data is missing. A red current cell means the parser differs from GOLDEN unless the authored oracle is demonstrably wrong.
-4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+4. **Regenerate:** publish the current plain-version YAML and required manifest changes, then rerender from the same worktree.
 5. **Re-read:** inspect the rendered current column and repeat until both counts are zero.
 
 Do not hide a failure with `reason:`, `unavailable:`, a historical capture, stale HTML, or an unsupported GOLDEN edit. Run the standard gate `conformance/utils/check.sh status --model <family> --tab unified`; it rerenders, reads the same model as the browser, names every empty or red case, and exits nonzero until the selected row is clear. Finish with `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.

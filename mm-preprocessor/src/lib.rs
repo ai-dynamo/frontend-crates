@@ -75,6 +75,23 @@ impl MmError {
             source: Some(Box::new(source)),
         }
     }
+
+    pub fn limit_exceeded(message: impl Into<String>) -> Self {
+        Self::LimitExceeded {
+            message: message.into(),
+            source: None,
+        }
+    }
+
+    pub fn internal_with_source(
+        message: impl Into<String>,
+        source: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
+        Self::Internal {
+            message: message.into(),
+            source: Some(Box::new(source)),
+        }
+    }
 }
 
 impl std::fmt::Display for MmError {

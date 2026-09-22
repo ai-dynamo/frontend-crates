@@ -105,6 +105,7 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
 
 
 def current_source_snapshot(directory: Path) -> Path:
+    """Deprecated Rust harness compatibility; canonical YAML has no source patches."""
     if not is_source_capture(directory.name):
         return directory
     candidates = [directory]
@@ -190,7 +191,7 @@ def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--select-source-snapshot", type=Path)
+    mode.add_argument("--select-source-snapshot", type=Path, help="deprecated Rust harness compatibility")
     mode.add_argument("--validate-current", type=Path)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")

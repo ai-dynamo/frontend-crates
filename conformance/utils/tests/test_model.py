@@ -36,7 +36,7 @@ from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
-from dynamo_version import dynamo_v2_label, select_capture_label  # noqa: E402
+from dynamo_version import dynamo_v2_label  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
@@ -303,38 +303,19 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(tmp_path):
-    page_path = tmp_path / "CONFORMANCE_v2.html"
-    result = subprocess.run(
-        [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
-        capture_output=True,
-        text=True,
-        cwd=REPO,
-    )
-    assert result.returncode == 0, result.stderr
-    tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
+def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
+    tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
-    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
+    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
-    captures = {}
-    for path in table._unified_base(REPO).glob("dynamo_v2-*/*/*.yaml"):
-        version = path.parent.parent.name.removeprefix("dynamo_v2-")
-        doc = yaml.safe_load(path.read_text())
-        layer = captures.setdefault(version, {
-            "complete_snapshot": (path.parent.parent / "capture-snapshot.json").is_file(),
-            "records": {},
-        })
-        layer["records"].update({
-            f"{path.parent.name}/{key}": doc.get("capture_provenance") for key in doc["cases"]
-        })
-    requested = select_capture_label(REPO, captures)
-    assert requested.startswith("0.6.1+source.")
+    requested = dynamo_v2_label(REPO)
+    assert requested == "0.6.1"
     assert dynamo["version"] == requested
     assert dynamo["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
+    assert release["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
 
 
@@ -349,7 +330,7 @@ def test_unified_grammar_header_preserves_each_family_config(tmp_path, monkeypat
     generator = table.gen_unified_golden
     authored = {family: generator.build_cases(family) for family in ("deepseek_v4", "deepseek_v41")}
     monkeypatch.setattr(generator, "build_cases", authored.__getitem__)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.0")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.0")
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     scenarios = {scenario, "text_only"} if missing_family else {scenario}
     monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] in scenarios])
@@ -422,26 +403,26 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
     monkeypatch.delenv("CONFORMANCE_DYNAMO_V2_LABEL", raising=False)
     monkeypatch.delenv("FRONTEND_CRATES_ROOT", raising=False)
     expected = dynamo_v2_label(REPO)
-    assert table._unified_dynamo_label({}) == expected
+    assert table._unified_dynamo_label() == expected
     monkeypatch.setenv("FRONTEND_CRATES_ROOT", str(REPO))
     monkeypatch.setattr(table, "__file__", str(tmp_path / "tests/parity/generate_conformance_table.py"))
-    assert table._unified_dynamo_label({}) == expected
+    assert table._unified_dynamo_label() == expected
 
 
 @pytest.mark.parametrize(
-    ("current_present", "selected_digit", "capture_failure"),
-    [(True, "0", None), (True, "f", None), (False, "0", None), (True, "0", "error")],
+    ("current_present", "capture_failure"),
+    [(True, None), (False, None), (True, "error")],
 )
-def test_unified_source_selection_requires_exact_requested_identity(
-    tmp_path, monkeypatch, current_present, selected_digit, capture_failure
+def test_unified_source_selection_inherits_previous_family_capture(
+    tmp_path, monkeypatch, current_present, capture_failure
 ):
-    selected = "0.6.0+source." + selected_digit * 64
-    other = "0.6.0+source." + ("f" if selected_digit == "0" else "0") * 64
+    selected = "0.6.1"
+    previous = "0.6.0"
     scenario, family = "text_only", "gemma4"
     generator = table.gen_unified_golden
     authored = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     key = table.unified_taxonomy.numbered_id(scenario)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: selected)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: selected)
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] == scenario])
     monkeypatch.setattr(generator, "EDGE", [])
@@ -452,10 +433,10 @@ def test_unified_source_selection_requires_exact_requested_identity(
                    "chunks": [{"delta_text": authored["input"]}]},
         "golden": {"assembled": authored["golden"]},
     }
-    for version in ["0.6.0", other] + ([selected] if current_present else []):
+    for version in [previous] + ([selected] if current_present else []):
         events = [{"kind": "text", "text": version}]
         records[f"dynamo_v2-{version}"] = (
-            {capture_failure: "capture could not run"} if capture_failure and version != "0.6.0" else
+            {capture_failure: "capture could not run"} if capture_failure and version == selected else
             {"assembled": events, "chunks": [{"expected": events}]}
         )
         records[f"dynamo_v2-{version}"]["capture_input"] = capture_input(records["inputs"])
@@ -467,39 +448,36 @@ def test_unified_source_selection_requires_exact_requested_identity(
     cases, _caps, versions = table._load_unified_fixtures(tmp_path)
     case = next(case for case in cases if case["family"] == family)
     assert versions["dynamo_v2"] == selected
-    assert set(versions["dynamo_v2_all"]) == {"0.6.0", other} | ({selected} if current_present else set())
-    assert case["dynamo_missing"] is (not current_present)
-    assert case["dynamo"] == ([{"kind": "text", "text": selected}] if current_present and not capture_failure else [])
+    assert set(versions["dynamo_v2_all"]) == {previous, selected}
+    assert not case["dynamo_missing"]
+    expected_version = selected if current_present else previous
+    assert case["dynamo"] == (
+        [{"kind": "text", "text": expected_version}] if not capture_failure else []
+    )
 
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
     assert candidates["dynamo"]["version"] == selected
-    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
-    assert {key for key in candidates if key.startswith("dynamo@")} == {"dynamo@0.6.0"}
-    assert candidates["dynamo@0.6.0"]["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
+    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
+    assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
     assert current["label"] == candidates["dynamo"]["label"]
     assert current["version"] == selected
     assert {candidate["key"] for candidate in cell["tooltip"]["candidates"]} == set(candidates)
     assert set(cell["cmp"]) == set(candidates)
-    assert (tmp_path / f"dynamo_v2-{other}" / family / f"{key}.yaml").is_file()
-    if current_present and capture_failure:
+    assert (tmp_path / f"dynamo_v2-{previous}" / family / f"{key}.yaml").is_file()
+    if capture_failure:
         assert current["block"] == {capture_failure: "capture could not run"}
         assert cell["status"] == "problem"
         assert cell["cmp"]["dynamo"]["err"] == 1
-    elif current_present:
-        assert current["block"]["events"] == [{"kind": "text", "text": selected}]
     else:
-        assert cell["status"] == "problem"
-        assert cell["cmp"]["dynamo"]["err"] == 1
-        assert "Missing Unified capture" in current["block"]["error"]
-    if capture_failure:
-        assert case["dynamo_by_ver"][other][capture_failure] == "capture could not run"
+        assert current["block"]["events"] == [{"kind": "text", "text": expected_version}]
+        assert "error" not in current["block"]
 
 
 @pytest.mark.parametrize("impl,version,mode,want", [
-    ("dynamo_v2", "0.6.0+source." + "a" * 64, "stream",
+    ("dynamo_v2", "0.6.0", "stream",
      "Dynamo v2 Rust 0.6.0 (stream)"),
     ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
@@ -597,18 +575,21 @@ def test_v2_patch_overlay_folds_into_base_version(model_v2):
 def test_v2_dynamo_versions_come_from_fixtures(model_v2):
     # memory/chart_invariants: Dynamo version labels come from fixture provenance, never
     # live Cargo.toml. Every shown Dynamo version must be a captured fixture dir version.
+    def release_version(version: str) -> str:
+        return version.split("+source.", 1)[0].split(".patch", 1)[0]
+
     fixture_dynamo = set()
     for tree in ("toolcalling/fixtures-batch-v1", "toolcalling/fixtures-stream-v2"):
         for impl, vers in _peer_versions(tree).items():
             if impl.startswith("dynamo"):
-                fixture_dynamo |= {v.split(".patch")[0] for v in vers}
+                fixture_dynamo |= {release_version(v) for v in vers}
     shown = set()
     for t in model_v2["tabs"]:
         if t["kind"] != "toolcalling":
             continue
         for c in t["candidates"]:
             if c["impl"] == "dynamo" and c.get("version"):
-                shown.add(c["version"].split(".patch")[0])
+                shown.add(release_version(c["version"]))
     assert shown, "no dynamo versions shown"
     assert shown <= fixture_dynamo, f"dynamo versions not from fixtures: {shown - fixture_dynamo}"
 
@@ -733,20 +714,28 @@ def test_v2_parser_ni_matches_stream_v2_families(model_v2):
 
 
 def test_v2_stream_parser_only_covers_implemented_families(model_v2):
-    # The v2 stream candidate is n/a (uncovered) on more families than it covers — a
-    # structural coverage guard (was regex over data-cmp na counts).
+    # The registry owns which families Dynamo v2 implements. Keep the rendered model
+    # aligned with that declaration instead of relying on a corpus-wide n/a ratio,
+    # which changes whenever a supported family or case is added.
     tab = _tab(model_v2, "tab-toolcalling-streamv2")
     v2 = next(c["key"] for c in tab["candidates"] if c["key"].startswith("dynamo_v2"))
-    na = present = 0
-    for cell in _iter_cells(tab):
-        entry = (cell.get("cmp") or {}).get(v2)
-        if entry is None:
+    registry = yaml.safe_load((UTILS / "src/parser_families.yaml").read_text())["families"]
+    for row in tab["rows"]:
+        family = row.get("family")
+        if not family:
             continue
-        if entry["na"]:
-            na += 1
-        else:
-            present += 1
-    assert na >= present, f"v2 stream covers too much: na={na} present={present}"
+        assert family in registry, f"rendered family {family!r} is absent from the registry"
+        entries = [
+            (cell.get("cmp") or {}).get(v2)
+            for cell in row.get("cells", {}).values()
+            if cell.get("kind") == "cell"
+        ]
+        present = any(entry is not None and not entry["na"] for entry in entries)
+        implemented = registry[family].get("dynamo_v2") is not None
+        assert present == implemented, (
+            f"family {family!r}: rendered Dynamo v2 coverage={present}, "
+            f"registry implementation={registry[family].get('dynamo_v2')!r}"
+        )
 
 
 # ---- reasoning tabs -----------------------------------------------------------
