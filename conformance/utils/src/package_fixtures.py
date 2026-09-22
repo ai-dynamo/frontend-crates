@@ -35,7 +35,6 @@ import tempfile
 from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
-import dynamo_version
 import fixture_disposition
 import unified_history
 
@@ -162,48 +161,6 @@ def _extracted_snapshot_dir():
     return d
 
 
-def _source_capture_shards(subdir, tree_rel, blobs_dir):
-    relative = f"{tree_rel}/{subdir.name}"
-    layers = fixture_disposition.capture_archive_layers(FIXTURES_DIR, relative)
-    previous = {}
-    shards = []
-    inactive = preserved_evidence()
-    for path in layers:
-        shard_path = str(path.relative_to(FIXTURES_DIR))
-        if shard_path in inactive:
-            raise ValueError(f"source capture layer is inactive: {shard_path}")
-        files = fixture_disposition.capture_archive_files(path, shard_path.removesuffix(".tar.gz"))
-        snapshot = fixture_disposition.capture_snapshot_members(files.get(fixture_disposition.CAPTURE_SNAPSHOT), files)
-        if snapshot is not None:
-            previous = files
-        else:
-            previous.update(files)
-        destination = blobs_dir / shard_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, destination)
-        shards.append({"path": shard_path, "sha256": sha256_file(path), "size": path.stat().st_size})
-    current = {str(path.relative_to(subdir)): path.read_bytes() for path in subdir.rglob("*") if path.is_file()}
-    # Complete source snapshots replace the active case set, not the retained
-    # archive bytes. Sparse release backfills do not carry this declaration.
-    current[fixture_disposition.CAPTURE_SNAPSHOT] = (json.dumps({
-        "schema_version": 1, "records": sorted(key for key in current if key.endswith(".yaml"))
-    }, sort_keys=True) + "\n").encode()
-    (subdir / fixture_disposition.CAPTURE_SNAPSHOT).write_bytes(current[fixture_disposition.CAPTURE_SNAPSHOT])
-    if layers and previous == current:
-        return shards
-    if layers:
-        # Parser identity excludes corpus contents. Preserve that identity and append
-        # the new capture snapshot instead of replacing its earlier request history.
-        names = [path.name.removesuffix(".tar.gz") for path in layers]
-        names.extend(path.name for path in subdir.parent.glob(subdir.name + ".patch*") if path.is_dir())
-        patch = max(fixture_disposition.capture_layer_sort_key(name)[1] for name in names) + 1
-        relative += f".patch{patch}"
-    shard_path = relative + ".tar.gz"
-    sha, size = _tar_dir(subdir, relative, blobs_dir / shard_path)
-    shards.append({"path": shard_path, "sha256": sha, "size": size})
-    return shards
-
-
 def build_shards(
     tmpdir,
     blobs_dir,
@@ -233,14 +190,17 @@ def build_shards(
             )
             required_capture_dirs = frozenset()
             if complete_snapshot:
-                required_capture_dirs = {
-                    f"dynamo_v2-{dynamo_version.dynamo_v2_label(ROOT)}"
-                }
+                required_capture_dirs = frozenset(
+                    path.name
+                    for path in capture_root.iterdir()
+                    if path.is_dir()
+                    and path.name.startswith("dynamo_v2-")
+                    and "+pr" not in path.name
+                )
             changed = unified_history.update_store_from_loose(
                 history_root,
                 capture_root,
                 complete_snapshot=complete_snapshot,
-                excluded_capture_dirs=_inactive_unified_capture_dirs(inactive),
                 required_capture_dirs=required_capture_dirs,
             )
             for path in changed:
@@ -264,7 +224,7 @@ def build_shards(
             continue
         for subdir in sorted(d for d in tree_abs.iterdir() if d.is_dir()):
             # golden_spec/ is an authored Unified oracle build tree, not a v1 shard.
-            if subdir.name == "golden_spec" or subdir.name.startswith("golden_spec-"):
+            if unified_history.is_generated_oracle_directory(subdir.name):
                 continue
             # Only the documented layout becomes a shard: inputs/ or
             # <impl>-<version>/. Anything else (a stray family dir, an
@@ -282,9 +242,6 @@ def build_shards(
             shard_path = rel + ".tar.gz"
             if shard_path in inactive:
                 print(f"  preserving inactive evidence {shard_path}; not rebuilding")
-                continue
-            if tree_rel == "unified" and fixture_disposition.is_source_capture(subdir.name):
-                shards.extend(_source_capture_shards(subdir, tree_rel, blobs_dir))
                 continue
             out = blobs_dir / shard_path
             sha, size = _tar_dir(tmpdir / rel, rel, out)
@@ -333,19 +290,6 @@ def preserved_evidence(*, manifest_path=None, fixtures_dir=None):
     return fixture_disposition.verify_inactive_shards(manifest, fixtures_dir)
 
 
-def _inactive_unified_capture_dirs(inactive: dict[str, dict]) -> set[str]:
-    prefix = "unified/"
-    suffix = ".tar.gz"
-    return {
-        path[len(prefix) : -len(suffix)]
-        for path in inactive
-        if path.startswith(prefix)
-        and path.endswith(suffix)
-        and "/" not in path[len(prefix) :]
-        and re.match(r"^[a-z0-9_]+-\d", path[len(prefix) : -len(suffix)])
-    }
-
-
 def sync_store(
     blobs_dir,
     shards,
@@ -368,15 +312,15 @@ def sync_store(
     inactive = preserved_evidence(manifest_path=manifest_path, fixtures_dir=fixtures_dir)
     if new_paths & inactive.keys():
         raise ValueError(f"cannot overwrite inactive evidence: {sorted(new_paths & inactive.keys())}")
-    # A changed capture needs a new patch shard, including when a stale loose tree
-    # would otherwise overwrite restored history during an unrelated package run.
+    # Versioned archive fixtures remain immutable. Unified captures are stored only
+    # in the canonical YAML history and must use a new semantic version when changed.
     for shard in shards:
         if shard.get("format") == "unified-history":
             continue
         destination = fixtures_dir / shard["path"]
         if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
             if sha256_file(destination) != shard["sha256"]:
-                raise ValueError(f"versioned capture is immutable; use a new patch shard: {shard['path']}")
+                raise ValueError(f"versioned capture is immutable; use a new semantic version: {shard['path']}")
     stale = [
         p
         for p in fixtures_dir.rglob("*.tar.gz")
@@ -433,7 +377,9 @@ def merge_shards(
     if manifest_path.exists():
         prior = fixture_disposition.active_shards(json.loads(manifest_path.read_text()))
         for s in prior:
-            if s["path"].startswith("unified/golden_spec-"):
+            if s["path"].startswith("unified/") and unified_history.is_generated_oracle_directory(
+                Path(s["path"]).name.removesuffix(".tar.gz")
+            ):
                 continue
             fp = fixtures_dir / s["path"]
             if s.get("format") == "unified-history":
@@ -458,22 +404,6 @@ def _validate_candidate_package(manifest, fixtures_dir, history_dir):
     shards = fixture_disposition.active_shards(manifest)
     inactive = fixture_disposition.verify_inactive_shards(manifest, fixtures_dir)
     store = unified_history.load_store(history_dir)
-    archive_entries = {
-        shard["path"]: shard
-        for shard in [*shards, *inactive.values()]
-        if shard["path"].startswith("unified/")
-    }
-    for archive, lineage in unified_history.import_lineage_inventory(store).items():
-        shard_path = f"unified/{archive}"
-        shard = archive_entries.get(shard_path)
-        if shard is None:
-            raise ValueError(f"Unified import lineage archive is not retained: {shard_path}")
-        path = fixtures_dir / shard_path
-        if not path.is_file():
-            raise FileNotFoundError(f"Unified import lineage archive is missing: {shard_path}")
-        digest = sha256_file(path)
-        if shard["sha256"] != lineage["sha256"] or digest != lineage["sha256"]:
-            raise ValueError(f"Unified import lineage archive differs from its pinned bytes: {shard_path}")
     for shard in shards:
         if shard.get("format") == "unified-history":
             digest, size = unified_history.store_digest(history_dir)
@@ -525,6 +455,12 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
                 manifest_path=manifest_path,
             )
 
+            inactive_shards = list(
+                preserved_evidence(
+                    manifest_path=manifest_path,
+                    fixtures_dir=candidate_fixtures,
+                ).values()
+            )
             manifest = {
                 "snapshot": stamp,
                 "created_pt": created_pt,
@@ -537,13 +473,17 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
                     history_dir=candidate_history,
                     manifest_path=manifest_path,
                 ),
-                "inactive_shards": list(
-                    preserved_evidence(
-                        manifest_path=manifest_path,
-                        fixtures_dir=candidate_fixtures,
-                    ).values()
-                ),
+                "inactive_shards": inactive_shards,
             }
+            if manifest_path.is_file():
+                previous = json.loads(manifest_path.read_text())
+                if (
+                    previous.get("crates") == manifest["crates"]
+                    and previous.get("peers") == manifest["peers"]
+                    and previous.get("shards") == manifest["shards"]
+                    and previous.get("inactive_shards") == manifest["inactive_shards"]
+                ):
+                    manifest = previous
             candidate_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
             _validate_candidate_package(manifest, candidate_fixtures, candidate_history)
 

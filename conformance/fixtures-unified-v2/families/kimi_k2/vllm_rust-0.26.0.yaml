@@ -1,20 +1,9 @@
-schema_version: 2
-family: kimi_k2
-implementation: vllm_rust
-parent: vllm_rust-0.25.1
-runtime_version: 0.26.0
 provenance:
-  status: captured
+  status: legacy
   captured_with:
     vllm_rust: 0.26.0
-completeness: delta
-import_lineage:
-- archive: vllm_rust-0.26.0.tar.gz
-  sha256: d34266871fe548c9c90a0b8b4f095fd058c68abaec377e24df8b652a6b530ba2
-  mode: overlay
 document:
   mode: unified
-document_overrides: {}
 changes:
   guided_json_gt_in_argument_bare_opener:
     case_key: UNIFIED.30.m
@@ -219,3 +208,4 @@ changes:
           - kind: text
             text: done
 metadata_changes: {}
+document_overrides: {}

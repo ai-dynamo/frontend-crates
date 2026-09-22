@@ -1,52 +1,11 @@
-schema_version: 2
-family: kimi_k3
-implementation: dynamo_v2
-parent: dynamo_v2-0.5.3
-runtime_version: 0.6.0
 provenance:
   status: captured
-  record:
+  origin:
     crate_version: 0.6.0
-    git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
-    git_head_tree: 6faaa60ff82e722e8ba5a72720f673fc51de94b9
-    kind: release
-    label: 0.6.0
-    release_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
-    release_tag: dynamo-parsers-v2-v0.6.0
-    source_id: sha256:fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
-    source_paths:
-    - parsers/v1/src
-    - parsers/v1/Cargo.toml
-    - parsers/v1/build.rs
-    - parsers/v2/src
-    - parsers/v2/Cargo.toml
-    - parsers/v2/build.rs
-    - protocols/src
-    - protocols/Cargo.toml
-    - protocols/build.rs
-    - Cargo.toml
-    - Cargo.lock
-    - rust-toolchain
-    - rust-toolchain.toml
-    - .cargo
     source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
-completeness: delta
-import_lineage:
-- archive: dynamo_v2-0.6.0.patch3.tar.gz
-  sha256: f5944611872777a9ad9039aadfa0ff3e8287593241e406d5803c692f88b1af20
-  mode: overlay
-- archive: dynamo_v2-0.6.0.patch4.tar.gz
-  sha256: 0706dd8c12b6504386708e0a6cd6ca1dbe863d46d8f0ca65b73475e77f7addeb
-  mode: overlay
-- archive: dynamo_v2-0.6.0.patch5.tar.gz
-  sha256: 1d652eddc10eeb42dae7a27ac7ea7a0ba4ef177698455c8e61fd72749e666787
-  mode: overlay
-- archive: dynamo_v2-0.6.0.patch6.tar.gz
-  sha256: 76e5d61e4fe07cd450e6a1a5e65f80362a51552df8bbb40ad390e304d1ef838e
-  mode: overlay
+    git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
 document:
   mode: unified
-document_overrides: {}
 changes:
   arg_marker_in_string:
     case_key: UNIFIED.7.b
@@ -87,6 +46,7 @@ changes:
             name: run
             arguments: '{"cmd":"git log <|close|>call<|sep|> --oneline"}'
             complete: true
+        - expected: []
   arg_unicode:
     case_key: UNIFIED.7.a
     stimulus:
@@ -122,6 +82,7 @@ changes:
             name: get_weather
             arguments: '{"city":"São Paulo 東京"}'
             complete: true
+        - expected: []
   content_then_reason:
     case_key: UNIFIED.11.g
     stimulus:
@@ -160,6 +121,7 @@ changes:
         - expected:
           - kind: text
             text: The capital is Paris.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -220,6 +182,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -247,6 +210,7 @@ changes:
             name: get_weather
             arguments: '{}'
             complete: true
+        - expected: []
   guided_json_after_reasoning:
     case_key: UNIFIED.30.f
     stimulus:
@@ -275,6 +239,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_array_argument:
     case_key: UNIFIED.30.e
     stimulus:
@@ -295,6 +260,7 @@ changes:
             name: sum_values
             arguments: '{"values": [2, 3, 5]}'
             complete: true
+        - expected: []
   guided_json_bare_tool_header_recovers_inside_a_thought:
     case_key: UNIFIED.31-28
     stimulus:
@@ -323,6 +289,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   guided_json_escaped_string_args:
     case_key: UNIFIED.30.d
     stimulus:
@@ -340,6 +307,7 @@ changes:
             name: run
             arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
             complete: true
+        - expected: []
   guided_json_gt_in_argument_bare_opener:
     case_key: UNIFIED.30.m
     stimulus:
@@ -358,6 +326,7 @@ changes:
             name: get_weather
             arguments: '{"city": "a > b"}'
             complete: true
+        - expected: []
   guided_json_gt_in_argument_trailing_close:
     case_key: UNIFIED.30.k
     stimulus:
@@ -375,6 +344,7 @@ changes:
             name: get_weather
             arguments: '{"city": "a > b"}'
             complete: true
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -401,6 +371,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   guided_json_invalid_call:
     case_key: UNIFIED.31-1
     stimulus:
@@ -414,6 +385,7 @@ changes:
         - expected:
           - kind: text
             text: '{"unexpected": "shape"}'
+        - expected: []
   guided_json_list_with_broken_element:
     case_key: UNIFIED.31-4
     stimulus:
@@ -463,6 +435,7 @@ changes:
             name: log
             arguments: '{"note": "<|close|>think<|sep|>"}'
             complete: true
+        - expected: []
   guided_json_named_tool:
     case_key: UNIFIED.30.a
     stimulus:
@@ -480,6 +453,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_narrated_invoke_in_reasoning:
     case_key: UNIFIED.31-8
     stimulus:
@@ -514,6 +488,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_narrated_prefix_inside_reasoning:
     case_key: UNIFIED.31-22
     stimulus:
@@ -546,6 +521,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_native_markup_only:
     case_key: UNIFIED.31-23
     stimulus:
@@ -554,6 +530,7 @@ changes:
       value:
         assembled: []
         chunks:
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -593,6 +570,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_orphan_tool_close_before_payload:
     case_key: UNIFIED.31-11
     stimulus:
@@ -613,6 +591,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_partial_calls:
     case_key: UNIFIED.31-3
     stimulus:
@@ -626,6 +605,7 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        - expected: []
   guided_json_prose_before_reasoning:
     case_key: UNIFIED.31-9
     stimulus:
@@ -659,6 +639,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_quoted_bare_header_after_payload:
     case_key: UNIFIED.31-27
     stimulus:
@@ -733,6 +714,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_required_tool:
     case_key: UNIFIED.30.b
     stimulus:
@@ -750,6 +732,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_schema_error_nameless_element_bare_opener:
     case_key: UNIFIED.31-20
     stimulus:
@@ -764,6 +747,7 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
   guided_json_schema_error_nameless_element_trailing_close:
     case_key: UNIFIED.31-18
     stimulus:
@@ -777,6 +761,7 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -799,6 +784,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   guided_json_schema_error_not_a_call_bare_opener:
     case_key: UNIFIED.31-17
     stimulus:
@@ -813,6 +799,7 @@ changes:
         - expected:
           - kind: text
             text: '{"unexpected": "shape"}'
+        - expected: []
   guided_json_schema_error_not_a_call_trailing_close:
     case_key: UNIFIED.31-15
     stimulus:
@@ -826,6 +813,7 @@ changes:
         - expected:
           - kind: text
             text: '{"unexpected": "shape"}'
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -845,6 +833,7 @@ changes:
         - expected:
           - kind: text
             text: '{"unexpected": "shape"}'
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -878,6 +867,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_syntax_error_bare_opener:
     case_key: UNIFIED.31-14
     stimulus:
@@ -950,6 +940,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   guided_json_tool_open_before_payload:
     case_key: UNIFIED.31-5
     stimulus:
@@ -970,6 +961,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   guided_json_two_calls:
     case_key: UNIFIED.30.c
     stimulus:
@@ -995,6 +987,7 @@ changes:
             name: run
             arguments: '{"cmd": "git log"}'
             complete: true
+        - expected: []
   guided_json_unterminated_reasoning_then_wrapped_payload:
     case_key: UNIFIED.31-24
     stimulus:
@@ -1026,6 +1019,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   guided_json_wrapped_in_tool_markup:
     case_key: UNIFIED.31-7
     stimulus:
@@ -1046,6 +1040,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1106,6 +1101,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   kimi_k3_elided_think_close_to_response:
     case_key: UNIFIED.k3-5
     stimulus:
@@ -1130,6 +1126,7 @@ changes:
         - expected:
           - kind: text
             text: The answer is 42.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1169,6 +1166,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   kimi_k3_malformed_call_then_valid:
     case_key: UNIFIED.k3-6
     stimulus:
@@ -1208,6 +1206,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   kimi_k3_message_end_after_response:
     case_key: UNIFIED.k3-4
     stimulus:
@@ -1224,6 +1223,7 @@ changes:
         - expected:
           - kind: text
             text: done
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1272,6 +1272,7 @@ changes:
             name: run
             arguments: '{"cmd":"literal <|close|>call<|sep|>","options":{"retries":2}}'
             complete: true
+        - expected: []
   kimi_k3_raw_json_eof:
     case_key: UNIFIED.k3-7
     stimulus:
@@ -1280,6 +1281,7 @@ changes:
       value:
         assembled: []
         chunks:
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1336,6 +1338,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1418,6 +1421,7 @@ changes:
             name: run
             arguments: '{"cmd":"echo ok","count":2,"force":true,"options":{"cwd":"/tmp"},"tags":["a","b"],"note":null}'
             complete: true
+        - expected: []
   narrated_calls:
     case_key: UNIFIED.8.e
     stimulus:
@@ -1529,6 +1533,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   orphan_close_after_prose:
     case_key: UNIFIED.5.c
     stimulus:
@@ -1542,6 +1547,7 @@ changes:
         - expected:
           - kind: text
             text: 'I will check that. '
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1591,6 +1597,7 @@ changes:
             name: get_weather
             arguments: '{"city":"London"}'
             complete: true
+        - expected: []
   prefilled_reasoning_then_text:
     case_key: UNIFIED.40.d
     stimulus:
@@ -1615,6 +1622,7 @@ changes:
         - expected:
           - kind: text
             text: The answer is 42.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1672,6 +1680,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   prefilled_reasoning_truncated:
     case_key: UNIFIED.41.b
     stimulus:
@@ -1685,6 +1694,7 @@ changes:
         - expected:
           - kind: reasoning
             text: analyzing data
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1723,6 +1733,7 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+        - expected: []
   prefilled_reasoning_with_tool:
     case_key: UNIFIED.40.a
     stimulus:
@@ -1766,6 +1777,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50.d
     stimulus:
@@ -1823,6 +1835,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   reason_after_tool:
     case_key: UNIFIED.11.b
     stimulus:
@@ -1888,6 +1901,7 @@ changes:
         - expected:
           - kind: text
             text: It's 18C.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1964,6 +1978,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   reason_interleaved:
     case_key: UNIFIED.11.c
     stimulus:
@@ -2048,6 +2063,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   reason_markup_in_arg:
     case_key: UNIFIED.12.a
     stimulus:
@@ -2089,6 +2105,7 @@ changes:
             name: log
             arguments: '{"note":"<|open|>think<|sep|>reconsider<|close|>think<|sep|>"}'
             complete: true
+        - expected: []
   reason_markup_in_arg_with_text:
     case_key: UNIFIED.12.c
     stimulus:
@@ -2152,6 +2169,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   reason_only:
     case_key: UNIFIED.10.a
     stimulus:
@@ -2168,6 +2186,7 @@ changes:
         - expected:
           - kind: reasoning
             text: just thinking, no answer
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -2198,6 +2217,7 @@ changes:
         - expected:
           - kind: text
             text: The answer is 42.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -2247,6 +2267,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   reason_tool_reason_tool_reason:
     case_key: UNIFIED.11.h
     stimulus:
@@ -2339,6 +2360,7 @@ changes:
         - expected:
           - kind: reasoning
             text: C
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -2437,6 +2459,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   reason_unterminated:
     case_key: UNIFIED.10.d
     stimulus:
@@ -2453,381 +2476,15 @@ changes:
         - expected:
           - kind: reasoning
             text: thinking but stream ends
+        - expected: []
   retired__30_14:
-    case_key: UNIFIED.30-14
-    stimulus:
-      inline:
-        input: '<|open|>call tool="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <|open|>
-        - delta_text: 'call tool="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        - delta_text: ‹finish›
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    absent: true
   retired__31_33:
-    case_key: UNIFIED.31-33
-    stimulus:
-      inline:
-        input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <|open|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: 'before '
-        - delta_text: <|open|>
-        - delta_text: call tool="f" index="1"
-        - delta_text: <|sep|>
-        - delta_text: <|open|>
-        - delta_text: argument key="x" type="string"
-        - delta_text: <|sep|>
-        - delta_text: é🙂
-        - delta_text: <par{value}<|close|>
-        - delta_text: argument
-        - delta_text: <|sep|>
-        - delta_text: <|close|>
-        - delta_text: call
-        - delta_text: <|sep|>
-        - delta_text: ' after'
-        - delta_text: <|close|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'before '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
+    absent: true
   retired__31_40:
-    case_key: UNIFIED.31-40
-    stimulus:
-      inline:
-        input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|><|open|>think<|sep|>quoted<|close|>think<|sep|><|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <|open|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: 'before '
-        - delta_text: <|open|>
-        - delta_text: call tool="f" index="1"
-        - delta_text: <|sep|>
-        - delta_text: <|open|>
-        - delta_text: argument key="x" type="string"
-        - delta_text: <|sep|>
-        - delta_text: <|open|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: quoted
-        - delta_text: <|close|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: <|close|>
-        - delta_text: argument
-        - delta_text: <|sep|>
-        - delta_text: <|close|>
-        - delta_text: call
-        - delta_text: <|sep|>
-        - delta_text: ' after'
-        - delta_text: <|close|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>quoted
-        - kind: text
-          text: ' after'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'before '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>
-        - expected:
-          - kind: reasoning
-            text: quoted
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' after'
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
+    absent: true
   retired__muse_1:
-    case_key: UNIFIED.31-26
-    stimulus:
-      partial:
-        input: 'I mean <|open|>think<|sep|>get_weather literal<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: Response
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: tool_calls
-        chunks:
-        - delta_text: 'I mean '
-        - delta_text: <|open|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: get_weather literal
-        - delta_text: <|close|>
-        - delta_text: think
-        - delta_text: <|sep|>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I mean <|open|>think<|sep|>get_weather literal<|close|>think<|sep|>
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <|open|>
-        - expected:
-          - kind: text
-            text: think
-        - expected:
-          - kind: text
-            text: <|sep|>
-        - expected:
-          - kind: text
-            text: get_weather literal
-        - expected:
-          - kind: text
-            text: <|close|>
-        - expected:
-          - kind: text
-            text: think
-        - expected:
-          - kind: text
-            text: <|sep|>
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
+    absent: true
   text_before_tool:
     case_key: UNIFIED.8.a
     stimulus:
@@ -2874,6 +2531,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   text_between_calls:
     case_key: UNIFIED.8.d
     stimulus:
@@ -2947,6 +2605,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   text_only:
     case_key: UNIFIED.3.a
     stimulus:
@@ -2963,6 +2622,7 @@ changes:
         - expected:
           - kind: text
             text: The answer is 42, no tools needed.
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3072,6 +2732,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   text_sandwich:
     case_key: UNIFIED.8.c
     stimulus:
@@ -3129,6 +2790,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -3137,6 +2799,7 @@ changes:
       value:
         assembled: []
         chunks:
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3189,6 +2852,7 @@ changes:
         - expected:
           - kind: reasoning
             text: ' now answer'
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3265,6 +2929,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   tool_markup_only_emits_nothing:
     case_key: UNIFIED.4.b
     stimulus:
@@ -3273,6 +2938,7 @@ changes:
       value:
         assembled: []
         chunks:
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3341,6 +3007,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
   trailing_text_after_tool:
     case_key: UNIFIED.8.b
     stimulus:
@@ -3387,6 +3054,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
   truncated_tool_eof:
     case_key: UNIFIED.5.a
     stimulus:
@@ -3403,6 +3071,7 @@ changes:
         - expected:
           - kind: reasoning
             text: ok
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3456,6 +3125,7 @@ changes:
         - expected:
           - kind: text
             text: done
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -3515,6 +3185,7 @@ changes:
             name: g
             arguments: '{"y":"2"}'
             complete: true
+        - expected: []
   two_calls_same_name:
     case_key: UNIFIED.2.b
     stimulus:
@@ -3571,6 +3242,7 @@ changes:
             name: get_weather
             arguments: '{"city":"Tokyo"}'
             complete: true
+        - expected: []
   two_reason_spans:
     case_key: UNIFIED.10.c
     stimulus:
@@ -3623,4 +3295,94 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-metadata_changes: {}
+        - expected: []
+metadata_changes:
+  arg_marker_in_string: {}
+  arg_unicode: {}
+  content_then_reason: {}
+  content_then_reason_then_tool: {}
+  empty_args: {}
+  guided_json_after_reasoning: {}
+  guided_json_array_argument: {}
+  guided_json_bare_tool_header_recovers_inside_a_thought: {}
+  guided_json_escaped_string_args: {}
+  guided_json_gt_in_argument_bare_opener: {}
+  guided_json_gt_in_argument_trailing_close: {}
+  guided_json_gt_in_argument_wrapped: {}
+  guided_json_invalid_call: {}
+  guided_json_list_with_broken_element: {}
+  guided_json_malformed_json: {}
+  guided_json_marker_inside_argument: {}
+  guided_json_named_tool: {}
+  guided_json_narrated_invoke_in_reasoning: {}
+  guided_json_narrated_prefix_inside_reasoning: {}
+  guided_json_native_markup_only: {}
+  guided_json_orphan_reason_close_before_payload: {}
+  guided_json_orphan_tool_close_before_payload: {}
+  guided_json_partial_calls: {}
+  guided_json_prose_before_reasoning: {}
+  guided_json_quoted_bare_header_after_payload: {}
+  guided_json_quoted_bare_header_in_answer: {}
+  guided_json_required_tool: {}
+  guided_json_schema_error_nameless_element_bare_opener: {}
+  guided_json_schema_error_nameless_element_trailing_close: {}
+  guided_json_schema_error_nameless_element_wrapped: {}
+  guided_json_schema_error_not_a_call_bare_opener: {}
+  guided_json_schema_error_not_a_call_trailing_close: {}
+  guided_json_schema_error_not_a_call_wrapped: {}
+  guided_json_stray_prefix_before_reasoning: {}
+  guided_json_syntax_error_bare_opener: {}
+  guided_json_syntax_error_trailing_close: {}
+  guided_json_syntax_error_wrapped: {}
+  guided_json_tool_close_after_payload: {}
+  guided_json_tool_open_before_payload: {}
+  guided_json_two_calls: {}
+  guided_json_unterminated_reasoning_then_wrapped_payload: {}
+  guided_json_wrapped_in_tool_markup: {}
+  interstitial_text: {}
+  kimi_k3_elided_think_close_to_response: {}
+  kimi_k3_guided_native_wrapper: {}
+  kimi_k3_malformed_call_then_valid: {}
+  kimi_k3_message_end_after_response: {}
+  kimi_k3_raw_json_arguments: {}
+  kimi_k3_raw_json_eof: {}
+  kimi_k3_spaced_xtml_markers: {}
+  kimi_k3_typed_argument_values: {}
+  narrated_calls: {}
+  orphan_close_after_prose: {}
+  prefilled_reasoning_redundant_opener: {}
+  prefilled_reasoning_then_text: {}
+  prefilled_reasoning_then_text_then_tool: {}
+  prefilled_reasoning_truncated: {}
+  prefilled_reasoning_with_guided_json: {}
+  prefilled_reasoning_with_tool: {}
+  prefilled_response_reasoning_markers_literal: {}
+  reason_after_tool: {}
+  reason_between_calls: {}
+  reason_interleaved: {}
+  reason_markup_in_arg: {}
+  reason_markup_in_arg_with_text: {}
+  reason_only: {}
+  reason_then_content: {}
+  reason_then_tool: {}
+  reason_tool_reason_tool_reason: {}
+  reason_tool_text_reason_tool: {}
+  reason_unterminated: {}
+  text_before_tool: {}
+  text_between_calls: {}
+  text_only: {}
+  text_reason_tool_text_reason_tool: {}
+  text_sandwich: {}
+  tool_block_never_closed_then_text: {}
+  tool_in_reason: {}
+  tool_in_reason_with_text: {}
+  tool_markup_only_emits_nothing: {}
+  tool_no_close: {}
+  tool_only: {}
+  trailing_text_after_tool: {}
+  truncated_tool_eof: {}
+  two_adjacent_reason_spans: {}
+  two_calls: {}
+  two_calls_same_name: {}
+  two_reason_spans: {}
+document_overrides: {}

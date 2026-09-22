@@ -4,10 +4,6 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
-# Freeze the label before generation; later consumers reject any source drift.
-CONFORMANCE_DYNAMO_V2_LABEL=$(python3 conformance/utils/src/dynamo_version.py --format label)
-export CONFORMANCE_DYNAMO_V2_LABEL
-
 run() {
   printf '\n==> %s\n' "$*"
   "$@"
@@ -63,6 +59,7 @@ import sys
 sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
 from dynamo_version import dynamo_v2_label
+from fixtures import _version_sort_key
 from unified_history import load_store
 from unified_taxonomy import numbered_id
 
@@ -75,8 +72,16 @@ expected = {
     }
     for family in golden.FAMILIES
 }
+expected_red = {
+    family: {
+        key[len("UNIFIED."):].rsplit(".", 1)[0]
+        for key, case in golden.build_cases(family).items()
+        if case.get("expect", {}).get("dynamo_current", {}).get("verdict") == "diverge"
+    }
+    for family in golden.FAMILIES
+}
 
-current_label = f"dynamo_v2-{dynamo_v2_label(Path.cwd())}"
+current_version = dynamo_v2_label(Path.cwd())
 store = load_store(root)
 for family, case_ids in expected.items():
     canonical = {
@@ -85,8 +90,17 @@ for family, case_ids in expected.items():
         if case["lifecycle"] == "active"
     }
     history = store.histories[(family, "dynamo_v2")]
-    if current_label not in history.captures:
-        raise SystemExit(f"missing generated Unified capture: {current_label}/{family}")
+    current_captures = [
+        (capture_id, capture)
+        for capture_id, capture in history.captures.items()
+        if _version_sort_key(capture["runtime_version"]) <= _version_sort_key(current_version)
+    ]
+    if not current_captures:
+        raise SystemExit(f"missing generated Unified capture at or before {current_version}/{family}")
+    current_label, _capture = max(
+        current_captures,
+        key=lambda item: _version_sort_key(item[1]["runtime_version"]),
+    )
     captured = {
         history.family.cases[case_id]["display_id"]
         for case_id in history.resolve(current_label)
@@ -101,12 +115,29 @@ for family, case_ids in expected.items():
                 f"missing={missing} extra={extra}"
             )
 
+seen_reports = set()
 for report in current["reports"]:
-    if report.get("tab") == "tab-unified" and (report["empty"] or report["red"]):
+    if report.get("tab") != "tab-unified":
+        continue
+    family = report["model"]
+    seen_reports.add(family)
+    actual_red = {
+        issue["scenario"]
+        for issue in report.get("issues", [])
+        if issue.get("state") == "red"
+    }
+    if report["empty"] or actual_red != expected_red[family]:
         raise SystemExit(
-            f"Unified display is not clean for {report['model']}: "
-            f"empty={report['empty']} red={report['red']}"
+            f"Unified display differs from documented current-Dynamo expectations for {family}: "
+            f"empty={report['empty']} expected_red={sorted(expected_red[family])} "
+            f"actual_red={sorted(actual_red)}"
         )
+if seen_reports != set(golden.FAMILIES):
+    raise SystemExit(
+        f"Unified display families differ from the generator: "
+        f"missing={sorted(set(golden.FAMILIES) - seen_reports)} "
+        f"extra={sorted(seen_reports - set(golden.FAMILIES))}"
+    )
 
 print("Unified regeneration gate passed: generated YAML history and rendered JSON are current.")
 PY

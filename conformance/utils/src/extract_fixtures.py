@@ -364,11 +364,22 @@ def extract_tarball(tarball_path, dest_dir, verbose=False):
         tf.extractall(str(dest_dir), filter="data")
 
 
-def materialize_shard(shard, source, dest_dir, verbose=False):
+def materialize_shard(
+    shard,
+    source,
+    dest_dir,
+    *,
+    derived_release_versions=None,
+    verbose=False,
+):
     if shard.get("format") == "unified-history":
         if verbose:
             print(f"  [materialize] {source.name} -> {dest_dir / 'unified'}", file=sys.stderr)
-        unified_history.materialize_store(source, dest_dir / "unified")
+        unified_history.materialize_store(
+            source,
+            dest_dir / "unified",
+            derived_release_versions=derived_release_versions,
+        )
     else:
         extract_tarball(source, dest_dir, verbose=verbose)
 
@@ -487,8 +498,21 @@ def _extract(args):
     if tmp_dir.exists():
         shutil.rmtree(str(tmp_dir))
     print(f"Extracting {len(shards)} shard(s) into {tmp_dir}", file=sys.stderr)
+    crates = manifest.get("crates", {})
+    dynamo_v2_version = crates.get("dynamo-parsers-v2") if isinstance(crates, dict) else None
+    derived_release_versions = (
+        {"dynamo_v2": dynamo_v2_version}
+        if isinstance(dynamo_v2_version, str)
+        else None
+    )
     for s in shards:
-        materialize_shard(s, shard_file(s), tmp_dir, verbose=args.verbose)
+        materialize_shard(
+            s,
+            shard_file(s),
+            tmp_dir,
+            derived_release_versions=derived_release_versions,
+            verbose=args.verbose,
+        )
     write_state(tmp_dir, pin, shards, inactive.values())
 
     snap_dir = publish_extracted_snapshot(
