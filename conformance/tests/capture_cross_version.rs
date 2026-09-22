@@ -356,12 +356,12 @@ fn native_parser_errors_reach_capture_records() {
 }
 
 #[test]
-fn current_capture_selector_requires_the_verified_identity() {
+fn current_capture_selector_uses_plain_semantic_version() {
     let provenance = common::dynamo_capture_provenance(None);
     let root = std::env::temp_dir().join(format!("dynamo-current-selector-{}", std::process::id()));
     let selected = root.join(format!(
         "dynamo_v2-{}",
-        provenance["label"].as_str().unwrap()
+        provenance["crate_version"].as_str().unwrap()
     ));
     let historical = root.join("dynamo_v2-0.0.1");
     std::fs::create_dir_all(&historical).unwrap();
