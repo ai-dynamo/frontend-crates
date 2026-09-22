@@ -65,24 +65,33 @@ def test_checked_in_manifest_pins_unified_history_store():
     assert pinned["size"] == size
 
 
-def test_checked_in_manifest_has_no_inactive_unified_archives():
+def test_checked_in_manifest_retains_inactive_unified_evidence():
     repo_root = SRC.parents[2]
     manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
 
-    inactive = fixture_disposition.inactive_shards(manifest)
+    inactive = fixture_disposition.verify_inactive_shards(
+        manifest,
+        repo_root / "conformance/fixtures",
+    )
 
-    assert not [path for path in inactive if path.startswith("unified/")]
+    assert inactive
+    assert all(path.startswith("unified/") for path in inactive)
 
 
-def test_checked_in_manifest_has_no_tracked_unified_archives():
+def test_checked_in_manifest_tracks_inactive_unified_evidence():
     repo_root = SRC.parents[2]
     manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
+    inactive_paths = sorted(fixture_disposition.inactive_shards(manifest))
+
     result = subprocess.run(
-        ["git", "-C", str(repo_root), "ls-files", "--", "conformance/fixtures/unified"],
+        ["git", "-C", str(repo_root), "ls-files", "--error-unmatch", "--", *(
+            f"conformance/fixtures/{path}" for path in inactive_paths
+        )],
         capture_output=True,
         text=True,
     )
-    assert not result.stdout.strip(), result.stdout
+
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.fixture
