@@ -1,11 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Capture identity shared by refresh, explode, and the Rust capture harnesses.
+"""Capture origin validation shared by refresh, explode, and capture harnesses.
 
-Plain versions require source equality with the release tag. Unpublished source
-defaults to ``<version>+source.<sha256>``; ``current`` explicitly selects that form.
-The digest covers parser crates, the split-path protocol dependency, and workspace
-build inputs; conformance outputs are excluded so capture cannot change its own ID.
+Unified capture directories and rendered columns are keyed only by the crate
+semantic version. The first capture of that version retains its source digest as
+origin metadata; later checkouts with the same version do not create another
+capture identity. The digest covers parser crates, the split-path protocol
+dependency, and workspace build inputs; conformance outputs are excluded so a
+capture cannot change its own origin.
 """
 
 import argparse
@@ -19,7 +21,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from fixture_disposition import DYNAMO_VERSION_RE, capture_layer_sort_key, historical_unified_case_key
+from fixture_disposition import DYNAMO_VERSION_RE
 
 ENV_OVERRIDE = "CONFORMANCE_DYNAMO_V2_LABEL"
 SOURCE_PATHS = (
@@ -29,6 +31,44 @@ SOURCE_PATHS = (
     "Cargo.toml", "Cargo.lock",
     "rust-toolchain", "rust-toolchain.toml", ".cargo",
 )
+_EXTERNAL_GIT_ENV = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_DIR",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_WORK_TREE",
+)
+
+
+def _capture_records(captures: dict, version: str) -> list:
+    layer = captures.get(version)
+    if isinstance(layer, dict):
+        records = layer.get("records")
+        return list(records.values()) if isinstance(records, dict) else []
+    return layer if isinstance(layer, list) else []
+
+
+def _legacy_records(captures: dict, version: str) -> list:
+    records = _capture_records(captures, version)
+    for label in captures:
+        if isinstance(label, str) and re.fullmatch(rf"{re.escape(version)}\.patch\d+", label):
+            records.extend(_capture_records(captures, label))
+    return records
+
+
+def _legacy_record_matches_current_source(record: object, current: dict) -> bool:
+    return isinstance(record, dict) and all(
+        record.get(key) == current[key]
+        for key in ("crate_version", "source_sha256", "source_id", "source_paths")
+    )
+
+
+def git_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    for name in _EXTERNAL_GIT_ENV:
+        env.pop(name, None)
+    return env
 
 
 def crate_version(cargo_toml: Path) -> str:
@@ -41,7 +81,10 @@ def crate_version(cargo_toml: Path) -> str:
 
 def _git(repo_root: Path, *args: str) -> bytes:
     return subprocess.run(
-        ["git", "-C", str(repo_root), *args], check=True, capture_output=True,
+        ["git", "-C", str(repo_root), *args],
+        check=True,
+        capture_output=True,
+        env=git_subprocess_env(),
     ).stdout
 
 
@@ -54,7 +97,10 @@ def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
         objects = b"".join(meta.split()[2] + b"\n" for meta, _ in records)
         blobs = subprocess.run(
             ["git", "-C", str(repo_root), "cat-file", "--batch"],
-            input=objects, check=True, capture_output=True,
+            input=objects,
+            check=True,
+            capture_output=True,
+            env=git_subprocess_env(),
         ).stdout
         stream = io.BytesIO(blobs)
         for meta, name in records:
@@ -86,6 +132,7 @@ def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
 
 
 def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
+    """Deprecated producer protocol retained until the Rust harnesses migrate."""
     repo_root = repo_root.resolve()
     actual_root = Path(os.fsdecode(_git(repo_root, "rev-parse", "--show-toplevel")).strip())
     if actual_root != repo_root:
@@ -133,91 +180,53 @@ def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
 
 
 def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
-    return dynamo_v2_provenance(repo_root, override)["label"]
-
-
-def effective_capture_provenance(captures: dict) -> dict[str, list]:
-    """Fold case ownership before validating identities, like the rendered overlays."""
-    by_version = {}
-    for shard in sorted(captures, key=capture_layer_sort_key):
-        version, patch = capture_layer_sort_key(shard)
-        layer = captures[shard]
-        if isinstance(layer, list):
-            # Already-folded callers have no per-case ownership to resolve.
-            if patch:
-                raise ValueError("capture source identity inventory needs per-case patch ownership")
-            by_version[version] = dict(enumerate(layer))
-            continue
-        complete = layer["complete_snapshot"]
-        if complete and "+source." not in version:
-            raise ValueError("complete capture snapshot requires a source-qualified capture")
-        if patch and "+source." in version and not complete:
-            raise ValueError("source capture patch requires a complete capture snapshot")
-        records = {}
-        for key, provenance in layer["records"].items():
-            family, case = key.split("/", 1)
-            canonical = f"{family}/{historical_unified_case_key(family, case)}"
-            if canonical in records and records[canonical] != provenance:
-                raise ValueError(f"conflicting capture source identity aliases: {shard}/{canonical}")
-            records[canonical] = provenance
-        if not patch or complete:
-            by_version[version] = records
-        else:
-            by_version.setdefault(version, {}).update(records)
-    return {version: list(records.values()) for version, records in by_version.items()}
-
-
-def select_capture_label(repo_root: Path, captures: dict) -> str:
-    captures = effective_capture_provenance(captures)
-    current = dynamo_v2_provenance(repo_root)
-    label = current["label"]
-    if label in captures:
-        # One source fingerprint per selection, not per corpus case. Validate each
-        # distinct record once, without ignoring a surviving legacy record.
-        for recorded in _unique_provenance(captures[label]):
-            _validate_provenance_identity(recorded, current)
-        return label
-    if current["kind"] == "release" or ENV_OVERRIDE in os.environ:
-        return label
-    version = current["crate_version"]
-    tag = f"dynamo-parsers-v2-v{version}"
-    if _git(repo_root, "tag", "--list", tag).strip():
-        return label
-    records = captures.get(version, [])
-    if not records:
-        return label
-    # A tagless clone may consume a previously verified release, but a directory
-    # name alone is not evidence. Every record must bind that release to these bytes.
-    expected = {
-        key: current[key]
-        for key in ("crate_version", "source_sha256", "source_id", "source_paths")
-    }
-    expected.update(label=version, kind="release", release_tag=tag)
-    verified_commits = set()
-    for recorded in _unique_provenance(records):
-        if not isinstance(recorded, dict) or any(recorded.get(k) != v for k, v in expected.items()):
-            return label
-        commit = recorded.get("release_commit")
-        if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40,64}", commit):
-            return label
-        try:
-            _validate_provenance_identity(recorded, {**current, **expected, "release_commit": commit})
-        except ValueError:
-            return label
-        if commit in verified_commits:
-            continue
-        try:
-            fingerprint = source_fingerprint(repo_root, commit)
-        except subprocess.CalledProcessError:
-            return label
-        if fingerprint != current["source_sha256"]:
-            return label
-        verified_commits.add(commit)
+    version = crate_version(repo_root / "parsers/v2/Cargo.toml")
+    supplied = override if override is not None else os.environ.get(ENV_OVERRIDE)
+    if supplied is not None and supplied.strip() not in ("current", version):
+        raise ValueError(f"capture version must be {version!r}, got {supplied!r}")
     return version
 
 
-def _unique_provenance(records: list):
-    return {json.dumps(record, sort_keys=True): record for record in records}.values()
+def select_capture_label(repo_root: Path, captures: dict) -> str:
+    """Deprecated Rust-only selector; normal readers use dynamo_v2_label."""
+    current = dynamo_v2_provenance(repo_root)
+    version = current["crate_version"]
+    semantic_records = _capture_records(captures, version)
+    if semantic_records:
+        # Schema-v3 materializations are a semantic current view. This generated
+        # marker distinguishes them from older fixtures that explicitly stored null.
+        if all(
+            isinstance(record, dict) and record.get("format") == "schema_v3"
+            for record in semantic_records
+        ):
+            return version
+        if current["label"] != version and current["label"] in captures:
+            return current["label"]
+        records = _legacy_records(captures, version)
+        if (
+            os.environ.get(ENV_OVERRIDE) is None
+            and records
+            and all(_legacy_record_matches_current_source(record, current) for record in records)
+        ):
+            return version
+        # A legacy release directory in a tagless checkout is not proof that it
+        # represents the current source. Preserve the old reader's fail-closed path.
+        return current["label"]
+    # New schema-v3 materializations always provide the semantic directory. These
+    # fallbacks only keep existing Rust readers able to open older extracted trees.
+    if current["label"] in captures:
+        return current["label"]
+    patch_pattern = re.compile(rf"{re.escape(version)}\.patch(?P<number>\d+)$")
+    patches = [
+        (int(match["number"]), label)
+        for label in captures
+        if isinstance(label, str) and (match := patch_pattern.fullmatch(label))
+    ]
+    if patches:
+        return max(patches)[1]
+    # An unpublished checkout without a semantic record cannot claim that a
+    # version-only directory was produced by its source.
+    return current["label"] if current["label"] != version else version
 
 
 def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
@@ -227,9 +236,13 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     _validate_provenance_identity(recorded, current)
     _validate_provenance_origin(repo_root, recorded)
     supplied = os.environ.get(ENV_OVERRIDE)
-    if supplied is not None and dynamo_v2_label(repo_root, supplied) != recorded["label"]:
-        raise ValueError("capture feed label differs from the requested capture label")
-    return recorded
+    origin = {
+        key: recorded[key]
+        for key in ("crate_version", "source_sha256", "git_commit")
+    }
+    if supplied is not None and dynamo_v2_label(repo_root, supplied) != origin["crate_version"]:
+        raise ValueError("capture feed version differs from the requested capture version")
+    return origin
 
 
 def _validate_provenance_identity(recorded: dict, current: dict) -> None:
@@ -262,17 +275,21 @@ def _validate_provenance_origin(repo_root: Path, recorded: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3])
-    parser.add_argument("--label", help="published version, current, or exact source-qualified label")
+    parser.add_argument("--label", help="crate version or current; legacy JSON producer labels are deprecated")
     parser.add_argument("--format", choices=("json", "label"), default="json")
-    parser.add_argument("--select-capture", action="store_true", help="select a consumer label using capture provenance JSON on stdin")
+    parser.add_argument("--select-capture", action="store_true", help="deprecated Rust harness compatibility: read legacy capture inventory from stdin")
     args = parser.parse_args()
     if args.select_capture:
         if args.label is not None or args.format != "label":
             parser.error("--select-capture requires --format label and no --label")
         print(select_capture_label(args.repo_root, json.load(sys.stdin)))
         return
-    provenance = dynamo_v2_provenance(args.repo_root, args.label)
-    print(json.dumps(provenance, sort_keys=True) if args.format == "json" else provenance["label"])
+    if args.format == "label":
+        print(dynamo_v2_label(args.repo_root, args.label))
+    else:
+        # Rust producers still consume the old JSON protocol. Never use its label
+        # for filenames or report selection; explode writes the crate version.
+        print(json.dumps(dynamo_v2_provenance(args.repo_root, args.label), sort_keys=True))
 
 
 if __name__ == "__main__":

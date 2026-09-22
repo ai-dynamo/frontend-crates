@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [9.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.0.0...dynamo-parsers-v9.0.1) - 2026-09-21
+
+### Bug fixes
+
+- *(parser)* Preserve XML argument order ([#223](https://github.com/ai-dynamo/frontend-crates/pull/223))
+
 ## [9.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.2.2...dynamo-parsers-v9.0.0) - 2026-09-11
 
 ### Bug fixes

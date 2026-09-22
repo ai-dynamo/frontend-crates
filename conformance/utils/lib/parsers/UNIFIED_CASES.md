@@ -2,13 +2,13 @@
 
 Reference taxonomy for the **unified** conformance surface: one parser owns the whole assistant-output grammar and emits ONE ordered event stream. Sibling stage docs: `REASONING_CASES.md` (reasoning only), `TOOLCALLING_CASES.md` / `TOOLCALLING_STREAMING_V2_CASES.md` (tool calls only). This surface is what those two cannot express — the ORDER between reasoning and tool calls, and reasoning that occurs *between* or *after* tool calls.
 
-The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed, versioned `conformance/fixtures/unified/golden.tar.gz` shard is derived from it.
+The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed canonical files under `conformance/fixtures-unified-v2/families/` are derived from it.
 
 ## The oracle: GOLDEN is authored, not captured
 
 ## Capture version policy
 
-Plain Dynamo release labels require source equality with the corresponding `dynamo-parsers-v2-v<version>` tag; matching `Cargo.toml` alone is insufficient. An unpublished parser uses `<version>+source.<sha256>`, where the shared capture identity helper hashes the parser sources and build inputs. Capture directories, `captured_with.dynamo_v2`, fixture-manifest paths, and rendered labels use that same identity. Never relabel branch output as a published release. Back-capture older columns from their tagged source, apply the serialized request initialization, and record an explicit limitation when that build cannot support it. Preserve existing release shards and append corrections or newly captured cases as overlays.
+Follow [the v2 storage contract](../../../README.md#v2-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. Old archive/hash readers do not permit new legacy-format captures. Changing an existing input requires rerunning and updating every prior affected version.
 
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 
@@ -349,7 +349,7 @@ The affected family's selected current Dynamo Unified column must finish with **
 1. **Write:** change the parser or capture path.
 2. **Read:** render the table and inspect each affected popup's input, initialization, chunks, GOLDEN events, and current Dynamo events.
 3. **Fix:** treat an empty current cell as missing capture data. Treat a red current cell as a parser defect unless the authored GOLDEN is demonstrably wrong.
-4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+4. **Regenerate:** publish the current plain-version YAML and required manifest changes, then rerender from the same worktree.
 5. **Re-read:** inspect the rendered column again and repeat until both counts are zero.
 
 Do not use `reason:`, `unavailable:`, a historical column, stale HTML, or an unsupported GOLDEN edit to make a current empty or red cell appear acceptable.

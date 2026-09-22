@@ -708,7 +708,7 @@ fn render_unified_conformance_html() {
     // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
-    // committed data is the per-version LFS shards under conformance/fixtures/unified/).
+    // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).
     let yaml_out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/unified_results.yaml");
     assert_eq!(
         common::dynamo_capture_provenance(Some(capture_provenance["label"].as_str().unwrap())),
