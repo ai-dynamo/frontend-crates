@@ -287,17 +287,23 @@ fn xtml_types(schema: &Value, root: &Value) -> Vec<&'static str> {
         .collect()
 }
 
-fn bounded_string_regex(schema: &Map<String, Value>) -> Option<String> {
-    let max_len = schema.get("maxLength")?.as_u64()?;
-    if max_len > 4096 {
+fn string_length_regex(schema: &Map<String, Value>) -> Option<String> {
+    let min_len = match schema.get("minLength") {
+        Some(value) => value.as_u64()?,
+        None => 0,
+    };
+    let max_len = match schema.get("maxLength") {
+        Some(value) => Some(value.as_u64()?),
+        None => None,
+    };
+    if min_len > 4096 || max_len.is_some_and(|max_len| max_len > 4096 || min_len > max_len) {
         return None;
     }
-    let min_len = schema
-        .get("minLength")
-        .and_then(Value::as_u64)
-        .filter(|min| *min <= max_len)
-        .unwrap_or(0);
-    Some(format!("{STRING_ATOM}{{{min_len},{max_len}}}"))
+    match max_len {
+        Some(max_len) => Some(format!("{STRING_ATOM}{{{min_len},{max_len}}}")),
+        None if schema.contains_key("minLength") => Some(format!("{STRING_ATOM}{{{min_len},}}")),
+        None => None,
+    }
 }
 
 fn string_content_format(schema: &Value) -> Format {
@@ -337,10 +343,11 @@ fn string_content_format(schema: &Value) -> Format {
         );
     }
 
-    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str)
-        && !schema.contains_key("minLength")
-        && !schema.contains_key("maxLength")
-    {
+    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str) {
+        // XGrammar 0.2.3 regexes do not support lookahead, so a general
+        // intersection of `pattern` and length bounds cannot be expressed.
+        // Match XGrammar's JSON-schema policy: `pattern` takes precedence when
+        // both are present instead of silently discarding the pattern.
         let anchored_start = pattern.starts_with('^');
         let anchored_end = pattern.ends_with('$') && !pattern.ends_with("\\$");
         let pattern = pattern
@@ -363,7 +370,7 @@ fn string_content_format(schema: &Value) -> Format {
         });
     }
 
-    if let Some(pattern) = bounded_string_regex(schema) {
+    if let Some(pattern) = string_length_regex(schema) {
         return Format::Regex(RegexFormat { pattern });
     }
 
@@ -1106,6 +1113,32 @@ mod tests {
         assert_eq!(argument["content"]["json_schema"]["type"], "integer");
         assert_eq!(argument["content"]["json_schema"]["minimum"], 1);
         assert!(argument["content"]["json_schema"].get("$ref").is_none());
+    }
+
+    #[test]
+    fn string_content_enforces_min_length_without_a_maximum() {
+        let value = serde_json::to_value(string_content_format(&json!({
+            "type": "string",
+            "minLength": 2
+        })))
+        .unwrap();
+
+        assert_eq!(value["type"], "regex");
+        assert_eq!(value["pattern"], format!("{STRING_ATOM}{{2,}}"));
+    }
+
+    #[test]
+    fn string_content_uses_xgrammar_pattern_precedence_over_length_bounds() {
+        let value = serde_json::to_value(string_content_format(&json!({
+            "type": "string",
+            "pattern": "^item-[0-9]+$",
+            "minLength": 6,
+            "maxLength": 12
+        })))
+        .unwrap();
+
+        assert_eq!(value["type"], "regex");
+        assert_eq!(value["pattern"], "(?:item-[0-9]+)");
     }
 
     #[test]
