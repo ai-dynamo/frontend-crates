@@ -1,9 +1,9 @@
 provenance:
   status: captured
   origin:
-    crate_version: 0.6.1
-    source_sha256: 670fb7ec4396c0d94e66c3cb18c63c36a71dc6dabe836fd114175cfae7b63c6b
-    git_commit: 1da1fea28494014833d0aeb0318cd4861f62eaaa
+    crate_version: 0.7.0
+    source_sha256: e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d
+    git_commit: 7fc16ca00f069c7a9b9fe5906f1f2700456a425c
 document:
   mode: unified
 changes:

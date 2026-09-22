@@ -9,10 +9,11 @@ Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for fr
 
 ## Unified storage contract: plain versioned YAML only
 
-The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.6.1.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
+The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
 
 - No new Unified `*.patch*.yaml`, `.tar.gz` capture archives, `+source.<hash>`, `+sha<hash>`, or other hash/commit-qualified capture names. Do not add these formats to satisfy an old Unified reader or test.
 - One version identifies one checkpoint per family and implementation. A different source SHA alone does not justify a recapture, duplicate file, or manifest change. The first capture may keep its original source SHA inside the YAML as origin metadata; later SHAs do not change its identity.
+- New parser behavior must use a new, unpublished crate version before capture. A feature branch retaining an already released version cannot record its new behavior as that release. GLM Unified starts at the pending `0.7.0` release in #234; it has no captures for `0.6.x`. Check the release tags before setting the version, update the crate and its dependent manifests together, and capture from that build.
 - Readers and HTML/JSON generators discover checkpoints by filename and semantic-version order. When a family has no changed output in a later version, carry its earlier captured output forward into that version's table cells. Do not duplicate YAML or leave those cells empty.
 - Keep inputs and GOLDEN separate from recorded outputs. Changing an existing input is discouraged; if necessary, rerun and update every prior affected version. Never change GOLDEN to hide a parser failure.
 - Family-specific PRs add only that family's captures and required code. Do not bundle other families' YAML in an archive. Shared cases and non-GLM fixes from #234 belong to #241.

@@ -3,7 +3,7 @@
   "created_pt": "2026-09-21 22:16:53 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.0.1",
-    "dynamo-parsers-v2": "0.6.3"
+    "dynamo-parsers-v2": "0.7.0"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -203,8 +203,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "6b5b1427ed92cd3450e29ec6ceba370d3ed6f1fe96f06a9d4112c70febc42d94",
-      "size": 3585209
+      "sha256": "3ed999674a371411b212e80cc021c0ac520cae6f648f9394a6263bd1cf58654b",
+      "size": 3584025
     }
   ],
   "inactive_shards": [
