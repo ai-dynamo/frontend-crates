@@ -982,10 +982,6 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
         mode = "jail+batch"
-    # A source-qualified version is the immutable capture identity. Keep its digest
-    # internal; the reader-facing reference remains the release version.
-    if impl == "dynamo_v2" and isinstance(version, str) and "+source." in version:
-        version = version.split("+source.", 1)[0]
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2178,7 +2174,7 @@ def _assemble_stream(chunk_deltas: list) -> list:
 def _unified_base(artifact_root: Path) -> Path:
     """Where the unified capture YAMLs live. In a packaged render they come from the
     extracted fixture snapshot (CONFORMANCE_FIXTURES_ROOT/unified — the
-    conformance/fixtures/unified/captures.tar.gz shard); locally after a harness run
+    conformance/fixtures-unified-v2 history); locally after a harness run
     they sit in the loose build tree conformance/unified/."""
     snap = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
     if snap and (Path(snap) / "unified").is_dir():
@@ -2212,13 +2208,13 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_dynamo_label(captures: dict) -> str:
+def _unified_dynamo_label() -> str:
     # The renderer is copied into /tmp; the checker must inspect the source checkout.
     source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
     return subprocess.run(
         [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
-         "--repo-root", str(source_root), "--format", "label", "--select-capture"],
-        input=json.dumps(captures), check=True, capture_output=True, text=True,
+         "--repo-root", str(source_root), "--format", "label"],
+        check=True, capture_output=True, text=True,
     ).stdout.strip()
 
 
@@ -2234,39 +2230,26 @@ def _load_unified_fixtures(base: Path):
     if not (base / "inputs").is_dir():
         return None
 
-    capture_provenance = {}
     inactive_dirs = fixture_disposition.inactive_fixture_dirs(base)
     input_bindings = {}
     input_aliases = {}
-    complete_snapshots = set()
+    directory_cache = {}
 
-    def _read_dir(name, include_bytes=False):
-        out = {}  # (family, case_key) -> case_doc
+    def _read_dir(name):
+        cached = directory_cache.get(name)
+        if cached is not None:
+            return cached
+
+        out = {}
         if name in inactive_dirs:
             return out
         is_capture = re.match(r"^[a-z0-9_]+-\d", name) is not None
         if is_capture and name not in input_bindings:
             input_bindings[name] = capture_stimulus.read_bindings(base / name)
-        snapshot_path = base / name / fixture_disposition.CAPTURE_SNAPSHOT
-        if is_capture and snapshot_path.is_file():
-            if not name.startswith("dynamo_v2-") or "+source." not in name:
-                raise ValueError(f"complete capture snapshot requires a source-qualified Dynamo capture: {name}")
-            available = [str(path.relative_to(base / name)) for path in (base / name).glob("*/*.yaml")]
-            fixture_disposition.capture_snapshot_members(snapshot_path.read_bytes(), available)
-            complete_snapshots.add(name)
         for fp in sorted((base / name).glob("*/*.yaml")):
             raw = fp.read_bytes()
             doc = yaml.safe_load(raw) or {}
             for k, cd in (doc.get("cases") or {}).items():
-                if name.startswith("dynamo_v2-"):
-                    layer = capture_provenance.setdefault(name.removeprefix("dynamo_v2-"), {
-                        "complete_snapshot": snapshot_path.is_file(), "records": {},
-                    })
-                    ident = f"{fp.parent.name}/{k}"
-                    provenance = doc.get("capture_provenance")
-                    if ident in layer["records"] and layer["records"][ident] != provenance:
-                        raise ValueError(f"conflicting capture provenance: {name}/{ident}")
-                    layer["records"][ident] = provenance
                 if is_capture:
                     family = fp.parent.name
                     _family, k = fixture_disposition.canonical_unified_record_key(
@@ -2282,42 +2265,14 @@ def _load_unified_fixtures(base: Path):
                             cd.pop("error", None)
                     if (fp.parent.name, k) in out and out[(fp.parent.name, k)] != cd:
                         raise ValueError(f"conflicting historical aliases in {name}: {fp.parent.name}/{k}")
-                out[(fp.parent.name, k)] = (cd, raw) if include_bytes else cd
+                out[(fp.parent.name, k)] = cd
+        directory_cache[name] = out
         return out
 
-    def _overlay_base(name):
-        return re.sub(r"\+pr\d+(?:\.patch\d+)?$", "", name)
-
-    def _merge_layers(layers, kind):
-        merged = {}
-        sources = {}
-        for name in layers:
-            for key, (record, raw) in _read_dir(name, include_bytes=True).items():
-                if key in merged and raw != merged[key]:
-                    family, case_key = key
-                    raise ValueError(
-                        f"conflicting shared {kind} record {family}/{case_key} in "
-                        f"{sources[key]} and {name}; shared overlays may repeat only "
-                        "byte-identical records"
-                    )
-                merged[key] = raw
-                sources.setdefault(key, name)
-        return {key: _read_dir(sources[key])[key] for key in merged}
-
-    # Shared inputs and the authored golden oracle are immutable once released. New
-    # cases are carried by PR-qualified sparse overlays instead of rewriting them.
-    input_layers = ["inputs"] + sorted(
-        d.name
-        for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) in ("inputs", "inputs+pr200") and d.name != "inputs"
-    )
-    golden_layers = ["golden"] + sorted(
-        d.name
-        for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) in ("golden", "golden+pr200") and d.name != "golden"
-    )
-    inputs = _merge_layers(input_layers, "input")
-    golden = _merge_layers(golden_layers, "golden")
+    # The canonical history materializes one authored current corpus. Historical
+    # observations are sparse semantic-version YAML checkpoints, not overlays.
+    inputs = _read_dir("inputs")
+    golden = _read_dir("golden")
 
     # Shared inputs own scenario identity. Canonicalize any legacy overlay key through
     # that scenario, then use the resulting input aliases to put its golden record in
@@ -2350,17 +2305,13 @@ def _load_unified_fixtures(base: Path):
     # `sorted()` alone is lexicographic (0.1.9 > 0.1.10), so sort on the version key.
     engine_versions: dict[str, list[tuple[str, str]]] = {}
     for d in sorted(base.iterdir()):
-        if not d.is_dir() or d.name in inactive_dirs or _overlay_base(d.name) in ("inputs", "golden"):
+        if not d.is_dir() or d.name in inactive_dirs or d.name in ("inputs", "golden"):
             continue
         m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
-        if m:
+        if m and fixture_disposition.DYNAMO_VERSION_RE.fullmatch(m.group(2)):
             engine_versions.setdefault(m.group(1), []).append((m.group(2), d.name))
     for impl in engine_versions:
-        # This order is only for history; source digests have no chronological order.
-        engine_versions[impl].sort(
-            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0],
-                            fixture_disposition.capture_layer_sort_key(vd[0]))
-        )
+        engine_versions[impl].sort(key=lambda vd: fixtures._version_sort_key(vd[0]))
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
     peer_by_ver = {}
@@ -2369,32 +2320,35 @@ def _load_unified_fixtures(base: Path):
             continue
         merged = peer_by_ver.setdefault(impl, {})
         for ver, dirname in vers:
-            base_ver = re.sub(r"\.patch\d+$", "", ver)
-            target = merged.setdefault(base_ver, {})
-            # A `.patchN` shard is an append-only correction layer for the same
-            # released parser, not a second release. It may intentionally replace
-            # an earlier capture for a case while leaving every other base case
-            # intact. Applying layers in version order preserves the release's
-            # identity and makes the patch's listed entries authoritative.
-            target.update(_read_dir(dirname))
+            merged[ver] = _read_dir(dirname)
     engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
-    engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
+    engine_cases = {}
     for impl, captures in peer_by_ver.items():
         latest = max(captures, key=fixtures._version_sort_key)
         engine_cases[impl] = captures[latest]
     dynamo_by_ver = {}
     for ver, dirname in engine_versions.get("dynamo_v2", []):
-        # `.patchN` is a sparse backfill for its released binary, but `+tag` identifies
-        # a distinct branch capture and must remain selectable beside that release.
-        display_ver = ver if "+" in ver and not _PATCH_SUFFIX_RE.search(ver) else _base_stream_version(ver)
-        captured_cases = _read_dir(dirname)
-        if _PATCH_SUFFIX_RE.search(ver) and dirname not in complete_snapshots:
-            dynamo_by_ver.setdefault(display_ver, {}).update(captured_cases)
-        else:
-            dynamo_by_ver[display_ver] = captured_cases
+        dynamo_by_ver[ver] = _read_dir(dirname)
 
-    current_dynamo_ver = _unified_dynamo_label(capture_provenance)
-    current_dynamo_cases = dynamo_by_ver.get(current_dynamo_ver, {})
+    current_dynamo_ver = _unified_dynamo_label()
+    target_release = fixtures._version_sort_key(current_dynamo_ver)
+    inherited_current_cases = {}
+    for version in sorted(
+        (
+            version
+            for version in dynamo_by_ver
+            if fixtures._version_sort_key(version) <= target_release
+        ),
+        key=fixtures._version_sort_key,
+    ):
+        for case_key, record in dynamo_by_ver[version].items():
+            inherited = dict(record)
+            if version != current_dynamo_ver:
+                inherited["inherited_from"] = version
+            inherited_current_cases[case_key] = inherited
+    inherited_current_cases.update(dynamo_by_ver.get(current_dynamo_ver, {}))
+    dynamo_by_ver[current_dynamo_ver] = inherited_current_cases
+    current_dynamo_cases = inherited_current_cases
     missing_current_case_keys = {
         (family, key)
         for (family, key), input_case in inputs.items()
@@ -2440,6 +2394,7 @@ def _load_unified_fixtures(base: Path):
                     **_unified_capture_failure(vdoc),
                     "assembled": (vdoc.get("assembled") or []),
                     "chunks": [c.get("expected") or [] for c in (vdoc.get("chunks") or [])],
+                    "inherited_from": vdoc.get("inherited_from"),
                 }
                 for ver, vcases in dynamo_by_ver.items()
                 if (vdoc := vcases.get((fam, key))) is not None
@@ -2590,10 +2545,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
     dynamo_ver_label = _vers["dynamo_v2"]
-    # Keep intermediate working captures in storage, not in the release selector.
     dynamo_history_vers = [
-        version for version in dynamo_all_vers
-        if version != dynamo_ver_label and "+source." not in version
+        version for version in dynamo_all_vers if version != dynamo_ver_label
     ]
     dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
     peer_specs = []
@@ -2836,7 +2789,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
-                                "todo": _TODO if dverd != "MATCH" else None})},
+                                "todo": _TODO if dverd != "MATCH" else None,
+                                "explanation": (
+                                    f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')}."
+                                    if c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')
+                                    else None
+                                )})},
                     {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
                      "version": None, "parse_mode": "unified", "leak": False,
                      "pin_first": True,  # oracle is always the leftmost popup column
@@ -2868,10 +2826,16 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     if pv not in prev_family_vers
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
-                               else (_unified_capture_failure(prev_by_ver[pv]) or {"events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                               else (_unified_capture_failure(prev_by_ver[pv]) or {
+                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or []))}))}
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [])),
+                                     "explanation": (
+                                         f"Inherited unchanged from Dynamo v2 {prev_by_ver[pv].get('inherited_from')}."
+                                         if prev_by_ver[pv].get("inherited_from") else None
+                                     ),
+                               }))}
                     for pv in reversed(dynamo_history_vers)
                 ],
                 "baseline": None, "reasons": reasons, "dynamo_notes": [], "refs": [],

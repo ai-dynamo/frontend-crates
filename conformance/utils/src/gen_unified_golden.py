@@ -11,7 +11,7 @@ The family registry supplies the seven golden-spec paths under the gitignored
 conformance/unified/golden_spec/ tree. Explicit scenario scopes and the redundant
 DeepSeek V4.1 prefill rows determine applicability. This spec is the harness INPUT (unified_render.rs reads it to
 compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
-NOT committed. The committed, versioned golden.tar.gz shard is DERIVED from it via
+NOT committed. The committed canonical family YAML is DERIVED from it via
 render -> explode -> package, exactly like every other conformance fixture shard.
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py

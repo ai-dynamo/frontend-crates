@@ -1,0 +1,1463 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.3.4
+document:
+  mode: unified
+changes:
+  guided_json_after_reasoning:
+    case_key: UNIFIED.30.f
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_array_argument:
+    case_key: UNIFIED.30.e
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: sum_values
+          arguments:
+            values:
+            - 2
+            - 3
+            - 5
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: sum_values
+            arguments: '{"values": [2, 3, 5]}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: UNIFIED.31-28
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'thinking '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_escaped_string_args:
+    case_key: UNIFIED.30.d
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo "雪" > C:\tmp\a.txt
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.30.m
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_gt_in_argument_trailing_close:
+    case_key: UNIFIED.30.k
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    case_key: UNIFIED.30.l
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_invalid_call:
+    case_key: UNIFIED.31-1
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+  guided_json_list_with_broken_element:
+    case_key: UNIFIED.31-4
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  guided_json_malformed_json:
+    case_key: UNIFIED.31-2
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"name": "get_weather", "arguments": {"city": "Par'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Par'
+  guided_json_marker_inside_argument:
+    case_key: UNIFIED.30.g
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|eom|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<|eom|>"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_named_tool:
+    case_key: UNIFIED.30.a
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: UNIFIED.31-8
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use  next
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll use
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' nex'
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.31-22
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call get_weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll call
+        - expected:
+          - kind: reasoning
+            text: ' get_weather'
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_native_markup_only:
+    case_key: UNIFIED.31-23
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_orphan_reason_close_before_payload:
+    case_key: UNIFIED.31-10
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_orphan_tool_close_before_payload:
+    case_key: UNIFIED.31-11
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_partial_calls:
+    case_key: UNIFIED.31-3
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  guided_json_prose_before_reasoning:
+    case_key: UNIFIED.31-9
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_quoted_bare_header_after_payload:
+    case_key: UNIFIED.31-27
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: I mean to=selfliteral
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: I mean to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+  guided_json_quoted_bare_header_in_answer:
+    case_key: UNIFIED.31-25
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean to=selfliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: I mean to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_quoted_bare_tool_header_in_answer:
+    case_key: UNIFIED.31-26
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean to=get_weatherliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: I mean to=get_weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_required_tool:
+    case_key: UNIFIED.30.b
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.31-20
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: UNIFIED.31-18
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: UNIFIED.31-19
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.31-17
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: UNIFIED.31-15
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: UNIFIED.31-16
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.31-21
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: secret
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: secre
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.31-14
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+  guided_json_syntax_error_trailing_close:
+    case_key: UNIFIED.31-12
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city":'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_syntax_error_wrapped:
+    case_key: UNIFIED.31-13
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city":'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_tool_close_after_payload:
+    case_key: UNIFIED.31-6
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_tool_open_before_payload:
+    case_key: UNIFIED.31-5
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_two_calls:
+    case_key: UNIFIED.30.c
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: UNIFIED.31-24
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_wrapped_in_tool_markup:
+    case_key: UNIFIED.31-7
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_reasoning_with_guided_json:
+    case_key: UNIFIED.40.b
+    stimulus:
+      ref: current
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  retired__30_14:
+    case_key: UNIFIED.30-14
+    stimulus:
+      inline:
+        input: '<atem:invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        init:
+          starting_state: None
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<atem:invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a >'
+        - delta_text: ' b"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+  retired__31_33:
+    case_key: UNIFIED.31-33
+    stimulus:
+      inline:
+        input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
+
+          <atem:parameter name="x">é🙂<par{value}</atem:parameter>
+
+          </atem:invoke> after<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        init:
+          starting_state: None
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant to=self
+        - delta_text: <|message|>
+        - delta_text: 'before '
+        - delta_text: <atem:invoke name="f">
+        - delta_text: '
+
+            '
+        - delta_text: <atem:parameter name="x">
+        - delta_text: é🙂
+        - delta_text: <par{value}</atem:parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:invoke>
+        - delta_text: ' after'
+        - delta_text: <|eom|>
+        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <atem:invoke name="f">
+
+            <atem:parameter name="x">é🙂<par{value}</atem:parameter>
+
+            </atem:invoke> after'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: before
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '<atem:invoke name="f">
+
+              <atem:parameter name="x">é🙂<par{value}</atem:parameter>'
+        - expected:
+          - kind: reasoning
+            text: '
+
+              '
+        - expected:
+          - kind: reasoning
+            text: </atem:invoke>
+        - expected:
+          - kind: reasoning
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  retired__31_34:
+    case_key: UNIFIED.31-34
+    stimulus:
+      inline:
+        input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        init:
+          starting_state: Response
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: to=self
+        - delta_text: <|message|>
+        - delta_text: literal
+        - delta_text: <|eom|>
+        - delta_text: <atem:invoke name="f">
+        - delta_text: <atem:parameter name="x">
+        - delta_text: '{"city":"Rome"}'
+        - delta_text: </atem:parameter>
+        - delta_text: </atem:invoke>
+        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'to=selfliteral<atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  retired__31_35:
+    case_key: UNIFIED.31-35
+    stimulus:
+      inline:
+        input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        init:
+          starting_state: Response
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: to=self
+        - delta_text: <|message|>
+        - delta_text: literal
+        - delta_text: <|eom|>
+        - delta_text: <atem:invoke name="f">
+        - delta_text: <atem:parameter name="x">
+        - delta_text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+        - delta_text: </atem:parameter>
+        - delta_text: </atem:invoke>
+        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'to=selfliteral<atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  retired__31_37:
+    case_key: UNIFIED.31-37
+    stimulus:
+      inline:
+        input: <atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]
+        init:
+          starting_state: None
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <atem:invoke name="x<|eom|>
+        - delta_text: '[{"name":"f","arguments":{}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: x
+        - kind: tool_call
+          name: f
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: text
+            text: x
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  retired__31_40:
+    case_key: UNIFIED.31-40
+    stimulus:
+      inline:
+        input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
+
+          <atem:parameter name="x"><|start|>assistant to=self<|message|>quoted<|eom|></atem:parameter>
+
+          </atem:invoke> after<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        init:
+          starting_state: None
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant to=self
+        - delta_text: <|message|>
+        - delta_text: 'before '
+        - delta_text: <atem:invoke name="f">
+        - delta_text: '
+
+            '
+        - delta_text: <atem:parameter name="x">
+        - delta_text: <|start|>
+        - delta_text: assistant to=self
+        - delta_text: <|message|>
+        - delta_text: quoted
+        - delta_text: <|eom|>
+        - delta_text: </atem:parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:invoke>
+        - delta_text: ' after'
+        - delta_text: <|eom|>
+        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <atem:invoke name="f">
+
+            <atem:parameter name="x">quoted'
+        - kind: text
+          text: '</atem:parameter>
+
+            </atem:invoke> after'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: before
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '<atem:invoke name="f">
+
+              <atem:parameter name="x">'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '</atem:parameter>
+
+              </atem:invoke> after'
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  retired__50_2:
+    case_key: UNIFIED.50-2
+    stimulus:
+      inline:
+        input: 'I mean to=self<|message|>literal<|eom|><atem:invoke name="</atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        init:
+          starting_state: Response
+          tool_output_mode: GuidedJson
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: I mean to=self
+        - delta_text: <|message|>
+        - delta_text: literal
+        - delta_text: <|eom|>
+        - delta_text: <atem:invoke name="</atem:invoke>
+        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean to=selfliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: I mean to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+metadata_changes: {}
+document_overrides: {}
