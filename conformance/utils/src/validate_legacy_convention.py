@@ -20,6 +20,15 @@ OLD_TO_NEW = {
     "stream" + "v2": "streamv1",
 }
 OLD_TOKENS = tuple(OLD_TO_NEW)
+LEGITIMATE_V2 = (
+    "dynamo_v2",
+    "dynamo-parsers-v2",
+    "parsers/v2",
+    "fixtures-unified-v2",
+    "CONFORMANCE_v2",
+)
+
+
 def _stored_legacy_archives(repo: Path) -> set[str]:
     store = repo / "conformance/fixtures/toolcalling"
     return {
