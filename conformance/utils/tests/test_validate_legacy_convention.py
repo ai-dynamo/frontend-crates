@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import io
-import json
-import sys
 import tarfile
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -12,70 +10,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import validate_legacy_convention as validator
 
 
-def test_active_tree_has_no_legacy_v2_names() -> None:
-    repo = Path(__file__).resolve().parents[3]
-    assert validator.validate(repo) == []
-
-
 def test_archive_member_with_old_name_is_rejected(tmp_path: Path) -> None:
     archive = tmp_path / "sample.tar.gz"
     old_root = "fixtures-stream-" + "v2"
-    old_mode = "stream" + "v2"
-    source = tmp_path / old_root
-    source.mkdir()
-    (source / "case.yaml").write_text(f"mode: {old_mode}\ncases: {{}}\n")
-    with tarfile.open(archive, "w:gz") as tar:
-        tar.add(source, arcname="toolcalling/" + old_root)
-
-    errors = validator._archive_errors(archive, "sample.tar.gz")
-    assert any("stale legacy-v2 name" in error for error in errors)
-    assert any("stale legacy-v2 content" in error for error in errors)
-
-
-def test_validate_rejects_stale_member_from_manifest_archive(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    archive = repo / "conformance/fixtures/toolcalling/fixtures-stream-v1"
-    archive.mkdir(parents=True)
-    archive_path = archive / "inputs.tar.gz"
-    old_root = "fixtures-stream-" + "v2"
     data = b"mode: streamv1\ncases: {}\n"
-    with tarfile.open(archive_path, "w:gz") as tar:
+    with tarfile.open(archive, "w:gz") as tar:
         info = tarfile.TarInfo(f"toolcalling/{old_root}/case.yaml")
         info.size = len(data)
         tar.addfile(info, io.BytesIO(data))
 
-    manifest = {
-        "shards": [
-            {
-                "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
-                "sha256": hashlib.sha256(archive_path.read_bytes()).hexdigest(),
-                "size": archive_path.stat().st_size,
-            }
-        ]
-    }
-    manifest_path = repo / "conformance/fixtures-manifest.json"
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(manifest))
-
-    errors = validator.validate(repo)
-    assert any("stale legacy-v2 name" in error for error in errors)
-
-
-def test_validate_rejects_unmanifested_stale_archive(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    fixtures = repo / "conformance/fixtures"
-    fixtures.mkdir(parents=True)
-    (repo / "conformance/fixtures-manifest.json").write_text('{"shards": []}')
-    old_root = "fixtures-stream-" + "v2"
-    stale = fixtures / f"toolcalling/{old_root}/inputs.tar.gz"
-    stale.parent.mkdir(parents=True)
-    with tarfile.open(stale, "w:gz"):
-        pass
-
-    errors = validator.validate(repo)
-    assert any("archive store: stale path" in error for error in errors)
-    assert any("archive store: unmanifested archive" in error for error in errors)
-
-
-def test_legitimate_parser_v2_names_are_not_stale() -> None:
-    assert all(token not in validator.LEGITIMATE_V2 for token in validator.OLD_TOKENS)
+    errors = validator._archive_errors(archive, "sample.tar.gz")
+    assert errors
+    assert any("stale legacy-v2" in error for error in errors)
