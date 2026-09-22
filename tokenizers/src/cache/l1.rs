@@ -461,8 +461,6 @@ impl L1Cache {
         cumulative.extend_from_slice(&prefix_tokens);
         cumulative.extend_from_slice(seg_a.token_ids());
 
-        // CachedTokenizer already computed this key during lookup. Preserve the
-        // existing public extension method for callers that do not supply a digest.
         let hash_bytes = deepest_hash.unwrap_or_else(|| {
             let mut hasher = blake3::Hasher::new();
             hasher.update(&input.as_bytes()[..deepest]);
@@ -1165,7 +1163,6 @@ mod tests {
     fn miss_encode_failure_retains_only_completed_prefixes() {
         let input = "<s>世界</s><s>tail";
         let boundaries = find_special_token_boundaries(input, SPECIALS);
-        // Fail in each boundary segment and in the final tail.
         for fail_at in 0..=boundaries.len() {
             for reuse_hashes in [false, true] {
                 let cache = test_cache(8 * 1024 * 1024);
