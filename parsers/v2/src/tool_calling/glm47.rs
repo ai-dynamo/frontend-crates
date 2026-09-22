@@ -392,6 +392,97 @@ mod tests {
     }
 
     #[test]
+    fn large_integer_keeps_numeric_bytes_in_nullable_schemas() {
+        let value = "9".repeat(400);
+        for schema in [
+            serde_json::json!({"type": "integer"}),
+            serde_json::json!({"type": ["integer", "null"]}),
+            serde_json::json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            serde_json::json!({"type": ["number", "null"]}),
+        ] {
+            let tools = vec![Tool {
+                name: "inspect".into(),
+                description: None,
+                parameters: serde_json::json!({"properties": {"value": schema}}),
+                strict: None,
+            }];
+            let input = format!(
+                "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
+            );
+            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            assert_eq!(result.calls.len(), 1);
+            // Parsing into Value here would impose the numeric limit under test.
+            assert_eq!(result.calls[0].arguments, format!("{{\"value\":{value}}}"));
+        }
+    }
+
+    #[test]
+    fn composed_nonstring_arguments_keep_json_types() {
+        for (schema, value) in [
+            (
+                serde_json::json!({"type": ["integer", "null"]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": ["integer", "null"]}),
+                serde_json::json!(42),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+                serde_json::json!(42),
+            ),
+            (
+                serde_json::json!({"oneOf": [{"type": "null"}, {"type": "integer"}]}),
+                serde_json::json!(42),
+            ),
+            (
+                serde_json::json!({"type": ["number", "null"]}),
+                serde_json::json!(1.25),
+            ),
+            (
+                serde_json::json!({"type": ["boolean", "null"]}),
+                serde_json::json!(false),
+            ),
+            (
+                serde_json::json!({"allOf": [
+                    {"type": ["integer", "string"]}, {"type": "integer"}
+                ]}),
+                serde_json::json!(7),
+            ),
+            (
+                serde_json::json!({"allOf": [
+                    {"minimum": 0}, {"type": "integer"}, {"type": ["string", "number"]}
+                ]}),
+                serde_json::json!(7),
+            ),
+            (
+                serde_json::json!({"type": ["integer", "string"], "allOf": [
+                    {"anyOf": [{"type": "integer"}, {"type": "null"}]}
+                ]}),
+                serde_json::json!(7),
+            ),
+        ] {
+            let tools = vec![Tool {
+                name: "inspect".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object", "properties": {"value": schema}
+                }),
+                strict: None,
+            }];
+            let input = format!(
+                "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
+            );
+            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: serde_json::Value =
+                serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"value": value}));
+        }
+    }
+
+    #[test]
     fn repeated_arg_key_emits_key_once() {
         // A repeated <arg_key> must not produce duplicate keys in the arguments.
         let out = parse_chunks(
