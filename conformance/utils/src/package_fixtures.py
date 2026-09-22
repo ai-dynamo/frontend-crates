@@ -2,16 +2,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """
-Package tool-calling and reasoning fixtures into per-version tarballs in the
-repo's LFS store, update the reviewable Unified YAML store, and write the
-manifest that pins both sources. Publishing a snapshot means committing both
-stores and the manifest to git; no external service is involved.
+Package stream captures as per-family YAML, retain historical archives, update
+the Unified YAML store, and write the manifest that pins these sources.
+Publishing a snapshot means committing the stores and the manifest to git;
+no external service is involved.
 
 Shard layout (relative to conformance/fixtures/):
   toolcalling/fixtures-batch-v1/inputs.tar.gz
   toolcalling/fixtures-batch-v1/<impl>-<ver>.tar.gz   (one per immediate subdir)
   toolcalling/fixtures-stream-v2/inputs.tar.gz
-  toolcalling/fixtures-stream-v2/<impl>-<ver>.tar.gz
+  toolcalling/fixtures-stream-v2/families/<family>/<impl>-<ver>.yaml
   toolcalling/fixtures-batch-on-stream-v2.tar.gz      (whole tree as one tarball)
   reasoning/fixtures-v1/inputs.tar.gz
 
@@ -36,6 +36,7 @@ from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
 import fixture_disposition
+import stream_history
 import unified_history
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
@@ -169,7 +170,7 @@ def build_shards(
     *,
     history_root=None,
 ):
-    """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
+    """Build capture shards and return their manifest entries."""
     shards = []
     inactive = preserved_evidence()
 
@@ -242,6 +243,28 @@ def build_shards(
             shard_path = rel + ".tar.gz"
             if shard_path in inactive:
                 print(f"  preserving inactive evidence {shard_path}; not rebuilding")
+                continue
+            if tree_rel == str(stream_history.TREE) and subdir.name not in ("inputs", "golden"):
+                # Existing archives remain historical evidence, never a publication target.
+                if (FIXTURES_DIR / shard_path).exists():
+                    prior = _extracted_snapshot_dir()
+                    if prior is None:
+                        raise ValueError("extract fixtures before packaging historical stream captures")
+                    for path in subdir.glob("*/*.yaml"):
+                        previous = prior / tree_rel / subdir.name / path.relative_to(subdir)
+                        if not previous.is_file() or unified_history.load_yaml(path) != unified_history.load_yaml(previous):
+                            raise ValueError(f"historical stream capture changed; use a new semantic version: {path}")
+                    continue
+                prior = _extracted_snapshot_dir()
+                for output in stream_history.package(
+                    subdir, blobs_dir,
+                    prior_root=prior / tree_rel if prior else None,
+                ):
+                    shards.append({
+                        "path": str(output.relative_to(blobs_dir)),
+                        "sha256": sha256_file(output),
+                        "size": output.stat().st_size,
+                    })
                 continue
             out = blobs_dir / shard_path
             sha, size = _tar_dir(tmpdir / rel, rel, out)
