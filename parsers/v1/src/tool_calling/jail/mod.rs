@@ -103,6 +103,11 @@ fn recover_kimi_k3_reasoning_handoff(choice: &ChatChoiceStream) -> Option<ChatCh
 pub enum ChoiceEmission {
     /// Pass through content unchanged (choice is not jailed)
     PassThrough(ChatChoiceStream),
+    /// Text that shared a jailed buffer with a parsed tool call and must be
+    /// flushed on its own chunk *before* the tool-call opener (a client that
+    /// assumes one channel per chunk — content XOR tool_calls — breaks if the
+    /// two are bundled into a single delta; see `split_leading_content_before_tool_call`).
+    Leading(ChatChoiceStream),
     /// Emit parsed tool calls (choice finished jailing with tool calls)
     ToolCall(ChatChoiceStream),
     /// Emit accumulated content (choice finished jailing without tool calls)
@@ -116,6 +121,7 @@ impl ChoiceEmission {
     pub fn into_choice(self) -> ChatChoiceStream {
         match self {
             ChoiceEmission::PassThrough(choice) => choice,
+            ChoiceEmission::Leading(choice) => choice,
             ChoiceEmission::ToolCall(choice) => choice,
             ChoiceEmission::Content(choice) => choice,
             ChoiceEmission::Trailing(choice) => choice,
@@ -126,6 +132,7 @@ impl ChoiceEmission {
     pub fn index(&self) -> u32 {
         match self {
             ChoiceEmission::PassThrough(choice) => choice.index,
+            ChoiceEmission::Leading(choice) => choice.index,
             ChoiceEmission::ToolCall(choice) => choice.index,
             ChoiceEmission::Content(choice) => choice.index,
             ChoiceEmission::Trailing(choice) => choice.index,
@@ -136,6 +143,7 @@ impl ChoiceEmission {
     fn choice(&self) -> &ChatChoiceStream {
         match self {
             ChoiceEmission::PassThrough(choice) => choice,
+            ChoiceEmission::Leading(choice) => choice,
             ChoiceEmission::ToolCall(choice) => choice,
             ChoiceEmission::Content(choice) => choice,
             ChoiceEmission::Trailing(choice) => choice,
@@ -146,6 +154,7 @@ impl ChoiceEmission {
     fn choice_mut(&mut self) -> &mut ChatChoiceStream {
         match self {
             ChoiceEmission::PassThrough(choice) => choice,
+            ChoiceEmission::Leading(choice) => choice,
             ChoiceEmission::ToolCall(choice) => choice,
             ChoiceEmission::Content(choice) => choice,
             ChoiceEmission::Trailing(choice) => choice,
@@ -410,6 +419,49 @@ fn create_choice_stream(
         finish_reason,
         logprobs,
     }
+}
+
+/// When a jailed buffer's tool-call parse also yields non-empty `normal_text`
+/// (e.g. the model's trailing prose landed in the same buffer as the
+/// `<tool_call>` marker), `create_tool_call_choice` bundles that text and
+/// the parsed tool call's opener into ONE `ChatChoiceStream`:
+/// a single delta carrying both `content` and `tool_calls` simultaneously.
+/// Nothing is lost on the wire, but a client that assumes one channel per
+/// chunk (content XOR tool_calls, matching every other provider's behavior)
+/// breaks on the combination.
+///
+/// Splits such a choice into two: returns `Some(leading)` — a content-only
+/// choice with `finish_reason`/`logprobs` stripped (those belong on the
+/// terminal piece) — and clears `content` on `choice` in place, so the
+/// caller can emit `leading` first and `choice` (now tool-call-only) second.
+/// Returns `None` when `choice` doesn't carry both fields, which is the
+/// common, already-correct shape and must pass through unchanged.
+fn split_leading_content_before_tool_call(
+    choice: &mut ChatChoiceStream,
+) -> Option<ChatChoiceStream> {
+    choice.delta.tool_calls.as_ref()?;
+    let has_leading_text = matches!(
+        &choice.delta.content,
+        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) if !text.is_empty()
+    );
+    if !has_leading_text {
+        return None;
+    }
+
+    #[allow(deprecated)]
+    Some(ChatChoiceStream {
+        index: choice.index,
+        delta: ChatCompletionStreamResponseDelta {
+            role: choice.delta.role,
+            content: choice.delta.content.take(),
+            tool_calls: None,
+            function_call: None,
+            refusal: None,
+            reasoning_content: None,
+        },
+        finish_reason: None,
+        logprobs: None,
+    })
 }
 
 /// Build a single-choice terminal chunk from a prior response used as a template.
@@ -842,6 +894,10 @@ impl ChoiceJailState {
         // offset at zero and the next payload would reuse this payload's tool indices.
         self.reconcile_streamed_calls(&mut unjailed_choice);
 
+        if let Some(leading) = split_leading_content_before_tool_call(&mut unjailed_choice) {
+            emissions.push(ChoiceEmission::Leading(leading));
+        }
+
         if unjailed_choice.delta.tool_calls.is_some() {
             emissions.push(ChoiceEmission::ToolCall(unjailed_choice));
         } else {
@@ -1012,7 +1068,7 @@ impl ChoiceJailState {
     }
 
     /// Finalize any remaining content when stream ends
-    async fn finalize(&mut self, jail_stream: &JailedStream) -> Option<ChoiceEmission> {
+    async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
         if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
             #[allow(deprecated)]
@@ -1042,24 +1098,38 @@ impl ChoiceJailState {
             // subtracted or its arguments are delivered twice.
             self.reconcile_streamed_calls(&mut final_choice);
 
-            // Preserve any pending reasoning content collected while jailed.
-            if let Some(pending_reasoning) = self.pending_reasoning_content.take() {
-                if let Some(existing_reasoning) = final_choice.delta.reasoning_content.as_mut() {
-                    existing_reasoning.push_str(&pending_reasoning);
-                } else {
-                    final_choice.delta.reasoning_content = Some(pending_reasoning);
-                }
-            }
-
             // End jailing
             self.end_jail();
 
+            // Split before attaching reasoning content, so reasoning lands on
+            // whichever emission is actually first on the wire.
+            let mut leading = split_leading_content_before_tool_call(&mut final_choice);
+
+            // Preserve any pending reasoning content collected while jailed.
+            if let Some(pending_reasoning) = self.pending_reasoning_content.take() {
+                let target_delta = leading
+                    .as_mut()
+                    .map(|choice| &mut choice.delta)
+                    .unwrap_or(&mut final_choice.delta);
+                if let Some(existing_reasoning) = target_delta.reasoning_content.as_mut() {
+                    existing_reasoning.push_str(&pending_reasoning);
+                } else {
+                    target_delta.reasoning_content = Some(pending_reasoning);
+                }
+            }
+
+            let mut emissions = Vec::new();
+            if let Some(leading) = leading {
+                emissions.push(ChoiceEmission::Leading(leading));
+            }
+
             // Determine emission type
             if final_choice.delta.tool_calls.is_some() {
-                Some(ChoiceEmission::ToolCall(final_choice))
+                emissions.push(ChoiceEmission::ToolCall(final_choice));
             } else {
-                Some(ChoiceEmission::Content(final_choice))
+                emissions.push(ChoiceEmission::Content(final_choice));
             }
+            emissions
         } else if !self.partial_match_buffer.is_empty() {
             let content = std::mem::take(&mut self.partial_match_buffer);
             let choice = create_choice_stream(
@@ -1070,9 +1140,9 @@ impl ChoiceJailState {
                 self.stream_finish_reason,
                 None,
             );
-            Some(ChoiceEmission::Content(choice))
+            vec![ChoiceEmission::Content(choice)]
         } else {
-            None
+            Vec::new()
         }
     }
 }
@@ -1348,10 +1418,12 @@ impl JailedStream {
                         let mut tool_content_emissions = Vec::new();
                         let mut trailing_emissions = Vec::new();
                         let mut passthrough_emissions = Vec::new();
+                        let mut leading_emissions = Vec::new();
 
                         for emission in all_emissions {
                             match emission {
                                 ChoiceEmission::PassThrough(_) => passthrough_emissions.push(emission),
+                                ChoiceEmission::Leading(_) => leading_emissions.push(emission),
                                 ChoiceEmission::ToolCall(_) | ChoiceEmission::Content(_) => {
                                     tool_content_emissions.push(emission);
                                 }
@@ -1362,13 +1434,34 @@ impl JailedStream {
                         }
 
                         // Ordering invariant: per choice, `process_content` emits only
-                        // PassThrough prefix -> ToolCall/Content -> Trailing suffix. The terminal
-                        // normalizer assigns `finish_reason` to the last emission, so this bucket
-                        // order must stay aligned or terminal ownership must move after bucketing.
+                        // PassThrough prefix -> Leading (text bundled with a tool-call opener
+                        // in the same jailed buffer) -> ToolCall/Content -> Trailing suffix.
+                        // The terminal normalizer assigns `finish_reason` to the last emission,
+                        // so this bucket order must stay aligned or terminal ownership must
+                        // move after bucketing. Each bucket also gets its own
+                        // `emit_choice_emissions` call rather than being folded into
+                        // `tool_content_emissions` — under the default `EmissionMode::Packed`,
+                        // two same-index entries from the same choice would otherwise be
+                        // packed into one wire chunk, which is exactly the bundling this split
+                        // exists to undo.
                         // Emit pass-through prefixes before parsed tool calls.
                         if !passthrough_emissions.is_empty() {
                             let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
                             let responses = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
+                            for emitted_response in responses {
+                                yield emitted_response;
+                            }
+                        }
+
+                        // Emit text that shared a jailed buffer with a tool call's opener on
+                        // its own chunk, before the opener itself.
+                        if !leading_emissions.is_empty() {
+                            let preserved_metadata = (
+                                last_annotated_id.clone(),
+                                last_annotated_event.clone(),
+                                last_annotated_comment.clone(),
+                            );
+                            let responses = self.emit_choice_emissions(leading_emissions, chat_response, preserved_metadata);
                             for emitted_response in responses {
                                 yield emitted_response;
                             }
@@ -1414,9 +1507,7 @@ impl JailedStream {
                 {
                     final_emissions.push(reasoning_emission);
                 }
-                if let Some(emission) = state.finalize(&self).await {
-                    final_emissions.push(emission);
-                }
+                final_emissions.extend(state.finalize(&self).await);
             }
 
             if !final_emissions.is_empty() {
@@ -1433,10 +1524,26 @@ impl JailedStream {
                     system_fingerprint: None,
                 };
 
+                // `finalize` can return a `Leading` + `ToolCall` pair for the same choice
+                // (bundled trailing text at end-of-stream) — keep `Leading` out of the
+                // same `emit_choice_emissions` call as the rest so `EmissionMode::Packed`
+                // can't fold them back into one same-index wire chunk.
+                let (leading_final, rest_final): (Vec<_>, Vec<_>) = final_emissions
+                    .into_iter()
+                    .partition(|emission| matches!(emission, ChoiceEmission::Leading(_)));
+
                 let final_metadata = (last_annotated_id, last_annotated_event, last_annotated_comment);
-                let responses = self.emit_choice_emissions(final_emissions, &dummy_response, final_metadata);
-                for emitted_response in responses {
-                    yield emitted_response;
+                if !leading_final.is_empty() {
+                    let responses = self.emit_choice_emissions(leading_final, &dummy_response, final_metadata.clone());
+                    for emitted_response in responses {
+                        yield emitted_response;
+                    }
+                }
+                if !rest_final.is_empty() {
+                    let responses = self.emit_choice_emissions(rest_final, &dummy_response, final_metadata);
+                    for emitted_response in responses {
+                        yield emitted_response;
+                    }
                 }
             }
         }
@@ -2818,6 +2925,105 @@ mod tests {
                 },
             },
         )
+    }
+
+    /// Build a `ChatChoiceStream` carrying a tool-call opener the way
+    /// `create_tool_call_choice`'s `MarkerBased` success branch would when the
+    /// jailed buffer's parse also yielded non-empty `normal_text` — i.e. the
+    /// bundled shape reported against Baseten's GLM-5.3/5.3-Flash: one delta
+    /// with `content` (leftover prose) AND `tool_calls[0].function.name` both set.
+    #[allow(deprecated)]
+    fn bundled_content_and_tool_call_opener(content: &str) -> ChatChoiceStream {
+        ChatChoiceStream {
+            index: 0,
+            delta: ChatCompletionStreamResponseDelta {
+                role: Some(Role::Assistant),
+                content: Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(
+                    content.to_string(),
+                )),
+                tool_calls: Some(vec![ChatCompletionMessageToolCallChunk {
+                    index: 0,
+                    id: Some("call_1".to_string()),
+                    r#type: Some(FunctionType::Function),
+                    function: Some(FunctionCallStream {
+                        name: Some("tool_search".to_string()),
+                        arguments: Some(String::new()),
+                    }),
+                }]),
+                function_call: None,
+                refusal: None,
+                reasoning_content: None,
+            },
+            finish_reason: Some(FinishReason::ToolCalls),
+            logprobs: None,
+        }
+    }
+
+    fn as_text(content: &dynamo_protocols::types::ChatCompletionMessageContent) -> &str {
+        match content {
+            dynamo_protocols::types::ChatCompletionMessageContent::Text(text) => text.as_str(),
+            dynamo_protocols::types::ChatCompletionMessageContent::Parts(_) => "",
+        }
+    }
+
+    /// Reproduces the Little Bird / GLM-5.3-Flash report: a delta that bundles
+    /// leftover prose (`content="."`) with the tool call's name-carrying opener.
+    /// A client that assumes one channel per chunk (content XOR tool_calls,
+    /// matching every other provider it had used) breaks on this combination
+    /// even though nothing is lost on the wire. The fix splits it into a
+    /// content-only leading chunk followed by a tool-call-only chunk.
+    #[test]
+    fn test_split_leading_content_before_tool_call_splits_bundled_delta() {
+        let mut choice = bundled_content_and_tool_call_opener(".");
+
+        let leading = split_leading_content_before_tool_call(&mut choice)
+            .expect("content bundled with a tool-call opener must split");
+
+        // The leading piece carries only the text: no tool_calls, no
+        // finish_reason/logprobs (those belong on the terminal piece).
+        assert_eq!(as_text(leading.delta.content.as_ref().unwrap()), ".");
+        assert!(leading.delta.tool_calls.is_none());
+        assert!(leading.finish_reason.is_none());
+        assert!(leading.logprobs.is_none());
+        assert_eq!(leading.index, choice.index);
+
+        // The original choice keeps the tool call and finish_reason, with
+        // content cleared so it no longer duplicates the leading piece.
+        assert!(choice.delta.content.is_none());
+        assert!(choice.delta.tool_calls.is_some());
+        assert_eq!(choice.finish_reason, Some(FinishReason::ToolCalls));
+    }
+
+    /// The common, already-correct shape (tool_calls with no bundled content)
+    /// must pass through unchanged — no split, no allocation of a leading choice.
+    #[test]
+    fn test_split_leading_content_before_tool_call_noop_without_content() {
+        let mut choice = bundled_content_and_tool_call_opener("");
+        choice.delta.content = None;
+
+        assert!(split_leading_content_before_tool_call(&mut choice).is_none());
+        assert!(choice.delta.tool_calls.is_some());
+    }
+
+    /// Empty-string content (as opposed to `None`) must also be treated as
+    /// "nothing to split" — there's no text worth its own chunk.
+    #[test]
+    fn test_split_leading_content_before_tool_call_noop_on_empty_content() {
+        let mut choice = bundled_content_and_tool_call_opener("");
+
+        assert!(split_leading_content_before_tool_call(&mut choice).is_none());
+        assert!(choice.delta.tool_calls.is_some());
+    }
+
+    /// Plain content with no tool call at all must never be touched — this is
+    /// the ordinary content-only streaming path.
+    #[test]
+    fn test_split_leading_content_before_tool_call_noop_without_tool_calls() {
+        let mut choice = bundled_content_and_tool_call_opener("some text");
+        choice.delta.tool_calls = None;
+
+        assert!(split_leading_content_before_tool_call(&mut choice).is_none());
+        assert!(choice.delta.content.is_some());
     }
 
     fn kimi_k3_tool_call(name: &str) -> String {
