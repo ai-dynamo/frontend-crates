@@ -128,9 +128,24 @@ impl QwenVlProcessor {
         self.spec.patch_size * self.spec.merge_size
     }
 
+    /// Patch grid of the resized image, `[t, h, w]` with `t = 1` for a still.
+    fn grid(&self, resized_h: usize, resized_w: usize) -> [u32; 3] {
+        let (gh, gw) = (
+            resized_h / self.spec.patch_size,
+            resized_w / self.spec.patch_size,
+        );
+        [1, gh as u32, gw as u32]
+    }
+
+    /// The ViT merges `merge_size²` patches per token.
     fn tokens_per_image(&self, grid: &[u32; 3]) -> usize {
         (grid[0] as usize * grid[1] as usize * grid[2] as usize)
             / (self.spec.merge_size * self.spec.merge_size)
+    }
+
+    /// Floats per flattened patch: `C * tps * ps * ps`.
+    fn patch_dim(&self) -> usize {
+        3 * self.spec.temporal_patch_size * self.spec.patch_size * self.spec.patch_size
     }
 
     /// HF flatten: patches ordered `(gh/m, gw/m, m, m)`, features `(C, tps,
@@ -142,7 +157,7 @@ impl QwenVlProcessor {
             self.spec.temporal_patch_size,
         );
         let (gh, gw) = (h / ps, w / ps);
-        let dim = 3 * tps * ps * ps;
+        let dim = self.patch_dim();
         let block_row = gw * m * dim; // one merged-block row of patches
         let mut out = vec![0.0f32; gh * gw * dim];
 
@@ -187,8 +202,7 @@ impl MmFamilyProcessor for QwenVlProcessor {
                     self.spec.min_pixels,
                     self.spec.max_pixels,
                 )?;
-                let (gh, gw) = (th / self.spec.patch_size, tw / self.spec.patch_size);
-                Ok(self.tokens_per_image(&[1, gh as u32, gw as u32]))
+                Ok(self.tokens_per_image(&self.grid(th, tw)))
             }
             _ => Err(MmError::unsupported(
                 "qwen_vl: only image token accounting is supported",
@@ -213,22 +227,20 @@ impl MmFamilyProcessor for QwenVlProcessor {
         } else {
             rgb.as_slice()
         };
-        let (gh, gw) = (th / self.spec.patch_size, tw / self.spec.patch_size);
-        let pixel_values = self.patchify(data, th, tw);
-        let dim = pixel_values.len() / (gh * gw);
-        let grid = [1, gh as u32, gw as u32];
+        let grid = self.grid(th, tw);
+        let num_patches = grid[1] as usize * grid[2] as usize;
         Ok(ProcessedItem {
             modality: media.modality(),
             feature_token_count: self.tokens_per_image(&grid),
             feature: Tensor {
-                shape: vec![gh * gw, dim],
-                data: TensorData::F32(pixel_values),
+                shape: vec![num_patches, self.patch_dim()],
+                data: TensorData::F32(self.patchify(data, th, tw)),
             },
             aux: vec![(
                 "image_grid_thw".to_string(),
                 Tensor {
                     shape: vec![3],
-                    data: TensorData::I64(vec![1, gh as i64, gw as i64]),
+                    data: TensorData::I64(grid.iter().map(|&g| g as i64).collect()),
                 },
             )],
             geometry: Some(Geometry::Grid(grid)),
@@ -250,7 +262,9 @@ impl MmFamilyProcessor for QwenVlProcessor {
         items: &[ProcessedItem],
     ) -> Result<PositionOutput> {
         if offsets.len() != items.len() {
-            return Err(MmError::internal("qwen_vl: offset and item counts differ"));
+            return Err(MmError::invalid_input(
+                "qwen_vl: offset and item counts differ",
+            ));
         }
         let mrope_items = offsets
             .iter()
@@ -261,7 +275,7 @@ impl MmFamilyProcessor for QwenVlProcessor {
                     end,
                     grid: *grid,
                 }),
-                None => Err(MmError::internal("qwen_vl: item is missing its grid")),
+                None => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
             })
             .collect::<Result<Vec<_>>>()?;
         let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;
@@ -336,7 +350,7 @@ pub fn mrope_image_only(
     for item in items {
         let (start, end) = (item.start as usize, item.end as usize);
         if start < st || end < start || end >= len {
-            return Err(MmError::internal(format!(
+            return Err(MmError::invalid_input(format!(
                 "mrope: item range ({start},{end}) out of order/bounds"
             )));
         }
@@ -347,12 +361,14 @@ pub fn mrope_image_only(
             || !(item.grid[1] as usize).is_multiple_of(merge_size)
             || !(item.grid[2] as usize).is_multiple_of(merge_size)
         {
-            return Err(MmError::internal("mrope: invalid image grid"));
+            return Err(MmError::invalid_input("mrope: invalid image grid"));
         }
         let gh = item.grid[1] as usize / merge_size;
         let gw = item.grid[2] as usize / merge_size;
         if gh * gw != end - start + 1 {
-            return Err(MmError::internal("mrope: token span does not match grid"));
+            return Err(MmError::invalid_input(
+                "mrope: token span does not match grid",
+            ));
         }
         for hi in 0..gh {
             for wi in 0..gw {
@@ -527,7 +543,22 @@ mod tests {
             .unwrap();
         assert_eq!(item.feature_token_count, counted);
         assert_eq!(item.feature.shape, vec![48, 1176]);
-        assert!(proc.positions(0, &[], &[item]).is_err());
+    }
+
+    #[test]
+    fn positions_reject_unpaired_items() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        let item = proc
+            .process_item(&DecodedMedia::Image {
+                rgb: vec![7u8; 76 * 100 * 3],
+                height: 76,
+                width: 100,
+            })
+            .unwrap();
+        assert!(matches!(
+            proc.positions(16, &[], &[item]),
+            Err(MmError::InvalidInput { .. })
+        ));
     }
 
     #[test]
