@@ -95,16 +95,15 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
 
 /// Convert media URL content parts to empty placeholder types.
 fn convert_media_url_to_placeholder(
-    mut content_array: Vec<serde_json::Value>,
+    content_array: &mut [serde_json::Value],
     conversions: &[(&str, &str)],
-) -> Vec<serde_json::Value> {
-    for part in &mut content_array {
+) {
+    for part in content_array {
         let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
         if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
             *part = serde_json::json!({"type": target_type});
         }
     }
-    content_array
 }
 
 fn may_be_fix_msg_content(
@@ -130,10 +129,7 @@ fn may_be_fix_msg_content(
                 )]);
             }
             serde_json::Value::Array(parts) => {
-                *parts = convert_media_url_to_placeholder(
-                    std::mem::take(parts),
-                    DEFAULT_MEDIA_TYPE_CONVERSIONS,
-                );
+                convert_media_url_to_placeholder(parts, DEFAULT_MEDIA_TYPE_CONVERSIONS);
                 // An empty array must remain an array. Templates distinguish it
                 // from an empty string, including when the placeholder is "".
                 let text_only = !parts.is_empty()
@@ -1362,49 +1358,49 @@ mod tests {
     /// Tests that media URL content parts are converted to empty placeholders.
     #[test]
     fn test_convert_media_url_to_placeholder_single_type() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "text", "text": "Check this image:"}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "What do you see?"}),
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
+        assert_eq!(content_array.len(), 3);
         // Text parts should be unchanged
-        assert_eq!(result[0]["type"], "text");
-        assert_eq!(result[0]["text"], "Check this image:");
+        assert_eq!(content_array[0]["type"], "text");
+        assert_eq!(content_array[0]["text"], "Check this image:");
         // image_url should be converted to image placeholder
-        assert_eq!(result[1]["type"], "image");
-        assert!(result[1].get("image_url").is_none());
+        assert_eq!(content_array[1]["type"], "image");
+        assert!(content_array[1].get("image_url").is_none());
         // Text parts should be unchanged
-        assert_eq!(result[2]["type"], "text");
-        assert_eq!(result[2]["text"], "What do you see?");
+        assert_eq!(content_array[2]["type"], "text");
+        assert_eq!(content_array[2]["text"], "What do you see?");
     }
 
     /// Tests that multiple media URL parts of the same type are all converted.
     #[test]
     fn test_convert_media_url_to_placeholder_multiple_same_type() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image1.jpg"}}),
             serde_json::json!({"type": "text", "text": "vs"}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image2.jpg"}}),
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
-        assert_eq!(result[0]["type"], "image");
-        assert_eq!(result[1]["type"], "text");
-        assert_eq!(result[2]["type"], "image");
+        assert_eq!(content_array.len(), 3);
+        assert_eq!(content_array[0]["type"], "image");
+        assert_eq!(content_array[1]["type"], "text");
+        assert_eq!(content_array[2]["type"], "image");
     }
 
     /// Tests that only specified media types are converted, others preserved.
     #[test]
     fn test_convert_media_url_to_placeholder_selective_conversion() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
             serde_json::json!({"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
@@ -1412,23 +1408,23 @@ mod tests {
 
         // Only convert image_url
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
+        assert_eq!(content_array.len(), 3);
         // audio_url and video_url should be preserved as-is
-        assert_eq!(result[0]["type"], "audio_url");
-        assert!(result[0].get("audio_url").is_some());
-        assert_eq!(result[1]["type"], "video_url");
-        assert!(result[1].get("video_url").is_some());
+        assert_eq!(content_array[0]["type"], "audio_url");
+        assert!(content_array[0].get("audio_url").is_some());
+        assert_eq!(content_array[1]["type"], "video_url");
+        assert!(content_array[1].get("video_url").is_some());
         // Only image_url should be converted
-        assert_eq!(result[2]["type"], "image");
-        assert!(result[2].get("image_url").is_none());
+        assert_eq!(content_array[2]["type"], "image");
+        assert!(content_array[2].get("image_url").is_none());
     }
 
     /// Tests converting multiple different media types at once.
     #[test]
     fn test_convert_media_url_to_placeholder_multiple_types() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "and listen to"}),
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
@@ -1442,42 +1438,42 @@ mod tests {
             ("audio_url", "audio"),
             ("video_url", "video"),
         ];
-        let result = convert_media_url_to_placeholder(content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 5);
-        assert_eq!(result[0]["type"], "image");
-        assert!(result[0].get("image_url").is_none());
-        assert_eq!(result[1]["type"], "text");
-        assert_eq!(result[2]["type"], "audio");
-        assert!(result[2].get("audio_url").is_none());
-        assert_eq!(result[3]["type"], "text");
-        assert_eq!(result[4]["type"], "video");
-        assert!(result[4].get("video_url").is_none());
+        assert_eq!(content_array.len(), 5);
+        assert_eq!(content_array[0]["type"], "image");
+        assert!(content_array[0].get("image_url").is_none());
+        assert_eq!(content_array[1]["type"], "text");
+        assert_eq!(content_array[2]["type"], "audio");
+        assert!(content_array[2].get("audio_url").is_none());
+        assert_eq!(content_array[3]["type"], "text");
+        assert_eq!(content_array[4]["type"], "video");
+        assert!(content_array[4].get("video_url").is_none());
     }
 
     /// Tests that empty conversions list preserves all content.
     #[test]
     fn test_convert_media_url_to_placeholder_no_conversions() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "hello"}),
         ];
 
         let conversions: &[(&str, &str)] = &[];
-        let result = convert_media_url_to_placeholder(content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 2);
+        assert_eq!(content_array.len(), 2);
         // Everything should be preserved as-is
-        assert_eq!(result[0]["type"], "image_url");
-        assert!(result[0].get("image_url").is_some());
-        assert_eq!(result[1]["type"], "text");
+        assert_eq!(content_array[0]["type"], "image_url");
+        assert!(content_array[0].get("image_url").is_some());
+        assert_eq!(content_array[1]["type"], "text");
     }
 
     /// Tests that DEFAULT_MEDIA_TYPE_CONVERSIONS only converts image_url,
     /// and preserves other media types like video_url and audio_url.
     #[test]
     fn test_default_media_type_conversions_only_converts_image_url() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}}),
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
@@ -1485,26 +1481,25 @@ mod tests {
         ];
 
         // Use the actual DEFAULT_MEDIA_TYPE_CONVERSIONS
-        let result =
-            convert_media_url_to_placeholder(content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+        convert_media_url_to_placeholder(&mut content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
 
-        assert_eq!(result.len(), 4);
+        assert_eq!(content_array.len(), 4);
 
         // image_url SHOULD be converted to image (it's in the default map)
-        assert_eq!(result[0]["type"], "image");
-        assert!(result[0].get("image_url").is_none());
+        assert_eq!(content_array[0]["type"], "image");
+        assert!(content_array[0].get("image_url").is_none());
 
         // video_url should NOT be converted (not in the default map)
-        assert_eq!(result[1]["type"], "video");
-        assert!(result[1].get("video_url").is_none());
+        assert_eq!(content_array[1]["type"], "video");
+        assert!(content_array[1].get("video_url").is_none());
 
         // audio_url should NOT be converted (not in the default map)
-        assert_eq!(result[2]["type"], "audio");
-        assert!(result[2].get("audio_url").is_none());
+        assert_eq!(content_array[2]["type"], "audio");
+        assert!(content_array[2].get("audio_url").is_none());
 
         // text should be unchanged
-        assert_eq!(result[3]["type"], "text");
-        assert_eq!(result[3]["text"], "hello");
+        assert_eq!(content_array[3]["type"], "text");
+        assert_eq!(content_array[3]["text"], "hello");
     }
 
     #[test]

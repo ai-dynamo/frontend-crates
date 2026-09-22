@@ -141,7 +141,7 @@ fn render_message(
                 && !tool_calls.is_empty()
             {
                 prompt.push_str("\n\n");
-                prompt.push_str(&format!("<{}function_calls>\n", tokens::DSML_TOKEN));
+                writeln!(prompt, "<{}function_calls>", tokens::DSML_TOKEN)?;
 
                 for tool_call in tool_calls {
                     let name = tool_call
@@ -164,7 +164,7 @@ fn render_message(
                     )?;
                 }
 
-                prompt.push_str(&format!("</{}function_calls>", tokens::DSML_TOKEN));
+                write!(prompt, "</{}function_calls>", tokens::DSML_TOKEN)?;
             }
 
             prompt.push_str(tokens::EOS);
@@ -316,6 +316,20 @@ impl crate::OAIPromptFormatter for DeepSeekV32Formatter {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn tool_name_keeps_literal_arguments_placeholder() {
+        let messages = vec![json!({"role": "assistant", "tool_calls": [{
+            "function": {"name": "n{arguments}n", "arguments": "{\"k\":\"v\"}"}
+        }]})];
+        let prompt = encode_messages(&messages, ThinkingMode::Chat, false).unwrap();
+        assert_eq!(
+            prompt,
+            "\n\n<｜DSML｜function_calls>\n<｜DSML｜invoke name=\"n{arguments}n\">\n\
+             <｜DSML｜parameter name=\"k\" string=\"true\">v</｜DSML｜parameter>\n\
+             </｜DSML｜invoke>\n</｜DSML｜function_calls><｜end▁of▁sentence｜>"
+        );
+    }
 
     #[test]
     fn test_simple_conversation() {

@@ -125,8 +125,8 @@ fn render_message(
         "user" => {
             prompt.push_str(tokens::USER_START);
             if let Some(blocks) = msg.get("content_blocks").and_then(|b| b.as_array()) {
-                for (index, block) in blocks.iter().enumerate() {
-                    if index > 0 {
+                for (block_idx, block) in blocks.iter().enumerate() {
+                    if block_idx > 0 {
                         prompt.push_str("\n\n");
                     }
                     let block_type = block.get("type").and_then(|v| v.as_str()).unwrap_or("");
@@ -148,9 +148,6 @@ fn render_message(
                         }
                     }
                 }
-            } else {
-                let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
-                prompt.push_str(content);
             }
         }
 
@@ -194,14 +191,15 @@ fn render_message(
                 && !tool_calls.is_empty()
             {
                 prompt.push_str("\n\n");
-                prompt.push_str(&format!(
-                    "<{}{}>\n",
+                writeln!(
+                    prompt,
+                    "<{}{}>",
                     tokens::DSML_TOKEN,
                     encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
-                ));
+                )?;
 
-                for (index, tc) in tool_calls.iter().enumerate() {
-                    if index > 0 {
+                for (call_idx, tc) in tool_calls.iter().enumerate() {
+                    if call_idx > 0 {
                         prompt.push('\n');
                     }
                     // Accept both OpenAI-format (nested `function`) and internal
@@ -227,11 +225,12 @@ fn render_message(
                         encoding.tag("invoke", " invoke")
                     )?;
                 }
-                prompt.push_str(&format!(
+                write!(
+                    prompt,
                     "\n</{}{}>",
                     tokens::DSML_TOKEN,
                     encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
-                ));
+                )?;
             }
 
             if !wo_eos {
@@ -330,28 +329,12 @@ pub fn encode_messages_with_options(
     drop_thinking: bool,
     reasoning_effort: Option<ReasoningEffort>,
 ) -> Result<String> {
-    encode_messages_with_encoding(
-        messages,
-        thinking_mode,
-        add_bos_token,
-        drop_thinking,
-        Encoding::V4(reasoning_effort),
-    )
-}
-
-pub(super) fn encode_messages_with_encoding(
-    messages: &[JsonValue],
-    thinking_mode: ThinkingMode,
-    add_bos_token: bool,
-    drop_thinking: bool,
-    encoding: Encoding,
-) -> Result<String> {
     encode_owned_messages(
         messages.to_vec(),
         thinking_mode,
         add_bos_token,
         drop_thinking,
-        encoding,
+        Encoding::V4(reasoning_effort),
     )
 }
 

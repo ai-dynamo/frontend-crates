@@ -200,6 +200,11 @@ impl std::error::Error for PromptRenderError {}
 pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
+    /// Optional fast path for rendering without calling [`Self::messages`].
+    ///
+    /// Returning `Some` requires the same serialized messages, including all
+    /// transformations, as `messages()`. Adapters that rewrite messages must
+    /// return `None` unless this slice includes those same changes.
     fn typed_messages(&self) -> Option<&[dynamo_protocols::types::ChatCompletionRequestMessage]> {
         None
     }

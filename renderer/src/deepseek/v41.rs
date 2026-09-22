@@ -159,6 +159,10 @@ pub fn encode_messages(
     drop_thinking: bool,
     reasoning_effort: u8,
 ) -> Result<String> {
+    ensure!(
+        (1..=100).contains(&reasoning_effort),
+        "DeepSeek V4.1 reasoning effort must be within 1–100"
+    );
     encode_owned_messages(
         messages.to_vec(),
         thinking_mode,

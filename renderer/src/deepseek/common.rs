@@ -312,7 +312,9 @@ fn preserve_user_fields(target: &mut JsonValue, source: &JsonValue) {
 }
 
 // Merge `tool` role messages into preceding user `content_blocks` and collapse
-// consecutive user turns, matching Python's `merge_tool_messages`.
+// consecutive user turns with Python-compatible rendering. The internal user
+// representation keeps text only in content_blocks, without Python's duplicate
+// content field.
 pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
     let mut merged: Vec<JsonValue> = Vec::with_capacity(messages.len());
 
@@ -618,6 +620,11 @@ mod tests {
             serde_json::json!({"role": "user", "content": "separate"}),
         ]);
         assert_eq!(merged.len(), 2);
+        assert!(
+            merged
+                .iter()
+                .all(|message| message.get("content").is_none())
+        );
         assert_eq!(
             merged[0]["content_blocks"],
             serde_json::json!([

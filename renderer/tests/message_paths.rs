@@ -16,6 +16,52 @@ struct Request<'a> {
     args: &'a HashMap<String, serde_json::Value>,
 }
 
+#[test]
+fn typed_and_generic_content_normalization_match() {
+    let array_template = "{% for m in messages %}{% for part in m.content %}{% if part.type == 'text' %}{{ part.text }}{% elif part.type == 'image' %}<image>{% endif %}{% endfor %}{% endfor %}";
+    let phi_template = "{% for m in messages %}{{ '<|' + m.role + '|>' + m.content + '<|end|>' }}{% endfor %}<|assistant|>";
+    let passthrough = "{% for m in messages %}{{ m.content }}{% endfor %}";
+    let mixed = json!([
+        {"type": "text", "text": "Before "},
+        {"type": "image_url", "image_url": {"url": "https://example.com/image.png"}},
+        {"type": "text", "text": " after"}
+    ]);
+    for (template, content, expected) in [
+        (array_template, json!("Hello 中文"), "Hello 中文"),
+        (array_template, mixed.clone(), "Before <image> after"),
+        (
+            phi_template,
+            mixed.clone(),
+            "<|user|>Before <|image_1|> after<|end|><|assistant|>",
+        ),
+        (passthrough, mixed, "Before  after"),
+    ] {
+        let PromptFormatter::OAI(formatter) = PromptFormatter::from_parts(
+            serde_json::from_value(json!({"chat_template": template})).unwrap(),
+            ContextMixins::new(&[]),
+            true,
+        )
+        .unwrap();
+        let inner = serde_json::from_value(json!({
+            "model": "test", "messages": [{"role": "user", "content": content}]
+        }))
+        .unwrap();
+        let args = HashMap::new();
+        let typed = Request {
+            inner: &inner,
+            typed: true,
+            args: &args,
+        };
+        let generic = Request {
+            typed: false,
+            ..typed
+        };
+        let actual = formatter.render(&typed).unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(formatter.render(&generic).unwrap(), actual);
+    }
+}
+
 impl OAIChatLikeRequest for Request<'_> {
     fn model(&self) -> String {
         self.inner.model()
