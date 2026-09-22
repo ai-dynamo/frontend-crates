@@ -1,4 +1,4 @@
-# conformance/toolcalling/fixtures-stream-v2
+# conformance/toolcalling/fixtures-stream-v1
 
 Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the frontend-crates-owned `conformance/toolcalling/fixtures-batch-v1/` batch corpus when building the HTML matrix.
 
@@ -6,18 +6,18 @@ Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are
 
 The `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the v1 corpus.
 
-Complete batch text fed through streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v2/`. Use both directories when adding a v2 streaming parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the streaming parser reconstructs the batch result.
+Complete batch text fed through streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v1/`. Use both directories when adding a v2 streaming parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the streaming parser reconstructs the batch result.
 
 ## Layout (versioned, no unversioned baseline)
 
 This corpus is versioned exactly like the batch corpus (`conformance/toolcalling/fixtures-batch-v1/`): there is **no** unversioned "baseline"/anchor dir. The baseline is whichever version is lowest, per impl, found dynamically at resolve time.
 
 ```
-fixtures-stream-v2/
-  inputs/<family>/TOOLCALLING.streamv2.*.yaml        # shared per-chunk delta_text
+fixtures-stream-v1/
+  inputs/<family>/TOOLCALLING.streamv1.*.yaml        # shared per-chunk delta_text
                                                      # (+ delta_token_ids/finish_reason,
                                                      #  tools, description) — NO expected
-  <impl>-<version>/<family>/TOOLCALLING.streamv2.*.yaml
+  <impl>-<version>/<family>/TOOLCALLING.streamv1.*.yaml
                                                      # that impl's per-chunk expected
                                                      # (+ normal_text); lowest version =
                                                      # full anchor, higher = changed-only
@@ -35,9 +35,9 @@ Current version dirs: `dynamo_v2-<version>` (Dynamo v2 stream parser, at its cap
 
 ```yaml
 family: harmony
-mode: streamv2
+mode: streamv1
 cases:
-  TOOLCALLING.streamv2.1.a:
+  TOOLCALLING.streamv1.1.a:
     tools: [...]
     chunks:
     - {delta_text: '<|message|>', delta_token_ids: [200008]}
@@ -48,10 +48,10 @@ cases:
 
 ```yaml
 family: harmony
-mode: streamv2
+mode: streamv1
 captured_with: {vllm_python: '0.23.0'}
 cases:
-  TOOLCALLING.streamv2.1.a:
+  TOOLCALLING.streamv1.1.a:
     chunks:
     - {expected: []}
     - expected:
@@ -86,10 +86,10 @@ Use `conformance/utils/capture.sh` for new captures:
 ```bash
 # Example: capture one Dynamo v2 Rust stream fixture into JSON for inspection.
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/inputs/harmony/TOOLCALLING.streamv2.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
   --output /tmp/dynamo_stream.json
 
-# Example: capture all stream behavior and refresh `fixtures-stream-v2/`.
+# Example: capture all stream behavior and refresh `fixtures-stream-v1/`.
 conformance/utils/capture.sh stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
@@ -100,7 +100,7 @@ Use `capture.sh stream` for all-family captures; do not add a second wrapper for
 
 ## Conformance Tests
 
-`conformance/tests/conformance_toolcalling_stream.rs` drives Dynamo parser v2 over stream fixtures, checks per-chunk output, and checks the assembled result. `conformance/tests/conformance_toolcalling_batch_via_stream.rs` checks complete batch text through the same streaming parsers using `fixtures-batch-on-stream-v2/`.
+`conformance/tests/conformance_toolcalling_stream.rs` drives Dynamo parser v2 over stream fixtures, checks per-chunk output, and checks the assembled result. `conformance/tests/conformance_toolcalling_batch_via_stream.rs` checks complete batch text through the same streaming parsers using `fixtures-batch-on-stream-v1/`.
 
 ```bash
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture

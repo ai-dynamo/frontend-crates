@@ -57,8 +57,8 @@ Tool-calling and reasoning archives remain under `conformance/fixtures/`, extrac
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
-toolcalling/fixtures-stream-v2/<family>/          # v2 stream cases
-toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-stream cases
+toolcalling/fixtures-stream-v1/<family>/          # legacy, non-Unified stream cases
+toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on-stream cases
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
@@ -78,7 +78,7 @@ Per-case tagging currently covers the UNIFIED surface only. The reasoning and to
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use the v1 parser; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
+| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use the v1 parser; legacy stream and batch-on-stream tabs use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; legacy tabs use the legacy non-Unified v1 corpus convention; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
 
 ## Running the tests
 
@@ -102,8 +102,8 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
 | `conformance_toolcalling` | v1 batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
-| `conformance_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v2/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the batch-on-stream expectations. |
-| `conformance_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures (`toolcalling/fixtures-stream-v2/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
+| `conformance_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v1/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the batch-on-stream expectations. |
+| `conformance_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | Legacy stream fixtures (`toolcalling/fixtures-stream-v1/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Every fixture uses an explicit implementation key: `expected.dynamo_v1`, `expected.dynamo_v2`, `expected.vllm_rust`, `expected.vllm_python`, `expected.sglang_python`. Dynamo v1 and v2 are separate impls with separate version lineages (`dynamo_v1-3.0.0/`, `dynamo_v2-0.1.11/`) — exactly like the vLLM/SGLang runtime variants. Legacy spellings (`dynamo`, `dynamo_rust`, `vllm`, `sglang`) are still accepted on read via the alias table in `utils/src/impls.py`.
 
@@ -117,7 +117,7 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. Keep the existing stream archive format and include only the affected family's changed captures. The Unified YAML migration does not change this workflow.
 
-The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
+The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
 
 ## Fixture Workflows
 
@@ -205,17 +205,17 @@ The `rust` CI job checks out the LFS store (`lfs: true`), extracts the manifest-
 
 - `conformance_toolcalling`: v1 code vs `expected.dynamo_v1` in the `dynamo_v1-<ver>/` dir of `fixtures-batch-v1`.
 - `conformance_toolcalling_stream`: v2 code vs `expected.dynamo_v2` folded from the LOWEST `dynamo_v2-<ver>/` dir — the v2 anchor. (The v1-jail reference lives in its own `dynamo_v1-3.0.0/` namespace and never enters the v2 fold. Overlay folding up to the pinned crate version is a follow-up; until then an intended v2 output change must be reflected in the anchor's expected blocks at re-capture.)
-- `conformance_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v2` expectations.
+- `conformance_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v1` expectations.
 
 A parser change that alters output fails CI until the fixtures are re-captured and committed (workflow 2) — CI compares Dynamo against the pinned shard YAMLs, nothing else. The `conformance-table` CI job runs exactly one command, `conformance/utils/check.sh ci`, which re-renders both HTML pages from the same pinned store, runs the coverage/marker lint (section 8), and the chart-invariant guards. To add or change a conformance gate, edit `run_ci()` in `check.sh`; the workflow file stays untouched.
 
-### 5. Add a new test case (e.g. a new `TOOLCALLING.streamv2.5.h`)
+### 5. Add a new test case (e.g. a new `TOOLCALLING.streamv1.5.h`)
 
 A "case" is one numeric-suffix sub-case shared across families. New case IDs use `<num>-<num>` or `<letters/num>-<num>`; do not allocate new letter suffixes because a long-running taxonomy can exhaust `a` through `z`. Adding one is FOUR edits, in order:
 
-1. **Input.** Add the case to `toolcalling/fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
-2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
-3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv2 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. That list now lives in exactly one place, so a case is one edit. A new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
+1. **Input.** Add the case to `toolcalling/fixtures-stream-v1/inputs/<family>/TOOLCALLING.streamv1.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
+2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
+3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv1 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. That list now lives in exactly one place, so a case is one edit. A new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
 4. **Capture + package.** `refresh_dynamo_captures.py stream` (records the Dynamo v2 output for the new case), then `package_fixtures.py`, then commit all three published fixture paths. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
 
 ### 6. Changing an existing Unified test input

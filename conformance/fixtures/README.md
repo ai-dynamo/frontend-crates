@@ -17,13 +17,13 @@ Naming: `<tree>/<impl>-<version>.tar.gz`, where `<version>` is the engine/crate 
 | `toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz` | **Dynamo v1** batch (`dynamo-parsers` 3.0.0) | `expected.dynamo_v1` batch expectations |
 | `toolcalling/fixtures-batch-v1/vllm_python-{0.23.0,0.24.0}.tar.gz` | vLLM Python batch | `expected.vllm_python` |
 | `toolcalling/fixtures-batch-v1/sglang_python-{0.5.12.post1,0.5.14}.tar.gz` | SGLang Python batch | `expected.sglang_python` |
-| `toolcalling/fixtures-stream-v2/inputs.tar.gz` | — | shared per-chunk `delta_text` for the stream corpus |
-| `toolcalling/fixtures-stream-v2/dynamo_v2-0.1.11.tar.gz` | **Dynamo v2** stream (`dynamo-parsers-v2` 0.1.11) | `expected.dynamo_v2` per-chunk expectations — the v2 anchor the parity test folds |
-| `toolcalling/fixtures-stream-v2/dynamo_v1-3.0.0.tar.gz` | **Dynamo v1 JAIL** (`dynamo-parsers` 3.0.0) | v1 jail+batch stream reference for the chart — its own impl namespace, cleanly separate from v2 |
-| `toolcalling/fixtures-stream-v2/vllm_python-{0.23.0,0.24.0}.tar.gz` | vLLM Python stream | `expected.vllm_python` |
-| `toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz` | vLLM Rust stream | `expected.vllm_rust` |
-| `toolcalling/fixtures-stream-v2/sglang_python-{0.5.12.post1,0.5.14}.tar.gz` | SGLang Python stream | `expected.sglang_python` |
-| `toolcalling/fixtures-batch-on-stream-v2.tar.gz` | all impls, one tree | complete batch text fed through STREAMING parsers; versions live in each fixture's `captured_with` |
+| `toolcalling/fixtures-stream-v1/inputs.tar.gz` | — | shared per-chunk `delta_text` for the stream corpus |
+| `toolcalling/fixtures-stream-v1/dynamo_v2-0.1.11.tar.gz` | **Dynamo v2** stream (`dynamo-parsers-v2` 0.1.11) | `expected.dynamo_v2` per-chunk expectations — the v2 anchor the parity test folds |
+| `toolcalling/fixtures-stream-v1/dynamo_v1-3.0.0.tar.gz` | **Dynamo v1 JAIL** (`dynamo-parsers` 3.0.0) | v1 jail+batch stream reference for the chart — its own impl namespace, cleanly separate from v2 |
+| `toolcalling/fixtures-stream-v1/vllm_python-{0.23.0,0.24.0}.tar.gz` | vLLM Python stream | `expected.vllm_python` |
+| `toolcalling/fixtures-stream-v1/vllm_rust-0.23.0.tar.gz` | vLLM Rust stream | `expected.vllm_rust` |
+| `toolcalling/fixtures-stream-v1/sglang_python-{0.5.12.post1,0.5.14}.tar.gz` | SGLang Python stream | `expected.sglang_python` |
+| `toolcalling/fixtures-batch-on-stream-v1.tar.gz` | all impls, one tree | complete batch text fed through STREAMING parsers; versions live in each fixture's `captured_with` |
 | `reasoning/fixtures-v1/inputs.tar.gz` | — | reasoning inputs (v1-era anchor, `captured_with` stamps inside) |
 | `reasoning/fixtures-v1/vllm_python-0.24.0.tar.gz` | vLLM Python reasoning | changed-only overlay |
 | `reasoning/fixtures-v1/sglang_python-0.5.14.tar.gz` | SGLang Python reasoning | changed-only overlay |

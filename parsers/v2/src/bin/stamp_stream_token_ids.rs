@@ -3,7 +3,7 @@
 
 //! Stamp `delta_token_ids` into every chunk of every harmony stream fixture.
 //!
-//! Reads conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.stream.*.yaml,
+//! Reads conformance/toolcalling/fixtures-stream-v1/harmony/TOOLCALLING.stream.*.yaml,
 //! encodes the FULL concatenated delta_text per case with the gpt-oss harmony
 //! tokenizer, then aligns those tokens back to individual chunks by tracking the
 //! decoded byte cursor. The resulting per-chunk token ids form a valid token
@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
         .to_path_buf();
 
     // Stamp the v2 stream overlay only. The v1 conformance corpus stays pristine.
-    let dirs = [repo_root.join("conformance/toolcalling/fixtures-stream-v2/harmony")];
+    let dirs = [repo_root.join("conformance/toolcalling/fixtures-stream-v1/harmony")];
 
     for root in &dirs {
         if !root.exists() {

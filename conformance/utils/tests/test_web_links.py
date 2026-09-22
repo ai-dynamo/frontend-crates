@@ -65,9 +65,9 @@ def test_web_links_pin_sources_and_publish_fixture_inputs():
         f"https://github.com/ai-dynamo/frontend-crates/tree/{revision}/"
         "conformance/fixtures/toolcalling/fixtures-batch-v1/"
     )
-    assert common.fixture_href("deepseek_v4/TOOLCALLING.streamv2.1.yaml") == (
+    assert common.fixture_href("deepseek_v4/TOOLCALLING.streamv1.1.yaml") == (
         "https://ai-dynamo.github.io/frontend-crates/fixtures/toolcalling/"
-        "fixtures-stream-v2/inputs/deepseek_v4/TOOLCALLING.streamv2.1.yaml"
+        "fixtures-stream-v1/inputs/deepseek_v4/TOOLCALLING.streamv1.1.yaml"
     )
     assert common.fixture_href("deepseek_r1/REASONING.batch.1.yaml") == (
         "https://ai-dynamo.github.io/frontend-crates/fixtures/reasoning/"

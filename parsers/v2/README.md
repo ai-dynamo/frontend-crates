@@ -150,15 +150,15 @@ For a new streaming parser family, add or update these files:
 
 - `parsers/v2/src/tool_calling/<family>.rs` for the parser implementation.
 - `parsers/v2/src/tool_calling/registry.rs` for the family registry entry.
-- `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
-- `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
+- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` for per-chunk stream captures.
+- `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
 
 New conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
-- `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
-- `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
+- `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` when adding a new stream-only case or changing stream case descriptions.
+- `conformance/toolcalling/fixtures-stream-v1/README.md` only if the fixture schema or capture convention changes.
 
-Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-batch-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
+Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-batch-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v1/`, and `fixtures-batch-on-stream-v1/` until v2 replaces v1.
 
 ## Fixture Format
 
@@ -166,14 +166,14 @@ v2 fixtures should use explicit implementation names. Do not rely on renderer in
 
 ```yaml
 captured_with:
-  dynamo_rust: Dynamo parser v2
+  dynamo_v2: Dynamo parser v2
   vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
   vllm_python: 0.22.0
   sglang_python: 0.5.12.post1
 cases:
-  TOOLCALLING.streamv2.4.a:
+  TOOLCALLING.streamv1.4.a:
     expected:
-      dynamo_rust:
+      dynamo_v2:
         calls: []
         normal_text: ''
       vllm_rust:
@@ -228,10 +228,10 @@ Harmony is only the first example; DS4 and the other streaming families follow t
 ## Which Fixture Do I Edit?
 
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
-- `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
-- `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
+- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
+- `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
 
-Decision rule for a new model: add the stream cases under `fixtures-stream-v2/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
+Decision rule for a new model: add the stream cases under `fixtures-stream-v1/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
 
 ## How To Record Divergences
 
@@ -249,7 +249,7 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 For a new parser family, done means:
 
 - Rust parser unit tests pass and the Dynamo fixture tests pass.
-- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the stream-v2 corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
+- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the legacy stream corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
 - vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
 - vLLM Rust captures include the source tag/commit in `captured_with` when available.
 - The HTML matrix is regenerated locally and has no unexplained `?`, no accidental tool-call markup leaks (`↯`), and no red-orphan tokens in the popups (undeclared markers).
@@ -274,11 +274,11 @@ Capture one Dynamo v2 stream fixture into JSON:
 
 ```bash
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/inputs/harmony/TOOLCALLING.streamv2.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
   --output /tmp/dynamo_stream.json
 ```
 
-Capture all stream behavior and refresh v2 stream fixtures:
+Capture all stream behavior and refresh the legacy v1 stream corpus:
 
 ```bash
 conformance/utils/capture.sh stream \
@@ -287,7 +287,7 @@ conformance/utils/capture.sh stream \
   --vllm-rust-source ~/dynamo/vllm-0.22.0
 ```
 
-Capture all batch-on-stream behavior and refresh v2 batch-on-stream fixtures:
+Capture all batch-on-stream behavior and refresh the legacy v1 batch-on-stream corpus:
 
 ```bash
 conformance/utils/capture.sh batch-on-stream \

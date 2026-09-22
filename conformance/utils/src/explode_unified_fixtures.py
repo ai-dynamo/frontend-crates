@@ -18,7 +18,7 @@ Output (conformance/unified/, one YAML per case per family per version-dir):
   vllm_rust-<ver>/<family>/...
   sglang_python-<ver>/<family>/...
 
-Same schema shape as toolcalling/fixtures-stream-v2 (family/mode/captured_with/cases).
+Same schema shape as toolcalling/fixtures-stream-v1 (family/mode/captured_with/cases).
 Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 """
 import shutil

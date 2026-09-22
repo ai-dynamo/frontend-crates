@@ -224,13 +224,13 @@ def test_e2e_tags_agree_between_descriptions_and_markdown() -> None:
 # and nothing complained. Require the full name AND require it to exist.
 
 _SIBLING_DOCS = {
-    "TOOLCALLING.streamv2": UTILS / "lib" / "parsers" / "TOOLCALLING_STREAMING_V2_CASES.md",
+    "TOOLCALLING.streamv1": UTILS / "lib" / "parsers" / "TOOLCALLING_STREAMING_V1_CASES.md",
     "TOOLCALLING.batch": UTILS / "lib" / "parsers" / "TOOLCALLING_CASES.md",
     "REASONING.batch": UTILS / "lib" / "parsers" / "REASONING_CASES.md",
 }
-_QUALIFIED = re.compile(r"\b(?:TOOLCALLING|REASONING)\.(?:batch|streamv2)\.\d+(?:\.[a-z])?")
+_QUALIFIED = re.compile(r"\b(?:TOOLCALLING|REASONING)\.(?:batch|streamv1)\.\d+(?:\.[a-z])?")
 # a stage segment with no axis in front of it — the shape that named nothing
-_BARE = re.compile(r"(?<![.\w])(?:batch|streamv2)\.\d+(?:\.[a-z])?")
+_BARE = re.compile(r"(?<![.\w])(?:batch|streamv1)\.\d+(?:\.[a-z])?")
 _CITING = [UTILS / "lib" / "parsers" / "UNIFIED_CASES.md", SRC / "gen_unified_golden.py"]
 
 
@@ -239,7 +239,7 @@ def test_sibling_case_references_are_fully_qualified() -> None:
     offenders = {k: v for k, v in offenders.items() if v}
     assert not offenders, (
         f"unqualified case references (missing the axis prefix): {offenders}. "
-        "Cite the full name, e.g. `TOOLCALLING.streamv2.2.a`, not `streamv2.2.a`."
+        "Cite the full name, e.g. `TOOLCALLING.streamv1.2.a`, not `streamv1.2.a`."
     )
 
 
@@ -250,7 +250,7 @@ def test_sibling_case_references_exist() -> None:
         bad = [
             ref
             for ref in sorted(set(_QUALIFIED.findall(f.read_text(encoding="utf-8"))))
-            # group-level ids (`...streamv2.2`) have no entry of their own; a sub-case does
+            # group-level ids (`...streamv1.2`) have no entry of their own; a sub-case does
             if not any(ref.startswith(k) and ref in body for k, body in bodies.items())
         ]
         if bad:

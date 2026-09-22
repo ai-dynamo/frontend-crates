@@ -402,7 +402,7 @@ def test_explanation_and_legacy_reason_both_recognized() -> None:
 
 
 # test_dsv4_v2_parser_cell_links_dsml_parser moved to test_model.py as a model/view
-# assertion (test_v2_deepseek_v4_streamv2_parser_links_dsml) — it now checks the parser
+# assertion (test_v2_deepseek_v4_streamv1_parser_links_dsml) — it now checks the parser
 # cell in the built model rather than calling the _parser_cell_html emitter directly.
 
 
@@ -523,7 +523,7 @@ def test_vllm_python_leak_marks_red_and_lightning() -> None:
     assert facts[S]["agrees"] is True
 
 
-def test_stream_v2_x_marker_shows_vllm_rust_exception_message() -> None:
+def test_stream_v1_x_marker_shows_vllm_rust_exception_message() -> None:
     # A peer `exception` block (the parser EXISTS, RAN, and RAISED — distinct from a
     # benign `unavailable`) gets the `✗` error marker. The verbatim message (the named
     # vLLM Rust crate variant) is surfaced in the model tooltip (JS-rendered); assert on
@@ -531,8 +531,8 @@ def test_stream_v2_x_marker_shows_vllm_rust_exception_message() -> None:
     exc = 'ToolParserError::ParsingFailed (near " not")'
     case = {
         "__family": "hermes",
-        "__case_id": "TOOLCALLING.streamv2.4.a",
-        "__fixture_path": "toolcalling/fixtures-stream-v2/hermes/TOOLCALLING.streamv2.4.yaml",
+        "__case_id": "TOOLCALLING.streamv1.4.a",
+        "__fixture_path": "toolcalling/fixtures-stream-v1/hermes/TOOLCALLING.streamv1.4.yaml",
         "description": "demo",
         "expected": {
             D: {"calls": [], "normal_text": ""},
@@ -782,7 +782,7 @@ _DOC_FILES = (
     UTILS / "README.md",
     REPO / "parsers" / "v2" / "README.md",
     REPO / "conformance" / "README.md",
-    REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "README.md",
+    REPO / "conformance" / "toolcalling" / "fixtures-stream-v1" / "README.md",
 )
 _STALE_COMMAND_NAMES = (
     "capture_v2.sh", "check_v2.sh",
@@ -864,7 +864,7 @@ def test_v2_overlays_are_canonical_only() -> None:
 
 
 def test_every_stream_family_has_registry_row_and_fixtures() -> None:
-    """D6: each fixtures-stream-v2/inputs/<family> has a parser_families.yaml row, and
+    """D6: each fixtures-stream-v1/inputs/<family> has a parser_families.yaml row, and
     each Dynamo-v2 family in the registry has at least one stream input fixture.
 
     The stream corpus is versioned like the batch corpus (no unversioned anchor):
@@ -872,7 +872,7 @@ def test_every_stream_family_has_registry_row_and_fixtures() -> None:
     expected, not families (resolve_stream_fixtures.py folds them into the inputs)."""
     registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
     # Fixtures are extracted from the in-repo LFS store; resolve against the cache.
-    inputs_root = _fixtures_cache_root() / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    inputs_root = _fixtures_cache_root() / "toolcalling" / "fixtures-stream-v1" / "inputs"
     if not inputs_root.is_dir():
         import pytest
 

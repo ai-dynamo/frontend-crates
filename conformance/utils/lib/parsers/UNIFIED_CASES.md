@@ -1,6 +1,6 @@
 # Unified Parser Cases (reasoning + content + tool calls, one ordered stream)
 
-Reference taxonomy for the **unified** conformance surface: one parser owns the whole assistant-output grammar and emits ONE ordered event stream. Sibling stage docs: `REASONING_CASES.md` (reasoning only), `TOOLCALLING_CASES.md` / `TOOLCALLING_STREAMING_V2_CASES.md` (tool calls only). This surface is what those two cannot express — the ORDER between reasoning and tool calls, and reasoning that occurs *between* or *after* tool calls.
+Reference taxonomy for the **unified** conformance surface: one parser owns the whole assistant-output grammar and emits ONE ordered event stream. Sibling stage docs: `REASONING_CASES.md` (reasoning only), `TOOLCALLING_CASES.md` / `TOOLCALLING_STREAMING_V1_CASES.md` (tool calls only). This surface is what those two cannot express — the ORDER between reasoning and tool calls, and reasoning that occurs *between* or *after* tool calls.
 
 The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed canonical files under `conformance/fixtures-unified-v2/families/` are derived from it.
 
@@ -62,39 +62,39 @@ The Dynamo column is a per-family mixture. The current corpus families — `deep
 
 ## Quick reference — numbered taxonomy (`UNIFIED.<num>-<num>` / `UNIFIED.<letters/num>-<num>`)
 
-New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<letters>-<num>` for model-specific groups such as `kimi-1`. Existing legacy IDs remain historical fixture identifiers and are translated on read; do not create new ones. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`gemma`, `glm5`, `kimi`, `muse`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
+New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<letters>-<num>` for model-specific groups such as `kimi-1`. Existing legacy IDs remain historical fixture identifiers and are translated on read; do not create new ones. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv1.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`gemma`, `glm5`, `kimi`, `muse`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
 
 ### Group 1 — TC Single call
 - **`1-1`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
 
-### Group 2 — TC Multiple calls (TOOLCALLING.streamv2.2)
-- **`2-1`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv2.2.a.
-- **`2-2`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv2.2.d.
+### Group 2 — TC Multiple calls (TOOLCALLING.streamv1.2)
+- **`2-1`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
+- **`2-2`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
 
-### Group 3 — TC No call (TOOLCALLING.streamv2.3)
-- **`3-1`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
+### Group 3 — TC No call (TOOLCALLING.streamv1.3)
+- **`3-1`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
 ### Group 4 — TC Malformed envelope
 - **`4-1`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
 - **`4-2`** (`tool_markup_only_emits_nothing`) A calls envelope contains no invocation. Both markers are control syntax and the parser emits no event.
 
-### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv2.5)
+### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv1.5)
 - **`5-1`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
-- **`5-2`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv2.5.a.
+- **`5-2`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
 - **`5-3`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
 
-### Group 6 — TC Empty body (TOOLCALLING.streamv2.6)
-- **`6-1`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv2.6.a.
+### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
+- **`6-1`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
 
-### Group 7 — TC Argument fidelity (TOOLCALLING.streamv2.7)
-- **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv2.7.b.
+### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
+- **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
 - **`7-2`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
 
-### Group 8 — TC Content / narration position (TOOLCALLING.streamv2.8)
-- **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv2.8.a.
+### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
+- **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
 - **`8-2`** (`trailing_text_after_tool`) Arbitrary prose AFTER the tool section (P1). vLLM suppresses it. Class LOSS.
-- **`8-3`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv2.8.c.
-- **`8-4`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv2.8.d.
+- **`8-3`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv1.8.c.
+- **`8-4`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv1.8.d.
 - **`8-5`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
 
 ### Group 10 — Reasoning span (`REASONING.*`)

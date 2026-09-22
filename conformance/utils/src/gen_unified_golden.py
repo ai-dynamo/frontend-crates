@@ -553,33 +553,33 @@ CLEAN = [
       "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
-    # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
+    # --- Group 2: multiple tool calls (TOOLCALLING.streamv1.2) — tool-only, green everywhere ---
     ("two_calls",
-     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.",
+     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.",
      [], [("tool", "f", "x", "1"), ("tool", "g", "y", "2")], M, M),
     ("two_calls_same_name",
-     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.",
+     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
-     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
+     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
      [], [("text", "The answer is 42, no tools needed.")], M, M),
 
-    # --- Group 7: argument fidelity (TOOLCALLING.streamv2.7) ---
+    # --- Group 7: argument fidelity (TOOLCALLING.streamv1.7) ---
     ("arg_unicode",
-     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.",
+     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.",
      [], [("tool", "get_weather", "city", "São Paulo 東京")], M, M),
 
-    # --- Group 8: content / narration position (TOOLCALLING.streamv2.8) ---
+    # --- Group 8: content / narration position (TOOLCALLING.streamv1.8) ---
     ("text_before_tool",
-     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.",
+     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.",
      [], [("text", "On it: "), ("tool", "get_weather", "city", "Paris")], M, M),
     ("text_sandwich",
-     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.",
+     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.",
      [], [("text", "Before. "), ("tool", "get_weather", "city", "Paris"), ("text", " After.")], M, M),
     ("text_between_calls",
-     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.",
+     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.",
      [], [("tool", "f", "x", "1"), ("text", " then "), ("tool", "g", "y", "2")], M, M),
     ("narrated_calls",
      "Multiple tool calls with visible narration between each — tool_call -> text -> tool_call -> text -> tool_call. The agentic pattern: call, narrate, call again. Every call and every inter-call text span must surface as its own ordered event.",
@@ -745,7 +745,7 @@ EDGE = [
       }),
 
     ("empty_args",
-     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
+     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv1.6.a.",
      ["P3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -761,7 +761,7 @@ EDGE = [
      }),
 
     ("tool_no_close",
-     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
+     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},

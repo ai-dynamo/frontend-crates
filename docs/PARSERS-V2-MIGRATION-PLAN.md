@@ -40,8 +40,8 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the conformance renderer. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |
-| `conformance/toolcalling/fixtures-stream-v2/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
-| `conformance/toolcalling/fixtures-batch-on-stream-v2/` | v2 frontend-crate-owned | Complete batch text captured through streaming parsers for stream-vs-batch comparison. |
+| `conformance/toolcalling/fixtures-stream-v1/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
+| `conformance/toolcalling/fixtures-batch-on-stream-v1/` | v2 frontend-crate-owned | Complete batch text captured through streaming parsers for stream-vs-batch comparison. |
 | `conformance/utils/src/generate_conformance_table.py` and `conformance/utils/src/conformance_table.html.j2` | v2 frontend-crate-owned | Conformance table renderer. |
 
 ## Migration Steps
@@ -91,8 +91,8 @@ These files exist only for the parser v1/v2 migration and conformance workflow.
 |---|---|
 | `parsers/v2/` | Temporary Rust parser crate for v2 streaming work. |
 | `parsers/v2-py/` | Temporary PyO3 binding crate/package for v2 streaming work. |
-| `conformance/toolcalling/fixtures-stream-v2/` | v2 stream fixtures. |
-| `conformance/toolcalling/fixtures-batch-on-stream-v2/` | v2 batch-on-stream fixture overlays. |
+| `conformance/toolcalling/fixtures-stream-v1/` | Legacy, non-Unified stream fixtures using the v1 corpus convention. |
+| `conformance/toolcalling/fixtures-batch-on-stream-v1/` | Legacy, non-Unified batch-on-stream fixture overlays. |
 | `conformance/utils/src/_common.sh` | Shared stage builder for conformance scripts. |
 | `conformance/utils/check.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run Dynamo parser v2 code. |
 | `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE.html` with the v2 conformance generator. |

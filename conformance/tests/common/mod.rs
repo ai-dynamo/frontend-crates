@@ -291,7 +291,7 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
 }
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
-/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
+/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
 /// readers fold them ascending so the latest capture wins per case.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
