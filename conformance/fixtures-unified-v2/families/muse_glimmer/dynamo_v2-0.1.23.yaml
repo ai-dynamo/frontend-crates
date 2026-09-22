@@ -1,58 +1,11 @@
-schema_version: 2
-family: muse_glimmer
-implementation: dynamo_v2
-parent: null
-runtime_version: 0.1.23
 provenance:
   status: captured
-  record:
+  origin:
     crate_version: 0.1.23
-    git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-    git_head_tree: 43d34cf4403ebdca53667bb672aa00ee6c395414
-    kind: release
-    label: 0.1.23
-    release_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-    release_tag: dynamo-parsers-v2-v0.1.23
-    source_id: sha256:39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-    source_paths:
-    - parsers/v1/src
-    - parsers/v1/Cargo.toml
-    - parsers/v1/build.rs
-    - parsers/v2/src
-    - parsers/v2/Cargo.toml
-    - parsers/v2/build.rs
-    - protocols/src
-    - protocols/Cargo.toml
-    - protocols/build.rs
-    - Cargo.toml
-    - Cargo.lock
-    - rust-toolchain
-    - rust-toolchain.toml
-    - .cargo
     source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-completeness: snapshot
-import_lineage:
-- archive: dynamo_v2-0.1.23.tar.gz
-  sha256: 69dd3be5a0f3a108e513c34a8b3669b405b521061872bfab5b1fb9885ac76880
-  mode: overlay
-- archive: dynamo_v2-0.1.23.patch2.tar.gz
-  sha256: eef07b345f0b7cbcdf12352cbb119d0d022ebfad0e14e69c9114a176e05f47fd
-  mode: overlay
-- archive: dynamo_v2-0.1.23.patch3.tar.gz
-  sha256: de5824f9ff9e4143bcd6ae1d5745bf10f392e8ca6b1655d1eecdbb5bb5ac241a
-  mode: overlay
-- archive: dynamo_v2-0.1.23.patch4.tar.gz
-  sha256: feeb58c36bc927a13600253995fc1f111988d60c7b4879fefceb871a58fb4a65
-  mode: overlay
-- archive: dynamo_v2-0.1.23.patch5.tar.gz
-  sha256: 68ab464c4b7ba7d06a2cc739eb76fedc6139bce10f1fd9dbfccedcff205f92fd
-  mode: overlay
-- archive: dynamo_v2-0.1.23.patch6.tar.gz
-  sha256: 8ab0670f56e5fcddc898ab1e9e856eaad4676047b92806dcbf3c92d0f1a4622d
-  mode: overlay
+    git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
 document:
   mode: unified
-document_overrides: {}
 changes:
   arg_marker_in_string:
     case_key: UNIFIED.7.b
@@ -1634,3 +1587,4 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+document_overrides: {}

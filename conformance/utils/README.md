@@ -2,6 +2,8 @@
 
 This directory is for checking parser behavior and generating an HTML conformance matrix. By default `render_table_v2.sh` writes `conformance/CONFORMANCE_v2.html`, but you can write another file such as `index.html`.
 
+For v2 capture publication, follow [the plain-version YAML contract](../README.md#v2-storage-contract-plain-versioned-yaml-only). Legacy commands below may still emit archives or hash-qualified names; those outputs must not be added to v2 PRs. Report the consumer migration needed instead of extending the old format.
+
 Most work has three steps:
 
 1. Verify parser code, table code, and fixture YAML.

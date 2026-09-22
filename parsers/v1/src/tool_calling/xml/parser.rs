@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
+use super::OrderedArguments;
 use super::parsed_value::{ParsedValue, is_integer_literal, raw_number_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
@@ -391,7 +392,8 @@ fn parse_tool_call_block(
         let param_config = get_arguments_config(function_name, tools);
 
         // Parse parameters from the function body.
-        let mut parameters: HashMap<String, ParsedValue> = HashMap::new();
+        let mut parameters: Vec<(String, ParsedValue)> = Vec::new();
+        let mut parameter_indices: HashMap<&str, usize> = HashMap::new();
 
         for param_cap in parameter_regex.captures_iter(function_body) {
             let param_name_raw = param_cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
@@ -401,12 +403,18 @@ fn parse_tool_call_block(
             if !param_name.is_empty() {
                 let parsed_value =
                     convert_param_value(param_value, param_name, &param_config, function_name);
-                parameters.insert(param_name.to_string(), parsed_value);
+                match parameter_indices.get(param_name).copied() {
+                    Some(index) => parameters[index].1 = parsed_value,
+                    None => {
+                        parameter_indices.insert(param_name, parameters.len());
+                        parameters.push((param_name.to_string(), parsed_value));
+                    }
+                }
             }
         }
 
         // Create tool call response.
-        let arguments_json = serde_json::to_string(&parameters)?;
+        let arguments_json = serde_json::to_string(&OrderedArguments(&parameters))?;
 
         let tool_call = ToolCallResponse {
             id: format!("call-{}", Uuid::new_v4()),
@@ -983,6 +991,41 @@ fahrenheit
         assert_eq!(args["unit"], "fahrenheit");
     }
 
+    #[test]
+    fn test_qwen3_coder_preserves_parameter_order() {
+        let input = r#"<tool_call><function=get_weather><parameter=city>Dallas</parameter><parameter=state>TX</parameter><parameter=unit>fahrenheit</parameter></function></tool_call>"#;
+
+        let (calls, _) = try_tool_call_parse_xml(input, &XmlParserConfig::default(), None).unwrap();
+
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"city":"Dallas","state":"TX","unit":"fahrenheit"}"#
+        );
+    }
+
+    #[test]
+    fn test_minimax_m2_preserves_parameter_order() {
+        let input = r#"<minimax:tool_call><invoke name="get_weather"><parameter name="city">Dallas</parameter><parameter name="state">TX</parameter><parameter name="unit">fahrenheit</parameter></invoke></minimax:tool_call>"#;
+
+        let (calls, _) = try_tool_call_parse_xml(input, &minimax_m2_config(), None).unwrap();
+
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"city":"Dallas","state":"TX","unit":"fahrenheit"}"#
+        );
+    }
+
+    #[test]
+    fn test_duplicate_parameter_keeps_first_position_and_last_value() {
+        let input = r#"<tool_call><function=get_weather><parameter=city>Dallas</parameter><parameter=state>TX</parameter><parameter=unit>fahrenheit</parameter><parameter=state>CA</parameter></function></tool_call>"#;
+
+        let (calls, _) = try_tool_call_parse_xml(input, &XmlParserConfig::default(), None).unwrap();
+
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"city":"Dallas","state":"CA","unit":"fahrenheit"}"#
+        );
+    }
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.8.c in tests/parity/toolcalling/fixtures/qwen3_coder/TOOLCALLING.batch.8.yaml.
     #[test] // TOOLCALLING.batch.8
     fn test_parse_with_normal_text() {

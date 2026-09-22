@@ -116,13 +116,9 @@ fn template_options_set_numeric_effort_and_disable_thinking() {
 }
 
 #[test]
-fn text_only_boundary_rejects_media() {
-    for block in [
-        json!({"type":"image_url","image_url":{"url":"https://example.com/image.png"}}),
-        json!({"type":"input_audio","input_audio":{"data":"AAAA","format":"wav"}}),
-    ] {
-        assert!(render(json!({"messages":[{"role":"user","content":[block]}]})).is_err());
-    }
+fn unsupported_media_and_literal_image_tokens_are_rejected() {
+    let block = json!({"type":"input_audio","input_audio":{"data":"AAAA","format":"wav"}});
+    assert!(render(json!({"messages":[{"role":"user","content":[block]}]})).is_err());
     assert!(
         render(json!({"messages":[{"role":"user","content":"<｜deepseek_image｜>"}]})).is_err()
     );
@@ -324,4 +320,64 @@ fn normalized_effort_uses_the_api_mapping() {
     let output = render(json!({"reasoning_effort": "none", "chat_template_args": {"reasoning_effort": "none", "thinking": false}})).unwrap();
     assert!(!output.contains("Reasoning Effort:"));
     assert!(output.ends_with("</think>"));
+}
+
+#[test]
+fn typed_api_image_messages_match_the_reference() {
+    let cases: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/deepseek_v41.json")).unwrap();
+    // Effort mapping is covered separately; exercise each image shape in both modes.
+    for case in cases.iter().filter(|case| {
+        let name = case["name"].as_str().unwrap();
+        name.starts_with("image-") && (name.ends_with("-chat") || name.ends_with("-high"))
+    }) {
+        let effort = if case["thinking"].as_bool().unwrap() {
+            "high"
+        } else {
+            "none"
+        };
+        let output =
+            render(json!({"messages": case["messages"], "reasoning_effort": effort})).unwrap();
+        assert_eq!(
+            output,
+            case["expected"].as_str().unwrap(),
+            "{}",
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn image_normalization_rejects_missing_sources_and_literal_markers() {
+    use dynamo_renderer::deepseek::{common::ThinkingMode, v41::encode_messages};
+    for message in [
+        json!({"role":"user","content":[{"type":"image_url"}]}),
+        json!({"role":"user","content":[{"type":"image_url","image_url":{"url":""}}]}),
+        json!({"role":"user","content":[{"type":"text","text":"<｜deepseek_image｜>"}]}),
+        json!({"role":"assistant","content":"", "reasoning_content":"<｜deepseek_image｜>"}),
+        json!({"role":"user","content":[{"type":"video_url","video_url":{"url":"https://example.com/v.mp4"}}]}),
+    ] {
+        assert!(encode_messages(&[message], ThinkingMode::Chat, true, 75).is_err());
+    }
+}
+
+#[test]
+fn typed_cached_image_requests_validate_sources() {
+    for role in ["user", "tool"] {
+        for image_url in [json!(null), json!({"url":""})] {
+            let output = render(json!({"messages":[{
+                "role":role,"tool_call_id":"shot1","content":[
+                    {"type":"image_url","image_url":image_url,"uuid":"photo-1"}
+                ]
+            }],"reasoning_effort":"none"}))
+            .unwrap();
+            assert_eq!(output.matches("<｜deepseek_image｜>").count(), 1);
+        }
+    }
+    for part in [
+        json!({"type":"image_url","image_url":{"url":""}}),
+        json!({"type":"image_url","uuid":""}),
+    ] {
+        assert!(render(json!({"messages":[{"role":"user","content":[part]}]})).is_err());
+    }
 }
