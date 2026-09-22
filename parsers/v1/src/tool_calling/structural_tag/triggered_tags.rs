@@ -79,7 +79,6 @@ pub(crate) fn build_triggered_tags(
             tags,
             at_least_one,
             stop_after_first: ctx.stop_after_first(),
-            excludes: vec![],
         }),
     }))
 }

@@ -17,7 +17,7 @@ use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
 use super::format::{
     AnyTextFormat, ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, OptionalFormat,
     OrFormat, RegexFormat, SequenceFormat, StarFormat, StructuralTag, TagFormat,
-    TagsWithSeparatorFormat, TriggeredTagsFormat,
+    TagsWithSeparatorFormat,
 };
 use crate::tool_calling::ToolDefinition;
 
@@ -271,7 +271,20 @@ fn schema_types(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Ve
 
 fn single_xtml_type(schema: &Value, root: &Value) -> Option<&'static str> {
     let types = schema_types(schema, root, &HashSet::new());
-    (types.len() == 1).then(|| types[0].xtml_name())
+    let xtml_types = types
+        .into_iter()
+        .map(JsonType::xtml_name)
+        .collect::<HashSet<_>>();
+    (xtml_types.len() == 1).then(|| *xtml_types.iter().next().expect("one XTML type"))
+}
+
+fn xtml_types(schema: &Value, root: &Value) -> Vec<&'static str> {
+    let mut seen = HashSet::new();
+    schema_types(schema, root, &HashSet::new())
+        .into_iter()
+        .map(JsonType::xtml_name)
+        .filter(|xtml_type| seen.insert(*xtml_type))
+        .collect()
 }
 
 fn bounded_string_regex(schema: &Map<String, Value>) -> Option<String> {
@@ -285,6 +298,78 @@ fn bounded_string_regex(schema: &Map<String, Value>) -> Option<String> {
         .filter(|min| *min <= max_len)
         .unwrap_or(0);
     Some(format!("{STRING_ATOM}{{{min_len},{max_len}}}"))
+}
+
+fn string_content_format(schema: &Value) -> Format {
+    let Some(schema) = schema.as_object() else {
+        return Format::AnyText(AnyTextFormat {
+            excludes: vec![CLOSE.to_string()],
+        });
+    };
+
+    let enum_values = schema
+        .get("enum")
+        .and_then(Value::as_array)
+        .cloned()
+        .or_else(|| {
+            schema
+                .get("const")
+                .and_then(Value::as_str)
+                .map(|value| vec![Value::String(value.to_string())])
+        });
+    if let Some(values) = enum_values.filter(|values| {
+        !values.is_empty()
+            && values.len() <= 256
+            && values
+                .iter()
+                .all(|value| value.as_str().is_some_and(|string| !string.contains("<|")))
+    }) {
+        return one_of(
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .map(|value| {
+                    Format::ConstString(ConstStringFormat {
+                        value: value.to_string(),
+                    })
+                })
+                .collect(),
+        );
+    }
+
+    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str)
+        && !schema.contains_key("minLength")
+        && !schema.contains_key("maxLength")
+    {
+        let anchored_start = pattern.starts_with('^');
+        let anchored_end = pattern.ends_with('$') && !pattern.ends_with("\\$");
+        let pattern = pattern
+            .strip_prefix('^')
+            .unwrap_or(pattern)
+            .strip_suffix('$')
+            .unwrap_or_else(|| pattern.strip_prefix('^').unwrap_or(pattern));
+        let prefix = if anchored_start {
+            String::new()
+        } else {
+            format!("{STRING_ATOM}*")
+        };
+        let suffix = if anchored_end {
+            String::new()
+        } else {
+            format!("{STRING_ATOM}*")
+        };
+        return Format::Regex(RegexFormat {
+            pattern: format!("{prefix}(?:{pattern}){suffix}"),
+        });
+    }
+
+    if let Some(pattern) = bounded_string_regex(schema) {
+        return Format::Regex(RegexFormat { pattern });
+    }
+
+    Format::AnyText(AnyTextFormat {
+        excludes: vec![CLOSE.to_string()],
+    })
 }
 
 fn argument_tag(
@@ -309,41 +394,7 @@ fn argument_tag(
     );
 
     let content = if json_type == "string" {
-        let enum_values = schema_object
-            .get("enum")
-            .and_then(Value::as_array)
-            .cloned()
-            .or_else(|| {
-                schema_object
-                    .get("const")
-                    .and_then(Value::as_str)
-                    .map(|value| vec![Value::String(value.to_string())])
-            });
-        if let Some(values) = enum_values.filter(|values| {
-            !values.is_empty()
-                && values.len() <= 256
-                && values
-                    .iter()
-                    .all(|value| value.as_str().is_some_and(|string| !string.contains("<|")))
-        }) {
-            one_of(
-                values
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .map(|value| {
-                        Format::ConstString(ConstStringFormat {
-                            value: value.to_string(),
-                        })
-                    })
-                    .collect(),
-            )
-        } else if let Some(pattern) = bounded_string_regex(schema_object) {
-            Format::Regex(RegexFormat { pattern })
-        } else {
-            Format::AnyText(AnyTextFormat {
-                excludes: vec![CLOSE.to_string()],
-            })
-        }
+        string_content_format(schema)
     } else {
         let mut embedded = schema_object.clone();
         if let Some(root_defs) = root_defs {
@@ -393,6 +444,75 @@ fn root_definitions(parameters: &Map<String, Value>) -> Map<String, Value> {
         .collect()
 }
 
+fn resolve_local_refs(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Option<Value> {
+    match schema {
+        Value::Array(values) => values
+            .iter()
+            .map(|value| resolve_local_refs(value, root, seen_refs))
+            .collect::<Option<Vec<_>>>()
+            .map(Value::Array),
+        Value::Object(object) => {
+            if let Some(reference) = object.get("$ref").and_then(Value::as_str) {
+                if seen_refs.contains(reference) {
+                    return None;
+                }
+                let target = resolve_local_ref(reference, root)?;
+                let mut nested_seen = seen_refs.clone();
+                nested_seen.insert(reference.to_string());
+                let resolved = resolve_local_refs(target, root, &nested_seen)?;
+                let siblings = object
+                    .iter()
+                    .filter(|(key, _)| key.as_str() != "$ref")
+                    .map(|(key, value)| {
+                        resolve_local_refs(value, root, seen_refs).map(|value| (key.clone(), value))
+                    })
+                    .collect::<Option<Map<_, _>>>()?;
+                if siblings.is_empty() {
+                    return Some(resolved);
+                }
+                return Some(serde_json::json!({
+                    "allOf": [resolved, Value::Object(siblings)]
+                }));
+            }
+
+            object
+                .iter()
+                .map(|(key, value)| {
+                    resolve_local_refs(value, root, seen_refs).map(|value| (key.clone(), value))
+                })
+                .collect::<Option<Map<_, _>>>()
+                .map(Value::Object)
+        }
+        _ => Some(schema.clone()),
+    }
+}
+
+fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option<Value> {
+    let resolved = resolve_local_refs(schema, root, &HashSet::new())?;
+    if single_xtml_type(&resolved, &resolved) == Some(xtml_type) {
+        return Some(resolved);
+    }
+
+    let json_types = schema_types(schema, root, &HashSet::new())
+        .into_iter()
+        .filter(|json_type| json_type.xtml_name() == xtml_type)
+        .map(|json_type| match json_type {
+            JsonType::String => "string",
+            JsonType::Number => "number",
+            JsonType::Integer => "integer",
+            JsonType::Boolean => "boolean",
+            JsonType::Array => "array",
+            JsonType::Object => "object",
+            JsonType::Null => "null",
+        })
+        .collect::<Vec<_>>();
+    match json_types.as_slice() {
+        [] => None,
+        [json_type] => Some(serde_json::json!({"type": json_type})),
+        _ => Some(serde_json::json!({"type": json_types})),
+    }
+}
+
 fn arguments_block(parameters: Option<&Value>) -> Format {
     let Some(parameters) = parameters.and_then(Value::as_object) else {
         return star(Format::Tag(permissive_argument_tag()));
@@ -416,62 +536,43 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
     star(one_of(tags))
 }
 
-fn auto_argument_format(
-    key: &str,
-    schema: &Value,
-    root: &Value,
-    root_defs: &Map<String, Value>,
-    require_nonempty_string: bool,
-) -> Option<Format> {
-    let xtml_type = single_xtml_type(schema, root)?;
-    let content = if xtml_type == "string" {
-        // K3 string values are raw rather than JSON quoted. Required string
-        // arguments need at least one atom; optional strings may be empty when
-        // their schema permits it.
-        Format::Regex(RegexFormat {
-            pattern: format!(
-                "{STRING_ATOM}{}",
-                if require_nonempty_string { "+" } else { "*" }
-            ),
+fn auto_argument_format(key: &str, schema: &Value, root: &Value) -> Option<Format> {
+    let alternatives = xtml_types(schema, root)
+        .into_iter()
+        .filter_map(|xtml_type| {
+            let content = if xtml_type == "string" {
+                string_content_format(schema)
+            } else {
+                Format::JsonSchema(JsonSchemaFormat {
+                    json_schema: schema_for_xtml_type(schema, root, xtml_type)?,
+                    style: JsonSchemaStyle::Json,
+                })
+            };
+            Some(Format::Tag(TagFormat {
+                begin: format!(
+                    "{OPEN}argument key=\"{}\" type=\"{xtml_type}\"{SEP}",
+                    escape_attr(key)
+                ),
+                content: Box::new(content),
+                end: ARGUMENT_CLOSE.to_string(),
+            }))
         })
-    } else {
-        // Non-string K3 argument bodies are JSON. Preserve the complete
-        // property schema instead of using the string-only regex, and carry
-        // root definitions so local references remain resolvable.
-        let mut embedded = schema.as_object()?.clone();
-        for (definition_key, definitions) in root_defs {
-            embedded
-                .entry(definition_key.clone())
-                .or_insert_with(|| definitions.clone());
-        }
-        Format::JsonSchema(JsonSchemaFormat {
-            json_schema: Value::Object(embedded),
-            style: JsonSchemaStyle::Json,
-        })
-    };
+        .collect::<Vec<_>>();
 
-    Some(Format::Tag(TagFormat {
-        begin: format!(
-            "{OPEN}argument key=\"{}\" type=\"{xtml_type}\"{SEP}",
-            escape_attr(key)
-        ),
-        content: Box::new(content),
-        end: ARGUMENT_CLOSE.to_string(),
-    }))
+    (!alternatives.is_empty()).then(|| one_of(alternatives))
 }
 
 fn optional_auto_arguments(
     properties: &Map<String, Value>,
     required_keys: &[&str],
     root: &Value,
-    root_defs: &Map<String, Value>,
 ) -> Option<Format> {
     let arguments = properties
         .iter()
         .filter(|(key, _)| !required_keys.contains(&key.as_str()))
         .filter_map(|(key, schema)| {
             matches!(schema, Value::Bool(_) | Value::Object(_))
-                .then(|| auto_argument_format(key, schema, root, root_defs, false))
+                .then(|| auto_argument_format(key, schema, root))
                 .flatten()
         })
         .collect::<Vec<_>>();
@@ -501,14 +602,15 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
         return arguments_block(None);
     }
 
-    let Some(parameters) = tool.parameters.as_ref().and_then(Value::as_object) else {
+    let Some(root) = tool.parameters.as_ref() else {
         return arguments_block(None);
     };
-    let root = Value::Object(parameters.clone());
+    let Some(parameters) = root.as_object() else {
+        return arguments_block(None);
+    };
     let Some(properties) = parameters.get("properties").and_then(Value::as_object) else {
         return arguments_block(None);
     };
-    let root_defs = root_definitions(parameters);
     let required = match parameters.get("required") {
         None => Vec::new(),
         Some(Value::Array(required)) if required.iter().all(|value| value.as_str().is_some()) => {
@@ -519,7 +621,7 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
         }
         Some(_) => return arguments_block(None),
     };
-    let optional_arguments = optional_auto_arguments(properties, &required, &root, &root_defs);
+    let optional_arguments = optional_auto_arguments(properties, &required, root);
 
     if required.is_empty() {
         return optional_arguments.unwrap_or_else(|| {
@@ -537,7 +639,7 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
         if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
             return arguments_block(None);
         }
-        let Some(argument) = auto_argument_format(key, schema, &root, &root_defs, true) else {
+        let Some(argument) = auto_argument_format(key, schema, root) else {
             return arguments_block(None);
         };
         arguments.push(argument);
@@ -588,15 +690,20 @@ fn build_auto_structural_tag(
         content: Box::new(calls),
         end: TOOLS_CLOSE.to_string(),
     };
-    let suffix = Format::TriggeredTags(TriggeredTagsFormat {
-        triggers: vec![TOOLS_OPEN.to_string()],
-        tags: vec![tools_tag],
-        at_least_one: false,
-        stop_after_first: !parallel_tool_calls,
-        excludes: vec![
-            THINK_OPEN.to_string(),
-            THINK_CLOSE.to_string(),
-            CALL_OPEN.to_string(),
+    // Express the optional tools suffix with existing public format nodes.
+    // Adding `excludes` to the public `TriggeredTagsFormat` struct would break
+    // downstream struct literals in the published parser crate.
+    let suffix = Format::Sequence(SequenceFormat {
+        elements: vec![
+            Format::AnyText(AnyTextFormat {
+                excludes: vec![
+                    TOOLS_OPEN.to_string(),
+                    THINK_OPEN.to_string(),
+                    THINK_CLOSE.to_string(),
+                    CALL_OPEN.to_string(),
+                ],
+            }),
+            optional(Format::Tag(tools_tag)),
         ],
     });
     let format = if ctx.starts_in_reasoning {
@@ -807,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn named_choice_is_mandatory_and_auto_uses_an_optional_trigger() {
+    fn named_choice_is_mandatory_and_auto_uses_an_optional_tools_suffix() {
         let tools = tools();
         let named = ToolChoice::Named("get_weather".to_string());
         let named_value =
@@ -818,23 +925,27 @@ mod tests {
         let auto = ToolChoice::Auto;
         let auto_value =
             serde_json::to_value(build_kimi_k3(&context(&auto, &tools)).unwrap().unwrap()).unwrap();
-        assert_eq!(auto_value["format"]["type"], "triggered_tags");
-        assert_eq!(auto_value["format"]["at_least_one"], false);
-        assert_eq!(auto_value["format"]["triggers"], json!([TOOLS_OPEN]));
+        assert_eq!(auto_value["format"]["type"], "sequence");
+        assert_eq!(auto_value["format"]["elements"][0]["type"], "any_text");
         assert_eq!(
-            auto_value["format"]["excludes"],
-            json!([THINK_OPEN, THINK_CLOSE, CALL_OPEN])
+            auto_value["format"]["elements"][0]["excludes"],
+            json!([TOOLS_OPEN, THINK_OPEN, THINK_CLOSE, CALL_OPEN])
+        );
+        assert_eq!(auto_value["format"]["elements"][1]["type"], "optional");
+        assert_eq!(
+            auto_value["format"]["elements"][1]["content"]["begin"],
+            TOOLS_OPEN
         );
     }
 
     #[test]
-    fn auto_requires_nonempty_required_arguments_then_allows_optional_content() {
+    fn auto_requires_declared_arguments_then_allows_optional_content() {
         let tools = tools();
         let choice = ToolChoice::Auto;
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let calls = &value["format"]["tags"][0]["content"];
+        let calls = &value["format"]["elements"][1]["content"]["content"];
         assert_eq!(calls["type"], "tags_with_separator");
         let call = &calls["tags"][0];
         assert_eq!(call["begin"], "<|open|>call tool=\"get_weather\" index=\"");
@@ -846,9 +957,10 @@ mod tests {
             arguments["elements"][0]["begin"],
             "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
         );
+        assert_eq!(arguments["elements"][0]["content"]["type"], "any_text");
         assert_eq!(
-            arguments["elements"][0]["content"]["pattern"],
-            format!("{STRING_ATOM}+")
+            arguments["elements"][0]["content"]["excludes"],
+            json!([CLOSE])
         );
         assert_eq!(arguments["elements"][1]["type"], "star");
         assert_eq!(
@@ -876,7 +988,8 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let arguments = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2];
         let elements = arguments["elements"].as_array().unwrap();
 
         assert_eq!(arguments["type"], "sequence");
@@ -922,7 +1035,8 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let arguments = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2];
         let elements = &arguments["elements"];
 
         for index in 0..4 {
@@ -959,17 +1073,142 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let argument = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2]
-            ["elements"][0];
+        let argument = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2]["elements"][0];
 
         assert_eq!(argument["content"]["type"], "json_schema");
+        assert_eq!(argument["content"]["json_schema"]["type"], "integer");
+        assert_eq!(argument["content"]["json_schema"]["minimum"], 1);
+        assert!(argument["content"]["json_schema"].get("$ref").is_none());
+    }
+
+    #[test]
+    fn auto_required_ref_into_properties_is_resolved_from_the_original_root() {
+        let tools = vec![ToolDefinition {
+            name: "lookup".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "other": {"type": "integer", "minimum": 1},
+                    "value": {"$ref": "#/properties/other"}
+                },
+                "required": ["value"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let argument = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2]["elements"][0];
+
+        assert_eq!(argument["content"]["json_schema"]["type"], "integer");
+        assert_eq!(argument["content"]["json_schema"]["minimum"], 1);
+        assert!(argument["content"]["json_schema"].get("$ref").is_none());
+    }
+
+    #[test]
+    fn auto_string_arguments_preserve_schema_constraints_and_allow_empty_values() {
+        let tools = vec![ToolDefinition {
+            name: "strings".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["fast", "safe"]},
+                    "bounded": {"type": "string", "minLength": 0, "maxLength": 8},
+                    "prefixed": {"type": "string", "pattern": "^item-[0-9]+$"},
+                    "empty_ok": {"type": "string", "minLength": 0, "maxLength": 0}
+                },
+                "required": ["mode", "bounded", "prefixed", "empty_ok"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2]["elements"];
+
+        assert_eq!(arguments[0]["content"]["type"], "or");
+        assert_eq!(arguments[0]["content"]["elements"][0]["value"], "fast");
         assert_eq!(
-            argument["content"]["json_schema"]["$ref"],
-            "#/$defs/identifier"
+            arguments[1]["content"]["pattern"],
+            format!("{STRING_ATOM}{{0,8}}")
         );
+        assert_eq!(arguments[2]["content"]["pattern"], "(?:item-[0-9]+)");
         assert_eq!(
-            argument["content"]["json_schema"]["$defs"]["identifier"]["type"],
-            "integer"
+            arguments[3]["content"]["pattern"],
+            format!("{STRING_ATOM}{{0,0}}")
+        );
+    }
+
+    #[test]
+    fn auto_numeric_union_uses_one_number_tag_with_the_declared_schema() {
+        let tools = vec![ToolDefinition {
+            name: "measure".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "value": {"anyOf": [{"type": "integer"}, {"type": "number"}]}
+                },
+                "required": ["value"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let argument = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2]["elements"][0];
+
+        assert_eq!(
+            argument["begin"],
+            "<|open|>argument key=\"value\" type=\"number\"<|sep|>"
+        );
+        assert_eq!(argument["content"]["type"], "json_schema");
+        assert_eq!(
+            argument["content"]["json_schema"]["anyOf"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn auto_optional_union_keeps_each_representable_xtml_type() {
+        let tools = vec![ToolDefinition {
+            name: "lookup".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "value": {"type": ["string", "null"]}
+                }
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let alternatives = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2]["content"]["elements"];
+
+        assert_eq!(alternatives.as_array().unwrap().len(), 2);
+        assert!(
+            alternatives[0]["begin"]
+                .as_str()
+                .unwrap()
+                .contains("type=\"string\"")
+        );
+        assert!(
+            alternatives[1]["begin"]
+                .as_str()
+                .unwrap()
+                .contains("type=\"null\"")
         );
     }
 
@@ -990,7 +1229,8 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let arguments = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2];
 
         assert_eq!(arguments["type"], "star");
         assert_eq!(arguments["content"]["type"], "or");
@@ -999,10 +1239,8 @@ mod tests {
             2
         );
         let alternatives = arguments["content"]["elements"].as_array().unwrap();
-        assert_eq!(
-            alternatives[0]["content"]["pattern"],
-            format!("{STRING_ATOM}*")
-        );
+        assert_eq!(alternatives[0]["content"]["type"], "any_text");
+        assert_eq!(alternatives[0]["content"]["excludes"], json!([CLOSE]));
         assert_eq!(alternatives[1]["content"]["type"], "json_schema");
         assert_eq!(alternatives[1]["content"]["json_schema"]["type"], "integer");
     }
@@ -1022,7 +1260,8 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let arguments = &value["format"]["elements"][1]["content"]["content"]["tags"][0]["content"]
+            ["elements"][2];
 
         assert_eq!(arguments["type"], "star");
         assert_eq!(arguments["content"]["begin"], "<|open|>argument ");
@@ -1037,8 +1276,8 @@ mod tests {
         };
         let strict_value =
             serde_json::to_value(build_kimi_k3(&strict_ctx).unwrap().unwrap()).unwrap();
-        let strict_arguments =
-            &strict_value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let strict_arguments = &strict_value["format"]["elements"][1]["content"]["content"]["tags"]
+            [0]["content"]["elements"][2];
 
         assert_eq!(strict_arguments["type"], "sequence");
         assert!(strict_arguments.to_string().contains("key=\\\"city\\\""));
@@ -1060,7 +1299,7 @@ mod tests {
         assert_eq!(value["format"]["type"], "sequence");
         assert_eq!(value["format"]["elements"][0]["type"], "tag");
         assert_eq!(value["format"]["elements"][0]["end"], THINK_CLOSE);
-        assert_eq!(value["format"]["elements"][1]["type"], "triggered_tags");
+        assert_eq!(value["format"]["elements"][1]["type"], "sequence");
     }
 
     #[test]
