@@ -1,16 +1,9 @@
-schema_version: 2
-family: deepseek_v4
-implementation: vllm_python
-parent: null
-runtime_version: 0.27.1
 provenance:
-  status: captured
+  status: legacy
   captured_with:
     vllm_python: 0.27.1
-completeness: snapshot
 document:
   mode: unified
-import_lineage: []
 changes:
   arg_marker_in_string:
     case_key: UNIFIED.7-2

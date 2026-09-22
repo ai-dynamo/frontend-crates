@@ -244,13 +244,46 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
         if row["family"] != "muse_glimmer":
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
+            assert cell["duplicate_of"] == "UNIFIED.35-1"
             for field in ("description", "na_note"):
-                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
+                assert cell["tooltip"][field].startswith("Duplicate of UNIFIED.35-1")
         if row["family"] == "deepseek_v41":
-            for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
+            duplicates = {
+                "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+                "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+                "prefilled_reasoning_then_text": "UNIFIED.10-2",
+            }
+            for scenario, canonical in duplicates.items():
                 cell = row["cells"][scenario]
                 assert cell["status"] == "na"
-                assert cell["tooltip"]["init"] is None
+                assert cell["duplicate_of"] == canonical
+                assert cell["tooltip"]["duplicate_of"] == canonical
+                assert cell["tooltip"]["na_note"] == f"Duplicate of {canonical}: same observable event contract for deepseek_v41."
+
+
+def test_unified_duplicate_cells_expose_canonical_pointer_in_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    assert {
+        scenario: row["cells"][scenario]["duplicate_of"]
+        for scenario in (
+            "prefilled_reasoning_with_tool",
+            "prefilled_reasoning_then_text_then_tool",
+            "prefilled_reasoning_then_text",
+        )
+    } == {
+        "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+        "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+        "prefilled_reasoning_then_text": "UNIFIED.10-2",
+    }
+
+
+def test_unified_duplicate_pointer_is_explained_in_tooltip_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    cell = row["cells"]["prefilled_reasoning_with_tool"]
+    assert cell["tooltip"]["duplicate_of"] == "UNIFIED.11-1"
+    assert "Duplicate of UNIFIED.11-1" in cell["tooltip"]["na_note"]
 
 
 def test_v2_exactly_one_active_tab(model_v2):

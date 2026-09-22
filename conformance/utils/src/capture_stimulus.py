@@ -9,11 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from fixture_disposition import (
-    CAPTURE_SNAPSHOT, capture_layer_sort_key, capture_snapshot_members,
-    canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
-    is_source_capture,
-)
+from fixture_disposition import canonical_unified_record_key, canonicalize_unified_inputs
 from unified_tools import unified_tools
 
 
@@ -104,50 +100,19 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
     return None
 
 
-def current_source_snapshot(directory: Path) -> Path:
-    """Deprecated Rust harness compatibility; canonical YAML has no source patches."""
-    if not is_source_capture(directory.name):
-        return directory
-    candidates = [directory]
-    candidates.extend(path for path in directory.parent.glob(directory.name + ".patch*")
-                      if path.is_dir() and capture_layer_sort_key(path.name)[0] == directory.name)
-    selected = max(candidates, key=lambda path: capture_layer_sort_key(path.name))
-    marker = selected / CAPTURE_SNAPSHOT
-    if selected != directory or marker.is_file():
-        if not marker.is_file():
-            raise ValueError(f"source overlay has no complete snapshot index: {selected}")
-        capture_snapshot_members(marker.read_bytes(),
-                                 [str(path.relative_to(selected)) for path in selected.glob("*/*.yaml")])
-    return selected
-
-
 def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
-    base_name, _patch = capture_layer_sort_key(directory.name)
-    base = directory.with_name(base_name)
-    inactive = inactive_fixture_dirs(directory.parent)
-    if "+source." in base_name:
-        layers = [current_source_snapshot(base)]
-    else:
-        layers = [base, *(path for path in base.parent.glob(base.name + ".patch*")
-                          if path.is_dir() and capture_layer_sort_key(path.name)[0] == base.name)]
-        layers.sort(key=lambda path: capture_layer_sort_key(path.name))
     captures = {}
-    for layer in layers:
-        if layer.name in inactive:
-            continue
-        bindings = read_bindings(layer)
-        records = {}
-        for path in sorted(layer.glob("*/*.yaml")):
-            raw = path.read_bytes()
-            doc = yaml.safe_load(raw)
-            if doc["family"] != path.parent.name:
-                raise ValueError(f"capture family differs from its directory: {path}")
-            for key, record in doc["cases"].items():
-                ident = canonical_unified_record_key(doc["family"], key, input_aliases)
-                if ident in records and records[ident][0] != record:
-                    raise ValueError(f"conflicting current capture aliases: {ident}")
-                records[ident] = (record, raw, str(path.relative_to(layer)), bindings)
-        captures.update(records)
+    bindings = read_bindings(directory)
+    for path in sorted(directory.glob("*/*.yaml")):
+        raw = path.read_bytes()
+        doc = yaml.safe_load(raw)
+        if doc["family"] != path.parent.name:
+            raise ValueError(f"capture family differs from its directory: {path}")
+        for key, record in doc["cases"].items():
+            ident = canonical_unified_record_key(doc["family"], key, input_aliases)
+            if ident in captures and captures[ident][0] != record:
+                raise ValueError(f"conflicting current capture aliases: {ident}")
+            captures[ident] = (record, raw, str(path.relative_to(directory)), bindings)
     return captures
 
 
@@ -190,23 +155,16 @@ def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--select-source-snapshot", type=Path, help="deprecated Rust harness compatibility")
-    mode.add_argument("--validate-current", type=Path)
+    parser.add_argument("--validate-current", type=Path, required=True)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")
     args = parser.parse_args()
-    if args.select_source_snapshot is not None:
-        if args.format != "count":
-            parser.error("--format json requires --validate-current")
-        print(current_source_snapshot(args.select_source_snapshot))
+    if not args.inputs:
+        parser.error("--validate-current requires --inputs")
+    if args.format == "json":
+        print(json.dumps(validated_current_capture_docs(args.validate_current, args.inputs)))
     else:
-        if not args.inputs:
-            parser.error("--validate-current requires --inputs")
-        if args.format == "json":
-            print(json.dumps(validated_current_capture_docs(args.validate_current, args.inputs)))
-        else:
-            print(validate_current_capture(args.validate_current, args.inputs))
+        print(validate_current_capture(args.validate_current, args.inputs))
 
 
 if __name__ == "__main__":

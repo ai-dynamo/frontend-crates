@@ -325,151 +325,31 @@ pub fn version_dirs_ascending_with_current(
     version_dirs_with_identity_command(root, prefix, current_dir, dynamo_identity_command())
 }
 
-fn capture_provenance_inventory(
-    root: &Path,
-    prefix: &str,
-) -> serde_json::Map<String, serde_json::Value> {
-    let mut captures = serde_json::Map::new();
-    for entry in std::fs::read_dir(root).expect("read capture root") {
-        let path = entry.expect("read capture entry").path();
-        if !path.is_dir() {
-            continue;
-        }
-        let name = path
-            .file_name()
-            .unwrap()
-            .to_str()
-            .expect("capture directory name");
-        let Some(version) = name.strip_prefix(prefix) else {
-            continue;
-        };
-        if !version.as_bytes().first().is_some_and(u8::is_ascii_digit) {
-            continue;
-        }
-        for family in std::fs::read_dir(&path).expect("read capture families") {
-            let family = family.expect("read capture family").path();
-            if !family.is_dir() {
-                continue;
-            }
-            let family_name = family.file_name().unwrap().to_str().unwrap();
-            for file in std::fs::read_dir(&family).expect("read capture cases") {
-                let file = file.expect("read capture case").path();
-                if file.extension().is_none_or(|extension| extension != "yaml") {
-                    continue;
-                }
-                let doc: serde_yaml::Value =
-                    serde_yaml::from_slice(&std::fs::read(&file).expect("read capture YAML"))
-                        .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
-                let provenance = serde_json::to_value(&doc["capture_provenance"])
-                    .expect("capture provenance JSON");
-                let layer = captures.entry(version.to_string()).or_insert_with(|| {
-                    serde_json::json!({
-                        "complete_snapshot": path.join("capture-snapshot.json").is_file(),
-                        "records": {},
-                    })
-                });
-                let records = layer["records"].as_object_mut().unwrap();
-                for key in doc["cases"]
-                    .as_mapping()
-                    .expect("capture cases mapping")
-                    .keys()
-                {
-                    let key = format!("{family_name}/{}", key.as_str().expect("capture case key"));
-                    if let Some(previous) = records.insert(key.clone(), provenance.clone()) {
-                        assert_eq!(
-                            previous, provenance,
-                            "conflicting capture provenance: {key}"
-                        );
-                    }
-                }
-            }
-        }
-    }
-    captures
-}
-
 fn version_dirs_with_identity_command(
     root: &Path,
     prefix: &str,
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let resolved;
     let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
-        let captures = capture_provenance_inventory(root, prefix);
-        let mut child = command
-            .args(["--select-capture", "--format", "label"])
-            .stdin(std::process::Stdio::piped())
+        let output = command
+            .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("run Dynamo capture selector");
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(&serde_json::to_vec(&captures).unwrap())
-            .expect("write capture provenance to selector");
-        let output = child
-            .wait_with_output()
-            .expect("wait for Dynamo capture selector");
+            .output()
+            .expect("run Dynamo capture version reader");
         assert!(
             output.status.success(),
-            "Dynamo capture selection failed: {}",
+            "Dynamo capture version lookup failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
         let label = String::from_utf8(output.stdout).expect("capture label UTF-8");
-        resolved = format!("{prefix}{}", label.trim());
-        &resolved
+        let resolved = format!("{prefix}{}", label.trim());
+        root.join(resolved)
     } else {
-        current_dir
+        root.join(current_dir)
     };
-    let current = root.join(current_dir);
-    let current = if current.is_dir() || current_dir.contains("+source.") {
-        current
-    } else {
-        let patch_prefix = format!("{current_dir}.patch");
-        std::fs::read_dir(root)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .map(|entry| entry.path())
-            .filter(|path| path.is_dir())
-            .filter_map(|path| {
-                let patch = path
-                    .file_name()?
-                    .to_str()?
-                    .strip_prefix(&patch_prefix)?
-                    .parse::<u64>()
-                    .ok()?;
-                Some((patch, path))
-            })
-            .max_by_key(|(patch, _)| *patch)
-            .map_or(current, |(_, path)| path)
-    };
-    let current = if current
-        .file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name.contains("+source."))
-    {
-        let output = capture_stimulus_command()
-            .arg("--select-source-snapshot")
-            .arg(&current)
-            .output()
-            .expect("select complete current source snapshot");
-        assert!(
-            output.status.success(),
-            "source snapshot selection failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        PathBuf::from(
-            String::from_utf8(output.stdout)
-                .expect("snapshot path UTF-8")
-                .trim(),
-        )
-    } else {
-        current
-    };
+    let current = current_dir;
     assert!(
         current.is_dir(),
         "expected current capture directory {}",
@@ -606,40 +486,6 @@ mod capture_selector_tests {
             "true"
         );
         assert_eq!(git(&clone, &["tag", "--list"]), "");
-        let patch_only = scratch.join("patch-only");
-        let historical = patch_only.join("dynamo_v2-0.5.3");
-        write_capture_with_record(
-            &historical,
-            &recorded,
-            serde_json::json!({
-                "assembled": [],
-                "capture_input": {
-                    "input": "probe",
-                    "init": {
-                        "starting_state": "None",
-                        "tool_output_mode": "Native",
-                        "named_tool": null
-                    },
-                    "finish_reason": "stop",
-                    "tools": [],
-                    "chunks": [{"delta_text": "probe"}, {"delta_text": "‹finish›"}]
-                }
-            }),
-        );
-        assert!(std::panic::catch_unwind(|| select(&patch_only, &repo, None)).is_err());
-        assert!(std::panic::catch_unwind(|| select(&patch_only, &clone, None)).is_err());
-        let release_patch2 = patch_only.join("dynamo_v2-0.6.0.patch2");
-        let release_patch10 = patch_only.join("dynamo_v2-0.6.0.patch10");
-        write_capture(&release_patch2, &recorded);
-        write_capture(&release_patch10, &recorded);
-        assert_eq!(
-            select(&patch_only, &repo, None).last(),
-            Some(&release_patch10)
-        );
-        assert_eq!(
-            select(&patch_only, &clone, None).last(),
-            Some(&release_patch10)
-        );
         let captures = scratch.join("unified");
         let release = captures.join("dynamo_v2-0.6.0");
         write_capture(&release, &recorded);
@@ -653,45 +499,18 @@ mod capture_selector_tests {
                 .status
                 .success()
         );
-        for override_label in ["current", "0.6.0"] {
-            assert!(
-                std::panic::catch_unwind(|| select(&captures, &clone, Some(override_label)))
-                    .is_err()
-            );
-        }
-        write_capture(&release, &serde_json::Value::Null);
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
-        write_capture(&release, &recorded);
-        let patch = captures.join("dynamo_v2-0.6.0.patch1");
-        let mut wrong = recorded.clone();
-        wrong["source_id"] = serde_json::json!("wrong source");
-        write_capture(&patch, &wrong);
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
-        write_capture(&patch, &recorded);
-        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
-
-        let output = checker(&clone).output().unwrap();
-        let current: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-        let qualified = captures.join(format!("dynamo_v2-{}", current["label"].as_str().unwrap()));
-        write_capture(&qualified, &current);
-        assert_eq!(select(&captures, &clone, None).last(), Some(&qualified));
         assert_eq!(
             select(&captures, &clone, Some("current")).last(),
-            Some(&qualified)
+            Some(&release)
         );
-        assert!(select(&captures, &clone, None).contains(&release));
-
-        let source_patch = qualified.with_file_name(format!(
-            "{}.patch10",
-            qualified.file_name().unwrap().to_str().unwrap()
-        ));
-        write_capture(&source_patch, &current);
-        std::fs::write(
-            source_patch.join("capture-snapshot.json"),
-            r#"{"schema_version":1,"records":["gemma4/probe.yaml"]}"#,
-        )
-        .unwrap();
-        assert_eq!(select(&captures, &clone, None).last(), Some(&source_patch));
+        assert_eq!(
+            select(&captures, &clone, Some("0.6.0")).last(),
+            Some(&release)
+        );
+        write_capture(&release, &serde_json::Value::Null);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
+        write_capture(&release, &recorded);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
 
         let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
         std::fs::create_dir_all(&stream).unwrap();
@@ -702,8 +521,6 @@ mod capture_selector_tests {
             std::process::Command::new("this-command-must-not-run"),
         );
         assert_eq!(stream_dirs.last(), Some(&stream));
-        std::fs::write(clone.join("parsers/v2/src/lib.rs"), "pub fn changed() {}\n").unwrap();
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
     }
 }
 

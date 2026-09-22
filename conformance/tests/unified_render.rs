@@ -937,10 +937,9 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 }
 
 #[test]
-fn release_overlay_records_reach_live_guard() {
-    let root = std::env::temp_dir().join(format!("dynamo-release-overlay-{}", std::process::id()));
+fn plain_capture_records_reach_live_guard() {
+    let root = std::env::temp_dir().join(format!("dynamo-plain-capture-{}", std::process::id()));
     let base = root.join("dynamo_v2-0.6.0");
-    let patch = root.join("dynamo_v2-0.6.0.patch10");
     let write = |directory: &std::path::Path, key: &str, doc: &Value| {
         std::fs::create_dir_all(directory.join("gemma4")).unwrap();
         std::fs::write(
@@ -973,22 +972,19 @@ fn release_overlay_records_reach_live_guard() {
         captures.insert(key, json!({"family":"gemma4","cases":{key:{
             "capture_input":stimulus,"assembled":[{"kind":"text","text":key}],"chunks":output_chunks}}}));
     }
-    let invalid = json!({"family":"gemma4","cases":{"old":{"error":"obsolete"}}});
-    write(&base, "old", &invalid);
+    write(&base, "old", &captures["old"]);
     write(&base, "retained", &captures["retained"]);
-    write(&patch, "old", &captures["old"]);
-    write(&patch, "added", &captures["added"]);
+    write(&base, "added", &captures["added"]);
     validate_selected_dynamo_capture(&root, &base);
 
-    // The same invalid base record becomes authoritative if its patch is absent.
-    std::fs::remove_file(patch.join("gemma4/old.yaml")).unwrap();
+    std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
     assert!(std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base)).is_err());
-    write(&patch, "old", &captures["old"]);
+    write(&base, "old", &captures["old"]);
     let mut wrong = captures["added"].clone();
     wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
-    write(&patch, "added", &wrong);
+    write(&base, "added", &wrong);
     let failure = std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base))
-        .expect_err("the live comparison must read the patch-only record");
+        .expect_err("the live comparison must read the plain capture record");
     assert!(
         failure
             .downcast_ref::<String>()
@@ -999,12 +995,12 @@ fn release_overlay_records_reach_live_guard() {
 }
 
 #[test]
-fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
+fn current_plain_version_reaches_live_guard_and_binds_tools() {
     if std::env::var_os("DYNAMO_SOURCE_SNAPSHOT_TEST_CHILD").is_none() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
-                "current_source_snapshot_reaches_live_guard_and_binds_tools",
+                "current_plain_version_reaches_live_guard_and_binds_tools",
                 "--nocapture",
             ])
             .env("DYNAMO_SOURCE_SNAPSHOT_TEST_CHILD", "1")
@@ -1025,11 +1021,7 @@ fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
     assert!(provenance["label"].as_str().unwrap().contains("+source."));
     let base = root.join(format!(
         "dynamo_v2-{}",
-        provenance["label"].as_str().unwrap()
-    ));
-    let patch = root.join(format!(
-        "{}.patch1",
-        base.file_name().unwrap().to_str().unwrap()
+        provenance["crate_version"].as_str().unwrap()
     ));
     let make = |key: &str, text: &str, assembled: Value| {
         let init = Init::default();
@@ -1073,21 +1065,10 @@ fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
         json!([{"kind":"tool_call","name":"f","arguments":{"x":"1"}}]),
     );
     write(&root.join("inputs"), "added", &new_input);
-    write(&patch, "old", &old_capture);
-    write(&patch, "added", &new_capture);
-    std::fs::write(
-        patch.join("capture-snapshot.json"),
-        r#"{"schema_version":1,"records":["gemma4/old.yaml","gemma4/added.yaml"]}"#,
-    )
-    .unwrap();
+    write(&base, "added", &new_capture);
     validate_committed_dynamo_capture(&root);
     std::fs::remove_file(root.join("inputs/gemma4/old.yaml")).unwrap();
-    std::fs::remove_file(patch.join("gemma4/old.yaml")).unwrap();
-    std::fs::write(
-        patch.join("capture-snapshot.json"),
-        r#"{"schema_version":1,"records":["gemma4/added.yaml"]}"#,
-    )
-    .unwrap();
+    std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
     validate_committed_dynamo_capture(&root);
     let mut wrong = new_capture.clone();
     let terminal = wrong["cases"]["added"]["chunks"]
@@ -1098,7 +1079,7 @@ fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
         .find(|delta| delta["complete"] == true)
         .expect("the captured call must contain a completion delta");
     terminal["complete"] = json!(false);
-    write(&patch, "added", &wrong);
+    write(&base, "added", &wrong);
     let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("changing only completion must fail the per-chunk comparison");
     assert!(
@@ -1109,9 +1090,9 @@ fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
     );
     let mut wrong = new_capture.clone();
     wrong["cases"]["added"]["capture_input"]["tools"] = json!([]);
-    write(&patch, "added", &wrong);
+    write(&base, "added", &wrong);
     assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
-    write(&patch, "added", &new_capture);
+    write(&base, "added", &new_capture);
     let mut wrong_input = new_input;
     wrong_input["cases"]["added"]["tools"] = json!([]);
     write(&root.join("inputs"), "added", &wrong_input);

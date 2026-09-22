@@ -41,29 +41,6 @@ _EXTERNAL_GIT_ENV = (
 )
 
 
-def _capture_records(captures: dict, version: str) -> list:
-    layer = captures.get(version)
-    if isinstance(layer, dict):
-        records = layer.get("records")
-        return list(records.values()) if isinstance(records, dict) else []
-    return layer if isinstance(layer, list) else []
-
-
-def _legacy_records(captures: dict, version: str) -> list:
-    records = _capture_records(captures, version)
-    for label in captures:
-        if isinstance(label, str) and re.fullmatch(rf"{re.escape(version)}\.patch\d+", label):
-            records.extend(_capture_records(captures, label))
-    return records
-
-
-def _legacy_record_matches_current_source(record: object, current: dict) -> bool:
-    return isinstance(record, dict) and all(
-        record.get(key) == current[key]
-        for key in ("crate_version", "source_sha256", "source_id", "source_paths")
-    )
-
-
 def git_subprocess_env() -> dict[str, str]:
     env = os.environ.copy()
     for name in _EXTERNAL_GIT_ENV:
@@ -187,72 +164,6 @@ def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
     return version
 
 
-def select_capture_label(repo_root: Path, captures: dict) -> str:
-    """Deprecated Rust-only selector; normal readers use dynamo_v2_label."""
-    current = dynamo_v2_provenance(repo_root)
-    version = current["crate_version"]
-    semantic_records = _capture_records(captures, version)
-    if semantic_records:
-        # Schema-v3 materializations are a semantic current view. This generated
-        # marker distinguishes them from older fixtures that explicitly stored null.
-        if all(
-            isinstance(record, dict) and record.get("format") == "schema_v3"
-            for record in semantic_records
-        ):
-            return version
-        if current["label"] != version and current["label"] in captures:
-            return current["label"]
-        records = _legacy_records(captures, version)
-        if (
-            os.environ.get(ENV_OVERRIDE) is None
-            and records
-            and all(_legacy_record_matches_current_source(record, current) for record in records)
-        ):
-            return version
-        # A legacy release directory in a tagless checkout is not proof that it
-        # represents the current source. Preserve the old reader's fail-closed path.
-        return current["label"]
-    # New schema-v3 materializations always provide the semantic directory. These
-    # fallbacks only keep existing Rust readers able to open older extracted trees.
-    if current["label"] in captures:
-        return current["label"]
-    patch_pattern = re.compile(rf"{re.escape(version)}\.patch(?P<number>\d+)$")
-    patches = [
-        (int(match["number"]), label)
-        for label in captures
-        if isinstance(label, str) and (match := patch_pattern.fullmatch(label))
-    ]
-    if patches:
-        return max(patches)[1]
-    # A released crate can advance without a new capture when its behavior is
-    # unchanged. Carry forward the latest earlier semantic checkpoint; the
-    # report records that it was inherited instead of inventing a new source
-    # or patch identity. An explicit `current` override still reaches the
-    # fail-closed path below.
-    if os.environ.get(ENV_OVERRIDE) is None:
-        current_parts = tuple(int(part) for part in version.split(".")[:3])
-        earlier = sorted(
-            (
-                tuple(int(part) for part in label.split(".")),
-                label,
-            )
-            for label in captures
-            if isinstance(label, str)
-            and re.fullmatch(r"\d+\.\d+\.\d+", label)
-            and _capture_records(captures, label)
-            and all(
-                isinstance(record, dict) and record.get("format") == "schema_v3"
-                for record in _capture_records(captures, label)
-            )
-            and tuple(int(part) for part in label.split(".")) <= current_parts
-        )
-        if earlier:
-            return earlier[-1][1]
-    # An unpublished checkout without a semantic record cannot claim that a
-    # version-only directory was produced by its source.
-    return current["label"] if current["label"] != version else version
-
-
 def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     if not isinstance(recorded, dict) or not isinstance(recorded.get("label"), str):
         raise ValueError("capture feed has no producer source identity; recapture it")
@@ -312,13 +223,7 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--label", help="crate version or current; legacy JSON producer labels are deprecated")
     parser.add_argument("--format", choices=("json", "label"), default="json")
-    parser.add_argument("--select-capture", action="store_true", help="deprecated Rust harness compatibility: read legacy capture inventory from stdin")
     args = parser.parse_args()
-    if args.select_capture:
-        if args.label is not None or args.format != "label":
-            parser.error("--select-capture requires --format label and no --label")
-        print(select_capture_label(args.repo_root, json.load(sys.stdin)))
-        return
     if args.format == "label":
         print(dynamo_v2_label(args.repo_root, args.label))
     else:

@@ -1,39 +1,11 @@
-schema_version: 2
-family: deepseek_v41
-implementation: dynamo_v2
-parent: dynamo_v2-0.6.1+source.d34b99849487da9b417502f108ed9cbb32657a48cb63b6899d501d12b1fde5d3
-runtime_version: 0.6.1+source.6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
 provenance:
   status: captured
-  record:
+  origin:
     crate_version: 0.6.1
-    git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
-    git_head_tree: 4b5a7e0a2f219ec8f80a375954ab40a5688734dd
-    kind: unpublished
-    label: 0.6.1+source.6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
-    release_commit: null
-    release_tag: null
-    source_id: sha256:6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
-    source_paths:
-    - parsers/v1/src
-    - parsers/v1/Cargo.toml
-    - parsers/v1/build.rs
-    - parsers/v2/src
-    - parsers/v2/Cargo.toml
-    - parsers/v2/build.rs
-    - protocols/src
-    - protocols/Cargo.toml
-    - protocols/build.rs
-    - Cargo.toml
-    - Cargo.lock
-    - rust-toolchain
-    - rust-toolchain.toml
-    - .cargo
     source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
-completeness: delta
+    git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
 document:
   mode: unified
-import_lineage: []
 changes:
   arg_marker_in_string:
     case_key: UNIFIED.7-2
