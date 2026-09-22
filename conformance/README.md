@@ -18,7 +18,7 @@ The intent of #257 is to remove code, duplicate captures, merge conflicts, and f
 - Keep inputs and GOLDEN separate from recorded outputs. Changing an existing input is discouraged; if necessary, rerun and update every prior affected version. Never change GOLDEN to hide a parser failure.
 - Family-specific PRs add only that family's captures and required code. Do not bundle other families' YAML in an archive. Shared cases and non-GLM fixes from #234 belong to #241.
 
-The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the migration scope. Keep the existing archive readers and packagers for those older tests. A family conversion may update that family's stream capture in the existing format without migrating storage or repackaging other families. Retired Unified archives remain historical evidence; new Unified captures use only the YAML store.
+The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the migration scope. Keep the existing archive readers and packagers for those older tests. A family conversion may update that family's stream capture in the existing format without migrating storage or repackaging other families. Unified uses only the YAML store.
 
 ### Pin the release version before capture
 

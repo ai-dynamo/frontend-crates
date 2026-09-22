@@ -3,7 +3,6 @@
 
 import hashlib
 import json
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -65,33 +64,13 @@ def test_checked_in_manifest_pins_unified_history_store():
     assert pinned["size"] == size
 
 
-def test_checked_in_manifest_retains_inactive_unified_evidence():
+def test_checked_in_manifest_has_no_inactive_unified_archives():
     repo_root = SRC.parents[2]
     manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
 
-    inactive = fixture_disposition.verify_inactive_shards(
-        manifest,
-        repo_root / "conformance/fixtures",
-    )
-
-    assert inactive
-    assert all(path.startswith("unified/") for path in inactive)
-
-
-def test_checked_in_manifest_tracks_inactive_unified_evidence():
-    repo_root = SRC.parents[2]
-    manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
-    inactive_paths = sorted(fixture_disposition.inactive_shards(manifest))
-
-    result = subprocess.run(
-        ["git", "-C", str(repo_root), "ls-files", "--error-unmatch", "--", *(
-            f"conformance/fixtures/{path}" for path in inactive_paths
-        )],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stderr
+    inactive_paths = fixture_disposition.inactive_shards(manifest)
+    assert not any(path.startswith("unified/") for path in inactive_paths)
+    assert not (repo_root / "conformance/fixtures/unified").exists()
 
 
 @pytest.fixture
