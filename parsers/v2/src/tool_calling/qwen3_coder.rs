@@ -560,6 +560,18 @@ mod tests {
                 ]}),
                 serde_json::json!("null"),
             ),
+            (
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
         ] {
             let mut tools = weather_tools();
             tools[0].parameters["properties"]["location"] = schema;
@@ -577,6 +589,41 @@ mod tests {
                     serde_json::json!({"location": expected}),
                     "width {width}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn literal_union_branches_preserve_typed_arguments() {
+        for schema in [
+            serde_json::json!({"anyOf": [{"const": "auto"}, {"type": "integer"}]}),
+            serde_json::json!({"oneOf": [{"enum": ["auto"]}, {"type": "integer"}]}),
+        ] {
+            for (raw, expected) in [
+                ("42", serde_json::json!(42)),
+                ("auto", serde_json::json!("auto")),
+            ] {
+                let mut tools = weather_tools();
+                tools[0].parameters["properties"]["location"] = schema.clone();
+                let input = format!(
+                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                        .collect();
+                    let output = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
+                    assert!(output.calls[0].complete);
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments)
+                            .unwrap(),
+                        serde_json::json!({"location": expected}),
+                        "schema {schema}, width {width}"
+                    );
+                }
             }
         }
     }

@@ -758,7 +758,7 @@ fn categorize_type(name: &str) -> Option<SchemaType> {
 }
 
 /// Collect the set of types a (possibly union) schema allows, walking
-/// `type`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
+/// `type`, `const`/`enum`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
 fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
     collect_type_constraints(schema).unwrap_or_default()
 }
@@ -788,6 +788,12 @@ fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
     let mut constraints = Vec::new();
     if !out.is_empty() {
         constraints.push(out);
+    }
+    if let Some(value) = schema.get("const") {
+        constraints.push(HashSet::from([value_category(value)]));
+    }
+    if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+        constraints.push(values.iter().map(value_category).collect());
     }
     for key in ["anyOf", "oneOf"] {
         if let Some(options) = schema.get(key).and_then(Value::as_array) {
