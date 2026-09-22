@@ -124,6 +124,7 @@ UNIFIED_TAX = {
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
+    "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -151,6 +152,7 @@ UNIFIED_GROUP_LABEL = {
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
     "gemma": "Gemma 4 guided call-prefix boundaries",
+    "glm5": "GLM 5 argument-marker boundaries",
     "kimi": "Kimi K3 XTML",
     "muse": "Muse-specific",
 }

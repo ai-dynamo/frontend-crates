@@ -91,6 +91,10 @@ glm47:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.4.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.a:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.5.d:
+    stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.c:

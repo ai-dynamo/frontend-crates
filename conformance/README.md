@@ -7,17 +7,29 @@ SPDX-License-Identifier: Apache-2.0
 
 Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for frontend-crates.
 
-## V2 storage contract: plain versioned YAML only
+## Unified storage contract: plain versioned YAML only
 
-The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. V2 conformance has one storage format: readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.6.1.yaml`. This applies to all v2 captures, including stream, batch-on-stream, and Unified, for every family and engine.
+The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
 
-- No `*.patch*.yaml`, `.tar.gz` capture archives, `+source.<hash>`, `+sha<hash>`, or other hash/commit-qualified capture names. Do not add, repackage, or extend these formats to satisfy an old reader or test.
+- No new Unified `*.patch*.yaml`, `.tar.gz` capture archives, `+source.<hash>`, `+sha<hash>`, or other hash/commit-qualified capture names. Do not add these formats to satisfy an old Unified reader or test.
 - One version identifies one checkpoint per family and implementation. A different source SHA alone does not justify a recapture, duplicate file, or manifest change. The first capture may keep its original source SHA inside the YAML as origin metadata; later SHAs do not change its identity.
+- New parser behavior requires a manually pinned, unpublished crate version before capture. Follow [Pin the release version before capture](#pin-the-release-version-before-capture).
 - Readers and HTML/JSON generators discover checkpoints by filename and semantic-version order. When a family has no changed output in a later version, carry its earlier captured output forward into that version's table cells. Do not duplicate YAML or leave those cells empty.
 - Keep inputs and GOLDEN separate from recorded outputs. Changing an existing input is discouraged; if necessary, rerun and update every prior affected version. Never change GOLDEN to hide a parser failure.
 - Family-specific PRs add only that family's captures and required code. Do not bundle other families' YAML in an archive. Shared cases and non-GLM fixes from #234 belong to #241.
 
-The old v2 archive readers and compatibility helpers still present in this checkout are unfinished migration work, not an approved second format. #257 stays a Python/YAML/documentation cleanup with no Rust or parser-behavior changes. If a consumer still requires an archive or hash label, report that blocker and defer the consumer migration to a separate PR; do not preserve the old format in new v2 work or add another compatibility layer. Existing v1 storage is outside this v2 rule. Preserve historical observations when migrating them.
+The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the migration scope. Keep the existing archive readers and packagers for those older tests. A family conversion may update that family's stream capture in the existing format without migrating storage or repackaging other families. Retired Unified archives remain historical evidence; new Unified captures use only the YAML store.
+
+### Pin the release version before capture
+
+When adding or converting a parser, or changing its captured behavior, manually pin the intended release version in the same PR before recording output. The invariant is `capture version == crate version == version published after merge`. An automatic bump after capture would break that equality.
+
+1. Fetch the current release tags and check published versions. Choose the next appropriate unpublished semantic version; a feature branch still carrying an old version does not make its new behavior part of that old release.
+2. Set the parser crate's `Cargo.toml` version explicitly. Update its dependent manifests, `Cargo.lock`, and the conformance manifest's crate version together. For Dynamo v2, this includes `parsers/v2/Cargo.toml`, `parsers/v2-py/Cargo.toml`, `conformance/Cargo.toml`, and `conformance/fixtures-manifest.json`.
+3. Build and capture from that pinned version. Keep the Unified YAML filename and origin version aligned with it, then run the capture validation and regenerate the report. Renaming an older capture without validating it against the pinned build is insufficient.
+4. Before merge, recheck that the pinned version is still unpublished. If another PR has released it, choose a new version and repeat the capture validation. After merge, verify the release tag and published crate use the captured version.
+
+The release workflow honors this [manual version override](../RELEASING.md#manual-version-peg-fixture-synced-releases): it checks compatibility and publishes the explicitly pinned version without another automatic bump. For #234, GLM Unified and its pending release are both `0.7.0`; GLM Unified has no `0.6.x` captures. Unchanged families continue to inherit their existing captures.
 
 ## Ownership
 
@@ -41,7 +53,7 @@ conformance/
 └── utils/                                         # render, check, and record helpers
 ```
 
-The current checkout still contains legacy tool-calling and reasoning archives under `conformance/fixtures/`, extracted into `~/.cache/dynamo/conformance-fixtures/`. Unified history already uses reviewable YAML under `conformance/fixtures-unified-v2/`. This describes the remaining migration state; it does not permit new v2 archives. `extract_fixtures.py` materializes both stores for existing consumers. Snapshot layout:
+Tool-calling and reasoning archives remain under `conformance/fixtures/`, extracted into `~/.cache/dynamo/conformance-fixtures/`. Unified history uses reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores for existing consumers. Snapshot layout:
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
@@ -103,13 +115,13 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 ## Adding Streaming Parser V2 Fixtures
 
-Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist and the v2 storage contract above for capture publication. Publish plain-version YAML for the affected family. An existing stream harness that requires a tarball must be migrated separately; do not add an archive to make that harness pass.
+Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. Keep the existing stream archive format and include only the affected family's changed captures. The Unified YAML migration does not change this workflow.
 
 The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
 
 ## Fixture Workflows
 
-The commands below include existing v1 and not-yet-migrated consumers. For v2, the storage contract above takes precedence: inspect the outputs before committing and reject archive, patch, or hash-qualified capture files.
+The commands below cover both the older archive-backed tests and Unified. Apply the plain-version YAML contract above to Unified only; do not migrate the other stores as part of a Unified change.
 
 **Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 
@@ -137,15 +149,15 @@ The commands below include existing v1 and not-yet-migrated consumers. For v2, t
    | `Reasoning` | `capture_peer_versions.py --corpus reasoning --impl vllm_python` | — | `capture_peer_versions.py --corpus reasoning --impl sglang_python` |
 
    ‡ vLLM Rust is source-only: set `VLLM_RUST_SOURCE=<vllm checkout at the tag>` (or pass `--vllm-rust-source`) first. In vLLM ≥ 0.25 the crate is `vllm-parser` at `rust/src/parser` (was `vllm-tool-parser` at `rust/src/tool-parser`), and `ToolParserOutput` is an ordered events list. A parser that moved to the native `unified::` interface between releases is marked unavailable via the `tool::` probe — expected, not a failure.
-4. **Publish:** use plain-version YAML for v2. Archive packaging applies only to existing v1 storage; a v2 path that still produces tarballs is a migration blocker, not permission to commit them.
+4. **Publish:** use plain-version YAML for Unified. Keep the existing archive packaging for the other corpora.
 5. **Verify the new version shows on ALL tabs.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh` and confirm the new version is a Reference/Compare candidate on all four tabs (grep the rendered HTML), then `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. `test_model.py::test_v2_reasoning_uses_current_peers` specifically guards that the Reasoning tab surfaces every peer version dir — if it fails after you add a version, the tab lost multi-version rendering.
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
 
 1. Fix the code under `parsers/v1/` or `parsers/v2/`.
 2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.
-3. For an intended v2 change, use the plain-version YAML contract above. Keep the first capture's source origin in metadata; do not create another identity when its SHA changes.
-4. Commit only the parser fix, affected family YAML, and required manifest changes. CI must compare code against the recorded outputs; release publication is a separate workflow.
+3. For an intended Unified change, use the plain-version YAML contract above. Keep the first capture's source origin in metadata; do not create another identity when its SHA changes. For the older tests, retain their existing capture format.
+4. Commit only the parser fix, affected family captures, and required manifest changes. CI must compare code against the recorded outputs; release publication is a separate workflow.
 
 ### Unified parser hard gate
 
@@ -183,7 +195,7 @@ Do not substitute a loose harness feed for the package step. The v2 table reads 
 
 ### 3. Version rule: one capture name per crate version
 
-The v2 storage contract at the top of this document owns naming, carry-forward, source-origin metadata, and input-change rules. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases); it does not introduce another capture naming scheme.
+The Unified storage contract at the top of this document owns naming, carry-forward, source-origin metadata, and input-change rules for Unified. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases); it does not introduce another capture naming scheme.
 
 TODO (follow-up PR; Rust cleanup is deferred from #257): remove the deprecated `dynamo_version.py` JSON producer and `--select-capture` inventory protocol, `capture_stimulus.py --select-source-snapshot`, and their patch/source compatibility helpers after migrating `conformance/tests/common/mod.rs`, `capture_cross_version.rs`, and `unified_render.rs`. These Rust harnesses still require the old protocol and tests. Python report readers use only `--format label`; newly packaged Unified YAML uses only semantic versions. Shared-family tests remain deferred to #241, and recovery of the pre-existing missing vLLM captures remains in #256.
 

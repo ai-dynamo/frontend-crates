@@ -86,7 +86,7 @@ Unified work is complete only when the affected family's selected current Dynamo
 
 ## Required conversion collection
 
-For every family converted to `UnifiedParser`, collect the current output in the same change under [the v2 plain-version YAML contract](../../README.md#v2-storage-contract-plain-versioned-yaml-only). Generate the authored inputs and GOLDEN, capture live Dynamo output, publish the affected family YAML and required manifest changes, extract the snapshot, and render `conformance/CONFORMANCE_v2.html`. Do not publish archives, patch files, or source-qualified names. Files under the gitignored `conformance/unified/` build tree alone do not prove the capture is committed.
+For every family converted to `UnifiedParser`, collect the current output in the same change under [the Unified plain-version YAML contract](../../README.md#unified-storage-contract-plain-versioned-yaml-only). Generate the authored inputs and GOLDEN, capture live Dynamo output, publish the affected family YAML and required manifest changes, extract the snapshot, and render `conformance/CONFORMANCE_v2.html`. Do not publish Unified archives, patch files, or source-qualified names. Files under the gitignored `conformance/unified/` build tree alone do not prove the capture is committed.
 
 Use only `conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html` for the report. Do not generate `CONFORMANCE_unified.html`. The required final gate is `conformance/utils/check.sh status --model <family> --tab unified`, which must show zero current Dynamo red cells and zero current Dynamo empty cells.
 
