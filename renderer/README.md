@@ -35,9 +35,11 @@ let prompt: String = formatter.render(&request)?;
 
 ## DeepSeek V4.1
 
-The V4.1 formatter supports text messages, tool history, mid-conversation system messages, and numeric reasoning effort. It rejects media content and explicit tool namespace fields; qualified function names are preserved. Generation headers follow the reference encoder and cannot be disabled with `add_generation_prompt`. OpenAI effort names match the reference encoder: `low` is 50, `high` is 75, and `max` is 100; the default is 75. The `xhigh` alias is not supported. Template arguments accept the same names or an integer from 1 to 100. Top-level effort takes precedence over template effort. Set `reasoning_effort` to `none` or the template argument `thinking` to `false` to disable thinking.
+The V4.1 formatter supports text and image messages, tool history, mid-conversation system messages, and numeric reasoning effort. It rejects audio/video content and explicit tool namespace fields; qualified function names are preserved. Generation headers follow the reference encoder and cannot be disabled with `add_generation_prompt`. OpenAI effort names match the reference encoder: `low` is 50, `high` is 75, and `max` is 100; the default is 75. The `xhigh` alias is not supported. Template arguments accept the same names or an integer from 1 to 100. Top-level effort takes precedence over template effort. Set `reasoning_effort` to `none` or the template argument `thinking` to `false` to disable thinking.
 
-Reasoning-effort names and the default follow the model's [Python reference encoder at revision `dba1be0a`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/dba1be0a40aa45a94ad051997016db3960a90277/encoding/encoding.py#L444). Prompt fixtures pass explicit numeric effort to the low-level encoder.
+Reasoning-effort names and the default follow the model's [Python reference encoder at revision `dba1be0a`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/dba1be0a40aa45a94ad051997016db3960a90277/encoding/encoding.py#L444). Prompt fixtures pass explicit numeric effort to the low-level encoder. Image cases use the same fixture schema and include URL/data-URL inputs, mixed content, multiple turns and tool results. Their expected prompts were generated with the pinned reference encoder (SHA-256 `502bdaec8a3fd88ebc24c4721a7038fbe42f2063c664638127056107920035c1`). UUID-only image reuse is a Dynamo processor-cache extension tested separately.
+
+Prompt-format tests do not replace live image-fetch, transfer, cache and backend validation. The runtime must collect tool-result images in the same call order as their rendered placeholders.
 
 ## Relationship to other crates
 - `dynamo-protocols` — OpenAI/wire request types this crate renders from.
