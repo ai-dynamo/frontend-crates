@@ -20,6 +20,15 @@ OLD_TO_NEW = {
     "stream" + "v2": "streamv1",
 }
 OLD_TOKENS = tuple(OLD_TO_NEW)
+def _stored_legacy_archives(repo: Path) -> set[str]:
+    store = repo / "conformance/fixtures/toolcalling"
+    return {
+        str(path.relative_to(repo / "conformance/fixtures"))
+        for path in store.rglob("*.tar.gz")
+        if "fixtures-stream-" in str(path) or "fixtures-batch-on-stream-" in str(path)
+    }
+
+
 def _manifest(repo: Path) -> dict:
     return json.loads((repo / "conformance/fixtures-manifest.json").read_text())
 
@@ -104,6 +113,11 @@ def validate(repo: Path) -> list[str]:
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         if digest != shard["sha256"] or archive.stat().st_size != shard["size"]:
             errors.append(f"manifest: integrity mismatch {path}")
+    for path in sorted(_stored_legacy_archives(repo)):
+        if any(token in path for token in OLD_TOKENS):
+            errors.append(f"archive store: stale path {path}")
+        if path not in seen:
+            errors.append(f"archive store: unmanifested archive {path}")
     for archive, relative in _active_archives(repo, manifest):
         errors.extend(_archive_errors(archive, relative))
     return errors

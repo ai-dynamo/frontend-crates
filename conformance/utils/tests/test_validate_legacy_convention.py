@@ -53,3 +53,19 @@ def test_validate_rejects_stale_member_from_manifest_archive(tmp_path: Path) -> 
 
     errors = validator.validate(repo)
     assert any("stale legacy-v2 name" in error for error in errors)
+
+
+def test_validate_rejects_unmanifested_stale_archive(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    fixtures = repo / "conformance/fixtures"
+    fixtures.mkdir(parents=True)
+    (repo / "conformance/fixtures-manifest.json").write_text('{"shards": []}')
+    old_root = "fixtures-stream-" + "v2"
+    stale = fixtures / f"toolcalling/{old_root}/inputs.tar.gz"
+    stale.parent.mkdir(parents=True)
+    with tarfile.open(stale, "w:gz"):
+        pass
+
+    errors = validator.validate(repo)
+    assert any("archive store: stale path" in error for error in errors)
+    assert any("archive store: unmanifested archive" in error for error in errors)
