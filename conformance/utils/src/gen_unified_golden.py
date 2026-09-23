@@ -2011,6 +2011,8 @@ def emit_yaml(fam):
         lines.append(f"    policy: {json.dumps(c['policy'])}")
         lines.append(f"    init: {json.dumps(c['init'], ensure_ascii=False)}")
         lines.append(f"    finish_reason: {json.dumps(c['finish_reason'])}")
+        if "tools" in c:
+            lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
         # EXPLICIT indentation indicator. A bare `|-` lets YAML infer the block's
         # indentation from its first non-empty line, so an input that legitimately
         # BEGINS with a space loses that byte on reload — the reader cannot tell

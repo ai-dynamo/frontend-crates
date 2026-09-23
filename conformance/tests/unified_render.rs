@@ -1246,13 +1246,33 @@ fn css(v: &str) -> &'static str {
 
 #[test]
 fn case_tools_control_capture_types_without_changing_legacy_defaults() {
-    let case: GoldenCase = serde_json::from_value(json!({
-        "description": "per-case schema", "input": "", "golden": [], "expect": {},
-        "tools": [{"name": "f", "parameters": {"type": "object", "properties": {
-            "x": {"type": "integer"}
-        }}}]
-    }))
-    .unwrap();
+    // Exercise the authored Python YAML path as well as Rust deserialization;
+    // dropping tools during emit_yaml would silently restore the string default.
+    let output = std::process::Command::new("python3")
+        .arg("-c")
+        .arg(
+            r#"
+import sys
+sys.path.insert(0, sys.argv[1])
+import gen_unified_golden as g
+case = {"description":"per-case schema", "policy":[], "init":{},
+        "finish_reason":"stop", "input":"", "golden":[], "expect":{},
+        "tools":[{"name":"f", "parameters":{"type":"object",
+                 "properties":{"x":{"type":"integer"}}}}]}
+g.build_cases = lambda family: {"custom": case}
+print(g.emit_yaml("glm47"))
+"#,
+        )
+        .arg(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let mut file: GoldenFile = serde_yaml::from_slice(&output.stdout).unwrap();
+    let case = file.cases.remove("custom").unwrap();
     let input = "<tool_call>f<arg_key>x</arg_key><arg_value>42</arg_value></tool_call>";
     let custom = common::parse_unified_tools(&case.tools);
     let expected = vec![Ev::ToolCall {
