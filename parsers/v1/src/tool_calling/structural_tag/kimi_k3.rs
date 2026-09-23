@@ -380,7 +380,6 @@ mod tests {
 
     #[test]
     fn mp1670_nullable_arguments_keep_key_and_type_constraints() {
-        // MP-1670 uses both nullable encodings in one tool.
         let tools = vec![ToolDefinition {
             name: "set_labels".into(),
             strict: None,
