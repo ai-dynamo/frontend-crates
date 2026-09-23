@@ -365,16 +365,6 @@ fn is_glm47_close_marker_spam(text: &str, config: &Glm47ParserConfig) -> bool {
     saw_close && rest.is_empty()
 }
 
-/// Decode XML character entities in a string.
-/// Handles the five predefined XML entities: &lt; &gt; &amp; &quot; &apos;
-fn decode_xml_entities(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&apos;", "'")
-}
-
 /// Coerce a raw string value using the tool's parameter schema.
 /// Falls back to string if no schema is available or the type is unrecognized.
 fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
@@ -593,12 +583,9 @@ pub fn parse_glm47_invoke(
         let raw_value = cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
         if !key.is_empty() {
-            // Decode XML entities (e.g. &lt; → <, &amp; → &) before parsing
-            let decoded = decode_xml_entities(raw_value);
-
             // Look up the expected type from the tool's parameter schema
-            let schema_type = get_param_schema_type(tools, &function_name, key, &decoded);
-            let json_value = coerce_value(&decoded, schema_type);
+            let schema_type = get_param_schema_type(tools, &function_name, key, raw_value);
+            let json_value = coerce_value(raw_value, schema_type);
 
             arguments.insert(key.to_string(), json_value);
         }
