@@ -557,13 +557,27 @@ fn get_param_schema_type<'a>(
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
     // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_has_type(param, "string") {
+    if schema_has_type(schema, param, "string", 0) {
         return Some("string");
     }
-    param.get("type")?.as_str()
+    let resolved = resolve_schema_ref(schema, param, 0)?;
+    resolved.get("type")?.as_str()
 }
 
-fn schema_has_type(schema: &Value, expected: &str) -> bool {
+fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> Option<&'a Value> {
+    if depth >= 16 {
+        return None;
+    }
+    let Some(reference) = schema.get("$ref").and_then(Value::as_str) else {
+        return Some(schema);
+    };
+    resolve_schema_ref(root, root.pointer(reference.strip_prefix('#')?)?, depth + 1)
+}
+
+fn schema_has_type(root: &Value, schema: &Value, expected: &str, depth: usize) -> bool {
+    let Some(schema) = resolve_schema_ref(root, schema, depth) else {
+        return false;
+    };
     if let Some(schema_type) = schema.get("type") {
         if schema_type.as_str() == Some(expected) {
             return true;
@@ -583,7 +597,7 @@ fn schema_has_type(schema: &Value, expected: &str) -> bool {
             .is_some_and(|options| {
                 options
                     .iter()
-                    .any(|option| schema_has_type(option, expected))
+                    .any(|option| schema_has_type(root, option, expected, depth + 1))
             })
     })
 }
@@ -688,6 +702,24 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn test_ref_string_preserves_json_looking_value() {
+        let tools = vec![ToolDefinition {
+            name: "capture_payload".to_string(),
+            strict: None,
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "$defs": {"Payload": {"type": "string"}},
+                "properties": {"payload": {"$ref": "#/$defs/Payload"}}
+            })),
+        }];
+        let input = "<tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{\"x\":1}</arg_value></tool_call>";
+        let (calls, _) =
+            try_tool_call_parse_glm47(input, &get_test_config(), Some(&tools)).unwrap();
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(args["payload"], "{\"x\":1}");
     }
 
     #[test] // helper
