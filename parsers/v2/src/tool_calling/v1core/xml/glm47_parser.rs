@@ -449,7 +449,7 @@ fn get_param_schema_type<'a>(
         });
     }
     // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_has_type(param, "string") {
+    if schema_has_type(schema, param, "string") {
         return Some("string");
     }
     if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
@@ -477,7 +477,7 @@ fn get_param_schema_type<'a>(
     candidates
         .iter()
         .copied()
-        .find(|candidate| schema_has_type(param, candidate))
+        .find(|candidate| schema_has_type(schema, param, candidate))
 }
 
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
@@ -634,12 +634,20 @@ fn schema_null_match<'a>(
     permits
 }
 
-fn schema_has_type(schema: &Value, expected: &str) -> bool {
-    schema_type_match(schema, expected) == Some(true)
+fn schema_has_type(root: &Value, schema: &Value, expected: &str) -> bool {
+    schema_type_match(root, schema, expected, 0) == Some(true)
 }
 
 // None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
-fn schema_type_match(schema: &Value, expected: &str) -> Option<bool> {
+fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize) -> Option<bool> {
+    if depth >= 16 {
+        return None;
+    }
+    if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+        && let Some(target) = resolve_null_schema_ref(reference, root)
+    {
+        return schema_type_match(root, target, expected, depth + 1);
+    }
     let matches = |ty: &Value| {
         ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
     };
@@ -653,7 +661,7 @@ fn schema_type_match(schema: &Value, expected: &str) -> Option<bool> {
         };
         let branches = options
             .iter()
-            .map(|option| schema_type_match(option, expected));
+            .map(|option| schema_type_match(root, option, expected, depth + 1));
         let branch_hint = if keyword == "allOf" {
             branches.flatten().reduce(|left, right| left && right)
         } else {
@@ -789,6 +797,23 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn test_ref_string_preserves_json_looking_value() {
+        let tools = vec![ToolDefinition {
+            name: "capture_payload".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "$defs": {"Payload": {"type": "string"}},
+                "properties": {"payload": {"$ref": "#/$defs/Payload"}}
+            })),
+        }];
+        let input = "<tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{\"x\":1}</arg_value></tool_call>";
+        let (calls, _) =
+            try_tool_call_parse_glm47(input, &get_test_config(), Some(&tools)).unwrap();
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(args["payload"], "{\"x\":1}");
     }
 
     fn parse_null_with_parameters(parameters: Value) -> Value {
