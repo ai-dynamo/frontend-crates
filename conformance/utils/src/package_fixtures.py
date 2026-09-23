@@ -327,7 +327,6 @@ def sync_store(
         p
         for p in fixtures_dir.rglob("*.tar.gz")
         if str(p.relative_to(fixtures_dir)) not in new_paths | inactive.keys()
-        and not str(p.relative_to(fixtures_dir)).startswith("unified/")
     ]
     if dry_run:
         archive_shards = [shard for shard in shards if shard.get("format") != "unified-history"]

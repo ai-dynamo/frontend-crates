@@ -570,6 +570,24 @@ def test_existing_versioned_archive_cannot_be_overwritten(evidence, tmp_path):
     assert path.read_bytes() == b"historical bytes"
 
 
+def test_prune_removes_stale_unified_archive(tmp_path):
+    store = tmp_path / "fixtures"
+    stale = store / "unified/obsolete.tar.gz"
+    stale.parent.mkdir(parents=True)
+    stale.write_bytes(b"obsolete")
+
+    package_fixtures.sync_store(
+        tmp_path / "blobs",
+        [],
+        dry_run=False,
+        prune=True,
+        fixtures_dir=store,
+        manifest_path=tmp_path / "missing-manifest.json",
+    )
+
+    assert not stale.exists()
+
+
 @pytest.mark.parametrize("records", [["missing.yaml"], [], ["a.yaml", "a.yaml"], [1]])
 def test_complete_snapshot_rejects_corrupt_member_index(records):
     with pytest.raises(ValueError, match="capture snapshot"):
