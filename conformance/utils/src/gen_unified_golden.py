@@ -1961,6 +1961,8 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if "tools" in stream_config:
+            cases[cid]["tools"] = stream_config["tools"]
     return cases
 
 

@@ -17,7 +17,7 @@
 
 mod common;
 
-use common::{Init, unified_tools as tools};
+use common::Init;
 
 use std::collections::BTreeMap;
 
@@ -38,6 +38,8 @@ struct GoldenFile {
 struct GoldenCase {
     input: String,
     golden: Vec<UnifiedEvent>,
+    #[serde(default = "common::unified_tool_schemas")]
+    tools: serde_json::Value,
     /// Request-scoped parser configuration, declared by the case. Shared with
     /// `unified_render` via `common::Init` so both harnesses configure a case
     /// identically; see that type for why it is declared and not inferred.
@@ -66,8 +68,13 @@ fn has_unified_parser(family: &str) -> bool {
     create_unified_parser_for_family(family, &[]).is_ok()
 }
 
-fn events(family: &str, chunks: &[String], init: &Init) -> Vec<UnifiedEvent> {
-    let mut parser = create_unified_parser_for_family(family, &tools())
+fn events(
+    family: &str,
+    chunks: &[String],
+    init: &Init,
+    case_tools: &[dynamo_parsers_v2::Tool],
+) -> Vec<UnifiedEvent> {
+    let mut parser = create_unified_parser_for_family(family, case_tools)
         .unwrap_or_else(|e| panic!("create unified parser for `{family}`: {e}"));
     init.apply(&mut parser, family);
 
@@ -157,7 +164,12 @@ fn unified_parser_matches_the_golden_oracle() {
     for file in &covered {
         for (id, case) in &file.cases {
             checked += 1;
-            let got = events(&file.family, &chunk_markers(&case.input), &case.init);
+            let got = events(
+                &file.family,
+                &chunk_markers(&case.input),
+                &case.init,
+                &common::parse_unified_tools(&case.tools),
+            );
             if got != case.golden {
                 failures.push(format!(
                     "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
@@ -187,9 +199,19 @@ fn unified_parser_is_chunk_invariant() {
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
-            let baseline = events(&file.family, std::slice::from_ref(&case.input), &case.init);
+            let baseline = events(
+                &file.family,
+                std::slice::from_ref(&case.input),
+                &case.init,
+                &common::parse_unified_tools(&case.tools),
+            );
             for (label, chunks) in splittings(&case.input) {
-                let got = events(&file.family, &chunks, &case.init);
+                let got = events(
+                    &file.family,
+                    &chunks,
+                    &case.init,
+                    &common::parse_unified_tools(&case.tools),
+                );
                 if got != baseline {
                     failures.push(format!(
                         "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
@@ -217,8 +239,17 @@ fn unified_parser_has_stream_batch_parity() {
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
-            let streamed = events(&file.family, &chunk_markers(&case.input), &case.init);
-            let mut parser = create_unified_parser_for_family(&file.family, &tools()).unwrap();
+            let streamed = events(
+                &file.family,
+                &chunk_markers(&case.input),
+                &case.init,
+                &common::parse_unified_tools(&case.tools),
+            );
+            let mut parser = create_unified_parser_for_family(
+                &file.family,
+                &common::parse_unified_tools(&case.tools),
+            )
+            .unwrap();
             case.init.apply(&mut parser, id);
 
             let batch = parser
@@ -249,11 +280,29 @@ fn unified_parsers_are_isolated_per_stream() {
                 continue;
             };
             let (ca, cb) = (chunk_markers(&a.input), chunk_markers(&b.input));
-            let solo_a = events(&file.family, &ca, &a.init);
-            let solo_b = events(&file.family, &cb, &b.init);
+            let solo_a = events(
+                &file.family,
+                &ca,
+                &a.init,
+                &common::parse_unified_tools(&a.tools),
+            );
+            let solo_b = events(
+                &file.family,
+                &cb,
+                &b.init,
+                &common::parse_unified_tools(&b.tools),
+            );
 
-            let mut pa = create_unified_parser_for_family(&file.family, &tools()).unwrap();
-            let mut pb = create_unified_parser_for_family(&file.family, &tools()).unwrap();
+            let mut pa = create_unified_parser_for_family(
+                &file.family,
+                &common::parse_unified_tools(&a.tools),
+            )
+            .unwrap();
+            let mut pb = create_unified_parser_for_family(
+                &file.family,
+                &common::parse_unified_tools(&b.tools),
+            )
+            .unwrap();
             a.init.apply(&mut pa, id_a);
             b.init.apply(&mut pb, id_b);
 
