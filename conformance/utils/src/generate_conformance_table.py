@@ -1739,7 +1739,6 @@ def _tab_label(
 import model as _model  # noqa: E402  (schema + serialization; leaf module)
 
 _MODE_PAREN_RE = re.compile(r"\(([^)]*)\)\s*$")
-_LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
 
 
 def _cand_engine_group(key: str) -> str:
@@ -1762,7 +1761,7 @@ def _parse_mode_of_label(label: str) -> str | None:
 
 
 def _version_of_label(label: str) -> str | None:
-    m = _LABEL_VERSION_RE.search(label)
+    m = _CANDIDATE_VERSION_RE.search(label)
     return m.group(1) if m else None
 
 
