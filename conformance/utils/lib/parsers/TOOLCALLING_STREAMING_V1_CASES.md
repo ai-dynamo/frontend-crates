@@ -46,6 +46,9 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.d`** Nested object + array. Streaming form of `TOOLCALLING.batch.7.d`.
 - **`TOOLCALLING.streamv1.7.e`** Large / deep JSON-edge argument payload. Streaming form of `TOOLCALLING.batch.7.e`.
 - **`TOOLCALLING.streamv1.7.f`** Numeric precision edge preserves integer-like number literal. Streaming form of `TOOLCALLING.batch.7.f`.
+- **`TOOLCALLING.streamv1.7.g`** GLM nullable and composed scalar schemas preserve JSON null, integer, number, and boolean values instead of stringifying them. Streaming regression for frontend-crates #248.
+- **`TOOLCALLING.streamv1.7.h`** DeepSeek V4 preserves leading/trailing whitespace, whitespace-only text, empty strings, and literal `null` string values. Streaming regression for frontend-crates #247.
+- **`TOOLCALLING.streamv1.50.a`** DeepSeek tool-only projection preserves reasoning delimiters in normal text so the caller can split reasoning from visible content. Streaming regression for frontend-crates #253.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.

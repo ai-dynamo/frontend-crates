@@ -208,6 +208,8 @@ suites:
           d: {desc: Nested object + array values, required: false}
           e: {desc: Large / deep argument payload, required: false}
           f: {desc: Numeric precision edge preserves integer-like literal, required: false}
+          g: {desc: Nullable and composed scalar schemas preserve JSON scalar types, required: false}
+          h: {desc: String argument boundaries and literal null text remain exact, required: false}
       "8":
         title: Narration around calls
         required: true
@@ -258,6 +260,7 @@ suites:
         required: true
         cases:
           "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
+          a: {desc: Reasoning delimiters remain caller-visible through the tool-only projection, required: false}
 
   reasoning.batch:
     prefix: REASONING.batch

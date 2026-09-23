@@ -36,6 +36,7 @@ from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
 import fixture_disposition
+import stream_capture_archive
 import unified_history
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
@@ -314,15 +315,26 @@ def sync_store(
     inactive = preserved_evidence(manifest_path=manifest_path, fixtures_dir=fixtures_dir)
     if new_paths & inactive.keys():
         raise ValueError(f"cannot overwrite inactive evidence: {sorted(new_paths & inactive.keys())}")
-    # Versioned archive fixtures remain immutable. Unified captures are stored only
-    # in the canonical YAML history and must use a new semantic version when changed.
+    # Versioned archive fixtures remain immutable except a current Dynamo v2 stream
+    # capture may gain an authored chore case while preserving every prior result.
     for shard in shards:
         if shard.get("format") == "unified-history":
             continue
         destination = fixtures_dir / shard["path"]
         if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
             if sha256_file(destination) != shard["sha256"]:
-                raise ValueError(f"versioned capture is immutable; use a new semantic version: {shard['path']}")
+                append_only_stream = (
+                    shard["path"].startswith("toolcalling/fixtures-stream-v1/dynamo_v2-")
+                    and Path(shard["path"]).stem
+                    == f"dynamo_v2-{read_versions()[0]['dynamo-parsers-v2']}"
+                    and stream_capture_archive.stream_capture_additions_only(
+                        destination,
+                        blobs_dir / shard["path"],
+                        Path(shard["path"]).stem,
+                    )
+                )
+                if not append_only_stream:
+                    raise ValueError(f"versioned capture is immutable; use a new semantic version: {shard['path']}")
     stale = [
         p
         for p in fixtures_dir.rglob("*.tar.gz")

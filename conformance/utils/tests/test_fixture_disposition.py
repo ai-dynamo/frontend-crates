@@ -3,7 +3,9 @@
 
 import hashlib
 import json
+import subprocess
 import sys
+import tarfile
 import threading
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +22,7 @@ import capture_stimulus  # noqa: E402
 import fixture_disposition  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
 import package_fixtures  # noqa: E402
+import stream_capture_archive  # noqa: E402
 import unified_history  # noqa: E402
 
 
@@ -587,6 +590,79 @@ def test_prune_removes_stale_unified_archive(tmp_path):
 
     assert not stale.exists()
     assert not stale.parent.exists()
+
+
+def test_current_dynamo_stream_archive_allows_new_cases_only(tmp_path):
+    def archive(path, cases):
+        source = tmp_path / f"{path.stem}.yaml"
+        source.write_text(yaml.safe_dump({
+            "family": "glm47",
+            "mode": "streamv1",
+            "captured_with": {"dynamo_v2": "0.7.0"},
+            "cases": cases,
+        }))
+        with tarfile.open(path, "w:gz") as output:
+            output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/TOOLCALLING.streamv1.7.yaml")
+
+    old = tmp_path / "old.tar.gz"
+    appended = tmp_path / "appended.tar.gz"
+    rewritten = tmp_path / "rewritten.tar.gz"
+    archive(old, {"TOOLCALLING.streamv1.7.a": {"chunks": [{"expected": []}]}})
+    archive(appended, {
+        "TOOLCALLING.streamv1.7.a": {"chunks": [{"expected": []}]},
+        "TOOLCALLING.streamv1.7.g": {"chunks": [{"expected": [{"complete": True}]}]},
+    })
+    archive(rewritten, {"TOOLCALLING.streamv1.7.a": {"chunks": [{"expected": [{"complete": True}]}]}})
+
+    assert stream_capture_archive.stream_capture_additions_only(old, appended, "dynamo_v2-0.7.0")
+    assert not stream_capture_archive.stream_capture_additions_only(old, rewritten, "dynamo_v2-0.7.0")
+
+
+def test_current_dynamo_stream_archive_rejects_wrong_capture_root(tmp_path):
+    old = tmp_path / "old.tar.gz"
+    candidate = tmp_path / "candidate.tar.gz"
+    source = tmp_path / "case.yaml"
+    source.write_text(yaml.safe_dump({"captured_with": {"dynamo_v2": "0.7.0"}, "cases": {}}))
+    with tarfile.open(old, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml")
+    with tarfile.open(candidate, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-99.0.0/glm47/case.yaml")
+
+    with pytest.raises(ValueError, match="unexpected stream capture member"):
+        stream_capture_archive.stream_capture_additions_only(old, candidate, "dynamo_v2-0.7.0")
+
+
+def test_current_dynamo_stream_archive_rejects_new_capture_document(tmp_path):
+    old = tmp_path / "old.tar.gz"
+    candidate = tmp_path / "candidate.tar.gz"
+    source = tmp_path / "case.yaml"
+    source.write_text(yaml.safe_dump({"captured_with": {"dynamo_v2": "0.7.0"}, "cases": {}}))
+    with tarfile.open(old, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml")
+    with tarfile.open(candidate, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml")
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/added.yaml")
+
+    assert not stream_capture_archive.stream_capture_additions_only(old, candidate, "dynamo_v2-0.7.0")
+
+
+@pytest.mark.parametrize("member", [
+    "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/../../escape.yaml",
+    "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml",
+])
+def test_current_dynamo_stream_archive_rejects_ambiguous_members(tmp_path, member):
+    old = tmp_path / "old.tar.gz"
+    candidate = tmp_path / "candidate.tar.gz"
+    source = tmp_path / "case.yaml"
+    source.write_text(yaml.safe_dump({"captured_with": {"dynamo_v2": "0.7.0"}, "cases": {}}))
+    with tarfile.open(old, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml")
+    with tarfile.open(candidate, "w:gz") as output:
+        output.add(source, arcname="toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0/glm47/case.yaml")
+        output.add(source, arcname=member)
+
+    with pytest.raises(ValueError, match="unexpected stream capture member"):
+        stream_capture_archive.stream_capture_additions_only(old, candidate, "dynamo_v2-0.7.0")
 
 
 @pytest.mark.parametrize("records", [["missing.yaml"], [], ["a.yaml", "a.yaml"], [1]])
