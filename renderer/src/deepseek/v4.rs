@@ -348,7 +348,12 @@ pub(super) fn encode_messages_with_encoding(
     encoding: Encoding,
 ) -> Result<String> {
     let merged = merge_tool_messages(messages);
-    let mut full = sort_tool_results_by_call_order(merged);
+    // V4.1 orders source messages before merging, using the same routine as its media hook.
+    let mut full = if encoding.is_v41() {
+        merged
+    } else {
+        sort_tool_results_by_call_order(merged)
+    };
 
     let mut prompt = String::new();
     if add_bos_token {
