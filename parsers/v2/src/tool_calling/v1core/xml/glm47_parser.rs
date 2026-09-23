@@ -693,48 +693,34 @@ mod tests {
         let schema = serde_json::json!({
             "$defs": {
                 "Scalar": {"type": ["string", "integer"]},
+                "Text": {"type": "string"},
                 "Loop": {"$ref": "#/$defs/Loop"}
             },
             "properties": {
                 "narrow": {"$ref": "#/$defs/Scalar", "type": "integer"},
                 "cycle": {"$ref": "#/$defs/Loop"},
-                "typed_cycle": {"$ref": "#/$defs/Loop", "type": "integer"}
+                "typed_cycle": {"$ref": "#/$defs/Loop", "type": "integer"},
+                "payload": {"$ref": "#/$defs/Text"}
             }
         });
-        for (field, expected) in [
-            ("narrow", serde_json::json!(42)),
-            ("cycle", serde_json::json!("42")),
-            ("typed_cycle", serde_json::json!(42)),
+        for (field, raw, expected) in [
+            ("narrow", "42", serde_json::json!(42)),
+            ("cycle", "42", serde_json::json!("42")),
+            ("typed_cycle", "42", serde_json::json!(42)),
+            ("payload", "{\"x\":1}", serde_json::json!("{\"x\":1}")),
         ] {
             let tools = vec![ToolDefinition {
                 name: "capture_payload".into(),
                 parameters: Some(schema.clone()),
             }];
             let input = format!(
-                "<tool_call>capture_payload<arg_key>{field}</arg_key><arg_value>42</arg_value></tool_call>"
+                "<tool_call>capture_payload<arg_key>{field}</arg_key><arg_value>{raw}</arg_value></tool_call>"
             );
             let (calls, _) =
                 try_tool_call_parse_glm47(&input, &get_test_config(), Some(&tools)).unwrap();
             let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
             assert_eq!(args[field], expected, "{field}");
         }
-    }
-
-    #[test]
-    fn test_ref_string_preserves_json_looking_value() {
-        let tools = vec![ToolDefinition {
-            name: "capture_payload".to_string(),
-            parameters: Some(serde_json::json!({
-                "type": "object",
-                "$defs": {"Payload": {"type": "string"}},
-                "properties": {"payload": {"$ref": "#/$defs/Payload"}}
-            })),
-        }];
-        let input = "<tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{\"x\":1}</arg_value></tool_call>";
-        let (calls, _) =
-            try_tool_call_parse_glm47(input, &get_test_config(), Some(&tools)).unwrap();
-        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
-        assert_eq!(args["payload"], "{\"x\":1}");
     }
 
     #[test]
