@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 Shard tarballs, tracked via git-lfs. `conformance/fixtures-manifest.json` pins the active snapshot (sha256 per shard); `extract_fixtures.py` unpacks everything into `~/.cache/dynamo/conformance-fixtures/`. Do not edit these by hand — re-capture and run `package_fixtures.py` (see [`../README.md`](../README.md#fixture-workflows)).
 
-Naming: `<tree>/<impl>-<version>.tar.gz`, where `<version>` is the engine/crate version that produced the outputs. Per impl, the LOWEST version is a full capture (anchor); higher versions are changed-only overlays. `inputs.tar.gz` = the shared test inputs for that tree. The `-v1`/`-v2` suffix on TREE names is the fixture-corpus generation, NOT the parser generation — v1-parser captures appear inside `-v2` trees and vice versa.
+Naming: `<tree>/<impl>-<version>.tar.gz`, where `<version>` is the engine/crate version that produced the outputs. Per impl, the LOWEST version is a full capture (anchor); higher versions are changed-only overlays. `inputs.tar.gz` is the shared test input. The tree suffix names the conformance convention, not the parser implementation: streaming v1 is legacy/non-Unified, while Unified v2 is the ordered reasoning+text+tool protocol. Therefore `dynamo_v2-*` implementation captures legitimately appear inside `fixtures-stream-v1`.
 
-**Parser lifecycle context:** Dynamo v1 (`dynamo-parsers`, batch + jail) is interim and will be removed once v2 reaches parity; v2 (`dynamo-parsers-v2`, streaming) is the ultimate implementation (WIP).
+**Runtime context:** Dynamo selects parser names from deployment configuration. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; routing still checks Unified first. The exact Qwen3 tool+reasoning parser pair uses Unified when the flag is on. Without a matching Unified pair, eligible Qwen3-Coder or DeepSeek V4 requests use the non-Unified incremental parser. Other tool-parsing requests use batch+jail; DeepSeek V4.1 and Muse have separate Unified routes that do not depend on the flag.
 
 | Shard | Implementation | What it holds |
 |---|---|---|

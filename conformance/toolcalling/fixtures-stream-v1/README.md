@@ -1,12 +1,14 @@
 # conformance/toolcalling/fixtures-stream-v1
 
-Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the frontend-crates-owned `conformance/toolcalling/fixtures-batch-v1/` batch corpus when building the HTML matrix.
+Per-chunk fixtures for the legacy, non-Unified **streaming v1 convention**. The directory suffix names the conformance convention, not the parser implementation: captures under `dynamo_v2-<version>` were produced by the `dynamo-parsers-v2` implementation but still belong here because they use the older tool-only stream contract. Unified v2 fixtures live under `conformance/fixtures-unified-v2/`.
+
+This corpus originally carried a `v2` suffix because the incremental parser was intended to replace batch+jail. Unified later introduced a different v2 protocol, leaving two “v2” conventions. The `v1` suffix now makes v1 mean legacy/non-Unified streaming and v2 mean Unified.
 
 ## Why A Separate Overlay Exists
 
 The `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the v1 corpus.
 
-Complete batch text fed through streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v1/`. Use both directories when adding a v2 streaming parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the streaming parser reconstructs the batch result.
+Complete batch text fed through non-Unified streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v1/`. Use both directories when adding an incremental parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the parser reconstructs the batch result.
 
 ## Layout (versioned, no unversioned baseline)
 

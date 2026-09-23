@@ -16,11 +16,14 @@ All three parser crates live under `parsers/`, grouped but still separately pack
 
 ## Terminology
 
-`v1` means the stable batch parser crate (`dynamo-parsers`, under `parsers/v1/`), its legacy fixtures (`conformance/toolcalling/fixtures-v1/`, `conformance/reasoning/fixtures/`), and `conformance/utils/lib/parsers/*_CASES.md`.
+There are two separate version axes. Do not infer one from the other:
 
-`v2` means the WIP streaming parser crate (`dynamo-parsers-v2`, under `parsers/v2/`), its Python binding (`parsers/v2-py/`), stream fixtures, batch-on-stream fixtures, and the conformance renderer (`conformance/utils/src/generate_conformance_table.py`, `conformance/utils/src/conformance_table.html.j2`).
+- **Implementation generation:** `dynamo-parsers` / `dynamo_v1` is the stable batch parser, also used behind the streaming jail. `dynamo-parsers-v2` / `dynamo_v2` is the newer crate containing the incremental tool-only parsers and Unified parsers. These implementation names stay unchanged.
+- **Conformance convention:** `fixtures-stream-v1`, `fixtures-batch-on-stream-v1`, and `TOOLCALLING.streamv1.*` identify the legacy, non-Unified streaming convention. `fixtures-unified-v2` identifies Unified, where one parser owns the ordered reasoning, visible-text, and tool-call stream.
 
-Use `Dynamo parser v2` as the parser label. The fixture key `expected.dynamo` and helper subcommand `check.sh dynamo` are compatibility labels for local parser output.
+The non-Unified incremental parser was originally called `stream-v2` because it was intended to replace the original batch+jail implementation. Unified arrived later and also used the v2 name. That left two different “v2” conventions. The corpus rename resolves the collision: **streaming v1 means legacy/non-Unified streaming; v2 means Unified**. A `dynamo_v2-*` capture can therefore appear inside `fixtures-stream-v1`; the directory names the convention, while the capture key names the implementation.
+
+In the current Dynamo runtime, parser names come from model deployment configuration. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not choose one by itself. Routing checks Unified first. The exact `tool_call_parser=qwen3_coder` plus `reasoning_parser=qwen3` pair uses Qwen3 Unified when the flag is on. If no Unified pair matches, the flag allows eligible `qwen3_coder` or `deepseek_v4` requests to use the older non-Unified incremental parser. All remaining tool-parsing requests use batch+jail. DeepSeek V4.1 and Muse have separate Unified routes that do not depend on this flag. This repository rename does not change that routing.
 
 ## Why The Split Exists
 
@@ -40,8 +43,8 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the conformance renderer. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |
-| `conformance/toolcalling/fixtures-stream-v1/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
-| `conformance/toolcalling/fixtures-batch-on-stream-v1/` | v2 frontend-crate-owned | Complete batch text captured through streaming parsers for stream-vs-batch comparison. |
+| `conformance/toolcalling/fixtures-stream-v1/` | legacy streaming convention | Per-chunk fixtures for non-Unified stream parsers, including `dynamo_v2` implementation captures. |
+| `conformance/toolcalling/fixtures-batch-on-stream-v1/` | legacy streaming convention | Complete batch text captured through non-Unified stream parsers for stream-vs-batch comparison. |
 | `conformance/utils/src/generate_conformance_table.py` and `conformance/utils/src/conformance_table.html.j2` | v2 frontend-crate-owned | Conformance table renderer. |
 
 ## Migration Steps

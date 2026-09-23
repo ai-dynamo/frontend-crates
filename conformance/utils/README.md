@@ -35,16 +35,20 @@ Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `c
 | Store path (inside snapshot) | Used By |
 |---|---|
 | `toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
-| `toolcalling/fixtures-batch-on-stream-v1/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
-| `toolcalling/fixtures-stream-v1/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
+| `toolcalling/fixtures-batch-on-stream-v1/` | Legacy streaming v1 convention. Complete batch text through non-Unified streaming parsers. |
+| `toolcalling/fixtures-stream-v1/` | Legacy streaming v1 convention. Incremental chunks through non-Unified streaming parsers. |
 | `reasoning/fixtures-v1/inputs/` | Reasoning parser tabs. |
 
 ## Parser Implementations
 
 Keep the implementation and mode separate when reading or updating fixtures.
 
+The original incremental parser was called `stream-v2` because it was intended to replace batch+jail. Unified later created a second v2 convention. Corpus names now use **streaming v1** for legacy/non-Unified data and **Unified v2** for the ordered reasoning+text+tool protocol. Implementation labels remain `dynamo_v1` and `dynamo_v2`, so `expected.dynamo_v2` inside `fixtures-stream-v1` is correct.
+
+At runtime, `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not force the non-Unified parser. Dynamo checks Unified first. The exact Qwen3 tool+reasoning parser pair uses Unified when the flag is on. If no Unified pair matches, eligible Qwen3-Coder or DeepSeek V4 requests use the non-Unified incremental parser. Other tool-parsing requests use batch+jail; DeepSeek V4.1 and Muse have separate Unified routes that do not depend on the flag.
+
 - Dynamo v1 is batch only. It writes `expected.dynamo_v1` in `conformance/toolcalling/fixtures-batch-v1/`. This is the current batch baseline, not the upcoming v2 stream parser. **v1 is interim** — it is removed outright once v2 reaches parity.
-- Dynamo v2 Rust is stream and batch-on-stream. It writes `expected.dynamo_v2` in new v2 fixture shapes. This is the upcoming Dynamo-owned Rust stream parser — **the ultimate implementation (WIP)** that fully replaces v1. Harmony is only the example wired today; DS4 and the other v2 stream parsers should use the same flow as they land.
+- Dynamo v2 Rust writes `expected.dynamo_v2` for both the legacy non-Unified stream convention and Unified. The directory or case ID identifies the convention; the expected-output key identifies the implementation.
 - vLLM Python is batch and stream. Legacy batch fixtures use `expected.vllm`; v2 fixtures use `expected.vllm_python`. Batch output is vLLM's complete-text parser. Stream output is vLLM's streaming parser.
 - vLLM Rust is stream only. It writes `expected.vllm_rust`. vLLM Rust does not expose a separate batch parser here. Complete text is tested by feeding the full text through the Rust streaming parser.
 - SGLang Python is batch and stream where SGLang has a detector for that family. Legacy batch fixtures use `expected.sglang`; v2 fixtures use `expected.sglang_python`. Missing detectors are recorded under `unavailable.sglang_python`.
@@ -202,7 +206,7 @@ conformance/utils/check.sh status --model qwen3 --tab unified
 
 Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
 
-Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
+Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the legacy stream and batch-on-stream tabs.
 
 ### UnifiedParser conversion collection
 
