@@ -51,6 +51,7 @@ fn spec() -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Clear,
         invoke_latch: InvokeLatch::IfEmitted,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(glm47_boundary)),
+        recover_saved_outer_close: None,
         preserve_special_tokens: true,
         ..Default::default()
     }

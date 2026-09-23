@@ -1,0 +1,155 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.6.3
+    git_commit: 7fc16ca00f069c7a9b9fe5906f1f2700456a425c
+    source_sha256: 3ae1c18af5b6c038793596bed1d4bb460638a91f8bd5f4e59943a64cad303b0b
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    case_key: UNIFIED.7-2
+    stimulus:
+      ref: current
+      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log </tool_call> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"git log'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' </tool_call> --oneline"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  bare_parameterless_call:
+    case_key: UNIFIED.6-2
+    stimulus:
+      ref: current
+      semantic_sha256: d361b33f6400255b345dd28465aae97227939f6eb96cb13f1c01f4daebe41f2f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  bare_saved_closer:
+    case_key: UNIFIED.5-5
+    stimulus:
+      ref: current
+      semantic_sha256: 6633d7acbeef7e11e49d6052fde555cbfad9d93472ccd5789f08b23ace5f286b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: true
+  guided_json_native_envelope_after_prose:
+    case_key: UNIFIED.32-6
+    stimulus:
+      ref: current
+      semantic_sha256: 92b3180535974559b7b9df976845a31d88f7e1f95196ea2bd9b012649f0b398f
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'hello '
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'hello '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  wrapped_saved_closer_partial_marker:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 91ddb3fe3a777cec319ccf29c2f750b0892b2e5991a152f3d20d1ff5a7d09e5a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        - kind: text
+          text: <
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: true
+          - kind: text
+            text: <
+metadata_changes: {}
+document_overrides: {}

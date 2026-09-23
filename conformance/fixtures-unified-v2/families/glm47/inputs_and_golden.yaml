@@ -6043,3 +6043,298 @@ cases:
         name: run
         arguments:
           cmd: before </tool_call><tool_call>get_weather</tool_call> after
+  guided_json_native_envelope_after_prose:
+    lifecycle: active
+    scenario: guided_json_native_envelope_after_prose
+    description: Visible prose is followed by a complete family-native tool envelope during a GuidedJson request. The envelope is stray because GuidedJson expects one bare JSON payload, and the preceding `hello ` has already become visible content. The result is only that prose for every chunk boundary.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.32-6
+    historical_ids: []
+    request:
+      input: 'hello <tool_call>run<arg_key>cmd</arg_key><arg_value>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</arg_value></tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'hello '
+      - delta_text: <tool_call>
+      - delta_text: run
+      - delta_text: <arg_key>
+      - delta_text: cmd
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'hello '
+  wrapped_saved_closer_partial_marker:
+    lifecycle: active
+    scenario: wrapped_saved_closer_partial_marker
+    description: The family-native outer close arrives while an argument value is unclosed, then EOF ends on a partial control marker. Recover the delimiter-terminated value and call, and preserve the partial suffix as visible text.
+    policy:
+    - P2
+    - I5
+    display_id: UNIFIED.5-4
+    historical_ids: []
+    request:
+      input: <tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call><
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: length
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: run
+      - delta_text: <arg_key>
+      - delta_text: cmd
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: first
+      - delta_text: </tool_call>
+      - delta_text: <
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: first
+      - kind: text
+        text: <
+  bare_saved_closer:
+    lifecycle: active
+    scenario: bare_saved_closer
+    description: A real family-native outer close follows an opener-less call whose argument value never closed. The offered tool name plus real closer bound the malformed call, so the delimiter-terminated value and call are recoverable.
+    policy:
+    - P2
+    - I5
+    display_id: UNIFIED.5-5
+    historical_ids: []
+    request:
+      input: run<arg_key>cmd</arg_key><arg_value>first</tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: length
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: run
+      - delta_text: <arg_key>
+      - delta_text: cmd
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: first
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: first
+  bare_parameterless_call:
+    lifecycle: active
+    scenario: bare_parameterless_call
+    description: A complete parameterless call emitted without the family-native outer opener. The offered tool name and real outer closer bound the malformed call; each parser may recover it or record a divergence, but every grammar can express the shape.
+    policy:
+    - P2
+    - I6
+    display_id: UNIFIED.6-2
+    historical_ids: []
+    request:
+      input: get_weather</tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: get_weather
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: {}

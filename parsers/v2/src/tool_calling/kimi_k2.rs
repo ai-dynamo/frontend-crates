@@ -485,7 +485,27 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(KIMI_INVOKE_SCAN)),
+        recover_saved_outer_close: Some(recover_saved_outer_close),
     }
+}
+
+fn recover_saved_outer_close(text: &str) -> Option<(usize, String)> {
+    let close = [SECTION_END_PLURAL, SECTION_END_SINGULAR]
+        .iter()
+        .filter_map(|marker| text.find(marker).map(|at| (at, *marker)))
+        .min_by_key(|(at, _)| *at)?;
+    let body = &text[..close.0];
+    let json = body.find(ARGUMENT_BEGIN)? + ARGUMENT_BEGIN.len();
+    let suffix = &body[json..];
+    if suffix.ends_with(['}', ']']) {
+        return None;
+    }
+    let mut repaired = body.to_string();
+    if serde_json::from_str::<serde_json::Value>(suffix).is_err() {
+        repaired.push_str("\"}");
+    }
+    repaired.push_str(CALL_END);
+    Some((close.0 + close.1.len(), repaired))
 }
 
 #[cfg(test)]

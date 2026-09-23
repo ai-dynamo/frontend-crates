@@ -504,6 +504,24 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
         assert present == scoped, f"{fam} is missing {scoped - present}"
 
 
+@pytest.mark.parametrize(
+    "scenario,tool_output_mode",
+    [
+        ("wrapped_saved_closer_partial_marker", "Native"),
+        ("bare_saved_closer", "Native"),
+        ("bare_parameterless_call", "Native"),
+        ("guided_json_native_envelope_after_prose", "GuidedJson"),
+    ],
+)
+def test_pr241_shared_cases_cover_every_family(scenario, tool_output_mode):
+    assert G.scenario_families(scenario) == set(FAMILIES)
+    for family in FAMILIES:
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        assert case["init"]["tool_output_mode"] == tool_output_mode
+        assert case["input"]
+        assert case["golden"] is not None
+
+
 def test_scenario_families_matches_declared_scope():
     scoped = {
         "guided_json_quoted_bare_header_in_answer": set(FAMILIES),
@@ -579,24 +597,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 80,
-            "deepseek_v41": 80,
-            "gemma4": 82,
-            "glm47": 80,
-            "kimi_k2": 80,
-            "kimi_k3": 88,
-            "muse_glimmer": 81,
-            "qwen3": 80,
+            "deepseek_v4": 84,
+            "deepseek_v41": 84,
+            "gemma4": 86,
+            "glm47": 84,
+            "kimi_k2": 84,
+            "kimi_k3": 92,
+            "muse_glimmer": 85,
+            "qwen3": 84,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 651
+    assert sum(per_family.values()) == 683
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-4", "5-5", "6-2", "7-3", "30-14", "32-6", "50-1", "50-2"} | {
+    deferred = {"1-2", "7-3", "30-14", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 92
+    assert len(UNIFIED_TAX) == 96
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -876,7 +894,7 @@ def _json_values(raw):
     return values
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, recover_outer_close=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present
@@ -906,6 +924,8 @@ def _native_input_calls(family, raw):
                 )
                 value_start += len("<arg_value>")
                 value_end = raw.find("</arg_value>", value_start)
+                if value_end < 0 and recover_outer_close:
+                    value_end = raw.find("</tool_call>", value_start)
                 if value_end < 0:
                     break
                 arguments[key] = raw[value_start:value_end]
@@ -932,23 +952,63 @@ def _native_input_calls(family, raw):
         arguments = {}
         if family in {"deepseek_v4", "deepseek_v41"}:
             gap = " " if family == "deepseek_v41" else ""
-            pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>'
+            close = rf'(?:</｜DSML｜{gap}parameter>'
+            if recover_outer_close:
+                outer_close = "</｜DSML｜ calls>" if family == "deepseek_v41" else "</｜DSML｜tool_calls>"
+                close += rf'|{re.escape(outer_close)}'
+            close += ')'
+            pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?){close}'
             for key, is_string, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if is_string == "true" else json.loads(value)
         elif family == "qwen3":
-            arguments = {key: value.strip() for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
+            close = r'(?:</parameter>'
+            if recover_outer_close:
+                close += r'|</tool_call>'
+            close += ')'
+            arguments = {
+                key: value.strip()
+                for key, value in re.findall(
+                    rf'<parameter=([^>]+)>(.*?){close}', body, re.S
+                )
+            }
         elif family == "muse_glimmer":
-            for key, value in re.findall(r'<atem:parameter name="([^"]+)">(.*?)</atem:parameter>', body, re.S):
+            close = r'(?:</atem:parameter>'
+            if recover_outer_close:
+                close += r'|<\|eom\|>'
+            close += ')'
+            for key, value in re.findall(
+                rf'<atem:parameter name="([^"]+)">(.*?){close}', body, re.S
+            ):
                 try:
                     arguments[key] = json.loads(value)
                 except json.JSONDecodeError:
                     arguments[key] = value
         elif family == "gemma4":
-            arguments = {key: value for key, value in re.findall(r'(\w+):<\|"\|>(.*?)<\|"\|>', body, re.S)}
+            close = r'(?:<\|"\|>'
+            if recover_outer_close:
+                close += r'|<tool_call\|>'
+            close += ')'
+            arguments = {
+                key: value
+                for key, value in re.findall(rf'(\w+):<\|"\|>(.*?){close}', body, re.S)
+            }
         elif family == "kimi_k2":
-            arguments, _ = json.JSONDecoder().raw_decode(body)
+            try:
+                arguments, _ = json.JSONDecoder().raw_decode(body)
+            except json.JSONDecodeError:
+                if not recover_outer_close:
+                    raise
+                recovered = re.match(
+                    r'\{"([^"]+)":\s*"(.*?)<\|tool_calls_section_end\|>', body, re.S
+                )
+                if recovered:
+                    arguments = {recovered[1]: recovered[2]}
         else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
+            close = r'(?:<\|close\|>\s*argument\s*<\|sep\|>'
+            if recover_outer_close:
+                close += r'|<\|close\|>\s*tools\s*<\|sep\|>'
+            close += ')'
+            pattern = rf'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?){close}'
             for key, kind, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
@@ -978,7 +1038,14 @@ def _assert_input_carries_events(family, scenario, case):
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
         if case["init"]["tool_output_mode"] == "Native":
-            candidates = _native_input_calls(family, raw)
+            candidates = _native_input_calls(
+                family,
+                raw,
+                recover_outer_close=scenario in {
+                    "wrapped_saved_closer_partial_marker",
+                    "bare_saved_closer",
+                },
+            )
         else:
             candidates = []
             for value in _json_values(raw):
@@ -1085,6 +1152,14 @@ def _assert_cross_family_contract(corpus):
 
 def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
     _assert_cross_family_contract({family: build_cases(family) for family in FAMILIES})
+
+
+def test_deferred_current_dynamo_divergences_pin_exact_events():
+    for family in FAMILIES:
+        for case in build_cases(family).values():
+            expected = case.get("expect", {}).get("dynamo_current")
+            if expected is not None:
+                assert "events" in expected, (family, case["description"])
 
 
 @pytest.mark.parametrize("family", [family for family in FAMILIES if family != "muse_glimmer"])

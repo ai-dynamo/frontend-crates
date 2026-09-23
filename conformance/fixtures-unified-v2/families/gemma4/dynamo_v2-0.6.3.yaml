@@ -1,0 +1,102 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.6.3
+    git_commit: 7fc16ca00f069c7a9b9fe5906f1f2700456a425c
+    source_sha256: 3ae1c18af5b6c038793596bed1d4bb460638a91f8bd5f4e59943a64cad303b0b
+document:
+  mode: unified
+changes:
+  bare_parameterless_call:
+    case_key: UNIFIED.6-2
+    stimulus:
+      ref: current
+      semantic_sha256: b5031e5b2395e13cc56eff1f384cd04ef4d81f6f83020ef61a164128eaedecc3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+  bare_saved_closer:
+    case_key: UNIFIED.5-5
+    stimulus:
+      ref: current
+      semantic_sha256: b535bead35771ebf27e0db6462cca65f720722367a92ef2656fa3dd4ddee918c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first"}'
+            complete: true
+  guided_json_native_envelope_after_prose:
+    case_key: UNIFIED.32-6
+    stimulus:
+      ref: current
+      semantic_sha256: a389b9b9396953511a42397a5228c0f8813b33ca1eb3af77f3e65c9a66b84b69
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'hello '
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'hello '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  wrapped_saved_closer_partial_marker:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 56ee578299c371d2d4e027aca406bd5741dd57008293eed0ffc634170ea39a65
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        - kind: text
+          text: <
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first"}'
+            complete: true
+          - kind: text
+            text: <
+metadata_changes: {}
+document_overrides: {}

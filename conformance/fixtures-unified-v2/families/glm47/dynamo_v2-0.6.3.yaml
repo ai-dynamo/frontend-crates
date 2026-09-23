@@ -1,0 +1,110 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.6.3
+    git_commit: 7fc16ca00f069c7a9b9fe5906f1f2700456a425c
+    source_sha256: 3ae1c18af5b6c038793596bed1d4bb460638a91f8bd5f4e59943a64cad303b0b
+document:
+  mode: unified
+changes:
+  bare_parameterless_call:
+    case_key: UNIFIED.6-2
+    stimulus:
+      ref: current
+      semantic_sha256: ceea8e3cdffbf0c9082dffb8da812fe9d5a205255b88ca440c7ffe92bda1781f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+  bare_saved_closer:
+    case_key: UNIFIED.5-5
+    stimulus:
+      ref: current
+      semantic_sha256: 84e3431667784e5f50fabc824b15bc8382cc4124010c026d1263a2249b1903bd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first"}'
+            complete: true
+  guided_json_native_envelope_after_prose:
+    case_key: UNIFIED.32-6
+    stimulus:
+      ref: current
+      semantic_sha256: 55925598d8c2a84ab88302791afee90dd79ff4dc6798fa18c10ee2a99a5c09e7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'hello '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'hello '
+        - expected: []
+  wrapped_saved_closer_partial_marker:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 6e456fdf1a5d3365eb224b178bb3390b6811cb1b182a6f5fce64a5a4aff741b1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: first
+        - kind: text
+          text: <
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"first"}'
+            complete: true
+          - kind: text
+            text: <
+metadata_changes: {}
+document_overrides: {}

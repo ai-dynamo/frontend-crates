@@ -283,6 +283,8 @@ pub(crate) struct InvokeScan {
     pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
 }
 
+pub(crate) type SavedOuterCloseRecovery = fn(&str) -> Option<(usize, String)>;
+
 /// Immutable family recipe for a request-local invoke boundary.
 #[derive(Clone, Copy)]
 pub(crate) enum InvokeBoundaryFactory {
@@ -449,6 +451,9 @@ pub(crate) struct WrappedBlockSpec {
     /// Optional family-owned boundary capability. `None` preserves the
     /// marker-only path with no boundary allocation.
     pub invoke_boundary_factory: Option<InvokeBoundaryFactory>,
+    /// Recover an invoke whose real outer closer arrived before missing inner
+    /// delimiters. Returns consumed source bytes and normalized invoke bytes.
+    pub recover_saved_outer_close: Option<SavedOuterCloseRecovery>,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -493,6 +498,9 @@ pub(crate) struct ReasoningSpec {
 /// owned field is the ordinary way to do that — no `RefCell` needed, since
 /// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
+    fn complete_partial_recovery(&self) -> Option<ToolCallDelta> {
+        None
+    }
     /// Emit an append-safe update while an invoke is still open. Families that
     /// cannot prove a fragment will survive their final typing leave this as a
     /// no-op and continue to emit only at the invoke close.
@@ -1233,6 +1241,32 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         continue;
                     }
                     if flush {
+                        if let Some((consumed, invoke)) = self
+                            .spec
+                            .recover_saved_outer_close
+                            .and_then(|recover| recover(&self.buffer))
+                        {
+                            let completion = self.emitter.complete_partial_recovery();
+                            self.emitter.reset();
+                            let emitted = if let Some(delta) = completion {
+                                Some(vec![delta])
+                            } else {
+                                self.emitter.parse_invoke_deltas(&invoke, self.next_index)?
+                            };
+                            self.buffer.drain(..consumed);
+                            self.reset_invoke_boundary();
+                            if let Some(deltas) = emitted {
+                                for delta in deltas {
+                                    out.push_call(delta);
+                                }
+                                self.next_index += 1;
+                                self.uncommitted_block.clear();
+                            }
+                            self.in_block = false;
+                            self.suppress_normal_text = false;
+                            self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                            continue;
+                        }
                         // Reviewer-caught regression: `invoke_end_at`
                         // returning `None` at flush does NOT always mean
                         // "genuinely incomplete, nothing left to salvage".
@@ -1445,6 +1479,30 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             continue;
                         }
                         if flush {
+                            if let Some((consumed, invoke)) = self
+                                .spec
+                                .recover_saved_outer_close
+                                .and_then(|recover| recover(&self.buffer))
+                            {
+                                let completion = self.emitter.complete_partial_recovery();
+                                self.emitter.reset();
+                                let emitted = if let Some(delta) = completion {
+                                    Some(vec![delta])
+                                } else {
+                                    self.emitter.parse_invoke_deltas(&invoke, self.next_index)?
+                                };
+                                self.buffer.drain(..consumed);
+                                self.reset_invoke_boundary();
+                                if let Some(deltas) = emitted {
+                                    for delta in deltas {
+                                        out.push_call(delta);
+                                    }
+                                    self.next_index += 1;
+                                }
+                                self.suppress_normal_text = false;
+                                self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                                continue;
+                            }
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
                                 "stream dropped incomplete bare invoke at EOF"
@@ -1527,6 +1585,7 @@ pub(crate) mod test_support {
                 invoke_latch: InvokeLatch::IfEmitted,
                 drop_invoke_crossing_block_end: false,
                 invoke_boundary_factory: None,
+                recover_saved_outer_close: None,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
