@@ -695,7 +695,12 @@ impl ChoiceJailState {
         }
 
         let mut chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
-        for delta in deltas {
+        let mut deltas = deltas.into_iter().peekable();
+        while let Some(mut delta) = deltas.next() {
+            // The forward-only cursor emits each call's opener before its fragments.
+            while let Some(fragment) = deltas.next_if(|next| next.tool_index == delta.tool_index) {
+                delta.arguments.push_str(&fragment.arguments);
+            }
             let first = delta.name.is_some();
             chunks.push(ChatCompletionMessageToolCallChunk {
                 index: (self.emitted_tool_calls_count + delta.tool_index) as u32,
@@ -1116,7 +1121,7 @@ impl ChoiceJailStateCollection {
 /// Emission mode for handling multiple choices
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EmissionMode {
-    /// Pack multiple choices in the same chunk (default, matches original behavior)
+    /// Pack distinct choice indices together; emit repeated indices in separate chunks.
     #[default]
     Packed,
     /// Emit one choice per chunk for OpenAI compatibility
@@ -1456,7 +1461,13 @@ impl JailedStream {
         let (id, event, comment) = annotated_metadata;
 
         match self.emission_mode {
-            EmissionMode::Packed => {
+            EmissionMode::Packed
+                if !emissions.iter().enumerate().any(|(i, emission)| {
+                    emissions[..i]
+                        .iter()
+                        .any(|prior| prior.choice().index == emission.choice().index)
+                }) =>
+            {
                 // Pack all choices into a single response
                 let mut response = base_response.clone();
                 response.choices = emissions.into_iter().map(|e| e.into_choice()).collect();
@@ -1469,8 +1480,8 @@ impl JailedStream {
                     error: None,
                 }]
             }
-            EmissionMode::SingleChoicePerChunk => {
-                // Emit each choice in a separate response
+            EmissionMode::Packed | EmissionMode::SingleChoicePerChunk => {
+                // Keep repeated indices in order without merging or discarding delta fields.
                 emissions
                     .into_iter()
                     .map(|emission| {
@@ -2807,6 +2818,116 @@ mod tests {
             }
         }
         tool_calls
+    }
+
+    #[test]
+    fn packed_emissions_split_repeated_indices_without_changing_choices() {
+        let base = text_chunk_with_logprobs("a").data.unwrap();
+        let choices: Vec<_> = [0, 1, 0, 1]
+            .into_iter()
+            .enumerate()
+            .map(|(position, index)| {
+                let mut choice = base.choices[0].clone();
+                choice.index = index;
+                choice.delta.reasoning_content = Some(position.to_string());
+                if position >= 2 {
+                    choice.delta.content =
+                        Some(dynamo_protocols::types::ChatCompletionMessageContent::Parts(vec![]));
+                    choice.finish_reason = Some(FinishReason::Stop);
+                }
+                choice
+            })
+            .collect();
+        for mode in [EmissionMode::Packed, EmissionMode::SingleChoicePerChunk] {
+            let jail = JailedStream::builder().emission_mode(mode).build();
+            let output = jail.emit_choice_emissions(
+                choices
+                    .iter()
+                    .cloned()
+                    .map(ChoiceEmission::Content)
+                    .collect(),
+                &base,
+                (
+                    Some("event-id".into()),
+                    Some("message".into()),
+                    Some(vec!["note".into()]),
+                ),
+            );
+            assert_eq!(output.len(), 4);
+            let mut actual = Vec::new();
+            for response in output {
+                assert_eq!(response.id.as_deref(), Some("event-id"));
+                assert_eq!(response.event.as_deref(), Some("message"));
+                assert_eq!(response.comment, Some(vec!["note".to_string()]));
+                let data = response.data.unwrap();
+                let indices: std::collections::HashSet<_> =
+                    data.choices.iter().map(|choice| choice.index).collect();
+                assert_eq!(indices.len(), data.choices.len());
+                actual.extend(data.choices);
+            }
+            assert_eq!(actual, choices);
+            let distinct = jail.emit_choice_emissions(
+                choices[..2]
+                    .iter()
+                    .cloned()
+                    .map(ChoiceEmission::Content)
+                    .collect(),
+                &base,
+                (None, None, None),
+            );
+            assert_eq!(
+                distinct.len(),
+                if mode == EmissionMode::Packed { 1 } else { 2 }
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn guided_progress_emits_unique_call_indices_and_complete_arguments() {
+        let payload = r#"[{"name":"calculate","parameters":{"x":1}},{"name":"calculate","parameters":{"x":2}}]"#;
+        let split = payload.find('1').unwrap() + 1;
+        for mode in [EmissionMode::Packed, EmissionMode::SingleChoicePerChunk] {
+            let mut terminal = text_chunk(&payload[split..]);
+            terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Stop);
+            let output: Vec<_> = JailedStream::builder()
+                .tool_choice_required()
+                .guided_streaming(true)
+                .emission_mode(mode)
+                .build()
+                .apply_with_finish_reason(stream::iter([text_chunk(&payload[..split]), terminal]))
+                .collect()
+                .await;
+            let mut arguments = std::collections::BTreeMap::<u32, String>::new();
+            let mut names = Vec::new();
+            let mut finishes = Vec::new();
+            for response in output {
+                for choice in response.data.unwrap().choices {
+                    finishes.extend(choice.finish_reason);
+                    let calls = choice.delta.tool_calls.unwrap_or_default();
+                    let indices: std::collections::HashSet<_> =
+                        calls.iter().map(|call| call.index).collect();
+                    assert_eq!(indices.len(), calls.len(), "duplicate tool-call index");
+                    for call in calls {
+                        let function = call.function.unwrap();
+                        if let Some(name) = function.name {
+                            assert!(call.id.is_some());
+                            assert_eq!(call.r#type, Some(FunctionType::Function));
+                            names.push(name);
+                        }
+                        arguments
+                            .entry(call.index)
+                            .or_default()
+                            .push_str(&function.arguments.unwrap_or_default());
+                    }
+                }
+            }
+            assert_eq!(names, ["calculate", "calculate"]);
+            assert_eq!(
+                arguments,
+                [(0, r#"{"x":1}"#.to_string()), (1, r#"{"x":2}"#.to_string())].into()
+            );
+            assert_eq!(finishes, [FinishReason::ToolCalls]);
+        }
     }
 
     fn named_choice(name: &str) -> dynamo_protocols::types::ChatCompletionToolChoiceOption {
