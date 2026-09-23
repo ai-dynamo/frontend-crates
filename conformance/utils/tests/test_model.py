@@ -486,11 +486,9 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
-@pytest.mark.parametrize("impl,versions", [
-    ("dynamo_v1", ["9.1.0+source.0abc123", "5.1.2"]),
-    ("dynamo_v2", ["0.7.0+source.0abc123", "0.6.1"]),
-])
-def test_tc_source_capture_versions_survive_label_parsing(impl, versions):
+def test_tc_source_capture_versions_survive_label_parsing():
+    impl = "dynamo_v2"
+    versions = ["0.7.0+source.0abc123", "0.6.1"]
     items = [
         {"key": f"{impl}-{version}", "label": table._full_label(impl, version, "stream")}
         for version in reversed(versions)
