@@ -557,8 +557,8 @@ fn get_param_schema_type<'a>(
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
-    // A bare null is unambiguous when the schema permits it, even if the
-    // other branch is string. Keep the string preference for other values.
+    // Prefer JSON null for a bare null when the schema permits it. The wire
+    // spelling can also represent a string; keep string preference for other values.
     if raw.trim() == "null" && schema_has_type(param, "null") {
         return Some("null");
     }
