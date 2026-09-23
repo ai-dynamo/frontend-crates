@@ -164,11 +164,12 @@ fn unified_parser_matches_the_golden_oracle() {
     for file in &covered {
         for (id, case) in &file.cases {
             checked += 1;
+            let case_tools = common::parse_unified_tools(&case.tools);
             let got = events(
                 &file.family,
                 &chunk_markers(&case.input),
                 &case.init,
-                &common::parse_unified_tools(&case.tools),
+                &case_tools,
             );
             if got != case.golden {
                 failures.push(format!(
@@ -199,19 +200,15 @@ fn unified_parser_is_chunk_invariant() {
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
+            let case_tools = common::parse_unified_tools(&case.tools);
             let baseline = events(
                 &file.family,
                 std::slice::from_ref(&case.input),
                 &case.init,
-                &common::parse_unified_tools(&case.tools),
+                &case_tools,
             );
             for (label, chunks) in splittings(&case.input) {
-                let got = events(
-                    &file.family,
-                    &chunks,
-                    &case.init,
-                    &common::parse_unified_tools(&case.tools),
-                );
+                let got = events(&file.family, &chunks, &case.init, &case_tools);
                 if got != baseline {
                     failures.push(format!(
                         "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
@@ -239,17 +236,14 @@ fn unified_parser_has_stream_batch_parity() {
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
+            let case_tools = common::parse_unified_tools(&case.tools);
             let streamed = events(
                 &file.family,
                 &chunk_markers(&case.input),
                 &case.init,
-                &common::parse_unified_tools(&case.tools),
+                &case_tools,
             );
-            let mut parser = create_unified_parser_for_family(
-                &file.family,
-                &common::parse_unified_tools(&case.tools),
-            )
-            .unwrap();
+            let mut parser = create_unified_parser_for_family(&file.family, &case_tools).unwrap();
             case.init.apply(&mut parser, id);
 
             let batch = parser
@@ -280,29 +274,15 @@ fn unified_parsers_are_isolated_per_stream() {
                 continue;
             };
             let (ca, cb) = (chunk_markers(&a.input), chunk_markers(&b.input));
-            let solo_a = events(
-                &file.family,
-                &ca,
-                &a.init,
-                &common::parse_unified_tools(&a.tools),
+            let (a_tools, b_tools) = (
+                common::parse_unified_tools(&a.tools),
+                common::parse_unified_tools(&b.tools),
             );
-            let solo_b = events(
-                &file.family,
-                &cb,
-                &b.init,
-                &common::parse_unified_tools(&b.tools),
-            );
+            let solo_a = events(&file.family, &ca, &a.init, &a_tools);
+            let solo_b = events(&file.family, &cb, &b.init, &b_tools);
 
-            let mut pa = create_unified_parser_for_family(
-                &file.family,
-                &common::parse_unified_tools(&a.tools),
-            )
-            .unwrap();
-            let mut pb = create_unified_parser_for_family(
-                &file.family,
-                &common::parse_unified_tools(&b.tools),
-            )
-            .unwrap();
+            let mut pa = create_unified_parser_for_family(&file.family, &a_tools).unwrap();
+            let mut pb = create_unified_parser_for_family(&file.family, &b_tools).unwrap();
             a.init.apply(&mut pa, id_a);
             b.init.apply(&mut pb, id_b);
 

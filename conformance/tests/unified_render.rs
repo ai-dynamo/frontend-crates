@@ -580,28 +580,20 @@ fn render_unified_conformance_html() {
         ));
         for (id, case) in &file.cases {
             total += 1;
+            let case_tools = common::parse_unified_tools(&case.tools);
 
             // Dynamo: live.
-            let got = dynamo_events(
-                &file.family,
-                &case.input,
-                &case.init,
-                &common::parse_unified_tools(&case.tools),
-            );
+            let got = dynamo_events(&file.family, &case.input, &case.init, &case_tools);
             let dclass = classify(&file.family, &case.golden, &got);
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
-            let chunk_feed: Vec<Value> = dynamo_chunks(
-                &file.family,
-                &case.input,
-                &case.init,
-                &common::parse_unified_tools(&case.tools),
-            )
-            .into_iter()
-            .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
-            .collect();
+            let chunk_feed: Vec<Value> =
+                dynamo_chunks(&file.family, &case.input, &case.init, &case_tools)
+                    .into_iter()
+                    .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
+                    .collect();
 
             let scenario = id
                 .strip_prefix("UNIFIED.")
@@ -916,13 +908,9 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             };
             checked += 1;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
+            let case_tools = common::parse_unified_tools(schemas);
 
-            let live_assembled = dynamo_events(
-                &doc.family,
-                input,
-                init,
-                &common::parse_unified_tools(schemas),
-            );
+            let live_assembled = dynamo_events(&doc.family, input, init, &case_tools);
             if live_assembled != committed.assembled {
                 stale.push(format!(
                     "{id} [{key}] assembled\n    committed: {}\n         live: {}",
@@ -942,15 +930,10 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(
-                &doc.family,
-                input,
-                init,
-                &common::parse_unified_tools(schemas),
-            )
-            .into_iter()
-            .map(|r| r.deltas)
-            .collect();
+            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init, &case_tools)
+                .into_iter()
+                .map(|r| r.deltas)
+                .collect();
             let committed_chunks: Vec<Vec<Value>> =
                 committed.chunks.into_iter().map(|c| c.expected).collect();
             if live_chunks != committed_chunks {
