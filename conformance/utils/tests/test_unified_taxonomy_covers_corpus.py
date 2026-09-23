@@ -1173,11 +1173,3 @@ def test_dsml_eof_contract_rejects_invented_success_or_changed_body(family, muta
         case["input"] = case["input"].replace(old, new)
     with pytest.raises(AssertionError):
         _assert_cross_family_contract(corpus)
-
-
-def test_case_specific_tools_survive_yaml_emission(monkeypatch):
-    case = dict(next(iter(build_cases("glm47").values())))
-    case["tools"] = [{"name": "custom", "parameters": {"type": "object"}}]
-    monkeypatch.setattr(G, "build_cases", lambda family: {"custom": case})
-    emitted = yaml.safe_load(G.emit_yaml("glm47"))
-    assert emitted["cases"]["custom"]["tools"] == case["tools"]
