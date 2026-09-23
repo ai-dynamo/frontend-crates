@@ -296,6 +296,8 @@ BATCH_SUB_CASE_GROUPS = [
             "7.d",
             "7.e",
             "7.f",
+            "7.g",
+            "7.h",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -322,7 +324,7 @@ SPLIT_PARENT_SUBCASES = {
 # tab. Only sub-cases that actually exist in fixtures become columns; the rest
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
-    ("Partial-token", ("50",)),
+    ("Partial-token", ("50", "50.a")),
 ]
 
 SUB_CASE_GROUPS_BY_MODE = {
