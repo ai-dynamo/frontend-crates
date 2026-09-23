@@ -1,0 +1,690 @@
+corpus: stream
+family: qwen3_coder
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: ''
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: <tool_'
+        - expected: []
+          normal_text: 'call>
+
+            <func'
+        - expected: []
+          normal_text: 'tion=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            <'
+        - expected: []
+          normal_text: '/parameter>
+
+            </function>'
+        - expected: []
+          normal_text: '
+
+            </tool_call'
+        - expected: []
+          normal_text: '>
+
+            '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+      TOOLCALLING.streamv1.4.f:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>'
+        - expected: []
+          normal_text: '
+
+            NYC'
+        - expected: []
+          normal_text: '
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time!
+
+            '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "Boston"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"location": "New York"'
+        - expected: []
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time!
+
+            '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "Boston"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{'
+        - expected: []
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>'
+        - expected: []
+          normal_text: '
+
+            NYC'
+        - expected: []
+          normal_text: '
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+        - expected: []
+          normal_text: '
+
+            '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "Boston"'
+        - expected: []
+      TOOLCALLING.streamv1.5.g:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' that. <function=get_weather>
+
+            <parameter=location>'
+        - expected: []
+          normal_text: '
+
+            NYC
+
+            </parameter>'
+        - expected: []
+          normal_text: '
+
+            </function>'
+        - expected: []
+          normal_text: '
+
+            </tool_call>'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+          normal_text: <t
+        - expected: []
+          normal_text: ool
+        - expected: []
+          normal_text: _call
+        - expected: []
+          normal_text: '>
+
+            <function'
+        - expected: []
+          normal_text: '=get_weather>
+
+            <para'
+        - expected: []
+          normal_text: me
+        - expected: []
+          normal_text: ter
+        - expected: []
+          normal_text: =loca
+        - expected: []
+          normal_text: 'tion>
+
+            NYC
+
+            <'
+        - expected: []
+          normal_text: '/parameter>
+
+            </funct'
+        - expected: []
+          normal_text: io
+        - expected: []
+          normal_text: 'n>
+
+            '
+        - expected: []
+          normal_text: </too
+        - expected: []
+          normal_text: l_call>
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"destination": "Paris", "passengers": "2"'
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ', "first_class": "true"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "Tōkyō central"'
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: set_limit
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected: []
+          normal_text: ' you need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected: []
+          normal_text: ' if you'
+        - expected: []
+          normal_text: ' need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+        - expected: []
+          normal_text: ' weather. '
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"location": "LA"'
+        - expected:
+          - index: 1
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

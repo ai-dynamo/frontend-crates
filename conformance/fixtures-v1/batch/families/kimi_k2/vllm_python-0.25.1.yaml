@@ -1,0 +1,95 @@
+corpus: batch
+family: kimi_k2
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.4.yaml:
+    family: kimi_k2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: kimi_k2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: '{"loc'
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments: '{"location":"New York'
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+  TOOLCALLING.batch.6.yaml:
+    family: kimi_k2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: kimi_k2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: 20
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740992
+            normal_text: ''

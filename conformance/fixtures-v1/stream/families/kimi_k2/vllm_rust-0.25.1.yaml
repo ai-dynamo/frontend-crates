@@ -1,0 +1,28 @@
+corpus: stream
+family: kimi_k2
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: 'ToolParserError::ParsingFailed (near "nonsense<|tool_calls_section_end|>": )'
+      TOOLCALLING.streamv1.4.c:
+        exception: 'ToolParserError::ParsingFailed (near "<|tool_call_argument_begin|>": )'
+      TOOLCALLING.streamv1.4.d:
+        exception: 'ToolParserError::ParsingFailed (near "<|tool_calls_section_end|>": )'
+  TOOLCALLING.streamv1.5.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases: {}

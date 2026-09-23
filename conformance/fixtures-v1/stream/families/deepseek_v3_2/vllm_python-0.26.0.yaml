@@ -1,0 +1,70 @@
+corpus: stream
+family: deepseek_v3_2
+capture: vllm_python-0.26.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.2.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.50.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.7.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.8.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.9.yaml:
+    family: deepseek_v3_2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}

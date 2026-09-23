@@ -1,0 +1,594 @@
+corpus: stream
+family: phi4
+capture: vllm_rust-0.24.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location":'
+        - expected:
+          - index: 1
+            arguments: ' "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: unknown_tool
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected:
+          - index: 1
+            name: unknown_tool
+          - index: 1
+            arguments: '{"location":'
+        - expected:
+          - index: 1
+            arguments: ' "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{"timezone":'
+        - expected:
+          - index: 1
+            arguments: ' "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: '
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location":'
+        - expected:
+          - index: 1
+            arguments: ' "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.30.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: run_query
+          - index: 0
+            arguments: '{"sql": "SELECT a,'
+        - expected:
+          - index: 0
+            arguments: ' SELECT b"}'
+        - expected: []
+      TOOLCALLING.streamv1.30.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: run_query
+          - index: 0
+            arguments: '{"sql": "SELECT value'
+        - expected:
+          - index: 0
+            arguments: ' WHERE note'
+        - expected:
+          - index: 0
+            arguments: ' has'
+        - expected:
+          - index: 0
+            arguments: ' brace }'
+        - expected:
+          - index: 0
+            arguments: ' and bracket ]'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: run_query
+          - index: 0
+            arguments: '{"sql": "literal func-tools'
+        - expected:
+          - index: 0
+            arguments: ' marker[] stays'
+        - expected:
+          - index: 0
+            arguments: ' text"}'
+        - expected: []
+  TOOLCALLING.streamv1.31.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: run_query
+          - index: 0
+            arguments: '{"sql": "SELECT a,'
+        - expected:
+          - index: 0
+            arguments: ' SELECT b"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: run_query
+          - index: 0
+            arguments: '{"sql": "SELECT value'
+        - expected:
+          - index: 0
+            arguments: ' WHERE note'
+        - expected:
+          - index: 0
+            arguments: ' has'
+        - expected:
+          - index: 0
+            arguments: ' brace }'
+        - expected:
+          - index: 0
+            arguments: ' and bracket ]'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: ToolParserError::ParsingFailed (invalid Phi4Mini)
+      TOOLCALLING.streamv1.4.b:
+        exception: 'ToolParserError::ParsingFailed (invalid JSON object argument
+
+          expected balanced array brackets)'
+      TOOLCALLING.streamv1.4.c:
+        exception: 'ToolParserError::ParsingFailed (invalid Phi4Mini
+
+          expected `name`)'
+      TOOLCALLING.streamv1.4.d:
+        exception: ToolParserError::ParsingFailed (incomplete Phi4Mini tool call)
+  TOOLCALLING.streamv1.5.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        exception: ToolParserError::ParsingFailed (incomplete Phi4Mini tool call)
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: 'functools{"name": "get_weather",'
+        - expected: []
+          normal_text: ' "arguments":'
+        - expected: []
+          normal_text: ' {"location": "NYC"}}]'
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        exception: ToolParserError::ParsingFailed (incomplete Phi4Mini tool call)
+      TOOLCALLING.streamv1.5.d:
+        exception: ToolParserError::ParsingFailed (incomplete Phi4Mini tool call)
+      TOOLCALLING.streamv1.5.e:
+        exception: ToolParserError::ParsingFailed (incomplete Phi4Mini tool call)
+  TOOLCALLING.streamv1.50.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"l'
+        - expected:
+          - index: 0
+            arguments: 'ocation": "'
+        - expected:
+          - index: 0
+            arguments: NYC"}
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_time
+          - index: 0
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_time
+          - index: 0
+            arguments: '{ }'
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        exception: ToolParserError::ParsingFailed (invalid Phi4Mini)
+  TOOLCALLING.streamv1.7.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: book_flight
+          - index: 0
+            arguments: '{"destination": "Paris", "passengers":'
+        - expected:
+          - index: 0
+            arguments: ' 2, "first_class":'
+        - expected:
+          - index: 0
+            arguments: ' true}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "Tōkyō \"central\""}'
+        - expected: []
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: set_temperature
+          - index: 0
+            arguments: '{"celsius": "20"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+          - index: 0
+            arguments: '{"items": [1,2,3],'
+        - expected:
+          - index: 0
+            arguments: ' "config": {"nested":'
+        - expected:
+          - index: 0
+            arguments: ' true}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+          - index: 0
+            arguments: '{"payload": {"regions": [{"name":'
+        - expected:
+          - index: 0
+            arguments: ' "west", "scores":'
+        - expected:
+          - index: 0
+            arguments: ' [1,'
+        - expected:
+          - index: 0
+            arguments: ' 2, 3]'
+        - expected:
+          - index: 0
+            arguments: '}, {"name": "east",'
+        - expected:
+          - index: 0
+            arguments: ' "scores":'
+        - expected:
+          - index: 0
+            arguments: ' [4, 5,'
+        - expected:
+          - index: 0
+            arguments: ' 6]'
+        - expected:
+          - index: 0
+            arguments: '}],'
+        - expected:
+          - index: 0
+            arguments: ' "flags":'
+        - expected:
+          - index: 0
+            arguments: ' {"enabled": true, "retry":'
+        - expected:
+          - index: 0
+            arguments: ' null}, "empty":'
+        - expected:
+          - index: 0
+            arguments: ' {}}}'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":'
+        - expected:
+          - index: 0
+            arguments: ' "NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": "NYC"}'
+          normal_text: ' Let'
+        - expected: []
+          normal_text: ' me know'
+        - expected: []
+          normal_text: ' i'
+        - expected: []
+          normal_text: f you need
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":'
+        - expected:
+          - index: 0
+            arguments: ' "NYC"}'
+          normal_text: ' Let'
+        - expected: []
+          normal_text: ' me know i'
+        - expected: []
+          normal_text: f you
+        - expected: []
+          normal_text: ' need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":'
+        - expected:
+          - index: 0
+            arguments: ' "NYC"}'
+          normal_text: ' Then'
+        - expected: []
+          normal_text: ' check LA weather.'
+        - expected: []
+          normal_text: ' '
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location":'
+        - expected:
+          - index: 1
+            arguments: ' "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: phi4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

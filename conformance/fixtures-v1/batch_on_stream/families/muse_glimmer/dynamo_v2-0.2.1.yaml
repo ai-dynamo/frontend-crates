@@ -1,0 +1,310 @@
+corpus: batch_on_stream
+family: muse_glimmer
+capture: dynamo_v2-0.2.1
+provenance:
+  captured_with: 0.2.1
+  runtime_version: 0.2.1
+documents:
+  TOOLCALLING.batch.yaml:
+    family: muse_glimmer
+    cases:
+      TOOLCALLING.batch.1:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.2.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.2.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.2.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: Let me look both up.Fetching now.
+      TOOLCALLING.batch.2.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: Paris
+        normal_text: ''
+      TOOLCALLING.batch.3:
+        calls: []
+        normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.4.a:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.b:
+        calls:
+        - name: search
+          arguments:
+            query: '{"unclosed": '
+        normal_text: ''
+      TOOLCALLING.batch.4.c:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.d:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.e:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.4.f:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.5.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.5.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.5.h:
+        calls: []
+        normal_text: Sure, here is the plan.
+      TOOLCALLING.batch.5.c:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.5.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.5.e:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.6.a:
+        calls:
+        - name: ping
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.6.b:
+        calls:
+        - name: ping
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.7.a:
+        calls:
+        - name: search
+          arguments:
+            query: muse glimmer
+            limit: 5
+            safe: true
+        normal_text: ''
+      TOOLCALLING.batch.7.b:
+        calls:
+        - name: search
+          arguments:
+            query: καλημέρα 你好 — "quoted" \n tab\t
+        normal_text: ''
+      TOOLCALLING.batch.7.c:
+        calls:
+        - name: search
+          arguments:
+            limit: '5'
+        normal_text: ''
+      TOOLCALLING.batch.7.d:
+        calls:
+        - name: search
+          arguments:
+            query:
+              filters:
+                lang:
+                - en
+                - el
+                site: null
+              boost:
+              - 1
+              - 2.5
+        normal_text: ''
+      TOOLCALLING.batch.7.e:
+        calls:
+        - name: search
+          arguments:
+            query:
+              a:
+                b:
+                  c:
+                    d:
+                      e:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 4
+                      - 5
+                      - 6
+                      - 7
+                      - 8
+                      - 9
+                      - 10
+                      - 11
+                      - 12
+                      - 13
+                      - 14
+                      - 15
+                      - 16
+                      - 17
+                      - 18
+                      - 19
+                      - 20
+                      - 21
+                      - 22
+                      - 23
+                      - 24
+                      - 25
+                      - 26
+                      - 27
+                      - 28
+                      - 29
+                      - 30
+                      - 31
+              text: 'lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum '
+        normal_text: ''
+      TOOLCALLING.batch.7.f:
+        calls:
+        - name: search
+          arguments:
+            limit: 9007199254740993
+            ratio: 5.0
+        normal_text: ''
+      TOOLCALLING.batch.8.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Checking the weather now.
+      TOOLCALLING.batch.8.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Called the weather service.
+      TOOLCALLING.batch.8.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: One moment.Done.
+      TOOLCALLING.batch.8.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: Now the time.
+      TOOLCALLING.batch.9.a:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.9.b:
+        calls: []
+        normal_text: '   '
+      TOOLCALLING.batch.10:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.11.a:
+        calls:
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.11.b:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.11.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.13:
+        calls:
+        - name: get_stock
+          arguments:
+            symbol: NVDA
+        normal_text: ''
+      TOOLCALLING.batch.13.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_stock
+          arguments:
+            symbol: NVDA
+        normal_text: ''
+      TOOLCALLING.batch.30.a:
+        calls:
+        - name: search
+          arguments:
+            query: 'text with '
+        normal_text: ''
+      TOOLCALLING.batch.30.b:
+        calls:
+        - name: search
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.30.c:
+        calls:
+        - name: search
+          arguments:
+            query: 'quote: <atem:function_calls> is the opener'
+        normal_text: ''
+      TOOLCALLING.batch.31.a:
+        calls:
+        - name: search
+          arguments:
+            query: 'has '
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.31.b:
+        calls:
+        - name: search
+          arguments: {}
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''

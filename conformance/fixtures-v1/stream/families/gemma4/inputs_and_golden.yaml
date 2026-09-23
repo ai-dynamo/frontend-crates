@@ -1,0 +1,795 @@
+corpus: stream
+family: gemma4
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.10.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|><|tool_call>call:get_weather{location:<|"|>'
+        - delta_text: LA<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.13.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        description: Unknown-only call under default behavior
+        ref: derived from TOOLCALLING.batch.13.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:unknown_tool{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: derived from TOOLCALLING.batch.13.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>'
+        - delta_text: LA<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.2.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls (back-to-back sentinels)
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|><|tool_call>call:get_time{timezone:<|"|>'
+        - delta_text: EST<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Both: <|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>}<tool_call|><|tool_call>
+        - delta_text: call:get_time{timezone:<|"|>EST<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - *id001
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|><|tool_call>call:get_weather{location:<|"|>'
+        - delta_text: LA<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.3.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.30.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        description: Call/body delimiters `,`, `:`, and `{}` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:run_query{sql:<|"|>
+        - delta_text: SELECT
+        - delta_text: ' a,b:and{brace}<|"|>}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.b:
+        description: Structural delimiters `}` and `]` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:run_query{sql:<|"|>
+        - delta_text: SELECT
+        - delta_text: ' value WHERE note'
+        - delta_text: ' has brace'
+        - delta_text: ' }'
+        - delta_text: ' and bracket'
+        - delta_text: ' ]<|"|>}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.c:
+        description: Tool-call marker `<|tool_call>` text inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:run_query{sql:<|"|>
+        - delta_text: literal
+        - delta_text: ' <|tool_call marker> call:get_time{}'
+        - delta_text: ' stays text<|"|>'
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.31.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        description: Multi-call response with Gemma delimiters `,`, `:`, and `{}` inside the first argument string
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:run_query{sql:<|"|>
+        - delta_text: SELECT
+        - delta_text: ' a,b:and{brace}<|"|>}<tool_call|><|tool_call>'
+        - delta_text: call:get_time{timezone:<|"|>EST<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: derived from TOOLCALLING.batch.31.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:run_query{sql:<|"|>
+        - delta_text: SELECT
+        - delta_text: ' value WHERE note'
+        - delta_text: ' has brace'
+        - delta_text: ' }'
+        - delta_text: ' and bracket'
+        - delta_text: ' ]<|"|>}<tool_call|>'
+        - delta_text: <|tool_call>
+        - delta_text: call:get_time{timezone:<|"|>EST<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.4.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Sentinel pair with garbage
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>nonsense<tool_call|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Missing close brace in body
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: <tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.4.c:
+        description: No call:name prefix
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Mismatched sentinels
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}</tool_call>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing <tool_call|> end marker
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing <tool_call|> without matching <|tool_call> open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-argument value
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: N
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<|tool_call>call:get_weather{location:<|"|>'
+        - delta_text: Boston<|"|>
+        - delta_text: '}<tool_call|><|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>
+        - delta_text: New York<|"|>}
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<|tool_call>call:get_weather{location:<|"|>'
+        - delta_text: Boston<|"|>
+        - delta_text: '}<tool_call|><|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>
+        - delta_text: New York
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.f:
+        description: Bare valid call before a complete wrapped call
+        ref: derived from TOOLCALLING.batch.5.f
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>Boston<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.g:
+        description: Closing <tool_call|> without matching <|tool_call> open after prefix prose
+        ref: derived from TOOLCALLING.batch.5.g
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' that. call:get_weather{location:<|"|>NYC<|"|>'
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|
+        - delta_text: too
+        - delta_text: l_cal
+        - delta_text: l>call:get_
+        - delta_text: weather{location:<|
+        - delta_text: '"|'
+        - delta_text: '>NY'
+        - delta_text: C<|"|
+        - delta_text: '>}<tool_cal'
+        - delta_text: l|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty {} body
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_call>call:get_time{}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside empty {}
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_call>call:get_time{
+        - delta_text: ' }<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.c:
+        description: No body (just call:name)
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_call>call:get_time<tool_call|>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: <|tool_call>call:book_flight{destination:<|"|>
+        - delta_text: Paris<|"|>
+        - delta_text: ',passengers:2,first_class:true}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode in value
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: Tōkyō
+        - delta_text: ' central<|"|>}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: <|tool_call>call:set_temperature{celsius:<|"|>
+        - delta_text: 20<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array (existing)
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: <|tool_call>call:process_data{items:[1,2,3]
+        - delta_text: ',config:{nested:true}}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>
+        - delta_text: west<|"|>
+        - delta_text: ',scores:[1,2,3]},{name:<|"|>east<|"|>'
+        - delta_text: ',scores:[4,5,6]}]'
+        - delta_text: ',flags:{enabled:true,retry:null},empty:{}}}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.8.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>
+        - delta_text: NYC<|"|>
+        - delta_text: '}<tool_call|> Let me'
+        - delta_text: ' know if'
+        - delta_text: ' you'
+        - delta_text: ' need more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ' Let me'
+        - delta_text: ' know if you'
+        - delta_text: ' need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>
+        - delta_text: '}<tool_call|>'
+        - delta_text: ' Then check'
+        - delta_text: ' LA weather. <|tool_call>'
+        - delta_text: call:get_weather{location:<|"|>
+        - delta_text: LA<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.9.yaml:
+    family: gemma4
+    mode: streamv1
+    model_label: Gemma 4
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

@@ -1,0 +1,420 @@
+corpus: batch
+family: llama3_json
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: Done.'
+            explanation: preserves trailing text after final parsed JSON object
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: nonsense
+            explanation: impl-defined recovery contract; strips python_tag before returning malformed action text
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"'
+            explanation: impl-defined recovery contract; strips python_tag before returning malformed action text
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+            explanation: SGLang Llama32Detector scans past the malformed prefix and recovers the later valid JSON object.
+  TOOLCALLING.batch.5.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}'
+            explanation: impl-defined recovery contract; strips python_tag before returning incomplete action text
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '{"name": "get_weather", "arguments": {"loc'
+            explanation: impl-defined recovery contract; strips python_tag before returning incomplete action text
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!{"name": "get_weather", "arguments": {"location": "New York"}'
+            explanation: impl-defined recovery contract; strips python_tag and preserves malformed trailing JSON after first recovered call
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!{"name": "get_weather", "arguments": {"location": "New York'
+            explanation: impl-defined recovery contract; strips python_tag and preserves malformed trailing JSON after first recovered call
+  TOOLCALLING.batch.6.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+            explanation: treats missing arguments key as an empty argument object
+  TOOLCALLING.batch.7.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō "central"
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: process_data
+              arguments:
+                config:
+                  nested: true
+                items:
+                - 1
+                - 2
+                - 3
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+            explanation: preserves whitespace before python_tag in normal_text
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: Let me know if you need more.
+            explanation: preserves trailing text after parsed JSON object
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather. Let me know if you need more.
+            explanation: preserves leading normal_text and trailing text around parsed JSON object
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+            explanation: uses next JSON object recovery and drops interstitial text between parsed calls
+  TOOLCALLING.batch.yaml:
+    family: llama3_json
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.30.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a; SELECT b
+            normal_text: ''
+      TOOLCALLING.batch.30.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            normal_text: ''
+      TOOLCALLING.batch.30.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: literal <|python_tag marker|>{name:x} stays text
+            normal_text: ''
+      TOOLCALLING.batch.31.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a; SELECT b
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.31.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang drops unknown tool names by default unless SGLANG_FORWARD_UNKNOWN_TOOLS is enabled.
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+            explanation: SGLang drops unknown tool names by default unless SGLANG_FORWARD_UNKNOWN_TOOLS is enabled.
+  TOOLCALLING.stream.1.yaml:
+    family: llama3_json
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: llama3_json
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: llama3_json
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: llama3_json
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            calls:
+            - arguments:
+                location: NYC
+              name: get_weather
+            normal_text: ''

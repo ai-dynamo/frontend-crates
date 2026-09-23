@@ -1,0 +1,84 @@
+corpus: stream
+family: qwen3_coder
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.2.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.4.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.streamv1.5.h:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check that. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.7.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.8.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.streamv1.9.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}

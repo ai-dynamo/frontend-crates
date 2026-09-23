@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Coverage for canonical Unified capture checkpoints."""
 
+import copy
+import shutil
 import sys
 from pathlib import Path
 
@@ -9,6 +11,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import capture_stimulus
+import package_fixtures
 import unified_history
 
 
@@ -256,24 +260,58 @@ def test_schema_v3_rewrite_is_byte_deterministic(tmp_path):
     assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
 
 
-def test_schema_v3_materializes_a_derived_release_view_without_a_checkpoint(tmp_path):
+def test_capture_order_uses_numeric_prerelease_identifiers():
+    assert unified_history._capture_release_sort_key("0.7.0-rc.2") < (
+        unified_history._capture_release_sort_key("0.7.0-rc.10")
+    )
+    assert unified_history._capture_release_sort_key("0.7.0-rc.10") < (
+        unified_history._capture_release_sort_key("0.7.0")
+    )
+
+
+@pytest.mark.parametrize("versions", [
+    ("0.9.0", "0.10.0"),
+    ("0.7.0-rc.2", "0.7.0-rc.10"),
+    ("0.7.0-rc.10", "0.7.0"),
+])
+def test_ingest_multiple_new_captures_in_semantic_version_order(tmp_path, versions):
+    root = _store(tmp_path / "store")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    for version in reversed(versions):
+        target = loose / f"dynamo_v2-{version}"
+        shutil.copytree(loose / "dynamo_v2-0.5.2", target)
+        path = target / "gemma4/UNIFIED.1-1.yaml"
+        document = unified_history.load_yaml(path)
+        document["captured_with"] = {"dynamo_v2": version}
+        record = document["cases"]["UNIFIED.1-1"]
+        record["assembled"] = [{"kind": "text", "text": version}]
+        record["chunks"] = [{"expected": record["assembled"]}]
+        path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert history.ordered_capture_ids() == [
+        "dynamo_v2-0.5.0", "dynamo_v2-0.5.2", *(f"dynamo_v2-{version}" for version in versions),
+    ]
+    for version in versions:
+        observation = history.resolve(f"dynamo_v2-{version}")["text_only"]["observation"]["value"]
+        assert observation["assembled"] == [{"kind": "text", "text": version}]
+    assert unified_history.update_store_from_loose(root, loose, complete_snapshot=True) == []
+
+
+def test_schema_v3_does_not_materialize_an_uncaptured_release(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
 
-    unified_history.materialize_store(
-        root,
-        loose,
-        derived_release_versions={"dynamo_v2": "0.6.1"},
-    )
+    unified_history.materialize_store(root, loose)
 
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
-    document = unified_history.load_yaml(loose / "dynamo_v2-0.6.1/gemma4/UNIFIED.1-1.yaml")
-    assert document["capture_provenance"] == {"format": "schema_v3"}
-    assert document["captured_with"] == {"dynamo_v2": "0.5.0"}
-    assert document["inherited_from"] == "0.5.0"
+    assert not (loose / "dynamo_v2-0.6.1").exists()
 
 
-def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_path):
+def test_schema_v3_materialization_does_not_add_an_uncaptured_checkpoint(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
     family_path = root / "families/gemma4/inputs_and_golden.yaml"
@@ -288,16 +326,210 @@ def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_pa
     family_path.write_text(unified_history.dump_yaml(family), encoding="utf-8")
     before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
 
-    unified_history.materialize_store(
-        root,
-        loose,
-        derived_release_versions={"dynamo_v2": "0.6.1"},
-    )
+    unified_history.materialize_store(root, loose)
     changed = unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
 
     assert changed == []
     assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
+
+
+@pytest.mark.parametrize("stimulus_kind", ["inline", "ref", "partial"])
+@pytest.mark.parametrize("mutation", [None, "request", "observation"])
+def test_recorded_capture_roundtrip_compares_resolved_request(tmp_path, stimulus_kind, mutation):
+    root = _store(tmp_path / "store")
+    capture_path = root / "families/gemma4/dynamo_v2-0.5.0.yaml"
+    capture = unified_history.load_yaml(capture_path)
+    capture["changes"]["text_only"]["stimulus"] = (
+        {"inline": _request()} if stimulus_kind == "inline" else {"ref": "current"}
+    )
+    if stimulus_kind == "partial":
+        capture["changes"]["text_only"]["stimulus"] = {
+            "partial": {key: value for key, value in _request().items() if key != "tools"},
+        }
+    capture_path.write_text(unified_history.dump_yaml(capture), encoding="utf-8")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
+    if stimulus_kind == "partial":
+        path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+        record = unified_history.load_yaml(path)["cases"]["UNIFIED.1-1"]
+        assert record["capture_input"] == capture["changes"]["text_only"]["stimulus"]["partial"]
+        reason = capture_stimulus.comparison_failure(record, _request(), path.read_bytes(), path.name, {})
+        assert "original tool schema was not retained" in reason
+    if mutation is not None:
+        path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+        document = unified_history.load_yaml(path)
+        record = document["cases"]["UNIFIED.1-1"]
+        if mutation == "request":
+            record["capture_input"]["input"] = "changed input"
+        else:
+            record["assembled"][0]["text"] = "changed observation"
+        path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+        with pytest.raises(ValueError, match="capture is immutable"):
+            unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+    else:
+        assert unified_history.update_store_from_loose(root, loose, complete_snapshot=True) == []
+    assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
+
+
+@pytest.mark.parametrize("provenance_kind", ["origin", "captured_with", "inherited"])
+@pytest.mark.parametrize("stimulus_kind", ["ref", "inline"])
+def test_unchanged_new_capture_retains_only_actual_version_provenance(tmp_path, provenance_kind, stimulus_kind):
+    root = _store(tmp_path / "store")
+    if stimulus_kind == "inline":
+        anchor = root / "families/gemma4/dynamo_v2-0.5.0.yaml"
+        document = unified_history.load_yaml(anchor)
+        document["changes"]["text_only"]["stimulus"] = {"inline": _request()}
+        anchor.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    capture_dir = loose / "dynamo_v2-0.5.3"
+    shutil.copytree(loose / "dynamo_v2-0.5.2", capture_dir)
+    path = capture_dir / "gemma4/UNIFIED.1-1.yaml"
+    document = unified_history.load_yaml(path)
+    origin = {"crate_version": "0.5.3", "source_sha256": "c" * 64, "git_commit": "d" * 40}
+    if provenance_kind != "inherited":
+        document.pop("inherited_from", None)
+        document["captured_with"] = {"dynamo_v2": "0.5.3"}
+    if provenance_kind == "origin":
+        document["capture_origin"] = origin
+    path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    changed = unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+
+    checkpoint = root / "families/gemma4/dynamo_v2-0.5.3.yaml"
+    if provenance_kind == "inherited":
+        assert changed == []
+        assert not checkpoint.exists()
+        return
+    assert checkpoint in changed
+    capture = unified_history.load_yaml(checkpoint)
+    assert capture["changes"] == {}
+    assert capture["metadata_changes"] == {}
+    assert capture["document_overrides"] == {}
+    assert capture["provenance"] == (
+        {"status": "captured", "origin": origin} if provenance_kind == "origin"
+        else {"status": "legacy", "captured_with": {"dynamo_v2": "0.5.3"}}
+    )
+    rematerialized = tmp_path / "rematerialized"
+    unified_history.materialize_store(root, rematerialized)
+    assert (rematerialized / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml").is_file()
+    before = checkpoint.read_bytes()
+    assert unified_history.update_store_from_loose(root, loose, complete_snapshot=True) == []
+    assert checkpoint.read_bytes() == before
+
+
+@pytest.mark.parametrize("mutation", [None, "new_capture", "missing_family", "missing_case"])
+def test_packaging_preserves_historical_capture_coverage(tmp_path, mutation):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "0.5.0", {"text_only": _change()})
+    second_family = root / "families/qwen3"
+    shutil.copytree(root / "families/gemma4", second_family)
+    family_path = second_family / "inputs_and_golden.yaml"
+    family = unified_history.load_yaml(family_path)
+    for field in ("input_document", "golden_document"):
+        family[field]["family"] = "qwen3"
+    family_path.write_text(unified_history.dump_yaml(family), encoding="utf-8")
+    original_capture = second_family / "dynamo_v2-0.5.0.yaml"
+    capture = unified_history.load_yaml(original_capture)
+    capture["provenance"]["captured_with"]["dynamo_v2"] = "0.6.0"
+    original_capture.unlink()
+    (second_family / "dynamo_v2-0.6.0.yaml").write_text(unified_history.dump_yaml(capture), encoding="utf-8")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose / "unified")
+    legacy = tmp_path / "legacy/batch/families/gemma4/inputs_and_golden.yaml"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("corpus: batch\nfamily: gemma4\ncapture: inputs\ndocuments: {}\n")
+    before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
+    expected_error = None
+    if mutation == "new_capture":
+        shutil.copytree(loose / "unified/dynamo_v2-0.5.0", loose / "unified/dynamo_v2-0.5.1")
+        expected_error = "complete capture dynamo_v2-0.5.1 is missing active families: qwen3"
+    elif mutation == "missing_family":
+        shutil.rmtree(loose / "unified/dynamo_v2-0.6.0/qwen3")
+        expected_error = "complete capture dynamo_v2-0.6.0 is missing active families: qwen3"
+    elif mutation == "missing_case":
+        (loose / "unified/dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml").unlink()
+        expected_error = "complete capture dynamo_v2-0.5.0 is missing active cases: gemma4/text_only"
+    if expected_error is None:
+        package_fixtures.build_shards(loose, tmp_path / "blobs", history_root=root, legacy_root=tmp_path / "legacy")
+    else:
+        with pytest.raises(ValueError, match=expected_error):
+            package_fixtures.build_shards(loose, tmp_path / "blobs", history_root=root, legacy_root=tmp_path / "legacy")
+    assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
+
+
+@pytest.mark.parametrize("retained_cases", [0, 1])
+def test_packaging_requires_complete_new_family_version_pair(tmp_path, retained_cases):
+    root = _store(tmp_path / "store")
+    second_family = root / "families/qwen3"
+    shutil.copytree(root / "families/gemma4", second_family)
+    (second_family / "dynamo_v2-0.5.2.yaml").unlink()
+    family_path = second_family / "inputs_and_golden.yaml"
+    family = unified_history.load_yaml(family_path)
+    for field in ("input_document", "golden_document"):
+        family[field]["family"] = "qwen3"
+    other = copy.deepcopy(family["cases"]["text_only"])
+    other.update(scenario="second", display_id="UNIFIED.1-2", request=_request("second"))
+    other["golden"] = {"assembled": [{"kind": "text", "text": "second"}]}
+    family["cases"]["second"] = other
+    family_path.write_text(unified_history.dump_yaml(family), encoding="utf-8")
+    capture_path = second_family / "dynamo_v2-0.5.0.yaml"
+    capture = unified_history.load_yaml(capture_path)
+    capture["changes"]["second"] = {**_change("second"), "case_key": "UNIFIED.1-2"}
+    capture_path.write_text(unified_history.dump_yaml(capture), encoding="utf-8")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose / "unified")
+    incoming = loose / "unified/dynamo_v2-0.5.2/qwen3"
+    incoming.mkdir()
+    if retained_cases:
+        document = unified_history.load_yaml(loose / "unified/dynamo_v2-0.5.0/qwen3/UNIFIED.1-1.yaml")
+        document["captured_with"] = {"dynamo_v2": "0.5.2"}
+        (incoming / "UNIFIED.1-1.yaml").write_text(unified_history.dump_yaml(document), encoding="utf-8")
+    legacy = tmp_path / "legacy/batch/families/gemma4/inputs_and_golden.yaml"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("corpus: batch\nfamily: gemma4\ncapture: inputs\ndocuments: {}\n")
+    before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
+
+    with pytest.raises(ValueError, match="complete capture dynamo_v2-0.5.2 is missing active cases: qwen3/second"):
+        package_fixtures.build_shards(loose, tmp_path / "blobs", history_root=root, legacy_root=tmp_path / "legacy")
+
+    assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
+
+
+def test_required_snapshot_cannot_use_a_later_prerelease_for_a_missing_family(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "1.0.0-rc.1", {"text_only": _change()})
+    second_family = root / "families/qwen3"
+    shutil.copytree(root / "families/gemma4", second_family)
+    family_path = second_family / "inputs_and_golden.yaml"
+    family = unified_history.load_yaml(family_path)
+    for field in ("input_document", "golden_document"):
+        family[field]["family"] = "qwen3"
+    family_path.write_text(unified_history.dump_yaml(family), encoding="utf-8")
+    original_capture = second_family / "dynamo_v2-1.0.0-rc.1.yaml"
+    capture = unified_history.load_yaml(original_capture)
+    capture["provenance"]["captured_with"]["dynamo_v2"] = "1.0.0-rc.10"
+    original_capture.unlink()
+    (second_family / "dynamo_v2-1.0.0-rc.10.yaml").write_text(
+        unified_history.dump_yaml(capture), encoding="utf-8"
+    )
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    (loose / "dynamo_v2-1.0.0-rc.1").rename(loose / "dynamo_v2-1.0.0-rc.2")
+    shutil.rmtree(loose / "dynamo_v2-1.0.0-rc.10")
+    before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
+
+    with pytest.raises(ValueError, match="missing active families: qwen3"):
+        unified_history.update_store_from_loose(
+            root, loose, complete_snapshot=True,
+            required_capture_dirs=frozenset({"dynamo_v2-1.0.0-rc.2"}),
+        )
+
+    assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
 
 
 def test_schema_v3_ignores_generated_oracle_directories_but_rejects_malformed_captures(tmp_path):

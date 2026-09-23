@@ -1,0 +1,42 @@
+corpus: stream
+family: hermes
+capture: vllm_rust-0.24.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: ToolParserError::ParsingFailed (invalid Hermes)
+      TOOLCALLING.streamv1.4.b:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+      TOOLCALLING.streamv1.4.c:
+        exception: 'ToolParserError::ParsingFailed (invalid Hermes
+
+          expected `name`)'
+      TOOLCALLING.streamv1.4.d:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+  TOOLCALLING.streamv1.5.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+      TOOLCALLING.streamv1.5.c:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+      TOOLCALLING.streamv1.5.d:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+      TOOLCALLING.streamv1.5.e:
+        exception: ToolParserError::ParsingFailed (incomplete Hermes tool call)
+  TOOLCALLING.streamv1.6.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.6.c:
+        exception: ToolParserError::ParsingFailed (invalid Hermes)

@@ -1,0 +1,417 @@
+corpus: batch
+family: jamba
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            explanation: 'Cosmetic whitespace only: Dynamo trims the single space between the leading narration and the <tool_calls> fence; vLLM preserves it. Calls are identical.'
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when the wrapped payload is not a valid JSON array. Dynamo discards the unparseable wrapper (discard_unparseable_wrapper) so no tool-call markup reaches the user.
+            calls: []
+            normal_text: <tool_calls>nonsense</tool_calls>
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when the JSON body is malformed (missing close brace). Dynamo discards the unparseable wrapper so no tool-call markup reaches the user.
+            calls: []
+            normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"location": "NYC"]</tool_calls>'
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when no call carries a name key. Dynamo discards it so no tool-call markup reaches the user.
+            calls: []
+            normal_text: '<tool_calls>[{"arguments": {"location": "NYC"}}]</tool_calls>'
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete call body (strip_markup_on_recovery) and emits no markup.
+            calls: []
+            normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+  TOOLCALLING.batch.5.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete call body (strip_markup_on_recovery) and emits no markup.
+            calls: []
+            normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the orphan closing </tool_calls> plus the JSON array in normal_text when the opening marker is missing. Dynamo strips the orphan close tag and recovers the call body (discard_unparseable_wrapper) so no tool-call markup reaches the user.
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls>'
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the truncated <tool_calls> wrapper in normal_text. Dynamo strips the markup on recovery and drops the incomplete body so no tool-call markup reaches the user.
+            calls: []
+            normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"loc'
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete multi-call body and emits no markup.
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}]'
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the truncated multi-call wrapper in normal_text. Dynamo recovers the two complete call bodies and drops the truncated tail, emitting no markup.
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+  TOOLCALLING.batch.6.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            explanation: vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when a call object has no arguments key. Dynamo discards it so no tool-call markup reaches the user.
+            calls: []
+            normal_text: '<tool_calls>[{"name": "get_time"}]</tool_calls>'
+  TOOLCALLING.batch.7.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                first_class: true
+                destination: Paris
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō "central"
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            explanation: 'Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical.'
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            explanation: 'Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical.'
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            explanation: 'Known Dynamo limitation: the jamba framed parser spans from the first <tool_calls> opener to the last </tool_calls> closer, so narration between two separate fences lands inside the captured region and breaks the JSON parse, dropping both calls and keeping only the leading narration. vLLM extracts the first call. Multiple-disjoint-fence support is a base JSON-parser change tracked as a follow-up, out of scope for the never-leak fix.'
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.30.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a, SELECT b
+            normal_text: ''
+      TOOLCALLING.batch.30.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            normal_text: ''
+      TOOLCALLING.batch.30.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: literal <tool_calls marker>[]</tool_calls marker> stays text
+            normal_text: ''
+      TOOLCALLING.batch.31.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a, SELECT b
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.31.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments.
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments.
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector leaks the first partial wrapper chunk (<tool_cal) into normal_text and leaves the second call's arguments as an unterminated JSON fragment. Dynamo's streaming jail buffers across chunk boundaries and emits both complete calls with no leaked markup.
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments: '{"timezone": "EST"'
+            normal_text: <tool_cal
+  TOOLCALLING.stream.3.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector leaks the partial opening wrapper (<tool_call) into normal_text and drops the arguments to an empty object when the grammar token is split across chunks. Dynamo's streaming jail buffers the split token and emits the complete call with no leaked markup.
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: <tool_call
+  TOOLCALLING.stream.4.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector drops the arguments to an empty object on a truncated (finish_reason=stop) stream. Dynamo's streaming jail recovers the complete in-flight call body with full arguments.
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            explanation: vLLM emits the call with empty arguments on mid-body truncation; Dynamo's streaming jail suppresses the truncated <tool_calls> wrapper, emitting no call and no markup (aligned by ai-dynamo/dynamo#10847).
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            explanation: vLLM's streaming jamba detector leaves the orphan </tool_calls> close markers in normal_text. Dynamo's streaming jail strips every </tool_calls> occurrence and keeps the inner JSON body (aligned by ai-dynamo/dynamo#10847).
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls></tool_calls></tool_calls>'

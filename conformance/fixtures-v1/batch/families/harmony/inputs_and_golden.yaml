@@ -1,0 +1,478 @@
+corpus: batch
+family: harmony
+capture: inputs
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        description: Two back-to-back commentary envelopes
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_openai_tool_parser.py#L130
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - &id002
+          name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.c:
+        description: With surrounding narration
+        ref: 'OpenAI Harmony preambles should be commentary messages: https://developers.openai.com/cookbook/articles/openai-harmony#preambles'
+        model_text: 'Both: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.'
+        tools:
+        - *id001
+        - *id002
+      TOOLCALLING.batch.2.d:
+        description: Same-name twice
+        ref: dynamo
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+        tools:
+        - *id001
+        - *id001
+      TOOLCALLING.batch.2.b:
+        description: Two back-to-back fence pairs — not applicable to this family
+        explanation: harmony's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
+  TOOLCALLING.batch.4.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        description: Channel envelope with garbage body
+        ref: 'OpenAI Harmony JSON-constrained function calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>nonsense<|call|>
+        tools:
+        - &id003
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.4.b:
+        description: Unterminated JSON in message body
+        ref: 'OpenAI Harmony JSON-constrained function calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC<|call|>
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.c:
+        description: No to=functions.X recipient
+        ref: dynamo
+        model_text: <|start|>assistant<|channel|>commentary <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.d:
+        description: Malformed variant 4.d — not applicable to this family
+        explanation: Malformed-input variant 4.d does not apply to harmony's parser syntax (no equivalent end-marker recovery scenario).
+      TOOLCALLING.batch.4.e:
+        description: Malformed-prefix recovery — n/a for this family's syntax
+        explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
+      TOOLCALLING.batch.4.f:
+        description: Tool-name XML tag case - n/a for this family's syntax
+        explanation: TOOLCALLING.batch.4.f is specific to Qwen3-Coder XML syntax, where the model may emit a tool-name tag such as <terminal> inside <tool_call> instead of the required <function=Terminal> opener. This family does not use Qwen3-Coder's <function=...> opener.
+  TOOLCALLING.batch.5.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        description: Missing <|call|> end marker (bare envelope)
+        ref: dynamo
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+        tools:
+        - &id004
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.5.b:
+        description: Complete commentary tool call without <|start|>assistant prefix
+        ref: 'OpenAI Harmony tool-call stop token: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.c:
+        description: Truncation mid-message JSON
+        ref: dynamo
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"loc
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York"}
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York
+        tools:
+        - *id004
+  TOOLCALLING.batch.6.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        description: Canonical empty {} message body
+        ref: 'OpenAI Harmony tool calls terminate with ''<|call|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
+        tools:
+        - &id005
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+      TOOLCALLING.batch.6.b:
+        description: Whitespace inside empty {}
+        ref: 'OpenAI Harmony tool calls terminate with ''<|call|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
+        tools:
+        - *id005
+      TOOLCALLING.batch.6.c:
+        description: No <|message|> body
+        ref: 'OpenAI Harmony tool-call message header/body format: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_time <|constrain|>json
+        tools:
+        - *id005
+  TOOLCALLING.batch.7.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        description: Standard scalar types
+        ref: 'OpenAI Harmony receiving tool calls example starts completion at ''<|channel|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+      TOOLCALLING.batch.7.b:
+        description: Unicode + escaped chars
+        ref: 'OpenAI Harmony receiving tool calls example starts completion at ''<|channel|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: 'OpenAI Harmony receiving tool calls example starts completion at ''<|channel|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+      TOOLCALLING.batch.7.d:
+        description: Nested object + array
+        ref: 'OpenAI Harmony receiving tool calls example starts completion at ''<|channel|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+      TOOLCALLING.batch.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: dynamo
+        model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+      TOOLCALLING.batch.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: inferhub live capture on nvidia/openai/gpt-oss-120b; format follows https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls
+        model_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+  TOOLCALLING.batch.8.yaml:
+    family: harmony
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        description: Narration before tool call only
+        ref: dynamo
+        model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+        tools:
+        - &id006
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.8.b:
+        description: Narration after tool call only
+        ref: dynamo
+        model_text: <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.c:
+        description: Narration both before and after (sandwich)
+        ref: inspired-by https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_openai_tool_parser.py#L220
+        model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.d:
+        description: Narration between multiple tool calls
+        ref: dynamo
+        model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Then check LA weather. <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+        tools:
+        - *id006
+  TOOLCALLING.batch.yaml:
+    family: harmony
+    model_label: gpt-oss
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        description: Single tool call (basic complete envelope)
+        ref: 'OpenAI Harmony receiving tool calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
+        model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+        tools:
+        - &id007
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.3:
+        description: No tool call (bare text without final channel)
+        ref: 'OpenAI Harmony channels/final output: https://developers.openai.com/cookbook/articles/openai-harmony#channels'
+        model_text: Hello, how can I help you today?
+        tools:
+        - *id007
+      TOOLCALLING.batch.9.a:
+        description: Empty model text
+        model_text: ''
+        tools:
+        - *id007
+      TOOLCALLING.batch.9.b:
+        description: Blank / whitespace-only model text
+        ref: dynamo
+        model_text: '   '
+        tools:
+        - *id007
+      TOOLCALLING.batch.10:
+        description: Duplicate calls (same name twice)
+        model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+        tools:
+        - *id007
+      TOOLCALLING.batch.30:
+        description: Separator-character case not applicable
+        explanation: This case is not applicable to harmony because it uses channel/recipient/message envelope tokens, not delimiter-separated call bodies.
+      TOOLCALLING.batch.31:
+        description: Multi-call separator-character case not applicable
+        explanation: This case is not applicable to harmony because it uses channel/recipient/message envelope tokens, not delimiter-separated call bodies.
+      TOOLCALLING.batch.13:
+        description: Unknown tool name absent from supplied tools
+        ref: dynamo
+        model_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.13.c:
+        description: Mixed known and unknown calls not applicable
+        explanation: This case is not applicable to harmony because there is no peer mixed known/unknown Harmony parser case to align against.
+  TOOLCALLING.stream.1.yaml:
+    family: harmony
+    model_label: gpt-oss
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        description: Complete tool-call payload delivered in one content chunk
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: &id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.1.b:
+        description: Complete tool call split across parser-significant boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|channel|>commentary to=functions.
+        - delta_text: get_weather
+        - delta_text: ' <|constrain|>json'
+        - delta_text: <|message|>
+        - delta_text: '{"location":"NYC"}'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: *id008
+  TOOLCALLING.stream.2.yaml:
+    family: harmony
+    model_label: gpt-oss
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        description: Multiple tool calls split across multiple content chunks
+        ref: derived from TOOLCALLING.batch.2.a
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assista
+        - delta_text: nt<|channel|>
+        - delta_text: comme
+        - delta_text: ntary to=function
+        - delta_text: s.g
+        - delta_text: et_weathe
+        - delta_text: r <|con
+        - delta_text: strain|>json<
+        - delta_text: '|mess'
+        - delta_text: 'age|>{"location":'
+        - delta_text: '"NY'
+        - delta_text: C"}<|call
+        - delta_text: '|><|sta'
+        - delta_text: rt|>assistant
+        - delta_text: <|cha
+        - delta_text: 'nnel|>commentary '
+        - delta_text: to=
+        - delta_text: functions
+        - delta_text: .get_ti
+        - delta_text: me <|constrai
+        - delta_text: n|>js
+        - delta_text: on<|message|>{"ti
+        - delta_text: mez
+        - delta_text: one":"EST
+        - delta_text: '"}<|cal'
+        - delta_text: l|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+  TOOLCALLING.stream.3.yaml:
+    family: harmony
+    model_label: gpt-oss
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|
+        - delta_text: cha
+        - delta_text: nnel|
+        - delta_text: '>commentary'
+        - delta_text: ' to=functions.get_w'
+        - delta_text: ea
+        - delta_text: the
+        - delta_text: r <|c
+        - delta_text: onstrain|>j
+        - delta_text: son<|message|>{"loc
+        - delta_text: at
+        - delta_text: ion
+        - delta_text: '":"NY'
+        - delta_text: C"}<|call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+  TOOLCALLING.stream.4.yaml:
+    family: harmony
+    model_label: gpt-oss
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        description: Truncated stream terminates after a complete in-flight tool-call body
+        ref: derived from TOOLCALLING.batch.5.a
+        chunks:
+        - delta_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.b:
+        description: Stream terminates mid-call body before the in-flight argument payload is complete
+        ref: derived from TOOLCALLING.batch.5.c
+        chunks:
+        - delta_text: <|start|>assistant<|channel|>commentary to=functi
+        - delta_text: ons.get_weather <|constrain|>json<|message|>{"loc
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.c:
+        description: Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers
+        ref: derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py
+        chunks:
+        - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|call|><|call|>
+        - delta_text: ''
+          finish_reason: length
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string

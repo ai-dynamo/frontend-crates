@@ -1,0 +1,33 @@
+corpus: reasoning
+family: deepseek_r1
+capture: vllm_python-0.24.0
+documents:
+  REASONING.stream.yaml:
+    family: deepseek_r1
+    mode: stream
+    cases:
+      REASONING.stream.2.a:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+      REASONING.stream.2.b:
+        expected:
+          vllm_python:
+            reasoning_text: first<think>second
+            normal_text: ' middle  done'
+      REASONING.stream.3.a:
+        expected:
+          vllm_python:
+            reasoning_text: <th
+            normal_text: ''
+      REASONING.stream.3.b:
+        expected:
+          vllm_python:
+            reasoning_text: ink>answer
+            normal_text: ''
+      REASONING.stream.2.c:
+        expected:
+          vllm_python:
+            reasoning_text: preamble
+            normal_text: answer

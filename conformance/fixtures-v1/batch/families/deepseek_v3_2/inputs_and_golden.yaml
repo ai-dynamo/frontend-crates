@@ -1,0 +1,765 @@
+corpus: batch
+family: deepseek_v3_2
+capture: inputs
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        description: Two invokes inside one function_calls wrapper
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L172
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_time">
+
+          <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - &id002
+          name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.b:
+        description: Two back-to-back function_calls wrappers
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L327
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>
+
+          <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_time">
+
+          <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id001
+        - *id002
+      TOOLCALLING.batch.2.c:
+        description: With surrounding narration
+        ref: dynamo
+        model_text: 'Both: <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_time">
+
+          <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls> Done.'
+        tools:
+        - *id001
+        - *id002
+      TOOLCALLING.batch.2.d:
+        description: Same-name twice
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L370
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id001
+        - *id001
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        description: Function_calls wrapper with garbage
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          nonsense
+
+          </｜DSML｜function_calls>'
+        tools:
+        - &id003
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.4.c:
+        description: Invoke without name attribute
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke>
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.d:
+        description: Missing </｜DSML｜parameter> end tag
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L499
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.b:
+        description: Malformed variant 4.b — not yet authored for this family
+        explanation: Malformed-input variant 4.b not yet authored for deepseek_v3_2; see 4.a / 4.c / 4.d for this family's malformed-input scenarios.
+      TOOLCALLING.batch.4.e:
+        description: Malformed-prefix recovery — n/a for this family's syntax
+        explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
+      TOOLCALLING.batch.4.f:
+        description: Tool-name XML tag case - n/a for this family's syntax
+        explanation: TOOLCALLING.batch.4.f is specific to Qwen3-Coder XML syntax, where the model may emit a tool-name tag such as <terminal> inside <tool_call> instead of the required <function=Terminal> opener. This family does not use Qwen3-Coder's <function=...> opener.
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        description: Missing </｜DSML｜function_calls> end marker
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>'
+        tools:
+        - &id004
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.5.b:
+        description: Closing </｜DSML｜function_calls> without matching open
+        ref: dynamo
+        model_text: '<｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.c:
+        description: Truncation mid-parameter value
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NY'
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: dynamo
+        model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">New York</｜DSML｜parameter>
+
+          </｜DSML｜invoke>'
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: dynamo
+        model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">New York'
+        tools:
+        - *id004
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        description: Invoke with no <parameter>
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L363
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_time">
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - &id005
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+      TOOLCALLING.batch.6.b:
+        description: Invoke with extra newline
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_time">
+
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id005
+      TOOLCALLING.batch.6.c:
+        description: Empty-body variant 6.c — not yet authored for this family
+        explanation: Empty-body variant 6.c not yet authored for deepseek_v3_2; see 6.a / 6.b for this family's empty / whitespace scenarios.
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        description: Multiple parameters
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="book_flight">
+
+          <｜DSML｜parameter name="destination" string="true">Paris</｜DSML｜parameter>
+
+          <｜DSML｜parameter name="passengers" string="false">2</｜DSML｜parameter>
+
+          <｜DSML｜parameter name="first_class" string="false">true</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+      TOOLCALLING.batch.7.b:
+        description: Unicode in parameter
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">Tōkyō central</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.7.c:
+        description: Schema-type-mismatch test 7.c — not yet authored for this family
+        explanation: Schema-type-mismatch test 7.c not yet authored for deepseek_v3_2; argument-shape coverage is provided by 7.a / 7.b for this family.
+      TOOLCALLING.batch.7.d:
+        description: Nested-arguments test 7.d — not yet authored for this family
+        explanation: Nested-arguments test 7.d not yet authored for deepseek_v3_2; see 7.a / 7.b for simpler argument shapes.
+      TOOLCALLING.batch.7.e:
+        description: Large / deep JSON-edge payload test 7.e — not yet authored for this family
+        explanation: Large/deep JSON-edge payload test 7.e not yet authored for deepseek_v3_2; existing batch.7 coverage remains in 7.a-d.
+      TOOLCALLING.batch.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/encoding/encoding_dsv32.py
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="set_limit">
+
+          <｜DSML｜parameter name="count" string="false">9007199254740993</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        description: Narration before tool call only
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L158
+        model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - &id006
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.8.b:
+        description: Narration after tool call only
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls> Let me know if you need more.'
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.c:
+        description: Narration both before and after (sandwich)
+        ref: dynamo
+        model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls> Let me know if you need more.'
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.d:
+        description: Narration between multiple tool calls
+        ref: dynamo
+        model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls> Then check LA weather. <｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id006
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v3_2
+    model_label: DeepSeek V3.2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        description: Single tool call (happy path)
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - &id007
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.3:
+        description: No tool call (plain text)
+        model_text: Hello, how can I help you today?
+        tools:
+        - *id007
+      TOOLCALLING.batch.9.a:
+        description: Empty model text
+        model_text: ''
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.9.b:
+        description: Blank / whitespace-only model text
+        ref: dynamo
+        model_text: '   '
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.10:
+        description: Duplicate calls (same name twice)
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - *id007
+      TOOLCALLING.batch.30:
+        description: Separator-character case not applicable
+        explanation: This case is not applicable to deepseek_v3_2 because it uses DSML invoke/parameter tags, not delimiter-separated call bodies.
+      TOOLCALLING.batch.31:
+        description: Multi-call separator-character case not applicable
+        explanation: This case is not applicable to deepseek_v3_2 because it uses DSML invoke/parameter tags, not delimiter-separated call bodies.
+      TOOLCALLING.batch.13:
+        description: Unknown tool name absent from supplied tools
+        ref: dynamo
+        model_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="unknown_tool">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.13.c:
+        description: Mixed known and unknown calls not applicable
+        explanation: This case is not applicable to deepseek_v3_2 because there is no peer mixed known/unknown DeepSeek V3.2 parser case to align against.
+  TOOLCALLING.stream.1.yaml:
+    family: deepseek_v3_2
+    model_label: DeepSeek V3.2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        description: Complete tool-call payload delivered in one content chunk
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: '<｜DSML｜function_calls>
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜function_calls>'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: &id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.1.b:
+        description: Complete tool call split across parser-significant boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: '<｜DSML｜function_calls>
+
+            '
+        - delta_text: '<｜DSML｜invoke name="get_weather">
+
+            '
+        - delta_text: <｜DSML｜parameter name="location" string="true">
+        - delta_text: NYC
+        - delta_text: '</｜DSML｜parameter>
+
+            '
+        - delta_text: '</｜DSML｜invoke>
+
+            '
+        - delta_text: </｜DSML｜function_calls>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: *id008
+  TOOLCALLING.stream.2.yaml:
+    family: deepseek_v3_2
+    model_label: DeepSeek V3.2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        description: Multiple tool calls split across multiple content chunks
+        ref: derived from TOOLCALLING.batch.2.a
+        chunks:
+        - delta_text: <｜DSML｜fu
+        - delta_text: nction_
+        - delta_text: 'calls>
+
+            <｜DSML'
+        - delta_text: ｜invo
+        - delta_text: ke name="get_weat
+        - delta_text: her
+        - delta_text: '">
+
+            <｜DSML'
+        - delta_text: ｜parame
+        - delta_text: ter name="loc
+        - delta_text: ation
+        - delta_text: '" string="true">N'
+        - delta_text: YC<
+        - delta_text: /｜DSML｜pa
+        - delta_text: rameter
+        - delta_text: '>
+
+            </｜DSML｜inv'
+        - delta_text: 'oke>
+
+            '
+        - delta_text: <｜DSML｜invoke nam
+        - delta_text: e="
+        - delta_text: get_time"
+        - delta_text: '>
+
+            <｜DSM'
+        - delta_text: L｜parameter n
+        - delta_text: ame="
+        - delta_text: timezone" string=
+        - delta_text: '"tr'
+        - delta_text: ue">EST</
+        - delta_text: ｜DSML｜p
+        - delta_text: 'arameter>
+
+            </｜'
+        - delta_text: DSML｜
+        - delta_text: 'invoke>
+
+            </｜DSML｜f'
+        - delta_text: unc
+        - delta_text: tion_call
+        - delta_text: s>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+  TOOLCALLING.stream.3.yaml:
+    family: deepseek_v3_2
+    model_label: DeepSeek V3.2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <｜
+        - delta_text: DSM
+        - delta_text: L｜fun
+        - delta_text: ction_calls
+        - delta_text: '>
+
+            <｜DSML｜invoke nam'
+        - delta_text: e=
+        - delta_text: '"ge'
+        - delta_text: t_wea
+        - delta_text: 'ther">
+
+            <｜DS'
+        - delta_text: ML｜parameter name="
+        - delta_text: lo
+        - delta_text: cat
+        - delta_text: 'ion" '
+        - delta_text: string="tru
+        - delta_text: e">NYC</｜DSML｜param
+        - delta_text: et
+        - delta_text: er>
+        - delta_text: '
+
+            </｜D'
+        - delta_text: SML｜invoke>
+        - delta_text: '
+
+            </｜DSML｜function_c'
+        - delta_text: al
+        - delta_text: ls>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+  TOOLCALLING.stream.4.yaml:
+    family: deepseek_v3_2
+    model_label: DeepSeek V3.2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        description: Truncated stream terminates after a complete in-flight tool-call body
+        ref: derived from TOOLCALLING.batch.5.a
+        chunks:
+        - delta_text: '<｜DSML｜function_calls>
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.b:
+        description: Stream terminates mid-call body before the in-flight argument payload is complete
+        ref: derived from TOOLCALLING.batch.5.c
+        chunks:
+        - delta_text: '<｜DSML｜function_calls>
+
+            <｜DSML｜invoke name="get_weathe'
+        - delta_text: 'r">
+
+            <｜DSML｜parameter name="location" string="true">NY'
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.c:
+        description: Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers
+        ref: derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py
+        chunks:
+        - delta_text: '<｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜invoke>'
+        - delta_text: ''
+          finish_reason: length
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string

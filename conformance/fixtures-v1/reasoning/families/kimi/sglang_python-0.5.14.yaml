@@ -1,0 +1,13 @@
+corpus: reasoning
+family: kimi
+capture: sglang_python-0.5.14
+documents:
+  REASONING.batch.yaml:
+    family: kimi
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          sglang_python:
+            reasoning_text: before ◁think▷thinking
+            normal_text: ' after'

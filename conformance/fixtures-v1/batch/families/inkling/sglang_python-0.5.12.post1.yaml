@@ -1,0 +1,114 @@
+corpus: batch
+family: inkling
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.yaml:
+    family: inkling
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.1.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: weather
+              arguments:
+                city: SF
+            normal_text: ''
+      TOOLCALLING.batch.2:
+        expected:
+          sglang_python:
+            calls:
+            - name: weather
+              arguments:
+                city: SF
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.4:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Paris
+            - name: get_weather
+              arguments:
+                location: London
+            normal_text: ''
+      TOOLCALLING.batch.5:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'Let me check that for you. '
+            explanation: sglang preserves the prefix trailing space; dynamo trim_end()s the prefix. Cosmetic whitespace divergence.
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: <|content_invoke_tool_json|>{"name":"weather","args":{"city":"S
+            explanation: 'sglang leaks the truncated tool markup into normal_text; dynamo drops it (goal 3: never leak tool-call markup). Dynamo behavior is preferred here.'
+      TOOLCALLING.batch.7:
+        expected:
+          sglang_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: book_flight
+            explanation: 'Real capture: the sglang InklingDetector (bundled in the live worker) run on this exact model_text surfaces the bare NAME as normal_text. dynamo and vLLM drop the header-less redundant NAME; sglang keeps it. Typed args identical.'
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''

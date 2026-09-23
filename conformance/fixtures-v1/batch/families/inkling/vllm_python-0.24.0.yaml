@@ -1,0 +1,162 @@
+corpus: batch
+family: inkling
+capture: vllm_python-0.24.0
+documents:
+  TOOLCALLING.batch.yaml:
+    family: inkling
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.4.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.11.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.11.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.11.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.30.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+      TOOLCALLING.batch.31.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.

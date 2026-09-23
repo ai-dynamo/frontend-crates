@@ -1,0 +1,15 @@
+corpus: reasoning
+family: gemma4
+capture: sglang_python-0.5.14
+documents:
+  REASONING.batch.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          sglang_python:
+            reasoning_text: 'before <|channel>thought
+
+              thinking'
+            normal_text: ' after'

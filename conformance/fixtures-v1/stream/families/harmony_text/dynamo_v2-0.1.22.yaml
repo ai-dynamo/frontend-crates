@@ -1,0 +1,194 @@
+corpus: stream
+family: harmony_text
+capture: dynamo_v2-0.1.22
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.2.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.3.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+          normal_text: Hello, how can I help you today?
+  TOOLCALLING.streamv1.4.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.50.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.7.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.8.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: 'I will check the weather. '
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+          normal_text: ' Let me know if you need more.'
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+          - index: 1
+            arguments: '{"location":"LA"}'
+        - expected: []
+          normal_text: 'I will check the weather.  Then check LA weather. '
+  TOOLCALLING.streamv1.9.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+        - expected: []
+          normal_text: '   '

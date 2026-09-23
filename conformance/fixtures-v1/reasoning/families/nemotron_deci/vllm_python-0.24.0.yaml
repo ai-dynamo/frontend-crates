@@ -1,0 +1,47 @@
+corpus: reasoning
+family: nemotron_deci
+capture: vllm_python-0.24.0
+documents:
+  REASONING.batch.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          vllm_python:
+            reasoning_text: before thinking
+            normal_text: ' after'
+      REASONING.batch.6.a:
+        expected:
+          vllm_python:
+            reasoning_text: firstsecond
+            normal_text: ' middle  done'
+      REASONING.batch.6.b:
+        expected:
+          vllm_python:
+            reasoning_text: preamble
+            normal_text: bodyanswer
+  REASONING.stream.yaml:
+    family: nemotron_deci
+    mode: stream
+    cases:
+      REASONING.stream.2.a:
+        expected:
+          vllm_python:
+            reasoning_text: <think>thinking</think>
+            normal_text: answer
+      REASONING.stream.2.b:
+        expected:
+          vllm_python:
+            reasoning_text: <think>first</think>
+            normal_text: ' middle <think>second</think> done'
+      REASONING.stream.3.a:
+        expected:
+          vllm_python:
+            reasoning_text: <think>thinking</think>answer
+            normal_text: ''
+      REASONING.stream.2.c:
+        expected:
+          vllm_python:
+            reasoning_text: <think>preamble</think>
+            normal_text: body</think>answer

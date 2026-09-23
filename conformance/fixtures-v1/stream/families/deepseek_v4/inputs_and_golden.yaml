@@ -1,0 +1,1194 @@
+corpus: stream
+family: deepseek_v4
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.10.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">LA</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.11.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.11.a:
+        description: Conflicting outer and inner tool names are unavailable in DSML
+        explanation: DSML has one tool-name owner in the invoke name attribute and no inner envelope name that can disagree with it.
+        unavailable:
+          dynamo_v2: DSML carries only one tool name, so TOOLCALLING.batch.11.a cannot be expressed by this grammar.
+      TOOLCALLING.streamv1.11.b:
+        description: Empty DSML invoke name
+        ref: derived from TOOLCALLING.batch.11.b
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              value:
+                type: integer
+        chunks:
+        - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+        - delta_text: ' name="">'
+        - delta_text: <｜DSML｜parameter name="value" string="false">
+        - delta_text: 1</｜DSML｜parameter></｜DSML｜invoke>
+        - delta_text: </｜DSML｜tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.11.c:
+        description: Generation-primer header omission is unavailable in DSML
+        explanation: DSML tool calls do not use a separate generation-primer message header.
+        unavailable:
+          dynamo_v2: DSML has no generation-primer header, so TOOLCALLING.batch.11.c cannot be expressed by this grammar.
+  TOOLCALLING.streamv1.13.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.13.c:
+        description: Known and unknown invokes in one DSML tool_calls block
+        ref: derived from TOOLCALLING.batch.13.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="unknown_tool">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">LA</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name absent from supplied tools
+        ref: derived from TOOLCALLING.batch.13
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="unknown_tool">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.2.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Two invokes inside one tool_calls wrapper
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - &id002
+          name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_time">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="timezone" string="true">EST</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.b:
+        description: Two back-to-back tool_calls wrappers
+        ref: derived from TOOLCALLING.batch.2.b
+        tools:
+        - *id001
+        - *id002
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_time">
+
+            <｜DSML｜parameter name="timezone"'
+        - delta_text: ' string="true">'
+        - delta_text: 'EST</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.c:
+        description: Parallel with surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - *id001
+        - *id002
+        chunks:
+        - delta_text: 'Both: <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">
+
+            <｜DSML｜parameter name="location"'
+        - delta_text: ' string="true">NYC</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_time">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="timezone" string="true">'
+        - delta_text: EST</｜DSML｜parameter>
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - *id001
+        - *id001
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">LA</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.3.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.30.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        description: Character-level call separator is unavailable in DSML
+        explanation: DSML separates invokes with complete tags rather than a comma, semicolon, or other separator character.
+        unavailable:
+          dynamo_v2: DSML has no character-level call separator to place inside an argument string.
+      TOOLCALLING.streamv1.30.b:
+        description: Character-level structural delimiter is unavailable in DSML
+        explanation: Braces and brackets are ordinary JSON data in non-string parameters, covered by TOOLCALLING.batch.7.d; DSML structure is tag-delimited.
+        unavailable:
+          dynamo_v2: DSML has no character-level structural delimiter distinct from its tag markers.
+      TOOLCALLING.streamv1.30.c:
+        description: DSML control markers inside a string parameter remain data
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+        chunks:
+        - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+        - delta_text: ' name="echo">'
+        - delta_text: <｜DSML｜parameter name="value" string="true">
+        - delta_text: literal </｜DSML｜invoke>
+        - delta_text: ' and'
+        - delta_text: ' <｜DSML｜tool_calls> stay'
+        - delta_text: ' data</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.31.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        description: DSML invoke-close marker inside the first string parameter before a later invoke
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+        - &id003
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+        - delta_text: ' name="echo">'
+        - delta_text: <｜DSML｜parameter name="value" string="true">
+        - delta_text: literal </｜DSML｜invoke>
+        - delta_text: ' stays'
+        - delta_text: ' data</｜DSML｜parameter></｜DSML｜invoke>'
+        - delta_text: <｜DSML｜invoke name="get_time"></｜DSML｜invoke>
+        - delta_text: </｜DSML｜tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.31.b:
+        description: Nested DSML parameter structures before a later invoke
+        ref: derived from TOOLCALLING.batch.31.b
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        - *id003
+        chunks:
+        - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+        - delta_text: ' name="process_data">'
+        - delta_text: <｜DSML｜parameter name="payload" string="false">
+        - delta_text: '{"items":[{"nested":{"value":1}}]}</｜DSML｜parameter>'
+        - delta_text: </｜DSML｜invoke>
+        - delta_text: <｜DSML｜invoke name="get_time">
+        - delta_text: </｜DSML｜invoke></｜DSML｜tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Tool_calls wrapper with garbage
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - &id004
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            nonsense'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: Invoke without name attribute
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - *id004
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Missing </｜DSML｜parameter> end tag
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - *id004
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Invalid JSON syntax in a non-string DSML parameter
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - *id004
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="false">'
+        - delta_text: '{"city":"NYC"</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.e:
+        description: Malformed DSML invoke prefix followed by a valid complete invoke
+        ref: derived from TOOLCALLING.batch.4.e
+        tools:
+        - *id004
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name=get_weather>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: Paris</｜DSML｜parameter>
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.f:
+        description: Tool-name XML tag form is unavailable in DSML
+        explanation: DSML identifies a tool only through the invoke name attribute; it has no XML function opener that can be replaced by a tool-name tag.
+        unavailable:
+          dynamo_v2: DSML has no XML function-opener form, so TOOLCALLING.batch.4.f cannot be expressed by this grammar.
+  TOOLCALLING.streamv1.5.h.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    model_label: DeepSeek V4
+    cases:
+      TOOLCALLING.streamv1.5.h:
+        description: Orphan DSML close marker split across chunks after prefix prose
+        ref: derived from TOOLCALLING.batch.5.g
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Prefix prose
+        - delta_text: ' </｜DSML｜tool_'
+        - delta_text: calls>
+        - delta_text: ' suffix'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing </｜DSML｜tool_calls> end marker
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - &id005
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing </｜DSML｜tool_calls> without matching open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - *id005
+        chunks:
+        - delta_text: <｜DSML｜invoke name="get_weather">
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-parameter value
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - *id005
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: NY
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - *id005
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!
+
+            <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location"'
+        - delta_text: ' string="true">Boston</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: 'New York</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - *id005
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!
+
+            <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location"'
+        - delta_text: ' string="true">Boston</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: New York
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.f:
+        description: Bare valid invoke before a complete wrapped call
+        ref: derived from TOOLCALLING.batch.5.f
+        tools:
+        - *id005
+        chunks:
+        - delta_text: <｜DSML｜invoke name="get_weather">
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: Boston</｜DSML｜parameter>
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.g:
+        description: Closing </｜DSML｜tool_calls> without matching open after prefix prose
+        ref: derived from TOOLCALLING.batch.5.g
+        tools:
+        - *id005
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' that. <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location"'
+        - delta_text: ' string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    model_label: DeepSeek V4
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜
+        - delta_text: DSM
+        - delta_text: L｜too
+        - delta_text: 'l_calls>
+
+            <｜'
+        - delta_text: DSML｜invoke name="g
+        - delta_text: et
+        - delta_text: _we
+        - delta_text: ather
+        - delta_text: '">
+
+            <｜DSML｜p'
+        - delta_text: arameter name="loca
+        - delta_text: ti
+        - delta_text: on"
+        - delta_text: ' stri'
+        - delta_text: ng="true">N
+        - delta_text: YC</｜DSML｜parameter
+        - delta_text: '>
+
+            '
+        - delta_text: </｜
+        - delta_text: DSML｜
+        - delta_text: 'invoke>
+
+            </｜'
+        - delta_text: DSML｜tool_calls>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Invoke with no <parameter>
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - &id006
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_time">'
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.b:
+        description: Invoke with extra newline
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - *id006
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_time">'
+        - delta_text: '
+
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.c:
+        description: Missing arguments key is unavailable in DSML
+        explanation: DSML has no arguments key; a parameterless invoke is already represented by TOOLCALLING.batch.6.a, so there is no distinct absent-key spelling.
+        unavailable:
+          dynamo_v2: DSML has no arguments key whose absence can be distinguished from an empty object; TOOLCALLING.batch.6.a is its parameterless form.
+  TOOLCALLING.streamv1.7.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Multiple parameters
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="book_flight">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="destination" string="true">'
+        - delta_text: 'Paris</｜DSML｜parameter>
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="passengers"'
+        - delta_text: ' string="false">2</｜DSML｜parameter>'
+        - delta_text: '
+
+            <｜DSML｜parameter name="first_class" string="false">'
+        - delta_text: true</｜DSML｜parameter>
+        - delta_text: '
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode in parameter
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: Tōkyō central</｜DSML｜parameter>
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.c:
+        description: DSML string value where the tool schema declares an integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="set_temperature">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="celsius" string="true">'
+        - delta_text: '20</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object and array in a non-string DSML parameter
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - &id007
+          name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="process_data">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="payload" string="false">'
+        - delta_text: '{"items":[1,2,3],"config":{"nested":true}}</｜DSML｜parameter>'
+        - delta_text: '
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.e:
+        description: Large nested DSML parameter with null and empty values
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - *id007
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="process_data">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="payload" string="false">'
+        - delta_text: '{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]'
+        - delta_text: '}]'
+        - delta_text: ',"flags":{"enabled":true,"retry":null},"empty":{}}</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="set_limit">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="count" string="false">'
+        - delta_text: '9007199254740993</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.8.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - &id008
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - *id008
+        chunks:
+        - delta_text: '<｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ' Let me'
+        - delta_text: ' know if you'
+        - delta_text: ' need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - *id008
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ' Let'
+        - delta_text: ' me know'
+        - delta_text: ' if'
+        - delta_text: ' you need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - *id008
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜DSML｜tool_calls>'
+        - delta_text: '
+
+            <｜DSML｜invoke name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter'
+        - delta_text: ' name="location" string="true">'
+        - delta_text: 'NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ' Then'
+        - delta_text: ' check LA'
+        - delta_text: ' weather.'
+        - delta_text: ' <｜DSML｜tool_calls>
+
+            <｜DSML｜invoke'
+        - delta_text: ' name="get_weather">'
+        - delta_text: '
+
+            <｜DSML｜parameter name="location" string="true">'
+        - delta_text: 'LA</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        - delta_text: '
+
+            </｜DSML｜tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.9.yaml:
+    family: deepseek_v4
+    model_label: DeepSeek V4
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

@@ -1,0 +1,603 @@
+corpus: stream
+family: inkling
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: streamv1
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    refs:
+      local: Chunked text derived from the matching batch corpus; boundary cases split native grammar tokens and JSON.
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single call split across marker and JSON boundaries
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>get_weather
+        - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+        - delta_text: '"args":{"location":"Paris","unit":"celsius"}}'
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls inside one wrapper / JSON array
+        explanation: 'n/a: Inkling has no array or shared multi-call wrapper; repeated fenced blocks are covered by 2.b.'
+      TOOLCALLING.streamv1.2.b:
+        description: Two different calls in back-to-back fenced blocks
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+      TOOLCALLING.streamv1.2.c:
+        description: Parallel calls with surrounding narration
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: 'Before. '
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        - delta_text: ' Between. '
+        - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+        - delta_text: ' After.'
+      TOOLCALLING.streamv1.2.d:
+        description: Same name twice; streaming indices remain distinct
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+      TOOLCALLING.streamv1.3:
+        description: Plain text stream
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: 'Hello, how can '
+        - delta_text: I help you today?
+      TOOLCALLING.streamv1.4.a:
+        description: Malformed fenced body is never claimed as a call
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>not-
+        - delta_text: json<|end_message|>
+      TOOLCALLING.streamv1.5.a:
+        description: Complete body without end fence recovers only at EOF
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>get_weather
+        - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+      TOOLCALLING.streamv1.5.b:
+        description: Orphan close marker without an opener
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: 'prefix '
+        - delta_text: <|end_
+        - delta_text: message|>
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-argument at EOF
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+        - delta_text: '"args":{"location":"S'
+      TOOLCALLING.streamv1.5.d:
+        description: Last of two calls misses only its end fence
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}
+      TOOLCALLING.streamv1.5.e:
+        description: Last of two calls truncates mid-argument
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"S
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty args object
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: <|message_model|>f
+        - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{}}
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside empty args object
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{ }}
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar argument types
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: f
+        - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{"s":"x",
+        - delta_text: '"n":2,"b":true}}'
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode and escaped quotes in a string argument
+        ref: Derived from the matching batch case
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              text:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo",
+        - delta_text: '"args":{"text":"say \"hi\" — héllo"}}'
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before a call
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: 'Let me check '
+        - delta_text: 'that for you. '
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after a call
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+        - delta_text: TRAILING
+      TOOLCALLING.streamv1.8.c:
+        description: Narration before and after a call
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: 'BEFORE '
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+        - delta_text: ' AFTER'
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between calls
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+        - delta_text: MIDDLE
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      TOOLCALLING.streamv1.9.a:
+        description: Empty stream chunk
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: ''
+      TOOLCALLING.streamv1.9.b:
+        description: Whitespace-only stream
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: ' '
+        - delta_text: '  '
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+      TOOLCALLING.streamv1.11.a:
+        description: Outer header and JSON name disagree
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>
+        - delta_text: '{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>'
+      TOOLCALLING.streamv1.11.b:
+        description: Empty JSON function name is rejected
+        ref: Derived from the matching batch case
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        chunks:
+        - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"",
+        - delta_text: '"args":{"x":1}}<|end_message|>'
+      TOOLCALLING.streamv1.11.c:
+        description: Headerless generation-primer call
+        ref: Derived from the matching batch case
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+        chunks:
+        - delta_text: book_flight
+        - delta_text: <|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"Paris"}}
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name is surfaced
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool",
+        - delta_text: '"args":{"location":"NYC"}}<|end_message|>'
+      TOOLCALLING.streamv1.30.c:
+        description: Own end-marker literal inside a string argument
+        ref: Derived from the matching batch case
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              text:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a
+        - delta_text: <|end_message|>
+        - delta_text: b"}}
+        - delta_text: <|end_message|>
+      TOOLCALLING.streamv1.31.a:
+        description: Marker-bearing first argument followed by a second call
+        ref: Derived from the matching batch case
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              text:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>
+        - delta_text: b"}}<|end_message|>
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      TOOLCALLING.streamv1.50:
+        description: Tool opener split at bare < and <| boundaries
+        ref: Derived from the matching batch case
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        chunks:
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: message_model|>get_weather
+        - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+        - delta_text: <|end_message|>

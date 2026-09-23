@@ -1,0 +1,436 @@
+corpus: stream
+family: hermes
+capture: dynamo_v1-3.0.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+            arguments: '{"location":"NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: unknown_tool
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.c:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+  TOOLCALLING.streamv1.5.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time!'
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Boston"}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"New York"}'
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time!'
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Boston"}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"New York"}'
+  TOOLCALLING.streamv1.50.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: '{}'
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: '{"destination":"Paris","first_class":true,"passengers":2}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Tōkyō \"central\""}'
+        - expected: []
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: set_temperature
+            arguments: '{"celsius":"20"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: '{"config":{"nested":true},"items":[1,2,3]}'
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: '{"payload":{"empty":{},"flags":{"enabled":true,"retry":null},"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: set_limit
+            arguments: '{"count":9007199254740993}'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' Let me'
+        - expected: []
+          normal_text: ' know'
+        - expected: []
+          normal_text: ' if you'
+        - expected: []
+          normal_text: ' need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' Let me know'
+        - expected: []
+          normal_text: ' if'
+        - expected: []
+          normal_text: ' you need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' Then check LA'
+        - expected: []
+          normal_text: ' weather.'
+        - expected: []
+          normal_text: ' '
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: hermes
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 3.0.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

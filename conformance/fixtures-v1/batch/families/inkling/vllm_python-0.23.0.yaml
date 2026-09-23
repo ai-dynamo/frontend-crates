@@ -1,0 +1,112 @@
+corpus: batch
+family: inkling
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.yaml:
+    family: inkling
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.1.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: weather
+              arguments:
+                city: SF
+            normal_text: ''
+      TOOLCALLING.batch.2:
+        expected:
+          vllm_python:
+            calls:
+            - name: weather
+              arguments:
+                city: SF
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+            explanation: vLLM InklingParser hard-sets initial_state=MESSAGE_HEADER (non-streaming parse receives only the generated suffix after a prompt-prefilled <|message_model|>), so plain text before any content-kind marker is treated as message-header metadata and dropped. dynamo/sglang surface it as normal_text. Divergence only on marker-less input, which does not occur after a real Inkling prefill.
+      TOOLCALLING.batch.4:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Paris
+            - name: get_weather
+              arguments:
+                location: London
+            normal_text: ''
+      TOOLCALLING.batch.5:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+            explanation: 'vLLM parses the tool call identically but drops the "Let me check that for you." prefix: initial_state=MESSAGE_HEADER treats text before the first content-kind marker as header metadata. dynamo trim_end()s and keeps it as normal_text; sglang keeps it with trailing space. All three agree on the call.'
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: weather
+              arguments_raw: '{"city":"S'
+              arguments_valid: false
+            normal_text: ''
+            explanation: 'vLLM surfaces the truncated call with a name but unterminated/invalid args ("{\"city\":\"S", arguments_json_valid=false); it neither guesses nor drops. dynamo drops it entirely (calls=[], goal 3: never emit an ambiguous call); sglang leaks the raw markup into normal_text. All three diverge; dynamo behavior is preferred.'
+      TOOLCALLING.batch.7:
+        expected:
+          vllm_python:
+            unavailable: 'real-trace peer capture pending: vLLM InklingParser not re-stood-up for this live capture. vLLM drops the bare NAME via initial_state=MESSAGE_HEADER; dynamo now agrees (header-less redundant-name drop). Args/name expected identical.'
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+            explanation: vLLM drops the whitespace-only input (no content-kind marker -> treated as message-header metadata under initial_state=MESSAGE_HEADER). dynamo/sglang preserve the whitespace as normal_text.
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''

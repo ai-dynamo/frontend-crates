@@ -1,0 +1,71 @@
+corpus: batch
+family: deepseek_v3_2
+capture: sglang_python-0.5.14
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    captured_with:
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    captured_with:
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_2
+    mode: batch
+    captured_with:
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '

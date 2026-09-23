@@ -1,0 +1,22 @@
+corpus: stream
+family: qwen3_coder
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: 'ToolParserError::ParsingFailed (near "\nnonsense\n</tool_call>": )'
+      TOOLCALLING.streamv1.4.d:
+        exception: 'ToolParserError::ParsingFailed (near "\n<function=get_weather>\n<parameter=location>\nNYC\n</function>\n</tool_call>": )'
+      TOOLCALLING.streamv1.4.f:
+        exception: 'ToolParserError::ParsingFailed (near "\n<terminal>\necho hello\n</function>\n</tool_call>": )'
+  TOOLCALLING.streamv1.5.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases: {}

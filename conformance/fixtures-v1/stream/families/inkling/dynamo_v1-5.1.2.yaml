@@ -1,0 +1,279 @@
+corpus: stream
+family: inkling
+capture: dynamo_v1-5.1.2
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: inkling
+    mode: streamv1
+    captured_with:
+      dynamo_v1: 5.1.2
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris","unit":"celsius"}'
+        - expected: []
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"LA"}'
+        - expected: []
+      TOOLCALLING.streamv1.11.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: '{"destination":"SFO"}'
+        - expected: []
+      TOOLCALLING.streamv1.11.b:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.11.c:
+        chunks:
+        - expected: []
+          normal_text: book_flight
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: '{"destination":"Paris"}'
+        - expected: []
+      TOOLCALLING.streamv1.13:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+            arguments: '{"location":"NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected:
+          - index: 1
+            id: true
+            name: book_flight
+            arguments: '{"destination":"SFO"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Before. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+          normal_text: ' Between. '
+        - expected:
+          - index: 1
+            id: true
+            name: book_flight
+            arguments: '{"destination":"SFO"}'
+        - expected: []
+          normal_text: ' After.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"LA"}'
+        - expected: []
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: 'Hello, how can '
+        - expected: []
+          normal_text: I help you today?
+        - expected: []
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: echo
+            arguments: '{"text":"a<|end_message|>b"}'
+        - expected: []
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: echo
+            arguments: '{"text":"a<|end_message|>b"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: 'prefix '
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: book_flight
+            arguments: '{"destination":"SFO"}'
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{ }'
+        - expected: []
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+          normal_text: f
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{"s":"x","n":2,"b":true}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: echo
+            arguments: '{"text":"say \"hi\" — héllo"}'
+        - expected: []
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: 'Let me check '
+        - expected: []
+          normal_text: 'that for you. '
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{}'
+        - expected: []
+          normal_text: TRAILING
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: 'BEFORE '
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{}'
+        - expected: []
+          normal_text: ' AFTER'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: f
+            arguments: '{}'
+        - expected: []
+          normal_text: MIDDLE
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+        - expected: []
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: ' '
+        - expected: []
+          normal_text: '  '
+        - expected: []

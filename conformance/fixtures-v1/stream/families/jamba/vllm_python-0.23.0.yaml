@@ -1,0 +1,769 @@
+corpus: stream
+family: jamba
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.10.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+  TOOLCALLING.streamv1.13.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: unknown_tool
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+  TOOLCALLING.streamv1.2.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+  TOOLCALLING.streamv1.3.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.30.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT a, SELECT'
+        - expected:
+          - index: 0
+            arguments: ' b'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.30.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT value WHERE'
+        - expected:
+          - index: 0
+            arguments: ' note'
+        - expected:
+          - index: 0
+            arguments: ' has brace'
+        - expected:
+          - index: 0
+            arguments: ' } and bracket'
+        - expected:
+          - index: 0
+            arguments: ' ]'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+        - expected:
+          - index: 0
+            arguments: '{"sql": "literal <tool_calls marker>'
+        - expected:
+          - index: 0
+            arguments: '[]'
+        - expected:
+          - index: 0
+            arguments: </tool_calls marker>
+        - expected:
+          - index: 0
+            arguments: ' stays text'
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.31.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT a, SELECT'
+        - expected:
+          - index: 0
+            arguments: ' b'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+        - expected:
+          - index: 1
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: ''
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT value WHERE'
+        - expected:
+          - index: 0
+            arguments: ' note'
+        - expected:
+          - index: 0
+            arguments: ' has brace'
+        - expected:
+          - index: 0
+            arguments: ' } and bracket'
+        - expected:
+          - index: 0
+            arguments: ' ]'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+  TOOLCALLING.streamv1.4.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.5.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: '[{"name": "get_weather",'
+        - expected: []
+          normal_text: ' "arguments":'
+        - expected: []
+          normal_text: ' {"location": "NYC"}}]</tool_calls>'
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '{"location": "Boston"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: ''
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '{"location": "Boston"}'
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+        - expected:
+          - index: 1
+            arguments: '{"location": "New York'
+        - expected:
+          - index: 1
+            arguments: ''
+  TOOLCALLING.streamv1.50.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+          normal_text: <t
+        - expected: []
+          normal_text: ool
+        - expected: []
+          normal_text: _call
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.6.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+        - expected:
+          - index: 0
+            arguments: ', "passengers": 2'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ', "first_class": true'
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: set_temperature
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ', "config": {}'
+        - expected:
+          - index: 0
+            arguments: '"nested": true'
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+        - expected:
+          - index: 0
+            arguments: '"regions": [{"name": "west"}]'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ', "scores": [1, 2]'
+        - expected:
+          - index: 0
+            arguments: ', 3]}, {'
+        - expected:
+          - index: 0
+            arguments: '"name": "east"'
+        - expected:
+          - index: 0
+            arguments: ', "scores": [4]'
+        - expected:
+          - index: 0
+            arguments: ', 5'
+        - expected:
+          - index: 0
+            arguments: ', 6'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ', "flags": {"enabled": true}'
+        - expected:
+          - index: 0
+            arguments: ', "retry": null'
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '}, "empty": {'
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: set_limit
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.8.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ''
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: ''
+  TOOLCALLING.streamv1.9.yaml:
+    family: jamba
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

@@ -1,0 +1,412 @@
+corpus: batch
+family: mistral
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: nonsense[/TOOL_CALLS]
+            explanation: vLLM's mistral parser splits only on the [TOOL_CALLS] opener and has no [/TOOL_CALLS] concept; on a malformed body its pre-v11 path returns the raw post-opener text as content, leaking the [/TOOL_CALLS] close marker. Dynamo strips the wrapper markers on malformed recovery so nothing leaks (TOOLCALLING.batch.4 impl-defined recovery).
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"][/TOOL_CALLS]'
+            explanation: vLLM splits on the [TOOL_CALLS] opener and, when the JSON body fails both raw_decode and the array-regex fallback, returns the raw post-opener text as content, leaking the body and the [/TOOL_CALLS] close marker. Dynamo strips the wrapper markers on malformed recovery so nothing leaks (TOOLCALLING.batch.4 impl-defined recovery).
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            error: 'KeyError: ''name'''
+            explanation: vLLM mistral_tool_parser raises KeyError when 'name' key is missing
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
+            explanation: vLLM requires the [TOOL_CALLS] opener; with only an orphan [/TOOL_CALLS] close it treats the whole string as content and emits no call. Dynamo strips the orphan close marker and recovers the complete call body without leaking markup (TOOLCALLING.batch.5 impl-defined recovery).
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"loc'
+            explanation: vLLM leaves the truncated post-marker JSON body in content; Dynamo suppresses the unterminated [TOOL_CALLS] call and emits empty content.
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+            explanation: vLLM leaves the raw truncated body in content; Dynamo recovers the complete leading call (Boston) and drops the truncated trailing call without fabricating it.
+  TOOLCALLING.batch.6.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+            explanation: vLLM's mistral_tool_parser fabricates an empty arguments object {} when the 'arguments' key is absent; Dynamo and SGLang drop the call because the required key is missing
+  TOOLCALLING.batch.7.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō "central"
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            error: 'ValueError: Only one BOT token should have been outputted'
+            explanation: vLLM mistral_tool_parser raises ValueError on two consecutive [TOOL_CALLS] envelopes
+  TOOLCALLING.batch.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.30.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a, SELECT b
+            normal_text: ''
+      TOOLCALLING.batch.30.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            normal_text: ''
+      TOOLCALLING.batch.30.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: literal [TOOL_CALLS marker][][/TOOL_CALLS marker] stays text
+            normal_text: ''
+      TOOLCALLING.batch.31.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a, SELECT b
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.31.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+            explanation: vLLM's streaming Mistral parser (pre-v11 ijson path) emits no call when the entire [TOOL_CALLS] payload arrives in one chunk via the parity harness (no incremental delta_token_ids to drive its coroutine); Dynamo buffers and recovers the call.
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: '[/TOOL_CALLS]'
+            explanation: vLLM's streaming Mistral parser leaks the trailing [/TOOL_CALLS] close marker into content; Dynamo now keeps the jail open until the marker arrives and consumes it, so normal_text is empty.
+  TOOLCALLING.stream.2.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[TOOL_CAL'
+            explanation: vLLM leaks the partial start marker prefix into content when [TOOL_CALLS] is split across chunks and emits no call; Dynamo buffers the marker fragments and recovers the calls with empty normal_text.
+  TOOLCALLING.stream.3.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[TOOL_CALL'
+            explanation: vLLM leaks the partial start marker prefix into content when [TOOL_CALLS] is split across chunks and emits no call; Dynamo buffers the marker fragments and recovers the call with empty normal_text.
+  TOOLCALLING.stream.4.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: '{"loc'
+            normal_text: ''
+            explanation: vLLM emits a malformed partial call with the incomplete argument fragment as arguments; Dynamo suppresses the unterminated call and emits empty content.
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS][/TOOL_CALLS][/TOOL_CALLS]'
+            explanation: vLLM streaming sees no [TOOL_CALLS] opener in the chunk, so it emits the whole string as content with no call, leaking the orphan [/TOOL_CALLS] markers verbatim. Dynamo strips the orphan close markers at the confirmed end token and recovers the complete call body without leaking markup.

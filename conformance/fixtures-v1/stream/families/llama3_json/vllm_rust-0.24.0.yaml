@@ -1,0 +1,14 @@
+corpus: stream
+family: llama3_json
+capture: vllm_rust-0.24.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: llama3_json
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.4.e:
+        exception: 'ToolParserError::ParsingFailed (invalid Llama JSON
+
+          expected `parameters`)'

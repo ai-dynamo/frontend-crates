@@ -1,0 +1,39 @@
+corpus: batch
+family: qwen3_coder
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:'
+  TOOLCALLING.batch.4.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}

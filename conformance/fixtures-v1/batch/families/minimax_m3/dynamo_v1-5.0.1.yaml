@@ -1,0 +1,52 @@
+corpus: batch
+family: minimax_m3
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m3
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m3
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m3
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m3
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m3
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.g:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check that.
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m3
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m3
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m3
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m3
+    mode: stream
+    cases: {}

@@ -1,0 +1,158 @@
+corpus: stream
+family: pythonic
+capture: vllm_rust-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.10.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.13.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.13.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.2.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.2.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.2.d:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.3.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.30.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.30.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.30.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.31.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.31.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.4.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.4.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.4.d:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.5.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.5.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.5.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.5.d:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.5.e:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.50.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.6.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.6.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.7.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.7.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.7.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.7.d:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.7.e:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.8.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.8.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.8.c:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.8.d:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+  TOOLCALLING.streamv1.9.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        unavailable: No vLLM Rust parser for family 'pythonic'.
+      TOOLCALLING.streamv1.9.b:
+        unavailable: No vLLM Rust parser for family 'pythonic'.

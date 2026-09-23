@@ -52,7 +52,7 @@ def test_validate_rejects_stale_member_from_manifest_archive(tmp_path: Path) -> 
     manifest_path.write_text(json.dumps(manifest))
 
     errors = validator.validate(repo)
-    assert any("stale legacy-v2 name" in error for error in errors)
+    assert any("archived fixture remains active" in error for error in errors)
 
 
 def test_validate_rejects_unmanifested_stale_archive(tmp_path: Path) -> None:
@@ -67,5 +67,4 @@ def test_validate_rejects_unmanifested_stale_archive(tmp_path: Path) -> None:
         pass
 
     errors = validator.validate(repo)
-    assert any("archive store: stale path" in error for error in errors)
-    assert any("archive store: unmanifested archive" in error for error in errors)
+    assert any("archive store: obsolete archive" in error for error in errors)

@@ -1,0 +1,66 @@
+corpus: batch
+family: deepseek_v4
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v4
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v4
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments: {}
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '

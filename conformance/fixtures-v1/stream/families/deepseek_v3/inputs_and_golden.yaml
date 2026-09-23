@@ -1,0 +1,970 @@
+corpus: stream
+family: deepseek_v3
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.10.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location": "LA"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.13.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name absent from supplied tools
+        ref: derived from TOOLCALLING.batch.13
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'unknown_tool
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.2.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls in single fence pair
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>get_time
+        - delta_text: '
+
+            ```json
+
+            {"timezone": "EST"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.b:
+        description: Two back-to-back fence pairs
+        ref: derived from TOOLCALLING.batch.2.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: 'function<｜tool▁sep｜>get_time
+
+            ```json'
+        - delta_text: '
+
+            {"timezone":'
+        - delta_text: ' "EST"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Both: <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: 'function<｜tool▁sep｜>get_weather
+
+            ```json'
+        - delta_text: '
+
+            {"location": "NYC"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: 'get_time
+
+            ```json
+
+            {"timezone":'
+        - delta_text: ' "EST"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - *id001
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location": "LA"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.3.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Garbage between calls fences
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Missing close brace inside fenced JSON
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: Missing function name token
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: '
+
+            ```json
+
+            {"location": "NYC"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Missing fenced JSON block (no ```json)
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            {"location": "NYC"}<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing calls_end / call_end markers
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing tool_calls_end without matching tool_calls_begin
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location": "NYC"}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-arguments JSON inside fenced block
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"loc'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!
+
+            <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>get_weather
+        - delta_text: '
+
+            ```json'
+        - delta_text: '
+
+            {"location": "Boston"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "New York"}
+
+            ```'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!
+
+            <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>get_weather
+        - delta_text: '
+
+            ```json'
+        - delta_text: '
+
+            {"location": "Boston"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "New York'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.50.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜
+        - delta_text: too
+        - delta_text: l▁cal
+        - delta_text: ls▁begin｜><
+        - delta_text: ｜tool▁call▁begin｜>f
+        - delta_text: un
+        - delta_text: cti
+        - delta_text: on<｜t
+        - delta_text: ool▁sep｜>ge
+        - delta_text: 't_weather
+
+            ```json
+
+            {'
+        - delta_text: '"l'
+        - delta_text: oca
+        - delta_text: tion"
+        - delta_text: ': "NYC"}
+
+            ``'
+        - delta_text: '`<｜tool▁call▁end｜><'
+        - delta_text: ｜t
+        - delta_text: ool
+        - delta_text: ▁call
+        - delta_text: s▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty {} in fenced code block
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_time
+
+            ```json
+
+            {}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside empty { } (newlines)
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_time
+
+            ```json
+
+            {'
+        - delta_text: '
+
+            }
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.c:
+        description: No fenced JSON block (function name only)
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'book_flight
+
+            ```json
+
+            {"destination":'
+        - delta_text: ' "Paris", "passengers":'
+        - delta_text: ' 2,'
+        - delta_text: ' "first_class": true}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "Tōkyō \"central\""}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'set_temperature
+
+            ```json
+
+            {"celsius":'
+        - delta_text: ' "20"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array (existing)
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'process_data
+
+            ```json
+
+            {"items":'
+        - delta_text: ' [1, 2,'
+        - delta_text: ' 3]'
+        - delta_text: ', "config":'
+        - delta_text: ' {"nested": true}}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'process_data
+
+            ```json
+
+            {"payload":'
+        - delta_text: ' {"regions": [{"name":'
+        - delta_text: ' "west",'
+        - delta_text: ' "scores": [1,'
+        - delta_text: ' 2, 3]},'
+        - delta_text: ' {"name":'
+        - delta_text: ' "east", "scores":'
+        - delta_text: ' [4,'
+        - delta_text: ' 5, 6]'
+        - delta_text: '}]'
+        - delta_text: ', "flags": {"enabled":'
+        - delta_text: ' true, "retry":'
+        - delta_text: ' null},'
+        - delta_text: ' "empty": {}}}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'set_limit
+
+            ```json
+
+            {"count":9007199254740993}'
+        - delta_text: '
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.8.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ' Let me'
+        - delta_text: ' know if you'
+        - delta_text: ' need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ' Let'
+        - delta_text: ' me know'
+        - delta_text: ' if'
+        - delta_text: ' you need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <｜tool▁calls▁begin｜>'
+        - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+        - delta_text: get_weather
+        - delta_text: '
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "NYC"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        - delta_text: ' Then'
+        - delta_text: ' check LA'
+        - delta_text: ' weather.'
+        - delta_text: ' <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+        - delta_text: function<｜tool▁sep｜>
+        - delta_text: 'get_weather
+
+            ```json
+
+            {"location":'
+        - delta_text: ' "LA"}
+
+            ```<｜tool▁call▁end｜>'
+        - delta_text: <｜tool▁calls▁end｜>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.9.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    model_label: DeepSeek V3
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

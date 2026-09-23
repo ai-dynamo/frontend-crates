@@ -100,13 +100,13 @@ def _hrefs_for_context() -> dict[str, str]:
         }
         fixture_stores = {
             "toolcalling_fixture_store": repository_href(
-                "conformance/fixtures/toolcalling/fixtures-batch-v1/"
+                "conformance/fixtures-v1/batch/"
             ),
             "toolcalling_stream_fixture_store": repository_href(
-                "conformance/fixtures/toolcalling/fixtures-stream-v1/"
+                "conformance/fixtures-v1/stream/"
             ),
             "reasoning_fixture_store": repository_href(
-                "conformance/fixtures/reasoning/fixtures-v1/"
+                "conformance/fixtures-v1/reasoning/"
             ),
         }
     else:
@@ -123,11 +123,9 @@ def _hrefs_for_context() -> dict[str, str]:
             "reasoning_fixtures": repository_href("conformance/reasoning/fixtures/"),
         }
         fixture_stores = {
-            "toolcalling_fixture_store": fixture_roots["toolcalling_fixtures"],
-            "toolcalling_stream_fixture_store": fixture_roots[
-                "toolcalling_stream_fixtures"
-            ],
-            "reasoning_fixture_store": fixture_roots["reasoning_fixtures"],
+            "toolcalling_fixture_store": repository_href("conformance/fixtures-v1/batch/"),
+            "toolcalling_stream_fixture_store": repository_href("conformance/fixtures-v1/stream/"),
+            "reasoning_fixture_store": repository_href("conformance/fixtures-v1/reasoning/"),
         }
 
     return fixture_roots | fixture_stores | {
@@ -152,14 +150,10 @@ def _hrefs_for_context() -> dict[str, str]:
     }
 
 
-# Fixture YAMLs aren't loose in the repo — they're LFS tarballs under
-# conformance/fixtures/, extracted into an immutable snapshot selected through
-# $CONFORMANCE_FIXTURES_ROOT or `extract_fixtures.py`. The store
-# holds only the tarballs (no per-file URL), so a per-cell YAML link points at the
-# extracted file in that cache for local renders or its bundled copy for Pages. The
-# rendered `__fixture_path` is the flat resolved-tree path the readers use; remap it to
-# the versioned snapshot layout (the shared `inputs/` tree carries the model_text /
-# description a viewer wants to see).
+# Both YAML stores materialize an immutable loose snapshot selected through
+# $CONFORMANCE_FIXTURES_ROOT or `extract_fixtures.py`. Per-cell links point at
+# the materialized input document so a case can be opened directly. The rendered
+# `__fixture_path` is the flat resolved-tree path; remap it to the input layer.
 def _fixtures_cache_root() -> str:
     return str(fixture_snapshot_root())
 
@@ -192,6 +186,10 @@ def fixture_href(rel: str) -> str:
         return rel
     if _LINK_CONTEXT and _LINK_CONTEXT.fixture_base_url:
         return _url_join(_LINK_CONTEXT.fixture_base_url, _fixture_cache_relpath(rel))
+    if _LINK_CONTEXT:
+        return quote(_href_from_output(
+            _LINK_CONTEXT.output_path, Path(_fixtures_cache_root()), _fixture_cache_relpath(rel),
+        ), safe="/._-~")
     return "file://" + _fixtures_cache_root() + "/" + _fixture_cache_relpath(rel)
 
 

@@ -1,0 +1,435 @@
+corpus: stream
+family: kimi_k2
+capture: vllm_rust-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+          - index: 1
+            name: get_weather
+        - expected:
+          - index: 1
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: unknown_tool
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+          - index: 1
+            name: get_time
+        - expected:
+          - index: 1
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: Bo
+        - expected: []
+          normal_text: th
+        - expected: []
+          normal_text: ': '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+          - index: 1
+            name: get_weather
+        - expected:
+          - index: 1
+            arguments: '{"location":"LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "" }'
+      TOOLCALLING.streamv1.4.b:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "incomplete Kimi K2 tool call" }'
+      TOOLCALLING.streamv1.4.c:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "" }'
+      TOOLCALLING.streamv1.4.d:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "" }'
+  TOOLCALLING.streamv1.5.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+        - expected: []
+          normal_text: '{"location":"NYC"}<|tool_call_end|>'
+        - expected: []
+          normal_text: <|tool_calls_section_end|>
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "incomplete Kimi K2 tool call" }'
+      TOOLCALLING.streamv1.5.d:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "incomplete Kimi K2 tool call" }'
+      TOOLCALLING.streamv1.5.e:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "incomplete Kimi K2 tool call" }'
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected: []
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+        - expected: []
+          normal_text: '{"location":"NYC"}<|tool_call_end|>'
+        - expected: []
+          normal_text: <|tool_calls_section_end|>
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location":"Boston"}'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.g:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>'
+        - expected: []
+          normal_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"l'
+        - expected:
+          - index: 0
+            arguments: ocation":"NYC"}
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_time
+        - expected:
+          - index: 0
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_time
+        - expected:
+          - index: 0
+            arguments: '{ }'
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "incomplete Kimi K2 tool call" }'
+  TOOLCALLING.streamv1.7.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: book_flight
+        - expected:
+          - index: 0
+            arguments: '{"destination":"Paris","passengers":2,"first_class":true}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"Tōkyō \"central\""}'
+        - expected: []
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: set_temperature
+        - expected:
+          - index: 0
+            arguments: '{"celsius":"20"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+        - expected:
+          - index: 0
+            arguments: '{"items":[1,2,3],"config":{"nested":true}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+        - expected:
+          - index: 0
+            arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]'
+        - expected:
+          - index: 0
+            arguments: ',"flags":{"enabled":true,"retry":null},"empty":{}}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: set_limit
+        - expected:
+          - index: 0
+            arguments: '{"count":9007199254740993}'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will check
+        - expected: []
+          normal_text: ' the'
+        - expected: []
+          normal_text: ' weather. '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"Dallas"}'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+        - expected:
+          - index: 0
+            arguments: '{"location":"Dallas"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will check
+        - expected: []
+          normal_text: ' the'
+        - expected: []
+          normal_text: ' weather. '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location":"Dallas"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: First check
+        - expected: []
+          normal_text: ' Dallas.'
+        - expected:
+          - index: 0
+            name: get_weather
+          normal_text: ' '
+        - expected:
+          - index: 0
+            arguments: '{"location":"Dallas"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: kimi_k2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

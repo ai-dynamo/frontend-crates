@@ -7,10 +7,10 @@ then assembles fixtures. Runs on the HOST (docker exec), not inside a container.
 
 Modes (`--mode`):
   stream           Per-chunk vLLM Python + vLLM Rust + SGLang Python streaming for configured families;
-                   captures into local fixture trees, then commit to the in-repo LFS store via package_fixtures.py
+                   captures into local fixture trees, then package into the YAML store via package_fixtures.py
                    (Dynamo parser v2 marked unavailable/TODO). Calls build_stream_fixtures.py.
   batch-on-stream  Each family's batch text through each engine's streaming parser;
-                   captures into local fixture trees, then commit to the in-repo LFS store via package_fixtures.py
+                   captures into local fixture trees, then package into the YAML store via package_fixtures.py
                    (optionally with Dynamo Rust recorder JSON).
   merge            Merge the three per-engine flat stream-on-batch captures
                    (--dynamo-rust/--vllm-python/--sglang JSON) into the nested
@@ -30,6 +30,7 @@ from pathlib import Path
 
 import yaml
 
+from fixture_disposition import DYNAMO_VERSION_RE
 from impls import PARSER_NOT_CAPTURED  # noqa: E402  (shared failure-marker contract, B11)
 
 # family -> parser/detector name per engine, loaded from parser_families.yaml (B2 —
@@ -320,11 +321,27 @@ def _block_for(impl, family, parser, entry):
     return {}
 
 
-def _load_dynamo_v2(path):
+def _load_dynamo_v2(path, version=None, *, require_version=True):
     if not path:
-        return {}
+        if version is not None:
+            raise ValueError("--dynamo-v2-version requires --dynamo-v2-json")
+        return {}, None
     with open(path) as f:
-        return json.load(f)
+        data = json.load(f)
+    if "captured_with" in data:
+        captured_version = data["captured_with"]["dynamo_v2"]
+        if version is not None and version != captured_version:
+            raise ValueError("--dynamo-v2-version differs from recorder provenance")
+        version = captured_version
+        data = data["cases"]
+    # Imported JSON may come from another build; the checkout cannot identify it.
+    if (version is not None or require_version) and (
+        not isinstance(version, str) or DYNAMO_VERSION_RE.fullmatch(version) is None
+    ):
+        raise ValueError("Dynamo capture needs recorder provenance or an explicit --dynamo-v2-version")
+    if not isinstance(data, dict):
+        raise ValueError("Dynamo capture cases must be a mapping")
+    return data, version
 
 
 def _dynamo_cases_for_family(data, family):
@@ -351,7 +368,7 @@ def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versio
     if versions.get("vllm_rust"):
         out["captured_with"]["vllm_rust"] = versions["vllm_rust"]
     if dynamo_cases:
-        out["captured_with"]["dynamo_v2"] = "Dynamo parser v2"
+        out["captured_with"]["dynamo_v2"] = versions["dynamo_v2"]
 
     vllm_parser = _parser_for("vllm", family)
     vllm_rust_parser = VLLM_RUST.get(family)
@@ -400,6 +417,7 @@ def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versio
 
 
 def _run_batch_on_stream(args):
+    dynamo_v2, dynamo_version = _load_dynamo_v2(args.dynamo_v2_json, args.dynamo_v2_version)
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
     vllm_rust_source = _vllm_rust_source_arg(args)
@@ -430,8 +448,9 @@ def _run_batch_on_stream(args):
     sglang_ver, sglang_caps = _container_capture(
         args.sglang_container, "sglang", "batch-on-stream", jobs["sglang"], args.work)
 
-    dynamo_v2 = _load_dynamo_v2(args.dynamo_v2_json)
     versions = {"vllm_python": vllm_ver, "sglang_python": sglang_ver}
+    if dynamo_version is not None:
+        versions["dynamo_v2"] = dynamo_version
     if vllm_rust_ver or vllm_rust_source_version:
         versions["vllm_rust"] = vllm_rust_ver or vllm_rust_source_version
     out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-on-stream-v1")
@@ -449,8 +468,10 @@ def _run_batch_on_stream(args):
 # mode=merge (was merge_batch_stream.py)
 # --------------------------------------------------------------------------- #
 def _run_merge(args):
+    # This compatibility output has no version labels; preserve its bare-JSON input.
+    dynamo_v2, _version = _load_dynamo_v2(args.dynamo_v2, args.dynamo_v2_version, require_version=False)
     layers = {
-        "dynamo_v2": json.load(open(args.dynamo_v2)),
+        "dynamo_v2": dynamo_v2,
         "vllm_python": json.load(open(args.vllm_python)),
         "sglang_python": json.load(open(args.sglang)),
     }
@@ -485,6 +506,7 @@ def main():
         help="batch-on-stream: Dynamo v2 recorder JSON (old spelling kept as alias)",
     )
     ap.add_argument("--dynamo-harmony-json", dest="dynamo_v2_json", help=argparse.SUPPRESS)
+    ap.add_argument("--dynamo-v2-version", help="Producer crate version for legacy Dynamo JSON without provenance")
     # merge
     ap.add_argument("--dynamo", dest="dynamo_v2")
     ap.add_argument("--dynamo-rust")

@@ -1,0 +1,356 @@
+corpus: batch
+family: deepseek_v3_1
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            explanation: vLLM surfaces malformed DeepSeek V3.1 JSON arguments as a raw string while Dynamo treats the whole wrapper as malformed.
+            calls:
+            - name: get_weather
+              arguments: '{"location":"NYC'
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            explanation: vLLM recovers a call with an empty function name when the arguments are valid; Dynamo treats the missing name as malformed.
+            calls:
+            - name: ''
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            explanation: vLLM/SGLang deepseek_v3_1 handling leaves the <｜tool▁call…｜> envelope and <｜tool▁sep｜> in normal_text on this orphan end-marker case.
+            calls: []
+            normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                passengers: 2
+                first_class: true
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō "central"
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v3_1
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: deepseek_v3_1
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  TOOLCALLING.stream.2.yaml:
+    family: deepseek_v3_1
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  TOOLCALLING.stream.3.yaml:
+    family: deepseek_v3_1
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  TOOLCALLING.stream.4.yaml:
+    family: deepseek_v3_1
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁end｜><｜tool▁call▁end｜>
+            explanation: vllm preserves malformed bare-wrapper parser syntax in normal_text for this recovery case; Dynamo recovers the call and suppresses parser-owned markers so they do not leak into message.content.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Shared reading + version-ordering helpers for the three fixture resolvers.
+"""Shared corpus-reading and selector helpers for the three fixture resolvers.
 
 resolve_fixtures.py (batch), resolve_stream_fixtures.py (stream) and
 resolve_reasoning_fixtures.py all walk the same corpus layout —
@@ -10,25 +10,18 @@ resolve_reasoning_fixtures.py all walk the same corpus layout —
     <root>/<impl>-<version>/<family>/*.yaml  per-impl overlays, lowest = full anchor
 
 — and each had grown its own copy of `load`, `version_key` and the "<impl>-<version>"
-splitter. They live here once so a corpus-layout change lands in one place.
+splitter. The batch, stream, and reasoning resolvers and `unified_history.py` use
+`fixture_disposition.version_sort_key` for the same release and prerelease ordering.
 """
-import re
 from pathlib import Path
 
 import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
+from fixture_disposition import version_sort_key as version_key
 
 
 def load(p):
     return yaml.safe_load(Path(p).read_text())
-
-
-def version_key(ver: str):
-    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", ver)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
 
 
 def split_sel(sel: str):

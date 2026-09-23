@@ -1,0 +1,13 @@
+corpus: reasoning
+family: qwen3
+capture: sglang_python-0.5.14
+documents:
+  REASONING.batch.yaml:
+    family: qwen3
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          sglang_python:
+            reasoning_text: before <think>thinking
+            normal_text: ' after'

@@ -1,0 +1,659 @@
+corpus: stream
+family: pythonic
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.10.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.13.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        description: Unknown-only call under default behavior
+        ref: derived from TOOLCALLING.batch.13.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[unknown_tool(location="NYC")]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: derived from TOOLCALLING.batch.13.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.2.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls in single bracket
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Both: [get_weather(location="NYC"),'
+        - delta_text: ' get_time(timezone="EST")]'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - *id001
+        chunks:
+        - delta_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.3.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.30.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        description: Pythonic call separator `,` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '[run_query(sql="SELECT a,'
+        - delta_text: ' SELECT'
+        - delta_text: ' b")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.b:
+        description: Pythonic/list structural delimiters `}` and `]` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '[run_query(sql="SELECT value'
+        - delta_text: ' WHERE'
+        - delta_text: ' note has brace'
+        - delta_text: ' } and'
+        - delta_text: ' bracket'
+        - delta_text: ' ]")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.c:
+        description: Tool-call marker-looking `[get_time ...]` text inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '[run_query(sql="literal [get_time'
+        - delta_text: ' marker]'
+        - delta_text: ' stays text")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.31.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        description: Multi-call Pythonic list with call separator `,` inside the first argument string
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '[run_query(sql="SELECT a,'
+        - delta_text: ' SELECT'
+        - delta_text: ' b"), get_time(timezone="EST")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: derived from TOOLCALLING.batch.31.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '[run_query(sql="SELECT value'
+        - delta_text: ' WHERE'
+        - delta_text: ' note has brace'
+        - delta_text: ' } and'
+        - delta_text: ' bracket'
+        - delta_text: ' ]"),'
+        - delta_text: ' get_time(timezone="EST")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.4.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Bracket form with garbage call
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[non'
+        - delta_text: se
+        - delta_text: nse]
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Missing closing bracket
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC"'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Mismatched paren / bracket
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC"]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing closing `]` end marker
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC")'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing `]` without matching `[` open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: get_weather(location="NYC")]
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-argument value
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="N'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+        - delta_text: ' York")'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+        - delta_text: ' York'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[g'
+        - delta_text: et_
+        - delta_text: weath
+        - delta_text: er(location
+        - delta_text: ="NYC")]
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Empty parens (no args)
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '[get_time()]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside parens
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '[get_time( )]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: '[book_flight(destination="Paris", passengers=2,'
+        - delta_text: ' first_class=True)]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="Tōkyō \"central\"")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: '[set_temperature(celsius="20")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Nested dict + array (existing)
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: '[process_data(items=[1, 2,'
+        - delta_text: ' 3]'
+        - delta_text: ', config={"nested": True})]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]'
+        - delta_text: '}]'
+        - delta_text: ',"flags":{"enabled":True,"retry":None},"empty":{}})]'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.8.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. [get_weather(location="NYC")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[get_weather(location="NYC")] Let'
+        - delta_text: ' me'
+        - delta_text: ' know if you'
+        - delta_text: ' need more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. [get_weather(location="NYC")]'
+        - delta_text: ' Let me'
+        - delta_text: ' know'
+        - delta_text: ' if you'
+        - delta_text: ' need more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. [get_weather(location="NYC")]'
+        - delta_text: ' Then check'
+        - delta_text: ' LA'
+        - delta_text: ' weather. [get_weather(location="LA")]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.9.yaml:
+    family: pythonic
+    mode: streamv1
+    model_label: Llama 4 (pythonic fmt)
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

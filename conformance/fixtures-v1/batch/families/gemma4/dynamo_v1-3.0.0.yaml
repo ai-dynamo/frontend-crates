@@ -1,0 +1,439 @@
+corpus: batch
+family: gemma4
+capture: dynamo_v1-3.0.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:'
+      TOOLCALLING.batch.2.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.b:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.c:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: ''
+      TOOLCALLING.batch.5.g:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check that.
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                passengers: 2
+                first_class: true
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: I will check the weather.
+  TOOLCALLING.batch.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.30.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a,b:and{brace}
+            normal_text: ''
+      TOOLCALLING.batch.30.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            normal_text: ''
+      TOOLCALLING.batch.30.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: literal <|tool_call marker> call:get_time{} stays text
+            normal_text: ''
+      TOOLCALLING.batch.31.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a,b:and{brace}
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.31.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: gemma4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: gemma4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: gemma4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: gemma4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''

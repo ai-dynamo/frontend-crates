@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """Explode the monolithic unified capture feeds into the per-case / per-family /
-per-version fixture layout that every other conformance tab uses, so unified
-fixtures package as versioned LFS shards exactly like toolcalling/reasoning.
+per-version loose fixture layout. Packaging folds these captures into the
+reviewable Unified YAML history store.
 
 Source (loose build tree, conformance/unified/):
   unified_results.yaml   Rust harness feed: per case input + golden + dynamo + chunks

@@ -1,0 +1,725 @@
+corpus: stream
+family: kimi_k2
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.10.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>'
+        - delta_text: '{"location":"LA"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.13.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name absent from supplied tools
+        ref: derived from TOOLCALLING.batch.13
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.unknown_tool:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.2.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls in single section
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_time:1<|tool_call_argument_begin|>'
+        - delta_text: '{"timezone":"EST"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.b:
+        description: Two back-to-back sections (each with one call)
+        ref: derived from TOOLCALLING.batch.2.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|>'
+        - delta_text: <|tool_call_begin|>functions.get_time:1<|tool_call_argument_begin|>
+        - delta_text: '{"timezone":"EST"}<|tool_call_end|>'
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: Parallel calls with surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: Bo
+        - delta_text: th
+        - delta_text: ': <|tool_calls_section_begin|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_time:1<|tool_call_argument_begin|>{"timezone":"EST"}<|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|> Done.
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice (id distinctness)
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - *id001
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>'
+        - delta_text: '{"location":"LA"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.3.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.4.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Garbage between section fences (no call_begin)
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|>nonsense<|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Invalid JSON args (missing close brace)
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: Missing function name (call_begin without functions.X:N)
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Mismatched fences (call_end before call_begin closes)
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: 'Missing section_end (max_tokens truncation, PR #8208)'
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.b:
+        description: Closing section_end without matching section_begin
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-arguments (incomplete JSON body)
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"loc'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<|tool_calls_section_begin|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"Boston"}<|tool_call_end|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:1<|tool_call_argument_begin|>
+        - delta_text: '{"location":"New York"}'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<|tool_calls_section_begin|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"Boston"}<|tool_call_end|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:1<|tool_call_argument_begin|>
+        - delta_text: '{"location":"New York'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.f:
+        description: Bare valid call before a complete wrapped section
+        ref: derived from TOOLCALLING.batch.5.f
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+        - delta_text: <|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:1<|tool_call_argument_begin|>{"location":"Boston"}<|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.g:
+        description: Closing section_end without matching section_begin after prefix prose
+        ref: derived from TOOLCALLING.batch.5.g
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>'
+        - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.h:
+        description: Orphan close marker SPLIT across two chunks after prefix prose (no matching open); the fixed parser holds the partial close, drops it whole, and keeps surrounding prose
+        ref: derived from TOOLCALLING.batch.5.g
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check that. '
+        - delta_text: <|tool_call
+        - delta_text: _begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|
+        - delta_text: too
+        - delta_text: l_cal
+        - delta_text: ls_section_
+        - delta_text: begin|><|tool_call_
+        - delta_text: be
+        - delta_text: gin
+        - delta_text: '|>fun'
+        - delta_text: ctions.get_
+        - delta_text: weather:0<|tool_cal
+        - delta_text: l_
+        - delta_text: arg
+        - delta_text: ument
+        - delta_text: _begin|>{"l
+        - delta_text: ocation":"NYC"}<|to
+        - delta_text: ol
+        - delta_text: _ca
+        - delta_text: ll_en
+        - delta_text: d|><|tool_c
+        - delta_text: alls_section_end|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty {} arguments
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_time:0<|tool_call_argument_begin|>
+        - delta_text: '{}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside empty {}
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_time:0<|tool_call_argument_begin|>
+        - delta_text: '{ }<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.c:
+        description: No argument body (skip argument_begin → end)
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_time:0<|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types (string + int + bool)
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.book_flight:0<|tool_call_argument_begin|>
+        - delta_text: '{"destination":"Paris","passengers":2,"first_class":true}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars in string value
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"Tōkyō \"central\""}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.set_temperature:0<|tool_call_argument_begin|>
+        - delta_text: '{"celsius":"20"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array (existing shape)
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.process_data:0<|tool_call_argument_begin|>
+        - delta_text: '{"items":[1,2,3],"config":{"nested":true}}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.process_data:0<|tool_call_argument_begin|>
+        - delta_text: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]'
+        - delta_text: ',"flags":{"enabled":true,"retry":null},"empty":{}}}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.set_limit:0<|tool_call_argument_begin|>
+        - delta_text: '{"count":9007199254740993}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.8.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will check
+        - delta_text: ' the'
+        - delta_text: ' weather. <|tool_calls_section_begin|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>{"location":"Dallas"}<|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+        - delta_text: '{"location":"Dallas"}<|tool_call_end|><|tool_calls_section_end|> Let'
+        - delta_text: ' me know'
+        - delta_text: ' if'
+        - delta_text: ' you need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will check
+        - delta_text: ' the'
+        - delta_text: ' weather. <|tool_calls_section_begin|><|tool_call_begin|>'
+        - delta_text: functions.get_weather:0<|tool_call_argument_begin|>{"location":"Dallas"}<|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ' Let me'
+        - delta_text: ' know if you'
+        - delta_text: ' need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: First check
+        - delta_text: ' Dallas.'
+        - delta_text: ' <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>'
+        - delta_text: '{"location":"Dallas"}<|tool_call_end|><|tool_calls_section_end|>'
+        - delta_text: ' Then'
+        - delta_text: ' check NYC.'
+        - delta_text: ' <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>'
+        - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.9.yaml:
+    family: kimi_k2
+    mode: streamv1
+    model_label: Kimi K2.6
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

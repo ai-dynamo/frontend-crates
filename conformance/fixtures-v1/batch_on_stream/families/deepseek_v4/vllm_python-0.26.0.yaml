@@ -1,0 +1,227 @@
+corpus: batch_on_stream
+family: deepseek_v4
+capture: vllm_python-0.26.0
+provenance:
+  captured_with: 0.26.0
+  runtime_version: 0.26.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.2.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+      TOOLCALLING.batch.2.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+      TOOLCALLING.batch.2.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.4.a:
+        calls: []
+      TOOLCALLING.batch.4.c:
+        calls: []
+      TOOLCALLING.batch.4.d:
+        calls:
+        - name: get_weather
+          arguments: '{"location": "'
+      TOOLCALLING.batch.4.b:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.e:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.5.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.5.b:
+        calls: []
+        normal_text: '<｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜tool_calls>'
+      TOOLCALLING.batch.5.c:
+        calls:
+        - name: get_weather
+          arguments: '{"location": "'
+      TOOLCALLING.batch.5.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        - name: get_weather
+          arguments:
+            location: New York
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          '
+      TOOLCALLING.batch.5.e:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        - name: get_weather
+          arguments: '{"location": "'
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          '
+      TOOLCALLING.batch.5.f:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: '<｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜tool_calls>
+
+          '
+      TOOLCALLING.batch.5.g:
+        calls: []
+        normal_text: 'I will check that. <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜tool_calls>'
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.6.a:
+        calls:
+        - name: get_time
+          arguments: {}
+      TOOLCALLING.batch.6.b:
+        calls:
+        - name: get_time
+          arguments: {}
+      TOOLCALLING.batch.6.c:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.7.a:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+      TOOLCALLING.batch.7.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō central
+      TOOLCALLING.batch.7.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.d:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.e:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.f:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740992
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.8.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.8.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v4
+    cases:
+      TOOLCALLING.batch.1:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.13.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.3:
+        calls: []
+        normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        calls: []
+      TOOLCALLING.batch.9.b:
+        calls: []
+      TOOLCALLING.batch.10:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+      TOOLCALLING.batch.30:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC

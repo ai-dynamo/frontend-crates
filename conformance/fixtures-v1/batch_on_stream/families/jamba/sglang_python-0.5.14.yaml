@@ -1,0 +1,108 @@
+corpus: batch_on_stream
+family: jamba
+capture: sglang_python-0.5.14
+provenance:
+  captured_with: 0.5.14
+  runtime_version: 0.5.14
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.2.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.2.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.2.d:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.2.b:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.4.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.4.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.4.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.4.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.4.d:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.4.e:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.4.f:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.5.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.5.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.5.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.5.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.5.d:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.5.e:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.6.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.6.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.6.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.6.c:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.7.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.7.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.7.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.7.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.7.d:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.7.e:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.7.f:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.8.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.8.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.8.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.8.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.8.d:
+        unavailable: No SGLang parser for family 'jamba'.
+  TOOLCALLING.batch.yaml:
+    family: jamba
+    cases:
+      TOOLCALLING.batch.1:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.3:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.9.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.9.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.10:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.30.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.30.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.30.c:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.31.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.31.b:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.13.a:
+        unavailable: No SGLang parser for family 'jamba'.
+      TOOLCALLING.batch.13.c:
+        unavailable: No SGLang parser for family 'jamba'.

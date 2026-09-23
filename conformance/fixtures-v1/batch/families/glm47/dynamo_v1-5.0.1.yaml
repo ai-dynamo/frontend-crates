@@ -1,0 +1,53 @@
+corpus: batch
+family: glm47
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.4.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.6.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.7.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: glm47
+    mode: batch
+    cases: {}
+  TOOLCALLING.batch.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.9.b:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: glm47
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.2.yaml:
+    family: glm47
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.3.yaml:
+    family: glm47
+    mode: stream
+    cases: {}
+  TOOLCALLING.stream.4.yaml:
+    family: glm47
+    mode: stream
+    cases: {}

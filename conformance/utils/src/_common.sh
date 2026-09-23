@@ -18,11 +18,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
-# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (extracted
-# from the in-repo LFS shard store via extract_fixtures.py). Run it every time,
+# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (materialized
+# from the in-repo YAML stores via extract_fixtures.py). Run it every time,
 # not only when the cache is empty: it exits instantly on a cache hit, and it
 # re-extracts when the committed manifest pin moved — otherwise a render after
-# pulling new shards would silently use a stale snapshot.
+# updating a store would silently use a stale snapshot.
 # extract_fixtures prints THIS manifest's snapshot dir on stdout. Point readers at
 # that exact dir, NOT the shared `<cache>/toolcalling` symlink: sibling checkouts
 # pinning a different snapshot race to repoint that symlink, so a render could read

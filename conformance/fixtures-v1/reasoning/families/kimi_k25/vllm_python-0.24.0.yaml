@@ -1,0 +1,23 @@
+corpus: reasoning
+family: kimi_k25
+capture: vllm_python-0.24.0
+documents:
+  REASONING.stream.yaml:
+    family: kimi_k25
+    mode: stream
+    cases:
+      REASONING.stream.2.a:
+        expected:
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: ''
+      REASONING.stream.3.a:
+        expected:
+          vllm_python:
+            reasoning_text: <thi
+            normal_text: ''
+      REASONING.stream.3.b:
+        expected:
+          vllm_python:
+            reasoning_text: ink>answer
+            normal_text: ''

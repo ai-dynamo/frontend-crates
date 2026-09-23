@@ -1,0 +1,30 @@
+corpus: stream
+family: qwen3_coder
+capture: vllm_rust-0.24.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: ToolParserError::ParsingFailed ()
+      TOOLCALLING.streamv1.4.d:
+        exception: ToolParserError::ParsingFailed ()
+      TOOLCALLING.streamv1.4.f:
+        exception: ToolParserError::ParsingFailed ()
+  TOOLCALLING.streamv1.5.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.24.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        exception: ToolParserError::ParsingFailed (incomplete Qwen Coder tool call)
+      TOOLCALLING.streamv1.5.c:
+        exception: ToolParserError::ParsingFailed (incomplete Qwen Coder tool call)
+      TOOLCALLING.streamv1.5.d:
+        exception: ToolParserError::ParsingFailed (incomplete Qwen Coder tool call)
+      TOOLCALLING.streamv1.5.e:
+        exception: ToolParserError::ParsingFailed (incomplete Qwen Coder tool call)

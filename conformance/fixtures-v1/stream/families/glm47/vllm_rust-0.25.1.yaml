@@ -1,0 +1,20 @@
+corpus: stream
+family: glm47
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: 'ToolParserError::ParsingFailed (near "<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>": )'
+      TOOLCALLING.streamv1.4.d:
+        exception: 'ToolParserError::ParsingFailed (near "get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>": )'
+  TOOLCALLING.streamv1.5.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases: {}

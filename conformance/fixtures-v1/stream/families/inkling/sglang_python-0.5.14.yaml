@@ -1,0 +1,68 @@
+corpus: stream
+family: inkling
+capture: sglang_python-0.5.14
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: inkling
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.streamv1.1:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.2.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.2.c:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.2.d:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.3:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.4.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.5.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.5.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.5.c:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.5.d:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.5.e:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.6.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.6.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.7.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.7.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.8.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.8.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.8.c:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.8.d:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.9.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.9.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.10:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.11.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.11.b:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.11.c:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.13:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.30.c:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.31.a:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+      TOOLCALLING.streamv1.50:
+        unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.

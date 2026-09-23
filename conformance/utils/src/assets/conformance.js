@@ -157,11 +157,14 @@
     const params = new URLSearchParams(window.location.search);
     const pid = panel.id;
     if (!params.has('base_' + pid) && !params.has('cmp_' + pid)) { return; }  // keep defaults
-    const base = params.has('base_' + pid) ? params.get('base_' + pid) : ctlBase(ctl);
+    // Saved links still name hidden captures; restore their equivalent visible controls.
+    const aliases = panel._candidateAliases || new Map();
+    const normalizeKey = key => aliases.get(key) || key;
+    const base = normalizeKey(params.has('base_' + pid) ? params.get('base_' + pid) : ctlBase(ctl));
     const refs = Array.from(ctl.querySelectorAll('input.cmp-ref'));
     // A removed capture in an old link is not an intentional empty reference.
     if (base && !refs.some(function (r) { return r.value === base; })) { return; }
-    const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean));
+    const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean).map(normalizeKey));
     refs.forEach(function (r) { r.checked = (r.value === base); });
     ctl.querySelectorAll('input.cmp-on').forEach(function (cb) {
       cb.checked = cb.value !== base && inB.has(cb.value);

@@ -1,0 +1,200 @@
+corpus: batch
+family: nemotron_deci
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.4.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.5.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.6.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.7.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.8.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.batch.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.stream.1.yaml:
+    family: nemotron_deci
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.stream.2.yaml:
+    family: nemotron_deci
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.stream.3.yaml:
+    family: nemotron_deci
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+  TOOLCALLING.stream.4.yaml:
+    family: nemotron_deci
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM has no parser for family='nemotron_deci'

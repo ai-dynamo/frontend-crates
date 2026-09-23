@@ -1078,14 +1078,13 @@ def _materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
         record["capture_input"] = case["request"]
     elif "inline" in stimulus:
         record["capture_input"] = stimulus["inline"]
+    elif "partial" in stimulus:
+        record["capture_input"] = stimulus["partial"]
     return record, change["document"]
 
 
 def _capture_release_sort_key(runtime_version: str) -> tuple:
-    release_version = runtime_version
-    release, separator, prerelease = release_version.partition("-")
-    numeric = tuple(int(part) for part in release.split("."))
-    return numeric, 0 if separator else 1, prerelease
+    return fixture_disposition.version_sort_key(runtime_version)
 
 
 def materialize_store(
@@ -1093,7 +1092,6 @@ def materialize_store(
     destination: Path,
     *,
     include_current_inputs: bool = True,
-    derived_release_versions: dict[str, str] | None = None,
 ) -> None:
     store = load_store(root)
     destination = Path(destination)
@@ -1181,63 +1179,9 @@ def materialize_store(
             if relative not in written:
                 add_document(directory, family_name, case_key, document)
 
-    capture_ids_by_implementation: dict[str, set[str]] = {}
-    for (family_name, _implementation), history in sorted(store.histories.items()):
-        capture_ids_by_implementation.setdefault(history.implementation, set()).update(
-            history.captures
-        )
+    for (_family_name, _implementation), history in sorted(store.histories.items()):
         for capture_id, capture in history.captures.items():
             add_capture_state(capture_id, history, history.resolve(capture_id))
-
-    # The YAML store remains sparse: a release with no changed family output has
-    # no checkpoint file. Consumers still need a complete directory for the
-    # released version, so extraction may request a derived release view.
-    for implementation, runtime_version in (derived_release_versions or {}).items():
-        if not isinstance(implementation, str) or not isinstance(runtime_version, str):
-            raise ValueError("derived release versions must map strings to strings")
-        if not fixture_disposition.DYNAMO_VERSION_RE.fullmatch(runtime_version):
-            raise ValueError(f"invalid derived release version: {runtime_version}")
-        if implementation not in capture_ids_by_implementation:
-            raise ValueError(f"no Unified captures for derived implementation: {implementation}")
-        capture_ids_by_implementation[implementation].add(
-            f"{implementation}-{runtime_version}"
-        )
-
-    # A capture directory is a complete release view. If only one family was
-    # recaptured for a source identity, carry every other family forward from its
-    # newest capture at the same or an earlier crate version.
-    for implementation, target_ids in sorted(capture_ids_by_implementation.items()):
-        histories = [
-            history
-            for (_family, impl), history in sorted(store.histories.items())
-            if impl == implementation
-        ]
-        for target_id in sorted(
-            target_ids,
-            key=lambda capture_id: _capture_release_sort_key(
-                capture_id.removeprefix(f"{implementation}-")
-            ),
-        ):
-            target_version = target_id.removeprefix(f"{implementation}-")
-            target_release = _capture_release_sort_key(target_version)[:3]
-            for history in histories:
-                if target_id in history.captures:
-                    continue
-                eligible = [
-                    capture_id
-                    for capture_id, capture in history.captures.items()
-                    if _capture_release_sort_key(capture["runtime_version"])[:3]
-                    <= target_release
-                ]
-                if not eligible:
-                    continue
-                source_id = max(
-                    eligible,
-                    key=lambda capture_id: _capture_release_sort_key(
-                        history.captures[capture_id]["runtime_version"]
-                    ),
-                )
-                add_capture_state(target_id, history, history.resolve(source_id))
 
     _write_materialized_documents(documents)
 
@@ -1299,7 +1243,7 @@ def _semantic_stimulus(value: dict) -> dict:
     return {key: item for key, item in value.items() if key != "semantic_sha256"}
 
 
-def _capture_semantic(value: dict, case_id: str) -> dict:
+def _capture_semantic(value: dict, case_id: str, current_request: dict | None = None) -> dict:
     """Return immutable capture content keyed by the canonical case identity.
 
     A current loose corpus can use a newer display ID for a case whose historical
@@ -1307,9 +1251,14 @@ def _capture_semantic(value: dict, case_id: str) -> dict:
     that rename; the display key is retained in new deltas but must not make an
     identical re-ingestion look like a mutation of a released capture.
     """
+    stimulus = _semantic_stimulus(value["stimulus"])
+    # Re-ingesting a recorded inline request can normalize it to `ref: current`.
+    # Compare the resolved request while retaining the original stored encoding.
+    if current_request is not None and stimulus == {"ref": "current"}:
+        stimulus = {"inline": capture_stimulus.capture_input(current_request)}
     return {
         "case_id": case_id,
-        "stimulus": _semantic_stimulus(value["stimulus"]),
+        "stimulus": stimulus,
         "observation": value["observation"],
     }
 
@@ -1369,13 +1318,16 @@ def _update_from_loose(
             missing = ", ".join(missing_required_capture_dirs)
             raise ValueError(f"complete snapshot is missing required captures: {missing}")
     for capture_dir in sorted(
-        path
-        for path in loose_root.iterdir()
-        if (
-            path.is_dir()
-            and CAPTURE_DIRECTORY_RE.fullmatch(path.name) is not None
-            and path.name not in excluded_capture_dirs
-        )
+        (
+            path
+            for path in loose_root.iterdir()
+            if (
+                path.is_dir()
+                and CAPTURE_DIRECTORY_RE.fullmatch(path.name) is not None
+                and path.name not in excluded_capture_dirs
+            )
+        ),
+        key=lambda path: _capture_release_sort_key(path.name.partition("-")[2]),
     ):
         match = CAPTURE_DIRECTORY_RE.fullmatch(capture_dir.name)
         assert match is not None
@@ -1411,12 +1363,12 @@ def _update_from_loose(
                 )
             missing_active_families = sorted(set(expected_active_families) - set(families))
             if required_capture and families:
-                target_release = _capture_release_sort_key(runtime_version)[:3]
+                target_release = _capture_release_sort_key(runtime_version)
                 missing_active_families = [
                     family_name
                     for family_name in missing_active_families
                     if not any(
-                        _capture_release_sort_key(capture["runtime_version"])[:3]
+                        _capture_release_sort_key(capture["runtime_version"])
                         <= target_release
                         for capture in store.histories[
                             (family_name, implementation)
@@ -1490,7 +1442,7 @@ def _update_from_loose(
                     }
 
             captures = history.captures
-            if complete_snapshot and required_capture:
+            if complete_snapshot and (required_capture or capture_dir.name not in captures):
                 missing_active_cases = [
                     case_id
                     for case_id, case in sorted(history.family.cases.items())
@@ -1520,8 +1472,11 @@ def _update_from_loose(
                 conflicts = [
                     case_id
                     for case_id in sorted(set(resolved) & set(records))
-                    if _canonical_json(_capture_semantic(resolved[case_id], case_id))
-                    != _canonical_json(_capture_semantic(records[case_id], case_id))
+                    if _canonical_json(_capture_semantic(
+                        resolved[case_id], case_id, history.family.cases[case_id]["request"],
+                    )) != _canonical_json(_capture_semantic(
+                        records[case_id], case_id, history.family.cases[case_id]["request"],
+                    ))
                 ]
                 if conflicts:
                     raise ValueError(f"capture is immutable; use a new identity: {capture_dir.name}")
@@ -1546,18 +1501,19 @@ def _update_from_loose(
             for case_id in sorted(set(prior) | set(records)):
                 before = prior.get(case_id)
                 after = records.get(case_id)
-                # Display IDs are renumbered independently of capture semantics.
-                # Compare by the stable case ID so a renamed case is inherited,
-                # while a changed observation or stimulus still creates a capture.
+                # Resolve request references just as immutable-capture checks do:
+                # extraction can replace an identical inline request with a ref,
+                # which must not duplicate output or invent an unmeasured version.
+                current_request = history.family.cases[case_id]["request"]
                 before_key = (
                     None
                     if before is None
-                    else _canonical_json(_capture_semantic(before, case_id))
+                    else _canonical_json(_capture_semantic(before, case_id, current_request))
                 )
                 after_key = (
                     None
                     if after is None
-                    else _canonical_json(_capture_semantic(after, case_id))
+                    else _canonical_json(_capture_semantic(after, case_id, current_request))
                 )
                 if before_key != after_key:
                     changes[case_id] = (
@@ -1592,9 +1548,14 @@ def _update_from_loose(
                 for case_id, record in records.items()
                 if "parser_path" in record["document"]
             }
-            # Extraction may derive a complete semantic release directory from
-            # an earlier checkpoint. That inherited view is not a new capture.
-            if not changes and not metadata_changes and not document_overrides:
+            # A measured version remains selectable even when all observations
+            # inherit. Old materialized views carry their earlier capture identity.
+            captured_at_version = bool(records) and all(
+                record["document"].get("capture_origin", {}).get("crate_version") == runtime_version
+                or record["document"].get("captured_with", {}).get(implementation) == runtime_version
+                for record in records.values()
+            )
+            if not changes and not metadata_changes and not document_overrides and not captured_at_version:
                 continue
             capture = {
                 "runtime_version": runtime_version,

@@ -1,0 +1,216 @@
+corpus: batch_on_stream
+family: qwen25
+capture: vllm_rust-0.23.0
+provenance:
+  captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  runtime_version: 0.23.0
+  git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.2.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.2.b:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.2.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:  Done.'
+      TOOLCALLING.batch.2.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.4.a:
+        error: 'tool parser parsing failed: invalid Hermes'
+      TOOLCALLING.batch.4.b:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+      TOOLCALLING.batch.4.c:
+        error: 'tool parser parsing failed: invalid Hermes
+
+          expected `name`'
+      TOOLCALLING.batch.4.d:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+      TOOLCALLING.batch.4.e:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.5.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.5.a:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+      TOOLCALLING.batch.5.b:
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      TOOLCALLING.batch.5.c:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+      TOOLCALLING.batch.5.d:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+      TOOLCALLING.batch.5.e:
+        error: 'tool parser parsing failed: incomplete Hermes tool call'
+  TOOLCALLING.batch.6.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.6.a:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.6.b:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.6.c:
+        error: 'tool parser parsing failed: invalid Hermes'
+  TOOLCALLING.batch.7.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.7.a:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+        normal_text: ''
+      TOOLCALLING.batch.7.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō "central"
+        normal_text: ''
+      TOOLCALLING.batch.7.c:
+        calls:
+        - name: set_temperature
+          arguments:
+            celsius: '20'
+        normal_text: ''
+      TOOLCALLING.batch.7.d:
+        calls:
+        - name: process_data
+          arguments:
+            items:
+            - 1
+            - 2
+            - 3
+            config:
+              nested: true
+        normal_text: ''
+      TOOLCALLING.batch.7.e:
+        calls:
+        - name: process_data
+          arguments:
+            payload:
+              regions:
+              - name: west
+                scores:
+                - 1
+                - 2
+                - 3
+              - name: east
+                scores:
+                - 4
+                - 5
+                - 6
+              flags:
+                enabled: true
+                retry: null
+              empty: {}
+        normal_text: ''
+      TOOLCALLING.batch.7.f:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740993
+        normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.8.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ' Let me know if you need more.'
+      TOOLCALLING.batch.8.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.  Let me know if you need more.
+      TOOLCALLING.batch.8.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: 'I will check the weather.  Then check LA weather. '
+  TOOLCALLING.batch.yaml:
+    family: qwen25
+    cases:
+      TOOLCALLING.batch.1:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.3:
+        calls: []
+        normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.9.b:
+        calls: []
+        normal_text: '   '
+      TOOLCALLING.batch.10:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+      TOOLCALLING.batch.13:
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.13.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.30:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        unavailable: No batch model_text for this case.

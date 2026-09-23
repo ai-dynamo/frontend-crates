@@ -11,6 +11,7 @@ import tarfile
 from pathlib import Path
 
 import yaml
+import legacy_history
 
 OLD_TO_NEW = {
     "fixtures-batch-on-stream-" + "v2": "fixtures-batch-on-stream-v1",
@@ -21,11 +22,10 @@ OLD_TO_NEW = {
 }
 OLD_TOKENS = tuple(OLD_TO_NEW)
 def _stored_legacy_archives(repo: Path) -> set[str]:
-    store = repo / "conformance/fixtures/toolcalling"
+    store = repo / "conformance/fixtures"
     return {
         str(path.relative_to(repo / "conformance/fixtures"))
         for path in store.rglob("*.tar.gz")
-        if "fixtures-stream-" in str(path) or "fixtures-batch-on-stream-" in str(path)
     }
 
 
@@ -97,6 +97,7 @@ def validate(repo: Path) -> list[str]:
     errors = _text_errors(repo)
     manifest = _manifest(repo)
     seen = set()
+    history = repo / "conformance/fixtures-v1"
     for shard in manifest["shards"]:
         path = shard["path"]
         if path in seen:
@@ -104,22 +105,25 @@ def validate(repo: Path) -> list[str]:
         seen.add(path)
         if any(token in path for token in OLD_TOKENS):
             errors.append(f"manifest: stale shard path {path}")
-        if not path.endswith(".tar.gz"):
-            continue
-        archive = repo / "conformance/fixtures" / path
-        if not archive.exists():
-            errors.append(f"manifest: missing archive {path}")
-            continue
-        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-        if digest != shard["sha256"] or archive.stat().st_size != shard["size"]:
-            errors.append(f"manifest: integrity mismatch {path}")
+        if path.endswith(".tar.gz"):
+            errors.append(f"manifest: archived fixture remains active {path}")
+        if shard.get("format") == legacy_history.HISTORY_FORMAT:
+            if path != legacy_history.HISTORY_PATH:
+                errors.append(f"manifest: invalid legacy YAML path {path}")
+            elif not history.is_dir():
+                errors.append(f"manifest: missing legacy YAML store {history}")
+            else:
+                try:
+                    digest, size = legacy_history.store_digest(history)
+                except ValueError as exc:
+                    errors.append(f"manifest: {exc}")
+                else:
+                    if (digest, size) != (shard["sha256"], shard["size"]):
+                        errors.append("manifest: legacy YAML store differs from pin")
+    if legacy_history.HISTORY_PATH not in seen:
+        errors.append("manifest: legacy YAML store has no pin")
     for path in sorted(_stored_legacy_archives(repo)):
-        if any(token in path for token in OLD_TOKENS):
-            errors.append(f"archive store: stale path {path}")
-        if path not in seen:
-            errors.append(f"archive store: unmanifested archive {path}")
-    for archive, relative in _active_archives(repo, manifest):
-        errors.extend(_archive_errors(archive, relative))
+        errors.append(f"archive store: obsolete archive {path}")
     return errors
 
 

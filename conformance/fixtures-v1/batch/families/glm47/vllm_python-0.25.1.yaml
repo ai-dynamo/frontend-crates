@@ -1,0 +1,51 @@
+corpus: batch
+family: glm47
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:'
+  TOOLCALLING.batch.4.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.7.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.yaml:
+    family: glm47
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}

@@ -1,0 +1,208 @@
+corpus: batch
+family: gemma4
+capture: vllm_python-0.24.0
+documents:
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: call:get_weather{location:<|"|>NYC<|"|>}
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: N
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: call:get_weather{location:<|"|>NYC<|"|>}
+      TOOLCALLING.batch.5.g:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time<tool_call|>
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: 20
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - '1'
+                - '2'
+                - '3'
+                config:
+                  nested: 'true'
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - '1'
+                    - '2'
+                    - '3'
+                  - name: east
+                    scores:
+                    - '4'
+                    - '5'
+                    - '6'
+                  flags:
+                    enabled: 'true'
+                    retry: 'null'
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740992
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: gemma4
+    mode: stream
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: gemma4
+    mode: stream
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: call:get_weather{location:<|"|>NYC<|"|>}

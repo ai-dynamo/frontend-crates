@@ -105,6 +105,7 @@ def main(argv=None):
         "--capture-dynamo-rust-json",
         dest="capture_dynamo_v2_json",
     )
+    b.add_argument("--dynamo-v2-version", help="Producer crate version for legacy JSON without provenance")
 
     ds = sub.add_parser("dynamo-stream")
     ds.add_argument("--fixture", required=True)
@@ -123,15 +124,19 @@ def main(argv=None):
     elif args.cmd == "batch-on-stream":
         dynamo_v2_json = args.dynamo_v2_json
         if args.capture_dynamo_v2_json:
-            _cargo_bin("record_batch_via_stream", [], dry, output=args.capture_dynamo_v2_json)
+            _cargo_bin("record_batch_via_stream", ["--", "--with-provenance"], dry, output=args.capture_dynamo_v2_json)
             dynamo_v2_json = args.capture_dynamo_v2_json
         extra = ["--dynamo-v2-json", dynamo_v2_json] if dynamo_v2_json else []
+        if args.dynamo_v2_version:
+            if not dynamo_v2_json:
+                ap.error("--dynamo-v2-version requires a Dynamo JSON input")
+            extra += ["--dynamo-v2-version", args.dynamo_v2_version]
         _driver("batch-on-stream", args, dry, extra=extra)
     elif args.cmd == "dynamo-stream":
         extra = ["--", args.fixture] + (["--text"] if args.text else [])
         _cargo_bin("record_dynamo_stream", extra, dry, output=args.output)
     elif args.cmd == "dynamo-batch-on-stream":
-        _cargo_bin("record_batch_via_stream", [], dry, output=args.output)
+        _cargo_bin("record_batch_via_stream", ["--", "--with-provenance"], dry, output=args.output)
     elif args.cmd == "token-ids":
         _cargo_bin("stamp_stream_token_ids", [], dry)
     return 0

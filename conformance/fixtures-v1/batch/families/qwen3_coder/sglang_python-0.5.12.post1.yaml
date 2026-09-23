@@ -1,0 +1,395 @@
+corpus: batch
+family: qwen3_coder
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.4.f:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '<function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            explanation: 'SGLang''s qwen3_coder detector gates parsing on the opening
+
+              <tool_call> sentinel (`if tool_call_start_token not in text: return
+
+              normal_text=text`); a bare </tool_call> close with a valid <function>
+
+              body short-circuits to zero calls and the full text as normal_text.
+
+              Dynamo/vLLM tolerate the missing open and extract the <function> body
+
+              per impl-defined recovery contract (see TOOLCALLING_CASES.md).'
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NY
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+            explanation: 'SGLang''s non-streaming path uses `re.compile(r"<tool_call>(.*?)</tool_call>")`
+
+              which requires a matching </tool_call> close; an unterminated trailing
+
+              <tool_call> (even with a complete <function> body) is silently dropped.
+
+              Dynamo/vLLM recover the trailing call and emit it.'
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.f:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: '<function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+              '
+            explanation: SGLang preserves the bare Qwen function before the first <tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
+      TOOLCALLING.batch.5.g:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: 'I will check that. <function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            explanation: 'SGLang''s qwen3_coder detector gates parsing on the opening <tool_call>
+
+              sentinel; a bare </tool_call> close after prefix prose short-circuits to
+
+              zero calls and the full text as normal_text. Dynamo preserves the prose,
+
+              recovers the <function> body, and strips the orphan close marker.'
+  TOOLCALLING.batch.6.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740992
+            normal_text: null
+  TOOLCALLING.batch.8.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: '
+
+              '
+  TOOLCALLING.stream.3.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+            explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). The stream ends mid-argument with `NY` but no `</parameter>`; SGLang requires the parameter close-token before emitting the value, so it ships the header with empty `arguments` and drops the partial payload. Dynamo emits the partial value (`location: "NY"`).'
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            calls:
+            - arguments: '{"location": "NYC"}}}'
+              name: get_weather
+            explanation: SGLang recovers the bare <function=...> body, but the repeated </function> close markers are folded into the emitted argument string as extra closing braces. Dynamo consumes the repeated close markers as parser syntax and emits arguments {"location":"NYC"} with empty normal_text.
+            normal_text: '
+
+
+
+
+              '

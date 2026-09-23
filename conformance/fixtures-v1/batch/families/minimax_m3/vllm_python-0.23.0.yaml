@@ -1,0 +1,197 @@
+corpus: batch
+family: minimax_m3
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python: &id001
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python: *id001
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python: *id001
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python: *id001
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python: &id002
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python: *id002
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python: *id002
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python: *id002
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python: &id003
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python: *id003
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python: *id003
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python: &id004
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python: *id004
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python: *id004
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python: *id004
+  TOOLCALLING.batch.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python: &id005
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python: *id005
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python: *id005
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python: *id005
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python: *id005
+      TOOLCALLING.batch.5.g:
+        expected:
+          vllm_python: *id005
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.batch.13.a:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python: &id006
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python: *id006
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python: &id007
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python: *id007
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python: *id007

@@ -1,0 +1,694 @@
+corpus: stream
+family: gemma4
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected:
+          - index: 1
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.30.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT'
+        - expected:
+          - index: 0
+            arguments: ' a,b:and{brace}"}'
+        - expected: []
+      TOOLCALLING.streamv1.30.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT'
+        - expected:
+          - index: 0
+            arguments: ' value WHERE note'
+        - expected:
+          - index: 0
+            arguments: ' has brace'
+        - expected:
+          - index: 0
+            arguments: ' '
+        - expected:
+          - index: 0
+            arguments: '} and bracket'
+        - expected:
+          - index: 0
+            arguments: ' ]"}'
+        - expected: []
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"sql": "literal'
+        - expected:
+          - index: 0
+            arguments: ' <|tool_call marker> call:get_time{'
+        - expected:
+          - index: 0
+            arguments: '} stays text'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+  TOOLCALLING.streamv1.31.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"sql": "SELECT'
+        - expected:
+          - index: 0
+            arguments: ' value WHERE note'
+        - expected:
+          - index: 0
+            arguments: ' has brace'
+        - expected:
+          - index: 0
+            arguments: ' '
+        - expected:
+          - index: 0
+            arguments: '} and bracket'
+        - expected:
+          - index: 0
+            arguments: ' ]"}'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>
+        - expected: []
+          normal_text: '}<tool_call|>'
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "N'
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "Boston'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"location": "New York'
+        - expected: []
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "Boston'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"location": "New York'
+        - expected: []
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>
+        - expected: []
+          normal_text: '}<tool_call|>'
+        - expected: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>Boston<|"|>
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.g:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' that. call:get_weather{location:<|"|>NYC<|"|>'
+        - expected: []
+          normal_text: '}<tool_call|>'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '{"location": "NY'
+        - expected:
+          - index: 0
+            arguments: C
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        chunks:
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"destination": "Paris'
+        - expected:
+          - index: 0
+            arguments: '", "passengers": 2, "first_class": true}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "Tōkyō'
+        - expected:
+          - index: 0
+            arguments: ' central"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: set_temperature
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"celsius": "20'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"payload": {"regions": [{"name": "west'
+        - expected:
+          - index: 0
+            arguments: '", "scores": [1, 2, 3]}, {"name": "east'
+        - expected:
+          - index: 0
+            arguments: '", "scores": [4, 5, 6'
+        - expected:
+          - index: 0
+            arguments: ']}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC'
+        - expected:
+          - index: 0
+            arguments: '"}'
+        - expected: []
+          normal_text: ' know if'
+        - expected: []
+          normal_text: ' you'
+        - expected: []
+          normal_text: ' need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+          normal_text: ' Let me'
+        - expected: []
+          normal_text: ' know if you'
+        - expected: []
+          normal_text: ' need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 0
+            arguments: '{"location": "NYC"}'
+        - expected: []
+          normal_text: ' Then check'
+        - expected: []
+        - expected:
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: ''
+        - expected:
+          - index: 1
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: gemma4
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

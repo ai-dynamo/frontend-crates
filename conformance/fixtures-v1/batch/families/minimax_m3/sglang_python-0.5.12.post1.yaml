@@ -1,0 +1,197 @@
+corpus: batch
+family: minimax_m3
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python: &id001
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.2.b:
+        expected:
+          sglang_python: *id001
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python: *id001
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python: *id001
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python: &id002
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python: *id002
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python: *id002
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python: *id002
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python: &id003
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python: *id003
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python: *id003
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python: &id004
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python: *id004
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python: *id004
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python: *id004
+  TOOLCALLING.batch.yaml:
+    family: minimax_m3
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python: &id005
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python: *id005
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python: *id005
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python: *id005
+      TOOLCALLING.batch.5.f:
+        expected:
+          sglang_python: *id005
+      TOOLCALLING.batch.5.g:
+        expected:
+          sglang_python: *id005
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.batch.13.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python: &id006
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python: *id006
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m3
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python: &id007
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python: *id007
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python: *id007

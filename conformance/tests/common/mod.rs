@@ -48,14 +48,13 @@ pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
 ///    already extracted and verified the cache.
 /// 2. Cache at `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME`),
 ///    kept current by running `extract_fixtures.py` every time (extracts the
-///    in-repo LFS shard store; no network). The script exits instantly on a
+///    in-repo YAML stores; no network). The script exits instantly on a
 ///    cache hit and re-extracts when the committed manifest pin moved — an
 ///    exists-check here would silently test against a stale snapshot. A
 ///    `flock` on `/tmp/dynamo-conformance-extract.lock` serializes parallel
 ///    test binaries so only one extraction runs at a time.
 ///
-/// If extraction fails (e.g. shards are un-pulled git-lfs pointers), the test
-/// panics with the exact command to fix the checkout.
+/// If extraction fails, the test panics with the exact command to fix the checkout.
 pub fn ensure_fixtures() -> PathBuf {
     if let Ok(r) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
         return PathBuf::from(r);
@@ -84,8 +83,8 @@ pub fn ensure_fixtures() -> PathBuf {
 
     if !output.status.success() {
         panic!(
-            "fixture extraction failed (exit {}). If the shards are git-lfs \
-             pointers, run:\n  git lfs install && git lfs pull\nthen retry:\n  python3 {}",
+            "fixture extraction failed (exit {}). Check the YAML store and manifest \
+             diagnostic above, then retry:\n  python3 {}",
             output.status.code().unwrap_or(-1),
             script.display()
         );
@@ -211,7 +210,7 @@ mod resolve_snap_dir_tests {
 ///
 /// The golden corpus is the AUTHORED oracle — a spec, not a capture — so it is
 /// NOT committed (that would leave a stray loose YAML tree next to the versioned
-/// `*.tar.gz` shards). Instead `gen_unified_golden.py` renders it from one
+/// history). Instead `gen_unified_golden.py` renders it from one
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
 /// The committed canonical family YAML is DERIVED from this via render -> explode
@@ -262,7 +261,7 @@ pub fn fixture_name(path: &Path) -> String {
 /// Fold prior family captures through the current GLM checkpoint.
 pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.1";
 
-// Consumers may reuse verified archives in tagless clones; producers still require tags.
+// Consumers may reuse verified captures in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
 
 fn dynamo_identity_command() -> std::process::Command {
@@ -294,7 +293,7 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
 /// readers fold them ascending so the latest capture wins per case.
-pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
+pub type VersionCaptureSortKey = (Vec<u64>, bool, Vec<(bool, u64, String)>, bool, String);
 
 pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     let mut dirs: Vec<(VersionCaptureSortKey, PathBuf)> = std::fs::read_dir(root)
@@ -717,12 +716,34 @@ pub fn version_capture_sort_key(name: &str, prefix: &str) -> Option<VersionCaptu
         return None;
     }
     let base = version.split_once('+').map_or(version, |(base, _)| base);
-    let numeric = base
+    let (release, prerelease) = base
+        .split_once('-')
+        .map_or((base, None), |(release, prerelease)| {
+            (release, Some(prerelease))
+        });
+    let numeric = release
         .split(|c: char| !c.is_ascii_digit())
         .filter(|s| !s.is_empty())
         .map(|s| s.parse().unwrap_or(0))
         .collect();
-    Some((numeric, version.contains('+'), version.to_string()))
+    let prerelease_key = prerelease
+        .map(|identifiers| {
+            identifiers
+                .split('.')
+                .map(|identifier| match identifier.parse::<u64>() {
+                    Ok(number) => (false, number, String::new()),
+                    Err(_) => (true, 0, identifier.to_string()),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Some((
+        numeric,
+        prerelease.is_none(),
+        prerelease_key,
+        version.contains('+'),
+        version.to_string(),
+    ))
 }
 
 /// One row of the `unified:` block in `conformance/utils/src/parser_families.yaml`.

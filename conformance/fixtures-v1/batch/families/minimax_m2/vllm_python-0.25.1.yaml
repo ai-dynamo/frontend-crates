@@ -1,0 +1,34 @@
+corpus: batch
+family: minimax_m2
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: minimax_m2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}
+  TOOLCALLING.batch.yaml:
+    family: minimax_m2
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases: {}

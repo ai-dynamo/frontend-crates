@@ -1,0 +1,360 @@
+corpus: batch
+family: minimax_m2
+capture: dynamo_v1-3.0.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+            explanation: 'Strict per MiniMax-M2 reference parser
+
+              (https://huggingface.co/MiniMaxAI/MiniMax-M2/blob/main/docs/tool_calling_guide.md):
+
+              the published `<invoke name=(.*?)</invoke>` regex requires both
+
+              fences, so missing `</invoke>` yields no match and no recovered
+
+              call. Wrapper markup is intentionally dropped (not echoed to
+
+              normal_text) so tool-call protocol markers don''t leak to
+
+              user-facing content.'
+  TOOLCALLING.batch.5.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.c:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.e:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.f:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: ''
+      TOOLCALLING.batch.5.g:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check that. '
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          dynamo_v1:
+            explanation: 'Strict per MiniMax-M2.7''s published parser regexes: the outer
+
+              <minimax:tool_call>, inner <invoke>, and <parameter> blocks must all
+
+              be paired. This stream ends mid-parameter, so Dynamo recovers no call
+
+              and drops the buffered protocol block from normal_text.'
+            calls: []
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''

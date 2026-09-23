@@ -1,0 +1,280 @@
+corpus: stream
+family: muse_glimmer
+capture: dynamo_v2-0.3.4+current
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: muse_glimmer
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.3.4+current
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.13:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_stock
+            arguments: '{"symbol":"NVDA"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: Let me look both up.
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+          normal_text: ' '
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+          normal_text: ' Fetching now.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.30.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"text with "}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.30.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"quote: <atem:function_calls> is the opener"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"has "}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: ping
+            arguments: '{}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: ping
+            arguments: '{}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"muse glimmer","limit":5,"safe":true}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"καλημέρα 你好 — \"quoted\""}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: Checking the weather now.
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+          normal_text: ' '
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+          normal_text: ' Called the weather service.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: One moment.
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+          normal_text: ' '
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+          normal_text: ' Now the time. '
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []

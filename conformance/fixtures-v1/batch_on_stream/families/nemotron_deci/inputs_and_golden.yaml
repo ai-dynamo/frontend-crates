@@ -1,0 +1,250 @@
+corpus: batch_on_stream
+family: nemotron_deci
+capture: inputs
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.2.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.2.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.2.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.2.d:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.4.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.4.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.4.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.4.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.4.d:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.4.e:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.4.f:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.5.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.5.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.5.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.5.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.5.d:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.5.e:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.6.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.6.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.6.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.6.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.7.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.7.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.7.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.7.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.7.d:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.7.e:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.7.f:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.8.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.8.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.8.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.8.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.8.d:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned
+  TOOLCALLING.batch.yaml:
+    family: nemotron_deci
+    mode: batch-on-stream
+    capture_order:
+    - vllm_python
+    - sglang_python
+    - vllm_rust
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.1:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.13.c:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.3:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.9.a:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.9.b:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.10:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.30:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.31:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+      TOOLCALLING.batch.13:
+      - vllm_rust
+      - vllm_python
+      - sglang_python
+    capture_selection:
+      vllm_python: vllm_python-0.26.0
+      sglang_python: sglang_python-0.5.14
+      vllm_rust: vllm_rust-0.23.0
+      dynamo_v2: dynamo_v2-unversioned

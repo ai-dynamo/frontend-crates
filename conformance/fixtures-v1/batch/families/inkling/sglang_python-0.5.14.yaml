@@ -1,0 +1,162 @@
+corpus: batch
+family: inkling
+capture: sglang_python-0.5.14
+documents:
+  TOOLCALLING.batch.yaml:
+    family: inkling
+    mode: batch
+    captured_with:
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.2.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.4.e:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.11.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.11.b:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.11.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.30.c:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+      TOOLCALLING.batch.31.a:
+        expected:
+          sglang_python:
+            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.

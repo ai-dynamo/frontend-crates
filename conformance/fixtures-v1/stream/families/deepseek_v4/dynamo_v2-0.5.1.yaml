@@ -1,0 +1,328 @@
+corpus: stream
+family: deepseek_v4
+capture: dynamo_v2-0.5.1
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.11.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.11.a:
+        unavailable: DSML carries only one tool name, so TOOLCALLING.batch.11.a cannot be expressed by this grammar.
+      TOOLCALLING.streamv1.11.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: ''
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"value":1}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.11.c:
+        unavailable: DSML has no generation-primer header, so TOOLCALLING.batch.11.c cannot be expressed by this grammar.
+  TOOLCALLING.streamv1.13.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: unknown_tool
+            arguments: ''
+            complete: false
+          - index: 1
+            arguments: '{"location":"LA"}'
+            complete: true
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.3.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.30.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        unavailable: DSML has no character-level call separator to place inside an argument string.
+      TOOLCALLING.streamv1.30.b:
+        unavailable: DSML has no character-level structural delimiter distinct from its tag markers.
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: echo
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"value":"literal </｜DSML｜invoke> and <｜DSML｜tool_calls> stay data"}'
+            complete: true
+        - expected: []
+  TOOLCALLING.streamv1.31.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: echo
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"value":"literal </｜DSML｜invoke> stays data"}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: ''
+            complete: false
+          - index: 1
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"payload":{"items":[{"nested":{"value":1}}]}}'
+            complete: true
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: ''
+            complete: false
+          - index: 1
+            arguments: '{}'
+            complete: true
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"location":"{\"city\":\"NYC\""}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.e:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"location":"Paris"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.f:
+        unavailable: DSML has no XML function-opener form, so TOOLCALLING.batch.4.f cannot be expressed by this grammar.
+  TOOLCALLING.streamv1.5.h.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.5.h:
+        chunks:
+        - expected: []
+          normal_text: Prefix prose
+        - expected: []
+          normal_text: ' '
+        - expected: []
+        - expected: []
+          normal_text: ' suffix'
+        - expected: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.50.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.6.c:
+        unavailable: DSML has no arguments key whose absence can be distinguished from an empty object; TOOLCALLING.batch.6.a is its parameterless form.
+  TOOLCALLING.streamv1.7.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: set_temperature
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"celsius":"20"}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"payload":{"items":[1,2,3],"config":{"nested":true}}}'
+            complete: true
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: process_data
+            arguments: ''
+            complete: false
+          - index: 0
+            arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+            complete: true
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}
+  TOOLCALLING.streamv1.9.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases: {}

@@ -1,0 +1,285 @@
+corpus: batch_on_stream
+family: gemma4
+capture: dynamo_v2-0.5.1
+provenance:
+  captured_with: 0.5.1
+  runtime_version: 0.5.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.2.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.2.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:  Done.'
+      TOOLCALLING.batch.2.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.4.a:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.b:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.c:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.4.d:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.5.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.5.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.5.c:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.5.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        - name: get_weather
+          arguments:
+            location: New York
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: ''
+      TOOLCALLING.batch.5.g:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check that. '
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.6.a:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.6.b:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+      TOOLCALLING.batch.6.c:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.7.a:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+        normal_text: ''
+      TOOLCALLING.batch.7.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō central
+        normal_text: ''
+      TOOLCALLING.batch.7.c:
+        calls:
+        - name: set_temperature
+          arguments:
+            celsius: '20'
+        normal_text: ''
+      TOOLCALLING.batch.7.d:
+        calls:
+        - name: process_data
+          arguments:
+            items:
+            - 1
+            - 2
+            - 3
+            config:
+              nested: true
+        normal_text: ''
+      TOOLCALLING.batch.7.e:
+        calls:
+        - name: process_data
+          arguments:
+            payload:
+              regions:
+              - name: west
+                scores:
+                - 1
+                - 2
+                - 3
+              - name: east
+                scores:
+                - 4
+                - 5
+                - 6
+              flags:
+                enabled: true
+                retry: null
+              empty: {}
+        normal_text: ''
+      TOOLCALLING.batch.7.f:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740993
+        normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.8.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ' Let me know if you need more.'
+      TOOLCALLING.batch.8.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.  Let me know if you need more.
+      TOOLCALLING.batch.8.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: 'I will check the weather.  Then check LA weather. '
+  TOOLCALLING.batch.yaml:
+    family: gemma4
+    cases:
+      TOOLCALLING.batch.1:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.3:
+        calls: []
+        normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        calls: []
+        normal_text: ''
+      TOOLCALLING.batch.9.b:
+        calls: []
+        normal_text: '   '
+      TOOLCALLING.batch.10:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+      TOOLCALLING.batch.30.a:
+        calls:
+        - name: run_query
+          arguments:
+            sql: SELECT a,b:and{brace}
+        normal_text: ''
+      TOOLCALLING.batch.30.b:
+        calls:
+        - name: run_query
+          arguments:
+            sql: SELECT value WHERE note has brace } and bracket ]
+        normal_text: ''
+      TOOLCALLING.batch.30.c:
+        calls:
+        - name: run_query
+          arguments:
+            sql: literal <|tool_call marker> call:get_time{} stays text
+        normal_text: ''
+      TOOLCALLING.batch.31.a:
+        calls:
+        - name: run_query
+          arguments:
+            sql: SELECT a,b:and{brace}
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.31.b:
+        calls:
+        - name: run_query
+          arguments:
+            sql: SELECT value WHERE note has brace } and bracket ]
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      TOOLCALLING.batch.13.a:
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC
+        normal_text: ''
+      TOOLCALLING.batch.13.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: unknown_tool
+          arguments:
+            location: LA
+        normal_text: ''

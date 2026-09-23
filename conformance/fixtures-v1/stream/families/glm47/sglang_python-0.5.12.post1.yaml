@@ -1,0 +1,646 @@
+corpus: stream
+family: glm47
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"location": '
+        - expected:
+          - index: 1
+            arguments: '"LA"'
+        - expected:
+          - index: 1
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.13:
+        chunks:
+        - expected:
+          - index: 0
+            name: unknown_tool
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"timezone": '
+        - expected:
+          - index: 1
+            arguments: '"EST"'
+        - expected:
+          - index: 1
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": "NYC"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_time
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"timezone": '
+        - expected:
+          - index: 1
+            arguments: '"EST"'
+          - index: 1
+            arguments: '}'
+        - expected: []
+          normal_text: ' Done.'
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{'
+        - expected:
+          - index: 1
+            arguments: '"location": '
+        - expected:
+          - index: 1
+            arguments: '"LA"'
+        - expected:
+          - index: 1
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC'
+          - index: 0
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: get_weather<arg_key>location</arg_key>
+        - expected: []
+          normal_text: <arg_value>
+        - expected: []
+          normal_text: NYC</arg_value>
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"N'
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+          normal_text: ' time!'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"Boston"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location": '
+        - expected:
+          - index: 1
+            arguments: '"New'
+        - expected:
+          - index: 1
+            arguments: ' York"'
+        - expected: []
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+          normal_text: ' time!'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"Boston"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{"location": '
+        - expected:
+          - index: 1
+            arguments: '"New'
+        - expected:
+          - index: 1
+            arguments: ' York'
+        - expected: []
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected: []
+          normal_text: get_weather<arg_key>location</arg_key>
+        - expected: []
+          normal_text: <arg_value>
+        - expected: []
+          normal_text: NYC</arg_value></tool_call>
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": '
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"Boston"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.5.g:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' that. get_weather<arg_key>location</arg_key>'
+        - expected: []
+          normal_text: <arg_value>NYC</arg_value>
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"N'
+        - expected:
+          - index: 0
+            arguments: YC"
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_time
+          - index: 0
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_time
+          - index: 0
+            arguments: '{}'
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: book_flight
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"destination": '
+        - expected:
+          - index: 0
+            arguments: '"Paris", '
+        - expected:
+          - index: 0
+            arguments: '"passengers": '
+        - expected:
+          - index: 0
+            arguments: '2'
+        - expected:
+          - index: 0
+            arguments: ', "first_class": '
+        - expected:
+          - index: 0
+            arguments: 'true'
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"Tōkyō central"'
+        - expected:
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected:
+          - index: 0
+            name: set_limit
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"count": '
+        - expected:
+          - index: 0
+            arguments: '9007199254740993'
+          - index: 0
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": '
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{'
+        - expected:
+          - index: 0
+            arguments: '"location": '
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+          normal_text: ' Let me'
+        - expected: []
+          normal_text: ' know'
+        - expected: []
+          normal_text: ' if you'
+        - expected: []
+          normal_text: ' need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": '
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+          normal_text: ' Let me know'
+        - expected: []
+          normal_text: ' if'
+        - expected: []
+          normal_text: ' you need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected:
+          - index: 0
+            name: get_weather
+          - index: 0
+            arguments: '{"location": '
+        - expected: []
+        - expected:
+          - index: 0
+            arguments: '"NYC"'
+          - index: 0
+            arguments: '}'
+        - expected: []
+          normal_text: ' Then check LA'
+        - expected: []
+          normal_text: ' weather.'
+        - expected:
+          - index: 1
+            name: get_weather
+          - index: 1
+            arguments: '{'
+          normal_text: ' '
+        - expected:
+          - index: 1
+            arguments: '"location": '
+        - expected:
+          - index: 1
+            arguments: '"LA"'
+        - expected:
+          - index: 1
+            arguments: '}'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

@@ -1,0 +1,232 @@
+corpus: stream
+family: deepseek_v4
+capture: dynamo_v2-0.1.22
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.2.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.2.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+          normal_text: ' '
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: ''
+          - index: 1
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: ''
+          - index: 1
+            arguments: '{"timezone":"EST"}'
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+            arguments: ''
+          - index: 1
+            arguments: '{"location":"Boston"}'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.7.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}
+  TOOLCALLING.streamv1.8.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases:
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+        - expected: []
+          normal_text: ' Let me'
+        - expected: []
+          normal_text: ' know if you'
+        - expected: []
+          normal_text: ' need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' Let'
+        - expected: []
+          normal_text: ' me know'
+        - expected: []
+          normal_text: ' if'
+        - expected: []
+          normal_text: ' you need'
+        - expected: []
+          normal_text: ' more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: ''
+          - index: 0
+            arguments: '{"location":"NYC"}'
+        - expected: []
+          normal_text: ' Then'
+        - expected: []
+          normal_text: ' check LA'
+        - expected: []
+          normal_text: ' weather.'
+        - expected: []
+          normal_text: ' '
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+            arguments: ''
+          - index: 1
+            arguments: '{"location":"LA"}'
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+    cases: {}

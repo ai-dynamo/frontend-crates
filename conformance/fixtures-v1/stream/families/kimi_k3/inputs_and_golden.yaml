@@ -1,0 +1,510 @@
+corpus: stream
+family: kimi_k3
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: kimi_k3
+    model_label: Kimi K3
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Canonical XTML single tool call split across semantic boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools: &id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable: &id001
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC
+        - delta_text: <|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.a:
+        description: Two calls in one XTML tools channel
+        ref: derived from TOOLCALLING.batch.2.a
+        tools: &id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.b:
+        description: Two back-to-back XTML tools channels
+        ref: derived from TOOLCALLING.batch.2.b
+        tools: *id002
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: Multiple calls with visible response text around them
+        ref: derived from TOOLCALLING.batch.2.c
+        tools: *id002
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>response<|sep|>Checking both. <|close|>response<|sep|><|open|>tools<|sep|>
+        - delta_text: <|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: <|open|>response<|sep|> Done.<|close|>response<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same tool name twice with distinct native indices
+        ref: derived from TOOLCALLING.batch.2.d
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.3:
+        description: Plain text without XTML tool syntax
+        ref: derived from TOOLCALLING.batch.3
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: 'Hello, how '
+        - delta_text: can I help you today?
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.a:
+        description: Garbage inside an XTML tools channel
+        ref: derived from TOOLCALLING.batch.4.a
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|>nonsense
+        - delta_text: <|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Invalid raw JSON arguments
+        ref: derived from TOOLCALLING.batch.4.b
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"location":"NYC"'
+        - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: XTML call missing its tool attribute
+        ref: derived from TOOLCALLING.batch.4.c
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Typed argument missing its structural close
+        ref: derived from TOOLCALLING.batch.4.d
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC
+        - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.e:
+        description: Malformed XTML call followed by a valid complete call
+        ref: derived from TOOLCALLING.batch.4.e
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|>not-an-argument
+        - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.4.f:
+        description: XML tool-name tag form is not part of Kimi K3 XTML
+        explanation: Kimi K3 identifies the tool in the call tag's tool attribute; it has no adjacent XML function-tag spelling.
+      TOOLCALLING.streamv1.5.a:
+        description: Complete call at EOF without the outer tools close
+        ref: derived from TOOLCALLING.batch.5.a
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.b:
+        description: Orphan tools close marker without a matching open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: 'I will check that. '
+        - delta_text: <|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: EOF inside a typed string argument
+        ref: derived from TOOLCALLING.batch.5.c
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>Par
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: First call complete and second call delimiter-terminated at EOF
+        ref: derived from TOOLCALLING.batch.5.d
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York<|close|>argument<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.e:
+        description: First call complete and second call truncated inside an argument
+        ref: derived from TOOLCALLING.batch.5.e
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.f:
+        description: Bare call before a wrapped call is not a Kimi K3 XTML form
+        explanation: Kimi K3 calls are carried in an XTML tools channel; a bare call outside that channel is not a supported wire form.
+      TOOLCALLING.streamv1.5.g:
+        description: Orphan call-close recovery is not a Kimi K3 XTML form
+        explanation: Orphan tools-close behavior is covered by TOOLCALLING.streamv1.5.b; Kimi K3 has no bare call body form.
+      TOOLCALLING.streamv1.5.h:
+        description: Split orphan close is not a separate Kimi K3 form
+        explanation: TOOLCALLING.streamv1.5.b already splits the surrounding text and orphan tools close into separate chunks.
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty raw JSON argument object
+        ref: derived from TOOLCALLING.batch.6.a
+        tools: &id004
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Spaced XTML spelling with whitespace inside an empty raw JSON object
+        ref: derived from TOOLCALLING.batch.6.b
+        tools: *id004
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|> tools <|sep|><|open|> call tool="get_time" index="1" <|sep|>
+        - delta_text: <|open|> json type="object" <|sep|>{ }<|close|> json <|sep|>
+        - delta_text: <|close|> call <|sep|><|close|> tools <|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.c:
+        description: Parameterless XTML call with no argument channel
+        ref: derived from TOOLCALLING.batch.6.c
+        tools: *id004
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|>
+        - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.a:
+        description: Typed XTML string, number, and boolean arguments
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="book_flight" index="1"<|sep|>
+        - delta_text: <|open|>argument key="destination" type="string"<|sep|>Paris<|close|>argument<|sep|>
+        - delta_text: <|open|>argument key="passengers" type="number"<|sep|>2<|close|>argument<|sep|><|open|>argument key="first_class" type="boolean"<|sep|>true<|close|>argument<|sep|>
+        - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Raw JSON arguments preserve nested data and marker-looking strings
+        ref: derived from TOOLCALLING.batch.7.d and TOOLCALLING.batch.30.c
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              note:
+                type: string
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"items":[1,2,3],"note":"literal <|close|>call<|sep|> stays data"}'
+        - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: Typed string where the tool schema declares an integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="set_temperature" index="1"<|sep|>
+        - delta_text: <|open|>argument key="celsius" type="string"<|sep|>20<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Raw JSON arguments preserve nested object and array values
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"items":[1,2,3],"config":{"nested":true}}'
+        - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large raw JSON argument object with nested null and empty values
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+        - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.f:
+        description: Typed number preserves an integer literal above f64 exact precision
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="set_limit" index="1"<|sep|>
+        - delta_text: <|open|>argument key="count" type="number"<|sep|>9007199254740993<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.a:
+        description: Visible response text before a tool call
+        ref: derived from TOOLCALLING.batch.8.a
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>response<|sep|>I will check the weather. <|close|>response<|sep|>
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Visible response text after a tool call
+        ref: derived from TOOLCALLING.batch.8.b
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: <|open|>response<|sep|> Let me know if you need more.<|close|>response<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Visible response text both before and after a tool call
+        ref: derived from TOOLCALLING.batch.8.c
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>response<|sep|>I will check. <|close|>response<|sep|>
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: <|open|>response<|sep|> Done.<|close|>response<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Visible response text between two tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: <|open|>response<|sep|> Now LA. <|close|>response<|sep|>
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.10:
+        description: Duplicate identical calls with distinct native indices
+        ref: derived from TOOLCALLING.batch.10
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.13.c:
+        description: Known and unknown tool names in the same XTML tools channel
+        ref: derived from TOOLCALLING.batch.13.c
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+        - delta_text: <|open|>call tool="unknown_tool" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.13.a:
+        description: Unknown-only XTML tool call
+        ref: derived from TOOLCALLING.batch.13.a
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="unknown_tool" index="1"<|sep|>
+        - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.11.a:
+        description: Redundant outer tool name is unavailable
+        explanation: Kimi K3 has one tool name owner in the XTML call tag and no inner envelope name to disagree with it.
+      TOOLCALLING.streamv1.11.b:
+        description: Empty XTML tool name is not a required general fixture
+        explanation: The required malformed-name contract is covered by TOOLCALLING.streamv1.4.c; an empty tool attribute is an optional grammar edge.
+      TOOLCALLING.streamv1.11.c:
+        description: Generation-primer header omission is unavailable
+        explanation: Kimi K3 tool calls do not use a separate generation-primer message header in this corpus.
+      TOOLCALLING.streamv1.30.a:
+        description: Delimiter-character case is covered by the raw JSON marker case
+        explanation: Kimi K3 raw JSON uses JSON's own string parser rather than a grammar-level call separator; the stronger marker-in-string case is TOOLCALLING.streamv1.30.c.
+      TOOLCALLING.streamv1.30.b:
+        description: Structural delimiter case is covered by raw JSON typed arguments
+        explanation: Nested braces and brackets are ordinary JSON syntax in TOOLCALLING.streamv1.7.d and 7.e; they are not Kimi K3 call delimiters.
+      TOOLCALLING.streamv1.30.c:
+        description: Kimi K3 markers inside a raw JSON string remain argument data
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"value":"literal <|close|>call<|sep|> and <|open|>tools<|sep|> stay data"}'
+        - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.a:
+        description: Marker-looking string data in the first of multiple calls
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable: *id001
+        chunks:
+        - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
+        - delta_text: '{"value":"literal <|close|>call<|sep|> stays data"}<|close|>json<|sep|><|close|>call<|sep|>'
+        - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.b:
+        description: Structural delimiters before a later call are covered by raw JSON
+        explanation: Kimi K3's JSON channel owns nested braces and brackets until its close; TOOLCALLING.streamv1.31.a covers the stronger marker-looking string followed by a later call.
+      TOOLCALLING.streamv1.50:
+        description: Canonical XTML markers split at partial-token boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools: *id003
+        unavailable: *id001
+        chunks:
+        - delta_text: <|op
+        - delta_text: en|>tools<|se
+        - delta_text: p|><|open|>call tool="get_weather" index="1"<|s
+        - delta_text: ep|><|open|>argument key="location" type="string"<|sep|>NYC<|cl
+        - delta_text: ose|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+        - delta_text: ''
+          finish_reason: tool_calls

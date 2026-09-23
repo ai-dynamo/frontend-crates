@@ -1,0 +1,148 @@
+corpus: stream
+family: muse_glimmer
+capture: dynamo_v2-0.5.1
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: muse_glimmer
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.1
+    cases:
+      TOOLCALLING.streamv1.2.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected:
+          - index: 0
+            name: search
+            arguments: '{"query":"{\"unclosed\": "}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.c:
+        chunks:
+        - expected: []
+          normal_text: No tool recipient was supplied.
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.e:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.4.f:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.5.h:
+        chunks:
+        - expected: []
+          normal_text: Sure, here is the plan.
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.5.f:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected:
+          - index: 1
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.5.g:
+        chunks:
+        - expected: []
+          normal_text: Sure, here is the plan.
+        - expected: []
+      TOOLCALLING.streamv1.6.c:
+        unavailable: Muse has no arguments key whose absence differs from an empty invoke; TOOLCALLING.streamv1.6.a is its parameterless form.
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected:
+          - index: 0
+            name: set_temperature
+            arguments: '{"celsius":"twenty"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected:
+          - index: 0
+            name: process_data
+            arguments: '{"payload":{"items":[1,2,3],"config":{"nested":true}}}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected:
+          - index: 0
+            name: process_data
+            arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.7.f:
+        chunks:
+        - expected:
+          - index: 0
+            name: set_limit
+            arguments: '{"count":9007199254740993}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.11.a:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+      TOOLCALLING.streamv1.11.b:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.11.c:
+        unavailable: Muse has no separate generation-primer header; assistant-prefix omission is covered by TOOLCALLING.streamv1.5.b, while headerless ATEM remains prose by design.
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+          - index: 1
+            name: unknown_tool
+            arguments: '{"location":"LA"}'
+            complete: true
+        - expected: []

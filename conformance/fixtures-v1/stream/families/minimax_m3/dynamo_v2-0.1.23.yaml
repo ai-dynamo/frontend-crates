@@ -1,0 +1,58 @@
+corpus: stream
+family: minimax_m3
+capture: dynamo_v2-0.1.23
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}
+  TOOLCALLING.streamv1.3.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases:
+      TOOLCALLING.streamv1.5.h:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check that. '
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}
+  TOOLCALLING.streamv1.9.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.23
+    cases: {}

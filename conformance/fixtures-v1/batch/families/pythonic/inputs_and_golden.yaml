@@ -1,0 +1,516 @@
+corpus: batch
+family: pythonic
+capture: inputs
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        description: Parallel calls in single bracket
+        ref: dynamo
+        model_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
+        tools:
+        - &id001
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - &id002
+          name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.c:
+        description: With surrounding narration
+        ref: dynamo
+        model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
+        tools:
+        - *id001
+        - *id002
+      TOOLCALLING.batch.2.d:
+        description: Same-name twice
+        ref: dynamo
+        model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+        tools:
+        - *id001
+        - *id001
+      TOOLCALLING.batch.2.b:
+        description: Two back-to-back fence pairs — not applicable to this family
+        explanation: pythonic's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
+  TOOLCALLING.batch.4.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        description: Bracket form with garbage call
+        ref: dynamo
+        model_text: '[nonsense]'
+        tools:
+        - &id003
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.4.b:
+        description: Missing closing bracket
+        ref: dynamo
+        model_text: '[get_weather(location="NYC"'
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.d:
+        description: Mismatched paren / bracket
+        ref: dynamo
+        model_text: '[get_weather(location="NYC"]'
+        tools:
+        - *id003
+      TOOLCALLING.batch.4.c:
+        description: Malformed variant 4.c — not yet authored for this family
+        explanation: Malformed-input variant 4.c not yet authored for pythonic; see 4.a / 4.b / 4.d for this family's malformed-input scenarios.
+      TOOLCALLING.batch.4.e:
+        description: Malformed-prefix recovery — n/a for this family's syntax
+        explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
+      TOOLCALLING.batch.4.f:
+        description: Tool-name XML tag case - n/a for this family's syntax
+        explanation: TOOLCALLING.batch.4.f is specific to Qwen3-Coder XML syntax, where the model may emit a tool-name tag such as <terminal> inside <tool_call> instead of the required <function=Terminal> opener. This family does not use Qwen3-Coder's <function=...> opener.
+  TOOLCALLING.batch.5.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        description: Missing closing `]` end marker
+        ref: dynamo
+        model_text: '[get_weather(location="NYC")'
+        tools:
+        - &id004
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.5.b:
+        description: Closing `]` without matching `[` open
+        ref: dynamo
+        model_text: get_weather(location="NYC")]
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.c:
+        description: Truncation mid-argument value
+        ref: dynamo
+        model_text: '[get_weather(location="N'
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+        tools:
+        - *id004
+      TOOLCALLING.batch.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
+        tools:
+        - *id004
+  TOOLCALLING.batch.6.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        description: Empty parens (no args)
+        ref: dynamo
+        model_text: '[get_time()]'
+        tools:
+        - &id005
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+      TOOLCALLING.batch.6.b:
+        description: Whitespace inside parens
+        ref: dynamo
+        model_text: '[get_time( )]'
+        tools:
+        - *id005
+      TOOLCALLING.batch.6.c:
+        description: Empty-body variant 6.c — not yet authored for this family
+        explanation: Empty-body variant 6.c not yet authored for pythonic; see 6.a / 6.b for this family's empty / whitespace scenarios.
+  TOOLCALLING.batch.7.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        description: Standard scalar types
+        ref: dynamo
+        model_text: '[book_flight(destination="Paris", passengers=2, first_class=True)]'
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+      TOOLCALLING.batch.7.b:
+        description: Unicode + escaped chars
+        ref: dynamo
+        model_text: '[get_weather(location="Tōkyō \"central\"")]'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: dynamo
+        model_text: '[set_temperature(celsius="20")]'
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+      TOOLCALLING.batch.7.d:
+        description: Nested dict + array (existing)
+        ref: dynamo
+        model_text: '[process_data(items=[1, 2, 3], config={"nested": True})]'
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+      TOOLCALLING.batch.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: dynamo
+        model_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":True,"retry":None},"empty":{}})]'
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+      TOOLCALLING.batch.7.f:
+        description: Numeric precision edge test 7.f — not yet authored for this family
+        explanation: Numeric precision edge test 7.f not yet authored for pythonic; Qwen3-Coder coverage is provided by qwen3_coder 7.f.
+  TOOLCALLING.batch.8.yaml:
+    family: pythonic
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        description: Narration before tool call only
+        ref: dynamo
+        model_text: I will check the weather. [get_weather(location="NYC")]
+        tools:
+        - &id006
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.8.b:
+        description: Narration after tool call only
+        ref: dynamo
+        model_text: '[get_weather(location="NYC")] Let me know if you need more.'
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.c:
+        description: Narration both before and after (sandwich)
+        ref: dynamo
+        model_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
+        tools:
+        - *id006
+      TOOLCALLING.batch.8.d:
+        description: Narration between multiple tool calls
+        ref: dynamo
+        model_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
+        tools:
+        - *id006
+  TOOLCALLING.batch.yaml:
+    family: pythonic
+    model_label: Llama 4 (pythonic fmt)
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        description: Single tool call (happy path)
+        model_text: '[get_weather(location="NYC")]'
+        tools:
+        - &id007
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.3:
+        description: No tool call (plain text)
+        model_text: Hello, how can I help you today?
+        tools:
+        - *id007
+      TOOLCALLING.batch.9.a:
+        description: Empty model text
+        model_text: ''
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.9.b:
+        description: Blank / whitespace-only model text
+        ref: dynamo
+        model_text: '   '
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.10:
+        description: Duplicate calls (same name twice)
+        model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+        tools:
+        - *id007
+      TOOLCALLING.batch.30.a:
+        description: Pythonic call separator `,` inside one argument string value
+        ref: dynamo
+        model_text: '[run_query(sql="SELECT a, SELECT b")]'
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+      TOOLCALLING.batch.30.b:
+        description: Pythonic/list structural delimiters `}` and `]` inside one argument string value
+        ref: dynamo
+        model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]")]'
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+      TOOLCALLING.batch.30.c:
+        description: Tool-call marker-looking `[get_time ...]` text inside one argument string value
+        ref: dynamo
+        model_text: '[run_query(sql="literal [get_time marker] stays text")]'
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+      TOOLCALLING.batch.31.a:
+        description: Multi-call Pythonic list with call separator `,` inside the first argument string
+        ref: dynamo
+        model_text: '[run_query(sql="SELECT a, SELECT b"), get_time(timezone="EST")]'
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: dynamo
+        model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]"), get_time(timezone="EST")]'
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.13.a:
+        description: Unknown-only call under default behavior
+        ref: originated from https://github.com/sgl-project/sglang/blob/612785ffdcaf35552f1ed433a981d596ca9fe900/test/registered/unit/function_call/test_function_call_parser.py#L3147
+        model_text: '[unknown_tool(location="NYC")]'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: dynamo
+        model_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+  TOOLCALLING.stream.1.yaml:
+    family: pythonic
+    model_label: Llama 4 (pythonic fmt)
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        description: Complete tool-call payload delivered in one content chunk
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: '[get_weather(location="NYC")]'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: &id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.1.b:
+        description: Complete tool call split across parser-significant boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: '['
+        - delta_text: get_weather
+        - delta_text: (location="
+        - delta_text: NYC
+        - delta_text: '")'
+        - delta_text: ']'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: *id008
+  TOOLCALLING.stream.2.yaml:
+    family: pythonic
+    model_label: Llama 4 (pythonic fmt)
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        description: Multiple tool calls split across multiple content chunks
+        ref: derived from TOOLCALLING.batch.2.a
+        chunks:
+        - delta_text: '[get_weat'
+        - delta_text: her(loc
+        - delta_text: ation="NYC"),
+        - delta_text: ' get_'
+        - delta_text: time(timezone="ES
+        - delta_text: T")
+        - delta_text: ']'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+  TOOLCALLING.stream.3.yaml:
+    family: pythonic
+    model_label: Llama 4 (pythonic fmt)
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: '[g'
+        - delta_text: et_
+        - delta_text: weath
+        - delta_text: er(location
+        - delta_text: ="NYC")]
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+  TOOLCALLING.stream.4.yaml:
+    family: pythonic
+    model_label: Llama 4 (pythonic fmt)
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        description: Truncated stream terminates after a complete in-flight tool-call body
+        ref: derived from TOOLCALLING.batch.5.a
+        chunks:
+        - delta_text: '[get_weather(location="NYC")'
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.b:
+        description: Stream terminates mid-call body before the in-flight argument payload is complete
+        ref: derived from TOOLCALLING.batch.5.c
+        chunks:
+        - delta_text: '[get_weather'
+        - delta_text: (location="N
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.stream.4.c:
+        description: Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers
+        ref: derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py
+        chunks:
+        - delta_text: get_weather(location="NYC")]]]
+        - delta_text: ''
+          finish_reason: length
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string

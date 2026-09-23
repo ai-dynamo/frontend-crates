@@ -4,6 +4,7 @@
 import hashlib
 import json
 import sys
+import tarfile
 import threading
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +20,7 @@ import extract_fixtures  # noqa: E402
 import capture_stimulus  # noqa: E402
 import fixture_disposition  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
+import legacy_history  # noqa: E402
 import package_fixtures  # noqa: E402
 import unified_history  # noqa: E402
 
@@ -71,6 +73,23 @@ def test_checked_in_manifest_has_no_inactive_unified_archives():
     inactive_paths = fixture_disposition.inactive_shards(manifest)
     assert not any(path.startswith("unified/") for path in inactive_paths)
     assert not (repo_root / "conformance/fixtures/unified").exists()
+
+
+def test_candidate_package_rejects_legacy_yaml_that_cannot_materialize(tmp_path, monkeypatch):
+    fixtures = tmp_path / "fixtures"
+    fixtures.mkdir()
+    legacy = tmp_path / "fixtures-v1"
+    invalid = legacy / "batch/families/demo/inputs_and_golden.yaml"
+    invalid.parent.mkdir(parents=True)
+    invalid.write_text("corpus: wrong\nfamily: demo\ncapture: inputs\ndocuments: {}\n")
+    digest, size = legacy_history.store_digest(legacy)
+    manifest = {"shards": [{"path": legacy_history.HISTORY_PATH,
+                            "format": legacy_history.HISTORY_FORMAT,
+                            "sha256": digest, "size": size}], "inactive_shards": []}
+    monkeypatch.setattr(unified_history, "load_store", lambda _root: {})
+
+    with pytest.raises(ValueError, match="legacy history identity mismatch"):
+        package_fixtures._validate_candidate_package(manifest, fixtures, tmp_path, legacy)
 
 
 @pytest.fixture
@@ -157,6 +176,11 @@ def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_p
     )
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
+    legacy_root = tmp_path / "fixtures-v1"
+    legacy_file = legacy_root / "batch/families/gemma4/inputs_and_golden.yaml"
+    legacy_file.parent.mkdir(parents=True)
+    legacy_file.write_text("corpus: batch\nfamily: gemma4\ncapture: inputs\ndocuments: {}\n")
+    monkeypatch.setattr(package_fixtures, "LEGACY_HISTORY_DIR", legacy_root)
 
     stage = tmp_path / "stage"
     _case(
@@ -177,17 +201,41 @@ def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_p
     shards = package_fixtures.build_shards(stage, blobs)
 
     digest, size = unified_history.store_digest(history_root)
-    assert shards == [{"path": "unified-history", "format": "unified-history", "sha256": digest, "size": size}]
+    legacy_digest, legacy_size = legacy_history.store_digest(legacy_root)
+    assert shards == [
+        {"path": "unified-history", "format": "unified-history", "sha256": digest, "size": size},
+        {"path": "legacy-history", "format": "legacy-history", "sha256": legacy_digest, "size": legacy_size},
+    ]
     assert not list(blobs.rglob("*.tar.gz"))
 
 
-def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, monkeypatch):
-    _conf, _store, _manifest, _manifest_path = evidence
+def test_package_dry_run_preserves_both_yaml_stores(evidence, tmp_path, monkeypatch):
+    _conf, _store, _manifest, manifest_path = evidence
     history_root = tmp_path / "fixtures-unified-v2"
     (history_root / "families").mkdir(parents=True)
     (history_root / "families/gemma4").mkdir(parents=True)
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
+    legacy_root = tmp_path / "fixtures-v1"
+    legacy_file = legacy_root / "batch/families/gemma4/inputs_and_golden.yaml"
+    legacy_file.parent.mkdir(parents=True)
+    original_input = {"family": "gemma4", "cases": {"A": {"model_text": "old"}}}
+    legacy_file.write_text(yaml.safe_dump({
+        "corpus": "batch", "family": "gemma4", "capture": "inputs",
+        "documents": {"one.yaml": original_input},
+    }))
+    monkeypatch.setattr(package_fixtures, "LEGACY_HISTORY_DIR", legacy_root)
+    before_legacy = legacy_file.read_bytes()
+    before_manifest = manifest_path.read_bytes()
+
+    def stage(_source, destination):
+        input_file = destination / "toolcalling/fixtures-batch-v1/inputs/gemma4/one.yaml"
+        input_file.parent.mkdir(parents=True)
+        input_file.write_text(yaml.safe_dump({
+            "family": "gemma4", "cases": {"A": {"model_text": "new"}},
+        }))
+
+    monkeypatch.setattr(package_fixtures, "stage_fixtures", stage)
 
     def mutate_history(
         store_root,
@@ -205,12 +253,25 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
 
     monkeypatch.setattr(unified_history, "update_store_from_loose", mutate_history)
     monkeypatch.setattr(unified_history, "store_digest", lambda _root: ("digest", 1))
+    monkeypatch.setattr(unified_history, "load_store", lambda _root: {})
+    validate_candidate = package_fixtures._validate_candidate_package
 
-    blobs = tmp_path / "blobs"
-    blobs.mkdir()
-    package_fixtures.build_shards(tmp_path / "stage", blobs, dry_run=True)
+    def assert_candidate(manifest, fixtures_dir, history_dir, legacy_dir):
+        candidate = yaml.safe_load((legacy_dir / "batch/families/gemma4/inputs_and_golden.yaml").read_text())
+        assert candidate["documents"]["one.yaml"]["cases"]["A"]["model_text"] == "new"
+        digest, size = legacy_history.store_digest(legacy_dir)
+        assert next(shard for shard in manifest["shards"] if shard["path"] == "legacy-history") == {
+            "path": "legacy-history", "format": "legacy-history", "sha256": digest, "size": size,
+        }
+        validate_candidate(manifest, fixtures_dir, history_dir, legacy_dir)
+
+    monkeypatch.setattr(package_fixtures, "_validate_candidate_package", assert_candidate)
+
+    package_fixtures.package_snapshot("dry", "dry America/Los_Angeles", {}, {}, dry_run=True, prune=False)
 
     assert not (history_root / "families/gemma4/dynamo_v2-0.1.0.yaml").exists()
+    assert legacy_file.read_bytes() == before_legacy
+    assert manifest_path.read_bytes() == before_manifest
 
 
 @pytest.mark.parametrize(
@@ -275,9 +336,14 @@ def test_package_staging_failure_preserves_live_generation(
     conformance = tmp_path / "conformance"
     fixtures = conformance / "fixtures"
     history = conformance / "fixtures-unified-v2"
+    legacy = conformance / "fixtures-v1"
     manifest_path = conformance / "fixtures-manifest.json"
     fixtures.mkdir(parents=True)
     history.mkdir()
+    legacy.mkdir()
+    legacy_file = legacy / "batch/families/gemma4/inputs_and_golden.yaml"
+    legacy_file.parent.mkdir(parents=True)
+    legacy_file.write_text("documents: {}\n")
     (fixtures / "generation").write_text("old archives")
     (history / "generation").write_text("old history")
     manifest_path.write_text(
@@ -292,9 +358,10 @@ def test_package_staging_failure_preserves_live_generation(
     monkeypatch.setattr(package_fixtures, "ROOT", tmp_path)
     monkeypatch.setattr(package_fixtures, "FIXTURES_DIR", fixtures)
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
+    monkeypatch.setattr(package_fixtures, "LEGACY_HISTORY_DIR", legacy)
     monkeypatch.setattr(package_fixtures, "stage_fixtures", lambda _source, _destination: None)
 
-    def build_shards(_loose, _blobs, _prune, *, history_root):
+    def build_shards(_loose, _blobs, _prune, *, history_root, legacy_root):
         if failure_stage == "history":
             (history_root / "generation").write_text("partial history")
             raise OSError("injected failure after history mutation")
@@ -307,7 +374,7 @@ def test_package_staging_failure_preserves_live_generation(
             generation.write_text("partial archives")
             raise OSError("injected failure after archive mutation")
 
-    def validate_candidate(_manifest, _fixtures_dir, _history_dir):
+    def validate_candidate(_manifest, _fixtures_dir, _history_dir, _legacy_dir):
         if failure_stage == "manifest":
             raise OSError("injected failure after manifest write")
 
@@ -334,14 +401,20 @@ def test_package_snapshots_loose_inputs_after_acquiring_writer_lock(tmp_path, mo
     conformance = tmp_path / "conformance"
     fixtures = conformance / "fixtures"
     history = conformance / "fixtures-unified-v2"
+    legacy = conformance / "fixtures-v1"
     fixtures.mkdir(parents=True)
     history.mkdir()
+    legacy.mkdir()
+    legacy_file = legacy / "batch/families/gemma4/inputs_and_golden.yaml"
+    legacy_file.parent.mkdir(parents=True)
+    legacy_file.write_text("documents: {}\n")
     (conformance / "fixtures-manifest.json").write_text(
         json.dumps({"snapshot": "old", "shards": [], "inactive_shards": []}) + "\n"
     )
     monkeypatch.setattr(package_fixtures, "ROOT", tmp_path)
     monkeypatch.setattr(package_fixtures, "FIXTURES_DIR", fixtures)
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
+    monkeypatch.setattr(package_fixtures, "LEGACY_HISTORY_DIR", legacy)
     monkeypatch.setattr(package_fixtures, "build_shards", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(package_fixtures, "sync_store", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(package_fixtures, "_validate_candidate_package", lambda *_args: None)
@@ -432,7 +505,6 @@ def test_extract_holds_generation_lock_through_shard_materialization(tmp_path, m
         _source,
         destination,
         *,
-        derived_release_versions=None,
         verbose=False,
     ):
         destination.mkdir(parents=True, exist_ok=True)
@@ -483,7 +555,11 @@ def test_extract_excludes_false_release_but_retains_real_patch(evidence, tmp_pat
     staging = tmp_path / "staging"
     _case(staging / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.gemma-1", {"assembled": []})
     rel = "unified/dynamo_v2-0.6.0.patch3"
-    sha, size = package_fixtures._tar_dir(staging / rel, rel, store / f"{rel}.tar.gz")
+    archive_path = store / f"{rel}.tar.gz"
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(staging / rel, arcname=rel)
+    sha, size = package_fixtures.sha256_file(archive_path), archive_path.stat().st_size
     manifest["shards"] = [{"path": f"{rel}.tar.gz", "sha256": sha, "size": size}]
     manifest_path.write_text(json.dumps(manifest))
     monkeypatch.setattr(sys, "argv", ["extract_fixtures.py"])
@@ -597,7 +673,7 @@ def test_complete_snapshot_rejects_corrupt_member_index(records):
         )
 
 
-def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
+def test_renderer_uses_semantic_capture_directories(evidence):
     conf, _store, _manifest, _manifest_path = evidence
     label = "0.6.1"
     base = f"dynamo_v2-{label}"
@@ -607,22 +683,20 @@ def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
         "capture_input": capture_stimulus.capture_input(stimulus),
         "assembled": [{"kind": "text", "text": "captured"}],
     })
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: label)
     cases, _caps, _versions = table._load_unified_fixtures(conf / "unified")
     assert cases[0]["dynamo"][0]["text"] == "captured"
 
 
-def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_path, monkeypatch):
+def test_loose_reader_keeps_an_older_capture_at_its_actual_version(tmp_path):
     base = tmp_path / "unified"
     key = "UNIFIED.gemma-1"
     _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
     _case(base, "golden", key, {"assembled": []})
     _case(base, "dynamo_v2-0.6.0", key, {"assembled": [{"kind": "text", "text": "captured"}]})
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
     cases, _caps, versions = table._load_unified_fixtures(base)
-    assert versions["dynamo_v2_all"] == ["0.6.0", "0.6.1"]
+    assert versions["dynamo_v2_all"] == ["0.6.0"]
+    assert versions["dynamo_v2"] == {"gemma4": "0.6.0"}
     assert cases[0]["dynamo"][0]["text"] == "captured"
-    assert cases[0]["dynamo_by_ver"]["0.6.1"]["inherited_from"] == "0.6.0"
 
 
 @pytest.mark.parametrize(("family", "old", "new"), [
@@ -640,23 +714,21 @@ def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
     assert fixture_disposition.historical_unified_case_key(family, old) == new
 
 
-def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monkeypatch):
+def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path):
     _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", {"assembled": []})
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
     before = {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")}
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
     with pytest.raises(ValueError, match="conflicting historical aliases"):
         table._load_unified_fixtures(tmp_path)
     assert {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
 
 
-def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path, monkeypatch):
+def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path):
     _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
     record = {"assembled": [{"kind": "text", "text": "same"}]}
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", record)
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", record)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
 
     cases, _captures, _versions = table._load_unified_fixtures(tmp_path)
 

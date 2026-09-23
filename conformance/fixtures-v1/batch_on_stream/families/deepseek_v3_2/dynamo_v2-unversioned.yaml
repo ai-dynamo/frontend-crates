@@ -1,0 +1,28 @@
+corpus: batch_on_stream
+family: deepseek_v3_2
+capture: dynamo_v2-unversioned
+provenance:
+  captured_with: Dynamo parser v2
+  runtime_version: null
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_2
+    cases: {}
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v3_2
+    cases: {}

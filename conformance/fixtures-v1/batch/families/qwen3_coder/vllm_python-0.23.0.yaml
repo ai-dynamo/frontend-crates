@@ -1,0 +1,414 @@
+corpus: batch
+family: qwen3_coder
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<tool_call>
+
+              nonsense
+
+              </tool_call>'
+            explanation: vLLM preserves a <tool_call> wrapper with no <function=...> body as content; Dynamo/SGLang strip the invalid wrapper.
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.4.f:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<tool_call>
+
+              <terminal>
+
+              echo hello
+
+              </function>
+
+              </tool_call>'
+            explanation: <terminal> is not valid Qwen3-Coder grammar; vLLM preserves the invalid wrapper as content, while Dynamo/SGLang strip it.
+  TOOLCALLING.batch.5.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            calls:
+            - arguments:
+                location: NYC
+              name: get_weather
+            normal_text: ''
+            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NY
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+            explanation: 'vLLM recovers the partial value (location=''New York'') from the call
+
+              truncated mid-arg-value before its closing sentinel. Dynamo (the
+
+              truncation guard) and SGLang require the value to be terminated, so
+
+              they drop the truncated call.'
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: '<function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+              '
+            explanation: vLLM preserves the bare Qwen function before the first <tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
+      TOOLCALLING.batch.5.g:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check that. '
+  TOOLCALLING.batch.6.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740992
+            normal_text: null
+  TOOLCALLING.batch.8.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: qwen3_coder
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+            explanation: vLLM streaming parser exits at qwen3coder_tool_parser.py:412 after detecting `<tool_call>` in delta_text and never re-processes the remainder of the same chunk; the trailing `finish_reason=tool_calls` chunk has no `delta_token_ids`, so the EOS-flush branch (qwen3coder_tool_parser.py:348-370) is skipped and no tool call is emitted. Dynamo handles the single-chunk burst correctly.
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<tool_call>
+
+              <function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+              <tool_call>
+
+              <function=get_time>
+
+              <parameter=timezone>
+
+              EST
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            explanation: 'vLLM streaming parser checks for `<tool_call>` only in `delta_text` (qwen3coder_tool_parser.py:402), not the accumulated `current_text`. When the start token is split across chunk boundaries (`<tool_cal` + `l>\n<fun`), the condition never fires and every chunk falls through to the no-tool-call branch at qwen3coder_tool_parser.py:422, which emits `delta_text` as content. Result: the entire wire payload leaks into `normal_text` and no tool calls are produced.'
+  TOOLCALLING.stream.3.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<tool_call>
+
+              <function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            explanation: 'Same root cause as TOOLCALLING.stream.2: vLLM checks for `<tool_call>` in `delta_text` only (qwen3coder_tool_parser.py:402). With the start token split across chunks (`<t` + `ool` + `_call` + `>\n…`), the guard never matches and every chunk is emitted as plain content via qwen3coder_tool_parser.py:422, leaking the entire payload into `normal_text`.'
+  TOOLCALLING.stream.4.yaml:
+    family: qwen3_coder
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+            explanation: 'Same root cause as TOOLCALLING.stream.1.a: the full body arrives in a single delta, vLLM detects `<tool_call>` and returns at qwen3coder_tool_parser.py:412 without reprocessing the rest of the chunk. The final `finish_reason=stop` chunk has no `delta_token_ids`, so the EOS-flush branch at qwen3coder_tool_parser.py:348-370 is skipped. No header or arguments are ever emitted.'
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+            explanation: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM's per-parameter extraction loop (qwen3coder_tool_parser.py:540-579) requires either `</parameter>`, the next `<parameter=`, or `</function>` to delimit the value; when the stream ends mid-payload none of those are present, the loop breaks before emitting a json fragment, and the header ships with empty `arguments`. Matches SGLang.
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<function=get_weather>
+
+              <parameter=location>
+
+              NYC
+
+              </parameter>
+
+              </function>
+
+              </function>
+
+              </function>'
+            explanation: vLLM's streaming qwen3_coder parser does not enter tool-call mode for this bare <function=...> body because the outer <tool_call> marker is missing, so it preserves the raw function markup in normal_text. Dynamo intentionally uses Qwen3-Coder's no-wrapper backoff and emits the structured call without leaking parser tags.

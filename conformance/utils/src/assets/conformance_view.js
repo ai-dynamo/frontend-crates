@@ -628,7 +628,7 @@
         + '<div class="cmprow cmphd"><span class="cmphd-ref" title="Reference (pick one)">ref</span>'
         + '<span class="cmphd-cmp" title="Compare-with">compare with</span></div>';
       (tab.candidates || []).forEach(function (c) {
-        if (c.impl !== impl) { return; }
+        if (c.impl !== impl || c.equivalent_to) { return; }
         var isA = c.default_bucket === 'A';
         var isAB = c.default_bucket === 'A' || c.default_bucket === 'B';
         html += '<div class="cmprow' + (isA ? ' is-ref' : '') + '">'
@@ -1099,6 +1099,9 @@
     var section = document.createElement('section');
     section.id = tab.id;
     section.className = 'tab-panel' + (tab.active ? ' active' : '');
+    section._candidateAliases = new Map((tab.candidates || [])
+      .filter(candidate => candidate.equivalent_to)
+      .map(candidate => [candidate.key, candidate.equivalent_to]));
     section.setAttribute('role', 'tabpanel');
     if (multiTab) { section.setAttribute('aria-labelledby', tab.id + '-button'); }
     var hasCands = tab.candidates && tab.candidates.length;

@@ -1,0 +1,22 @@
+corpus: reasoning
+family: gpt_oss
+capture: vllm_python-0.24.0
+documents:
+  REASONING.batch.yaml:
+    family: gpt_oss
+    mode: batch
+    cases:
+      REASONING.batch.3.c:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: Done.
+  REASONING.stream.yaml:
+    family: gpt_oss
+    mode: stream
+    cases:
+      REASONING.stream.4.a:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: Done.

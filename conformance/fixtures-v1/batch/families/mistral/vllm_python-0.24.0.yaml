@@ -1,0 +1,16 @@
+corpus: batch
+family: mistral
+capture: vllm_python-0.24.0
+documents:
+  TOOLCALLING.batch.8.yaml:
+    family: mistral
+    mode: batch
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            calls: []
+            error: 'ValueError: Only one BOT token should have been outputted, but got I will check the weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS] Then check LA weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "LA"}}][/TOOL_CALLS].'
+            normal_text: ''

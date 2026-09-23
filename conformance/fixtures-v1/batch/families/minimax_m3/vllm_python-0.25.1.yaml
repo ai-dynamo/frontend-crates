@@ -1,0 +1,407 @@
+corpus: batch
+family: minimax_m3
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ']<]minimax[>[<tool_call>
+
+              nonsense
+
+              ]<]minimax[>[</tool_call>'
+      TOOLCALLING.batch.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: configure
+              arguments:
+                settings: '{"mode": "fast"'
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ']<]minimax[>[<tool_call>
+
+              ]<]minimax[>[<invoke>
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[</tool_call>'
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ']<]minimax[>[<tool_call>
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</tool_call>'
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                passengers: 2
+                first_class: true
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō &quot;central&quot; &amp; west
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: twenty
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          vllm_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              Then check LA weather.
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[</tool_call>'
+  TOOLCALLING.batch.yaml:
+    family: minimax_m3
+    mode: batch
+    captured_with:
+      vllm_python: 0.25.1
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[</tool_call>'
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ']<]minimax[>[<tool_call>
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NY'
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              '
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              ]<]minimax[>[<tool_call>
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>New York'
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[</tool_call>
+
+              '
+      TOOLCALLING.batch.5.g:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+              ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+              ]<]minimax[>[</invoke>
+
+              ]<]minimax[>[</tool_call>'
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''

@@ -1,0 +1,98 @@
+corpus: batch_on_stream
+family: muse_glimmer
+capture: inputs
+documents:
+  TOOLCALLING.batch.yaml:
+    family: muse_glimmer
+    mode: batch-on-stream
+    capture_order:
+    - dynamo_v2
+    case_order:
+      TOOLCALLING.batch.1:
+      - dynamo_v2
+      TOOLCALLING.batch.2.a:
+      - dynamo_v2
+      TOOLCALLING.batch.2.b:
+      - dynamo_v2
+      TOOLCALLING.batch.2.c:
+      - dynamo_v2
+      TOOLCALLING.batch.2.d:
+      - dynamo_v2
+      TOOLCALLING.batch.3:
+      - dynamo_v2
+      TOOLCALLING.batch.4.a:
+      - dynamo_v2
+      TOOLCALLING.batch.4.b:
+      - dynamo_v2
+      TOOLCALLING.batch.4.c:
+      - dynamo_v2
+      TOOLCALLING.batch.4.d:
+      - dynamo_v2
+      TOOLCALLING.batch.4.e:
+      - dynamo_v2
+      TOOLCALLING.batch.4.f:
+      - dynamo_v2
+      TOOLCALLING.batch.5.a:
+      - dynamo_v2
+      TOOLCALLING.batch.5.b:
+      - dynamo_v2
+      TOOLCALLING.batch.5.h:
+      - dynamo_v2
+      TOOLCALLING.batch.5.c:
+      - dynamo_v2
+      TOOLCALLING.batch.5.d:
+      - dynamo_v2
+      TOOLCALLING.batch.5.e:
+      - dynamo_v2
+      TOOLCALLING.batch.6.a:
+      - dynamo_v2
+      TOOLCALLING.batch.6.b:
+      - dynamo_v2
+      TOOLCALLING.batch.7.a:
+      - dynamo_v2
+      TOOLCALLING.batch.7.b:
+      - dynamo_v2
+      TOOLCALLING.batch.7.c:
+      - dynamo_v2
+      TOOLCALLING.batch.7.d:
+      - dynamo_v2
+      TOOLCALLING.batch.7.e:
+      - dynamo_v2
+      TOOLCALLING.batch.7.f:
+      - dynamo_v2
+      TOOLCALLING.batch.8.a:
+      - dynamo_v2
+      TOOLCALLING.batch.8.b:
+      - dynamo_v2
+      TOOLCALLING.batch.8.c:
+      - dynamo_v2
+      TOOLCALLING.batch.8.d:
+      - dynamo_v2
+      TOOLCALLING.batch.9.a:
+      - dynamo_v2
+      TOOLCALLING.batch.9.b:
+      - dynamo_v2
+      TOOLCALLING.batch.10:
+      - dynamo_v2
+      TOOLCALLING.batch.11.a:
+      - dynamo_v2
+      TOOLCALLING.batch.11.b:
+      - dynamo_v2
+      TOOLCALLING.batch.11.c:
+      - dynamo_v2
+      TOOLCALLING.batch.13:
+      - dynamo_v2
+      TOOLCALLING.batch.13.c:
+      - dynamo_v2
+      TOOLCALLING.batch.30.a:
+      - dynamo_v2
+      TOOLCALLING.batch.30.b:
+      - dynamo_v2
+      TOOLCALLING.batch.30.c:
+      - dynamo_v2
+      TOOLCALLING.batch.31.a:
+      - dynamo_v2
+      TOOLCALLING.batch.31.b:
+      - dynamo_v2
+    capture_selection:
+      dynamo_v2: dynamo_v2-0.2.1

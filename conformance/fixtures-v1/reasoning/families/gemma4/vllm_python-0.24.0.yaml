@@ -1,0 +1,61 @@
+corpus: reasoning
+family: gemma4
+capture: vllm_python-0.24.0
+documents:
+  REASONING.batch.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: before  after
+      REASONING.batch.6.a:
+        expected:
+          vllm_python:
+            reasoning_text: 'firstthought
+
+              second'
+            normal_text: ' middle  done'
+      REASONING.batch.6.b:
+        expected:
+          vllm_python:
+            reasoning_text: preamble
+            normal_text: bodyanswer
+  REASONING.stream.yaml:
+    family: gemma4
+    mode: stream
+    cases:
+      REASONING.stream.2.a:
+        expected:
+          vllm_python:
+            reasoning_text: step two<channel|>
+            normal_text: '<|channel>thought
+
+              step one
+
+              The answer is 42.'
+      REASONING.stream.2.b:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: '<|channel>thought
+
+              first<channel|> middle <|channel>thought
+
+              second<channel|> done'
+      REASONING.stream.3.b:
+        expected:
+          vllm_python:
+            reasoning_text: nel|>answer
+            normal_text: '<|channel>thought
+
+              thinking<chan'
+      REASONING.stream.2.c:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: '<|channel>thought
+
+              preamble<channel|>body<channel|>answer'

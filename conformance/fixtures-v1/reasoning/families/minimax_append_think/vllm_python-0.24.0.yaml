@@ -1,0 +1,28 @@
+corpus: reasoning
+family: minimax_append_think
+capture: vllm_python-0.24.0
+documents:
+  REASONING.stream.yaml:
+    family: minimax_append_think
+    mode: stream
+    cases:
+      REASONING.stream.2.a:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>reasoning <think>content<think></think>answer
+      REASONING.stream.3.b:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>thinking</th<think>ink>answer
+      REASONING.stream.3.c:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>plain <th<think>esis answer
+      REASONING.stream.1.b:
+        expected:
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>plain<think> answer

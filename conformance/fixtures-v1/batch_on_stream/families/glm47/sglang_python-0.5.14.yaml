@@ -1,0 +1,177 @@
+corpus: batch_on_stream
+family: glm47
+capture: sglang_python-0.5.14
+provenance:
+  captured_with: 0.5.14
+  runtime_version: 0.5.14
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.2.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.2.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.2.b:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.4.a:
+        calls: []
+      TOOLCALLING.batch.4.d:
+        calls:
+        - name: get_weather
+          arguments: '{"location": "NYC}'
+      TOOLCALLING.batch.4.b:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.e:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.5.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.5.a:
+        calls:
+        - name: get_weather
+          arguments: '{"location": "NYC"'
+      TOOLCALLING.batch.5.b:
+        calls: []
+        normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      TOOLCALLING.batch.5.c:
+        calls:
+        - name: get_weather
+          arguments: '{"location": "N'
+      TOOLCALLING.batch.5.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      TOOLCALLING.batch.5.g:
+        calls: []
+        normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+  TOOLCALLING.batch.6.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.6.a:
+        calls:
+        - name: get_time
+          arguments: {}
+      TOOLCALLING.batch.6.b:
+        calls:
+        - name: get_time
+          arguments: {}
+      TOOLCALLING.batch.6.c:
+        unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.7.a:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+      TOOLCALLING.batch.7.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō central
+      TOOLCALLING.batch.7.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.d:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.e:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.f:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740993
+  TOOLCALLING.batch.8.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.8.a:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.8.c:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: glm47
+    cases:
+      TOOLCALLING.batch.1:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.3:
+        calls: []
+        normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        calls: []
+      TOOLCALLING.batch.13.c:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.9.b:
+        calls: []
+        normal_text: '   '
+      TOOLCALLING.batch.10:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+      TOOLCALLING.batch.30:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC

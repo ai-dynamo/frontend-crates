@@ -1,0 +1,16 @@
+corpus: stream
+family: qwen3_coder
+capture: vllm_rust-0.26.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+    cases: {}
+  TOOLCALLING.streamv1.5.yaml:
+    family: qwen3_coder
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+    cases: {}

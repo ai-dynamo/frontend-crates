@@ -1,0 +1,836 @@
+corpus: batch
+family: inkling
+capture: inputs
+documents:
+  TOOLCALLING.batch.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: batch
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    refs:
+      local: Inkling chat-template tool-call framing
+      e2e: Real model traces established the headerless generation-primer and typed-argument shapes; synthetic cases cover parser boundaries.
+    cases:
+      TOOLCALLING.batch.1:
+        description: Single tool call (happy path)
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.2.a:
+        description: Parallel calls in one sampled assistant turn
+        ref: Inkling native multi-block turn framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_time<|content_invoke_tool_json|>{"name":"get_time","args":{"timezone":"EST"}}<|end_message|><|content_model_end_sampling|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.b:
+        description: Two different tools in back-to-back fenced blocks
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_time<|content_invoke_tool_json|>{"name":"get_time","args":{"timezone":"EST"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.c:
+        description: Two calls with narration before and after
+        ref: Inkling native tool-call framing
+        model_text: 'Both: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_time<|content_invoke_tool_json|>{"name":"get_time","args":{"timezone":"EST"}}<|end_message|> Done.'
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+      TOOLCALLING.batch.2.d:
+        description: Same tool name twice; calls remain distinct
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.3:
+        description: No tool call (plain text passthrough)
+        ref: Inkling native tool-call framing
+        model_text: Hello, how can I help you today?
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.4.a:
+        description: Fenced wrapper with garbage body
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>not-json<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.4.b:
+        description: Unterminated / invalid JSON body
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"x":}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.4.c:
+        description: Structured body omits the function name
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"args":{"x":1}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.4.d:
+        description: Complete JSON body omits the outer end fence
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"s":"ok"}}
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.4.e:
+        description: Malformed fenced block followed by a valid call
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>not-json<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.4.f:
+        description: XML-like outer tool name adjacent to the invoke marker; JSON name remains authoritative
+        ref: Synthetic wrong-adjacent header boundary for Inkling
+        model_text: <|message_model|><tool>get_weather</tool><|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.5.a:
+        description: Missing end marker after a complete body (EOF recovery)
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.5.b:
+        description: Orphan close marker without a matching opener
+        ref: Inkling native tool-call framing
+        model_text: prefix <|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.5.c:
+        description: Truncation mid-argument value is dropped
+        ref: Inkling native tool-call framing
+        model_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"S
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.5.d:
+        description: Second call has complete body but no end marker
+        ref: Inkling native tool-call framing
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Boston"}}<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"New York"}}
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.5.e:
+        description: Second call truncates mid-argument value
+        ref: Inkling native tool-call framing
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Boston"}}<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"New York
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.6.a:
+        description: Canonical empty args object
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.6.b:
+        description: Whitespace inside empty args object
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{ }}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.6.c:
+        description: Arguments key absent defaults to an empty object
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f"}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.7.a:
+        description: Standard scalar argument types
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"s":"x","n":2,"b":true}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.7.b:
+        description: Unicode and escaped quotes survive verbatim
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Tōkyō \"central\""}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+      TOOLCALLING.batch.7.c:
+        description: Schema mismatch is surfaced rather than rejected
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"n":"not-an-integer"}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.7.d:
+        description: Nested object and array arguments
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"payload":{"items":[1,{"k":"v"}]}}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.7.e:
+        description: Large and deep argument payload
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"payload":{"a":{"b":{"c":{"d":["zero","one","two","three"]}}}}}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.7.f:
+        description: Integer-like numeric precision is preserved
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{"value":9007199254740993}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.8.a:
+        description: Narration before a call
+        ref: Inkling native tool-call framing
+        model_text: Let me check that for you. <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.8.b:
+        description: Narration after a call
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>TRAILING
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.8.c:
+        description: Narration before and after a call
+        ref: Inkling native tool-call framing
+        model_text: BEFORE <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|> AFTER
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.8.d:
+        description: Narration between two calls
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>MIDDLE<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.9.a:
+        description: Empty model text
+        ref: Inkling native tool-call framing
+        model_text: ''
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.9.b:
+        description: Blank / whitespace-only model text
+        ref: Inkling native tool-call framing
+        model_text: '   '
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.10:
+        description: Duplicate calls (same name twice)
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.11.a:
+        description: Outer header and JSON name disagree; JSON name wins
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+      TOOLCALLING.batch.11.b:
+        description: Empty JSON function name is rejected
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"","args":{"x":1}}<|end_message|>
+        tools:
+        - name: f
+          parameters:
+            type: object
+            properties:
+              s:
+                type: string
+              n:
+                type: integer
+              b:
+                type: boolean
+              payload:
+                type: object
+              value:
+                type: integer
+      TOOLCALLING.batch.11.c:
+        description: Headerless generation-primer call
+        ref: Inkling native tool-call framing
+        model_text: book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"Paris"}}<|end_message|>
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+            required:
+            - destination
+            - passengers
+            - first_class
+      TOOLCALLING.batch.13:
+        description: Unknown tool name is surfaced
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool","args":{"location":"NYC"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.13.c:
+        description: Mixed known and unknown calls
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool","args":{"location":"LA"}}<|end_message|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.batch.30.c:
+        description: Own end-marker literal inside a string argument
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|>
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              text:
+                type: string
+      TOOLCALLING.batch.31.a:
+        description: Marker-bearing first argument followed by a second call
+        ref: Inkling native tool-call framing
+        model_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              text:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+  TOOLCALLING.stream.1.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: stream
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    cases:
+      TOOLCALLING.stream.1.a:
+        description: Complete Inkling tool-call payload delivered in one content chunk
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.stream.1.b:
+        description: Complete Inkling tool call split across parser-significant boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|message_
+        - delta_text: model|>get_weather<|content_invoke_
+        - delta_text: tool_json|>{"name":"get_weather",
+        - delta_text: '"args":{"location":"NYC"}}'
+        - delta_text: <|end_message|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+  TOOLCALLING.stream.2.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: stream
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    cases:
+      TOOLCALLING.stream.2:
+        description: Multiple Inkling tool calls split across content chunks
+        ref: derived from TOOLCALLING.batch.2.b
+        chunks:
+        - delta_text: <|message_model|>get_wea
+        - delta_text: 'ther<|content_invoke_tool_json|>{"name":"get_weather","args":'
+        - delta_text: '{"location":"NYC"}}<|end_message|><|message_model|>get_time'
+        - delta_text: <|content_invoke_tool_json|>{"name":"get_time","args":{"time
+        - delta_text: zone":"EST"}}<|end_message|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+  TOOLCALLING.stream.3.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: stream
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    cases:
+      TOOLCALLING.stream.3:
+        description: Complete Inkling call with grammar tokens split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <
+        - delta_text: '|message_'
+        - delta_text: model|>get_weather<|content_
+        - delta_text: invoke_tool_
+        - delta_text: json|>{"name":"get_weather","args":{"location":"
+        - delta_text: NYC"}}<|end_mes
+        - delta_text: sage|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+  TOOLCALLING.stream.4.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: stream
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    cases:
+      TOOLCALLING.stream.4.a:
+        description: Stream ends after a complete Inkling call body without the end marker
+        ref: derived from TOOLCALLING.batch.5.a
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.stream.4.b:
+        description: Stream terminates mid-argument before the Inkling call body is complete
+        ref: derived from TOOLCALLING.batch.5.c
+        chunks:
+        - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_wea
+        - delta_text: ther","args":{"loc
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string
+      TOOLCALLING.stream.4.c:
+        description: Valid inner JSON without the invoke wrapper, followed by repeated close markers
+        ref: derived from legacy TOOLCALLING.stream.4.c malformed-wrapper coverage
+        chunks:
+        - delta_text: '{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|end_message|><|end_message|>'
+        - delta_text: ''
+          finish_reason: length
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+              unit:
+                type: string

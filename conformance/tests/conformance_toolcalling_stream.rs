@@ -23,6 +23,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 mod common;
+#[path = "common/migration_stream_snapshot.rs"]
+mod migration_stream_snapshot;
 use common::{collect_yaml, fixture_name};
 
 use dynamo_parsers_v2::{
@@ -190,6 +192,65 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
         ["dynamo_v2-0.3.1", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
     );
 
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn prerelease_compaction_preserves_latest_stream_capture() {
+    fn expected_name(fixture: &Fixture) -> &str {
+        fixture.cases["A"].chunks[0].expected["dynamo_v2"][0]
+            .name
+            .as_deref()
+            .unwrap()
+    }
+
+    let root = std::env::temp_dir().join(format!(
+        "dynamo-stream-prerelease-fold-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let relative = Path::new("qwen3/one.yaml");
+    let captures = [
+        ("0.1.0-rc1", "prerelease"),
+        ("0.1.0", "release"),
+        ("0.6.1", "release"),
+    ];
+    for (version, name) in captures {
+        let capture = root.join(format!("dynamo_v2-{version}/qwen3"));
+        std::fs::create_dir_all(&capture).unwrap();
+        std::fs::write(
+            capture.join("one.yaml"),
+            format!(
+                "cases:\n  A:\n    chunks:\n      - expected:\n          - index: 0\n            name: {name}\n            arguments: \"{{}}\"\n"
+            ),
+        )
+        .unwrap();
+    }
+
+    let base_fixture = || {
+        serde_yaml::from_str::<Fixture>(
+            "family: qwen3\ncases:\n  A:\n    chunks:\n      - delta_text: x\n",
+        )
+        .unwrap()
+    };
+    let dirs = common::version_dirs_ascending(&root, "dynamo_v2-");
+    let mut uncompacted = base_fixture();
+    for directory in &dirs {
+        merge_dynamo(&mut uncompacted, directory, relative);
+    }
+
+    let mut compacted = base_fixture();
+    for directory in dirs.iter().filter(|directory| {
+        directory.file_name().and_then(|name| name.to_str()) != Some("dynamo_v2-0.6.1")
+    }) {
+        merge_dynamo(&mut compacted, directory, relative);
+    }
+
+    assert_eq!(expected_name(&uncompacted), "release");
+    assert_eq!(expected_name(&compacted), "release");
     std::fs::remove_dir_all(root).unwrap();
 }
 

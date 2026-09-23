@@ -1,0 +1,439 @@
+corpus: batch
+family: minimax_m2
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              nonsense
+
+              </minimax:tool_call>'
+            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+      TOOLCALLING.batch.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke>
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+      TOOLCALLING.batch.4.d:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </minimax:tool_call>'
+            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  TOOLCALLING.batch.5.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>'
+            explanation: vLLM preserves a MiniMax block with a missing outer </minimax:tool_call> close as content; Dynamo recovers the complete inner <invoke> call.
+      TOOLCALLING.batch.5.b:
+        expected:
+          vllm_python:
+            explanation: vLLM and SGLang preserve orphan MiniMax invoke/parameter markers as content when opening <minimax:tool_call> is missing; Dynamo recovers the complete inner <invoke> call and drops the orphan close marker.
+            calls: []
+            normal_text: '<invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+      TOOLCALLING.batch.5.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NY'
+            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+      TOOLCALLING.batch.5.d:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              <minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">Boston</parameter>
+
+              </invoke>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">New York</parameter>
+
+              </invoke>'
+            explanation: vLLM preserves the unterminated MiniMax tool-call block as content; Dynamo preserves prefix text and recovers the complete inner <invoke> calls.
+      TOOLCALLING.batch.5.e:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+              <minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">Boston</parameter>
+
+              </invoke>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">New York'
+            explanation: vLLM preserves the truncated MiniMax tool-call block as content; Dynamo preserves prefix text, recovers the complete prior <invoke> call, and drops the incomplete trailing invoke.
+      TOOLCALLING.batch.5.f:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: '<invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>
+
+              '
+            explanation: vLLM preserves the bare MiniMax invoke before the first <minimax:tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
+      TOOLCALLING.batch.5.g:
+        expected:
+          vllm_python:
+            explanation: vLLM and SGLang preserve orphan MiniMax invoke/parameter markers as content when opening <minimax:tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete inner <invoke> call, and drops the orphan close marker.
+            calls: []
+            normal_text: 'I will check that. <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                first_class: true
+                passengers: 2
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          vllm_python:
+            explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740992
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.yaml:
+    family: minimax_m2
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+              <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+              </minimax:tool_call>'
+            explanation: vLLM leaves the unknown MiniMax tool-call block in normal_text, while Dynamo drops it after tool-name validation.
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              <invoke name="get_time">
+
+              <parameter name="timezone">EST</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+            explanation: 'vLLM leaks the complete MiniMax tool-call block into normal_text;
+
+              Dynamo parses it as structured tool output per the M2.7 spec.'
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+            explanation: 'vLLM leaks the complete MiniMax tool-call block into normal_text;
+
+              Dynamo parses it as structured tool output per the M2.7 spec.'
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m2
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            explanation: 'Strict per MiniMax-M2.7''s published parser regexes: the outer
+
+              <minimax:tool_call>, inner <invoke>, and <parameter> blocks must all
+
+              be paired. This stream ends mid-parameter, so Dynamo recovers no call
+
+              and drops the buffered protocol block from normal_text.'
+            calls: []
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </invoke>
+
+              </invoke>'
+            explanation: vLLM preserves the bare MiniMax invoke and orphan close-marker spam as content; Dynamo recovers the complete inner <invoke> call and drops the orphan marker tail.

@@ -1,0 +1,173 @@
+corpus: stream
+family: glm47
+capture: dynamo_v2-0.6.1
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}
+  TOOLCALLING.streamv1.10.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}
+  TOOLCALLING.streamv1.13.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.13.c:
+        chunks: []
+      TOOLCALLING.streamv1.11.a:
+        chunks: []
+      TOOLCALLING.streamv1.11.b:
+        chunks: []
+      TOOLCALLING.streamv1.11.c:
+        chunks: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.2.b:
+        chunks: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}
+  TOOLCALLING.streamv1.30.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.30:
+        chunks: []
+  TOOLCALLING.streamv1.31.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.31:
+        chunks: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+      TOOLCALLING.streamv1.4.b:
+        chunks: []
+      TOOLCALLING.streamv1.4.c:
+        chunks: []
+      TOOLCALLING.streamv1.4.e:
+        chunks: []
+      TOOLCALLING.streamv1.4.f:
+        chunks: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: 'I''ll '
+        - expected: []
+          normal_text: 'start '
+        - expected: []
+          normal_text: 'by fetching the '
+        - expected: []
+          normal_text: 'weather for '
+        - expected: []
+          normal_text: 'both '
+        - expected: []
+          normal_text: 'Boston and '
+        - expected: []
+          normal_text: 'New York at '
+        - expected: []
+          normal_text: 'the '
+        - expected: []
+          normal_text: same time!
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            name: get_weather
+            arguments: '{"location":"Boston"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 1
+            name: get_weather
+            arguments: '{"location":"New York"}'
+            complete: true
+  TOOLCALLING.streamv1.50.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}
+  TOOLCALLING.streamv1.6.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.6.c:
+        chunks: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases:
+      TOOLCALLING.streamv1.7.c:
+        chunks: []
+      TOOLCALLING.streamv1.7.d:
+        chunks: []
+      TOOLCALLING.streamv1.7.e:
+        chunks: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}
+  TOOLCALLING.streamv1.9.yaml:
+    family: glm47
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.6.1
+    cases: {}

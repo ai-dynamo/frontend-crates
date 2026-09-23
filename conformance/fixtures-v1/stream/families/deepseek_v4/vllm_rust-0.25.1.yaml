@@ -1,0 +1,22 @@
+corpus: stream
+family: deepseek_v4
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        exception: 'ToolParserError::ParsingFailed (near "\nn": )'
+      TOOLCALLING.streamv1.4.c:
+        exception: 'ToolParserError::ParsingFailed (near "\n<｜DSML｜invoke>": )'
+      TOOLCALLING.streamv1.4.d:
+        exception: 'ToolParserError::ParsingFailed (near "\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true": )'
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+    cases: {}

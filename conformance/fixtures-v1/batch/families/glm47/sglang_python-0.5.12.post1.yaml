@@ -1,0 +1,319 @@
+corpus: batch
+family: glm47
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:  Done.'
+            explanation: SGLang glm47 preserves trailing prose after the last </tool_call>; Dynamo and vLLM drop it
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+            explanation: vLLM and SGLang preserve the truncated <tool_call>... markup as content on missing-end-token recovery; Dynamo drops to keep wire tags out of message.content
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo recovers the complete bare call body and strips the orphan close marker.
+            calls: []
+            normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+            explanation: vLLM and SGLang preserve the truncated <tool_call>... prefix as content on mid-arg-value truncation; Dynamo drops to keep wire tags out of message.content
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+            explanation: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo and vLLM both drop it
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+            explanation: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo and vLLM both drop it
+      TOOLCALLING.batch.5.f:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+            explanation: vLLM and SGLang preserve the bare GLM call before the first <tool_call> as content; Dynamo recovers it as the first structured call before parsing the wrapped call.
+      TOOLCALLING.batch.5.g:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete bare call body, and strips the orphan close marker.
+            calls: []
+            normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  TOOLCALLING.batch.6.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang glm47 rejects whitespace between the function name and </tool_call> (`get_time `), emitting no calls; Dynamo and vLLM both tolerate it and extract the empty-args call
+  TOOLCALLING.batch.7.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: book_flight
+              arguments:
+                first_class: true
+                passengers: 2
+                destination: Paris
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+            explanation: SGLang glm47 trims trailing whitespace before the first <tool_call>; Dynamo and vLLM keep it verbatim
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: Let me know if you need more.
+            explanation: SGLang glm47 preserves trailing normal_text after the last </tool_call>; Dynamo and vLLM drop it
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.  Let me know if you need more.
+            explanation: SGLang glm47 concatenates the prefix and trailing prose; Dynamo and vLLM drop the post-wrapper text
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: I will check the weather.  Then check LA weather.
+            explanation: SGLang glm47 concatenates inter-call narration and trailing prose; Dynamo and vLLM only emit the prefix before the first <tool_call>
+  TOOLCALLING.batch.yaml:
+    family: glm47
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.stream.1.yaml:
+    family: glm47
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: glm47
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: glm47
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: glm47
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: '{"location": "NYC"'
+            normal_text: ''
+            explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). SGLang''s XML-to-JSON state machine (`glm47_moe_detector.py:377-407`) closes the incremental JSON string with `"` when `</arg_value>` is matched but emits the closing `}` only from `_finalize_tool_call` on `</tool_call>` (line 729); on EOF neither flush path runs so the streamed args buffer is shipped as `{"location": "NYC"` (open object). Dynamo drops the truncated call instead of emitting a malformed-JSON args payload (`glm47_parser.rs:194-215`, `allow_eof_recovery=false` production default).'
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments: '{"location": "N'
+            normal_text: ''
+            explanation: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). The stream ends mid-`<arg_value>` with `N` and never delivers `</arg_value>` or `</tool_call>`; SGLang's state machine (`glm47_moe_detector.py:419-428`) has already opened the JSON string and emitted `N` incrementally, but neither the closing `"` (gated on `</arg_value>`, line 396) nor `}` (gated on `</tool_call>`, line 729) is ever flushed. Dynamo drops the truncated call (`glm47_parser.rs:194-215`, `allow_eof_recovery=false` production default).
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+            explanation: SGLang strips orphan GLM close markers but does not recover the complete bare call body; Dynamo emits the recovered call.

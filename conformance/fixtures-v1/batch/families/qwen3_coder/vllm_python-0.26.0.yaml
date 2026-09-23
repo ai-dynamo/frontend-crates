@@ -1,0 +1,28 @@
+corpus: batch
+family: qwen3_coder
+capture: vllm_python-0.26.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.batch.4.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.batch.5.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}
+  TOOLCALLING.batch.8.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+    cases: {}

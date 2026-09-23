@@ -1,0 +1,303 @@
+corpus: batch
+family: mistral
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: 'Both:'
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+  TOOLCALLING.batch.4.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+  TOOLCALLING.batch.5.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's MistralDetector requires '[TOOL_CALLS] [' with a space before the JSON array; the canonical mistral_common wire format emits '[TOOL_CALLS][' with no space, so it falls to its compact path, finds no [ARGS], and returns no call. Dynamo recovers the call via the empty end-token. Real SGLang divergence on the genuine Mistral format.
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
+            explanation: SGLang's MistralDetector matches no [TOOL_CALLS opener (an orphan [/TOOL_CALLS] close does not match) and returns the text unchanged with no call. Dynamo strips the orphan close marker and recovers the complete call body without leaking markup (TOOLCALLING.batch.5 impl-defined recovery).
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+            explanation: SGLang's MistralDetector requires '[TOOL_CALLS] [' with a space before the JSON array; the canonical mistral_common format emits '[TOOL_CALLS][' with no space, so it returns no call and keeps the narration prefix. Dynamo recovers both complete calls. Real SGLang divergence on the genuine Mistral format.
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+            explanation: SGLang emits no call and keeps the narration prefix; Dynamo recovers the complete leading call (Boston) and drops the truncated trailing call.
+  TOOLCALLING.batch.6.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            explanation: SGLang's Mistral detector only recognizes the space-delimited JSON-array form '[TOOL_CALLS] [...]' or the compact '[TOOL_CALLS]name[ARGS]{...}' form; this fixture uses the InferHub/vLLM no-space bracket form with a closing marker, so SGLang emits no tool call.
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: I will check the weather.
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: I will check the weather.
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: I will check the weather.
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits; it also trims the boundary whitespace Dynamo now preserves.
+  TOOLCALLING.batch.yaml:
+    family: mistral
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.30.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.30.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.30.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.31.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.31.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.13.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+  TOOLCALLING.stream.1.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's streaming MistralDetector requires '[TOOL_CALLS] [' with a space; the canonical mistral_common format emits '[TOOL_CALLS][' with no space, so it never enters the JSON-array path and emits no call. Dynamo buffers the payload and recovers the call. Real SGLang divergence on the genuine Mistral format.
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's Mistral detector emits no tool call when the [TOOL_CALLS] payload is split across streaming chunks; Dynamo buffers the fragments and recovers the call.
+  TOOLCALLING.stream.2.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's Mistral detector emits no tool call when the [TOOL_CALLS] payload is split across streaming chunks; Dynamo buffers the fragments and recovers the calls.
+  TOOLCALLING.stream.3.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's Mistral detector emits no tool call when the [TOOL_CALLS] payload is split across streaming chunks; Dynamo buffers the fragments and recovers the call.
+  TOOLCALLING.stream.4.yaml:
+    family: mistral
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang's streaming MistralDetector requires '[TOOL_CALLS] [' with a space; the canonical mistral_common format emits '[TOOL_CALLS][' with no space, so it never enters the JSON-array path and emits no call. Dynamo recovers the call at stream finalize. Real SGLang divergence on the genuine Mistral format.
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}[/TOOL_CALLS[/TOOL_CALLS[/TOOL_CALLS'
+            explanation: SGLang's streaming MistralDetector matches no [TOOL_CALLS marker and flushes the buffer as normal text, stripping every ']' char via its eot_token replace (leaving bracket fragments). Dynamo strips the orphan close markers at the confirmed end token and recovers the complete call body without leaking markup.

@@ -1,0 +1,192 @@
+corpus: batch
+family: deepseek_v4
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.2.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.f:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.5.g:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.batch.13:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.stream.1.yaml:
+    family: deepseek_v4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.stream.2.yaml:
+    family: deepseek_v4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.stream.3.yaml:
+    family: deepseek_v4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+  TOOLCALLING.stream.4.yaml:
+    family: deepseek_v4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='deepseek_v4'

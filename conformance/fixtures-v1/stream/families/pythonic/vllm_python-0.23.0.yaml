@@ -1,0 +1,462 @@
+corpus: stream
+family: pythonic
+capture: vllm_python-0.23.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.1:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.10.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.10:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.13.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: unknown_tool
+            arguments: '{"location": "NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.13.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+          - index: 1
+            id: true
+            name: unknown_tool
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.2.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+          - index: 1
+            id: true
+            name: get_time
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.2.c:
+        chunks:
+        - expected: []
+          normal_text: 'Both: [get_weather(location="NYC"),'
+        - expected: []
+          normal_text: ' get_time(timezone="EST")]'
+        - expected: []
+          normal_text: ' Done.'
+        - expected: []
+      TOOLCALLING.streamv1.2.d:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+          - index: 1
+            id: true
+            name: get_weather
+            arguments: '{"location": "LA"}'
+        - expected: []
+  TOOLCALLING.streamv1.3.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.3:
+        chunks:
+        - expected: []
+          normal_text: Hello, how
+        - expected: []
+          normal_text: ' can'
+        - expected: []
+          normal_text: ' I help you'
+        - expected: []
+          normal_text: ' today?'
+        - expected: []
+  TOOLCALLING.streamv1.30.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: '{"sql": "SELECT a'
+        - expected:
+          - index: 0
+            arguments: ', SELECT'
+        - expected:
+          - index: 0
+            arguments: ' b"}'
+        - expected: []
+      TOOLCALLING.streamv1.30.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: '{"sql": "SELECT value'
+        - expected:
+          - index: 0
+            arguments: ' WHERE'
+        - expected:
+          - index: 0
+            arguments: ' note has brace'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.30.c:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: '{"sql": "literal [get_time marker]'
+        - expected:
+          - index: 0
+            arguments: ' stays text"}'
+        - expected: []
+  TOOLCALLING.streamv1.31.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: '{"sql": "SELECT a'
+        - expected:
+          - index: 0
+            arguments: ', SELECT'
+        - expected:
+          - index: 0
+            arguments: ' b"}'
+          - index: 1
+            id: true
+            name: get_time
+            arguments: '{"timezone": "EST"}'
+        - expected: []
+      TOOLCALLING.streamv1.31.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: run_query
+            arguments: '{"sql": "SELECT value'
+        - expected:
+          - index: 0
+            arguments: ' WHERE'
+        - expected:
+          - index: 0
+            arguments: ' note has brace'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.4.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.b:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.4.d:
+        chunks:
+        - expected: []
+        - expected: []
+  TOOLCALLING.streamv1.5.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+      TOOLCALLING.streamv1.5.b:
+        chunks:
+        - expected: []
+          normal_text: get_weather(location="NYC")]
+        - expected: []
+      TOOLCALLING.streamv1.5.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "N'
+        - expected: []
+      TOOLCALLING.streamv1.5.d:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+        - expected: []
+          normal_text: ' York")'
+        - expected: []
+      TOOLCALLING.streamv1.5.e:
+        chunks:
+        - expected: []
+          normal_text: I'll start
+        - expected: []
+          normal_text: ' by'
+        - expected: []
+          normal_text: ' fetching the weather'
+        - expected: []
+          normal_text: ' for both'
+        - expected: []
+          normal_text: ' Boston'
+        - expected: []
+          normal_text: ' and New'
+        - expected: []
+          normal_text: ' York at the'
+        - expected: []
+          normal_text: ' same'
+        - expected: []
+          normal_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+        - expected: []
+          normal_text: ' York'
+        - expected: []
+  TOOLCALLING.streamv1.50.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.50:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  TOOLCALLING.streamv1.6.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: '{}'
+        - expected: []
+      TOOLCALLING.streamv1.6.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_time
+            arguments: '{}'
+        - expected: []
+  TOOLCALLING.streamv1.7.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        chunks:
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: book_flight
+            arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'
+        - expected: []
+      TOOLCALLING.streamv1.7.b:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: get_weather
+            arguments: '{"location": "Tōkyō \"central\""}'
+        - expected: []
+      TOOLCALLING.streamv1.7.c:
+        chunks:
+        - expected:
+          - index: 0
+            id: true
+            name: set_temperature
+            arguments: '{"celsius": "20"}'
+        - expected: []
+      TOOLCALLING.streamv1.7.d:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'
+        - expected: []
+      TOOLCALLING.streamv1.7.e:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - index: 0
+            id: true
+            name: process_data
+            arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'
+        - expected: []
+  TOOLCALLING.streamv1.8.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. [get_weather(location="NYC")]'
+        - expected: []
+      TOOLCALLING.streamv1.8.b:
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.8.c:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. [get_weather(location="NYC")]'
+        - expected: []
+          normal_text: ' Let me'
+        - expected: []
+          normal_text: ' know'
+        - expected: []
+          normal_text: ' if you'
+        - expected: []
+          normal_text: ' need more.'
+        - expected: []
+      TOOLCALLING.streamv1.8.d:
+        chunks:
+        - expected: []
+          normal_text: I will
+        - expected: []
+          normal_text: ' check'
+        - expected: []
+          normal_text: ' the weather. [get_weather(location="NYC")]'
+        - expected: []
+          normal_text: ' Then check'
+        - expected: []
+          normal_text: ' LA'
+        - expected: []
+          normal_text: ' weather. [get_weather(location="LA")]'
+        - expected: []
+  TOOLCALLING.streamv1.9.yaml:
+    family: pythonic
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.23.0
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        chunks:
+        - expected: []
+        - expected: []
+      TOOLCALLING.streamv1.9.b:
+        chunks:
+        - expected: []
+          normal_text: '   '
+        - expected: []

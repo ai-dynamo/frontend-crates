@@ -1,0 +1,224 @@
+corpus: batch
+family: jamba
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.4.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.5.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.6.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.7.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.8.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.batch.yaml:
+    family: jamba
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.30.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.30.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.30.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.31.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.31.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.13.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.stream.1.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.stream.2.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.stream.3.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+  TOOLCALLING.stream.4.yaml:
+    family: jamba
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            unavailable: SGLang has no detector for family='jamba'

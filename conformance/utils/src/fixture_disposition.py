@@ -14,6 +14,28 @@ from unified_taxonomy import historical_case_label
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
 DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
+LEGACY_HISTORY_PATH = "legacy-history"
+LEGACY_HISTORY_FORMAT = "legacy-history"
+
+
+def version_sort_key(version: str) -> tuple:
+    semver, build_separator, build = version.partition("+")
+    release_text, prerelease_separator, prerelease = semver.partition("-")
+    match = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", release_text)
+    release = tuple(int(part) for part in match.group(1).split(".")) if match else ()
+    post = int(match.group(2)) if match and match.group(2) else 0
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return (
+        release,
+        post,
+        0 if prerelease_separator else 1,
+        prerelease_key,
+        bool(build_separator),
+        build,
+    )
 
 
 def is_source_capture(name: str) -> bool:
@@ -151,6 +173,9 @@ def active_shards(manifest: dict) -> list[dict]:
         if shard.get("format") == "unified-history":
             if shard.get("path") != UNIFIED_HISTORY_PATH:
                 raise ValueError(f"invalid Unified history path: {shard.get('path')}")
+        elif shard.get("format") == LEGACY_HISTORY_FORMAT:
+            if shard.get("path") != LEGACY_HISTORY_PATH:
+                raise ValueError(f"invalid legacy history path: {shard.get('path')}")
         elif shard["path"] in inactive:
             raise ValueError(f"inactive shard is also active: {shard['path']}")
     return shards

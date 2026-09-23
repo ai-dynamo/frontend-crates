@@ -1,0 +1,464 @@
+corpus: reasoning
+family: inkling
+capture: inputs
+documents:
+  REASONING.batch.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: batch
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    refs:
+      local: Inkling block-structured reasoning grammar
+    cases:
+      REASONING.batch.1.a:
+        description: Empty input
+        ref: Inkling block-structured reasoning grammar
+        model_text: ''
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
+      REASONING.batch.1.b:
+        description: Plain text without reasoning markers
+        ref: Inkling block-structured reasoning grammar
+        model_text: plain answer
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: plain answer
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
+      REASONING.batch.2.a:
+        description: Explicit reasoning span
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>thinking<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: ''
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: ''
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: ''
+      REASONING.batch.2.b:
+        description: Normal prefix before a reasoning block
+        ref: Inkling block-structured reasoning grammar
+        model_text: Hello. <|message_model|><|content_thinking|>think<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: think
+            normal_text: 'Hello. '
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.2.c:
+        description: Reasoning followed by a content answer
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>compute it<|end_message|><|message_model|><|content_text|>The answer is 42.<|end_message|><|content_model_end_sampling|>
+        expected:
+          dynamo_v1:
+            reasoning_text: compute it
+            normal_text: The answer is 42.
+          vllm_python:
+            reasoning_text: compute it
+            normal_text: The answer is 42.
+          sglang_python:
+            reasoning_text: compute it
+            normal_text: The answer is 42.
+      REASONING.batch.2.d:
+        description: Normal text around a reasoning span
+        ref: Inkling block-structured reasoning grammar
+        model_text: before <|message_model|><|content_thinking|>thinking<|end_message|><|message_model|><|content_text|> after<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: before  after
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.2.e:
+        description: Empty reasoning block
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|><|end_message|><|message_model|><|content_text|>Direct answer.<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: Direct answer.
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.2.f:
+        description: Complex Unicode and multiline reasoning
+        ref: Inkling block-structured reasoning grammar
+        model_text: '<|message_model|><|content_thinking|>Line 1
+
+          Unicode: café
+
+          JSON-ish: {"x": [1, true]}<|end_message|><|message_model|><|content_text|>Done.<|end_message|>'
+        expected:
+          dynamo_v1:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.3.a:
+        description: Reasoning followed by downstream tool-call text
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>use weather<|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|><|content_model_end_sampling|>
+        expected:
+          dynamo_v1:
+            reasoning_text: use weather
+            normal_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.3.b:
+        description: Tool marker force-exits an open reasoning block
+        explanation: 'n/a: Inkling requires every thinking block to close with <|end_message|> before a tool block begins; <|content_invoke_tool_json|> is not a legal in-band reasoning terminator.'
+        expected:
+          dynamo_v1:
+            unavailable: Inkling requires a thinking block to close with <|end_message|> before a tool block; the invoke marker is not an in-band reasoning terminator.
+          vllm_python:
+            unavailable: Inkling requires a thinking block to close with <|end_message|> before a tool block; the invoke marker is not an in-band reasoning terminator.
+          sglang_python:
+            unavailable: Inkling requires a thinking block to close with <|end_message|> before a tool block; the invoke marker is not an in-band reasoning terminator.
+      REASONING.batch.3.c:
+        description: Recipientless commentary channel is visible normal text
+        explanation: 'n/a: Harmony channel/recipient semantics do not exist in Inkling; Inkling uses thinking, text, tool, and non-text content-kind blocks instead.'
+        expected:
+          dynamo_v1:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          vllm_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          sglang_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+      REASONING.batch.3.d:
+        description: Directed commentary tool call is not visible normal text
+        explanation: 'n/a: Harmony channel/recipient semantics do not exist in Inkling; Inkling uses thinking, text, tool, and non-text content-kind blocks instead.'
+        expected:
+          dynamo_v1:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          vllm_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          sglang_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+      REASONING.batch.3.e:
+        description: Directed analysis tool call is handed off
+        explanation: 'n/a: Harmony channel/recipient semantics do not exist in Inkling; Inkling uses thinking, text, tool, and non-text content-kind blocks instead.'
+        expected:
+          dynamo_v1:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          vllm_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          sglang_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+      REASONING.batch.3.f:
+        description: Analysis/commentary/final channel sequencing
+        explanation: 'n/a: Harmony channel/recipient semantics do not exist in Inkling; Inkling uses thinking, text, tool, and non-text content-kind blocks instead.'
+        expected:
+          dynamo_v1:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          vllm_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+          sglang_python:
+            unavailable: Harmony channel and recipient semantics are not part of the Inkling block grammar.
+      REASONING.batch.4:
+        description: Dangling end marker without an opening block
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.5:
+        description: Missing end marker keeps remaining text as reasoning
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>partial reasoning
+        expected:
+          dynamo_v1:
+            reasoning_text: partial reasoning
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.6.a:
+        description: Two reasoning spans concatenate
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>first<|end_message|><|message_model|><|content_thinking|>second<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: firstsecond
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.6.b:
+        description: Stray end marker after a complete reasoning span is stripped
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_thinking|>preamble<|end_message|>body<|end_message|>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: preamble
+            normal_text: bodyanswer
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.7:
+        description: Headerless real-generation framing anchor
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|content_thinking|>real trace reasoning<|end_message|><|message_model|><|content_text|>real trace answer<|end_message|><|content_model_end_sampling|>
+        expected:
+          dynamo_v1:
+            reasoning_text: real trace reasoning
+            normal_text: real trace answer
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.batch.7.a:
+        description: Image placeholder block is consumed without leaking
+        ref: Inkling block-structured reasoning grammar
+        model_text: <|message_model|><|content_image|>IMGDATA<|end_message|><|message_model|><|content_text|>done<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: done
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+  REASONING.stream.yaml:
+    family: inkling
+    model_label: Inkling
+    mode: stream
+    spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+    refs:
+      local: Inkling block-structured reasoning grammar
+    cases:
+      REASONING.stream.1.a:
+        description: Empty stream chunk
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - ''
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.1.b:
+        description: Plain text stream
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - plain
+        - ' answer'
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: plain answer
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.2.a:
+        description: Single reasoning block across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thinking|>rea
+        - son<|end_message|><|message_model|><|content_text|>ans
+        - wer<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: reason
+            normal_text: answer
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.2.b:
+        description: Multiple reasoning spans across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thinking|>a<|end_message|>
+        - <|message_model|><|content_thinking|>b<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ab
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.2.c:
+        description: Stray end marker after a complete reasoning span
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thinking|>a<|end_message|>
+        - <|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: a
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.3.a:
+        description: Start marker split across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thin
+        - king|>reason<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: reason
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.3.b:
+        description: End marker split across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thinking|>reason<|end_mes
+        - sage|><|message_model|><|content_text|>answer<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: reason
+            normal_text: answer
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.3.c:
+        description: Partial marker prefix later becomes normal text
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|cont
+        - ainer
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: <|container
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.3.d:
+        description: Ambiguous trailing <| is preserved as text
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|content_text|>answer<|end_message|>
+        - <|
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: answer<|
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.4:
+        description: Dangling end marker split across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|end_mes
+        - sage|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic Inkling boundary not live-recaptured for this peer; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic Inkling boundary not live-recaptured for this peer; Dynamo behavior is locally recorded.
+      REASONING.stream.4.a:
+        description: Close marker only is stripped
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.4.b:
+        description: Downstream tool boundary split across chunks
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|><|content_thinking|>use tool<|end_message|>
+        - <|message_model|>get_weather<|content_invoke_
+        - tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+        - <|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: use tool
+            normal_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.4.c:
+        description: Two downstream tool calls in one stream
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+        - <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|><|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+      REASONING.stream.4.d:
+        description: Partial downstream boundary recovers when completed
+        ref: Inkling block-structured reasoning grammar
+        chunks:
+        - get_weather<|content_inv
+        - oke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+        - <|end_message|>
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+          vllm_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.
+          sglang_python:
+            unavailable: Synthetic boundary case not live-recaptured for this peer in the current snapshot; Dynamo behavior is locally recorded.

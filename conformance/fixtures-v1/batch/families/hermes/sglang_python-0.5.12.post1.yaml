@@ -1,0 +1,375 @@
+corpus: batch
+family: hermes
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:'
+      TOOLCALLING.batch.2.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang leave the raw <tool_call> wrapper in normal_text on non-JSON garbage; Dynamo discards the unparseable wrapper (no leak). Non-parity by design.
+            calls: []
+            normal_text: <tool_call>nonsense</tool_call>
+      TOOLCALLING.batch.4.b:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang drop the call and leak the raw wrapper when the JSON body is missing its closing brace; Dynamo's JSON-repair recovers the call. Non-parity by design.
+            calls: []
+            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
+      TOOLCALLING.batch.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang leave the orphan </tool_call> in normal_text when the opening <tool_call> marker is missing; Dynamo strips the stray end marker (no leak). Non-parity by design.
+            calls: []
+            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      TOOLCALLING.batch.5.c:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang surface the truncated <tool_call> body as raw text; Dynamo suppresses the unterminated call (open <tool_call>, no close, nothing salvaged) so no markup leaks. Non-parity by design.
+            calls: []
+            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+      TOOLCALLING.batch.5.d:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang recover the trailing call whose body is complete but end marker is missing; Dynamo drops the unterminated trailing call and keeps the first complete call. Non-parity by design.
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        expected:
+          sglang_python:
+            explanation: vLLM and SGLang leak the whole text when the trailing call is truncated mid-arg-value; Dynamo recovers the first complete call and drops the truncated trailer (no leak). Non-parity by design.
+            calls: []
+            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York'
+  TOOLCALLING.batch.6.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: book_flight
+              arguments:
+                first_class: true
+                passengers: 2
+                destination: Paris
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō "central"
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        expected:
+          sglang_python:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        expected:
+          sglang_python:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.d:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: I will check the weather.
+  TOOLCALLING.batch.yaml:
+    family: hermes
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '   '
+      TOOLCALLING.batch.10:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: ''
+            explanation: SGLang drops unknown tool names by default unless SGLANG_FORWARD_UNKNOWN_TOOLS is enabled.
+      TOOLCALLING.batch.13.c:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+            explanation: SGLang drops unknown tool names by default unless SGLANG_FORWARD_UNKNOWN_TOOLS is enabled.
+  TOOLCALLING.stream.1.yaml:
+    family: hermes
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.2.yaml:
+    family: hermes
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: hermes
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.stream.4.yaml:
+    family: hermes
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        expected:
+          sglang_python:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        expected:
+          sglang_python:
+            explanation: On a stream truncated mid-body, SGLang's finalizer recovers a no-arg get_weather({}); Dynamo suppresses the unterminated call (open <tool_call>, no close, nothing salvaged) so no markup leaks. Non-parity by design.
+            calls:
+            - name: get_weather
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          sglang_python:
+            calls: []
+            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'

@@ -10,6 +10,8 @@
 //! Output:
 //! - `--family <family>`: {case_id: {"calls": [...], "normal_text": "..."}}
 //! - no `--family`: {family: {case_id: {"calls": [...], "normal_text": "..."}}}
+//! - `--with-provenance`: wrap either payload in `cases` with the compiled crate
+//!   version in `captured_with.dynamo_v2`, so packaging cannot guess its producer.
 //!
 //! Usage:
 //!   cargo run -p dynamo-parsers-v2 --bin record_batch_via_stream -- --family deepseek_v4
@@ -78,11 +80,20 @@ fn main() -> anyhow::Result<()> {
         );
     }
 
-    if let Some(family) = family {
-        println!("{}", serde_json::to_string_pretty(&nested[&family])?);
+    let cases = if let Some(family) = family {
+        serde_json::to_value(&nested[&family])?
     } else {
-        println!("{}", serde_json::to_string_pretty(&nested)?);
-    }
+        serde_json::to_value(&nested)?
+    };
+    let output = if args.iter().any(|arg| arg == "--with-provenance") {
+        serde_json::json!({
+            "captured_with": {"dynamo_v2": env!("CARGO_PKG_VERSION")},
+            "cases": cases,
+        })
+    } else {
+        cases
+    };
+    println!("{}", serde_json::to_string_pretty(&output)?);
     Ok(())
 }
 

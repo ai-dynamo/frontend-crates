@@ -1,0 +1,72 @@
+corpus: stream
+family: minimax_m3
+capture: sglang_python-0.5.12.post1
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.1:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.10.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.10:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.13.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.13:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.3.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.3:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.5.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.7.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.7.b:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.7.c:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.7.d:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.7.e:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.7.f:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.streamv1.9.yaml:
+    family: minimax_m3
+    mode: streamv1
+    captured_with:
+      sglang_python: 0.5.12.post1
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+      TOOLCALLING.streamv1.9.b:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.

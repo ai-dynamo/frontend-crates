@@ -9,16 +9,16 @@ Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for fr
 
 ## Unified storage contract: plain versioned YAML only
 
-The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
+The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. The batch, streaming, batch-on-stream, and reasoning corpora also use reviewable YAML under `fixtures-v1/`, with their original capture identities and resolution rules.
 
 - No new Unified `*.patch*.yaml`, `.tar.gz` capture archives, `+source.<hash>`, `+sha<hash>`, or other hash/commit-qualified capture names. Do not add these formats to satisfy an old Unified reader or test.
 - One version identifies one checkpoint per family and implementation. A different source SHA alone does not justify a recapture, duplicate file, or manifest change. The first capture may keep its original source SHA inside the YAML as origin metadata; later SHAs do not change its identity.
 - New parser behavior requires a manually pinned, unpublished crate version before capture. Follow [Pin the release version before capture](#pin-the-release-version-before-capture).
-- Readers and HTML/JSON generators discover checkpoints by filename and semantic-version order. When a family has no changed output in a later version, carry its earlier captured output forward into that version's table cells. Do not duplicate YAML or leave those cells empty.
+- Readers and HTML/JSON generators discover recorded checkpoints by filename and semantic-version order. The default Unified reference selects each family's newest actual capture and displays that version in its cell details. A concrete version with no checkpoint for that family remains unavailable. Within a recorded checkpoint, omitted cases inherit prior observations; an actual capture with unchanged output needs only its provenance and an empty `changes` mapping.
 - Keep inputs and GOLDEN separate from recorded outputs. Changing an existing input is discouraged; if necessary, rerun and update every prior affected version. Never change GOLDEN to hide a parser failure.
 - Family-specific PRs add only that family's captures and required code. Do not bundle other families' YAML in an archive. Shared cases and non-GLM fixes from #234 belong to #241.
 
-The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the migration scope. Keep the existing archive readers and packagers for those older tests. A family conversion may update that family's stream capture in the existing format without migrating storage or repackaging other families. Unified uses only the YAML store.
+The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the storage format. Unified's plain semantic-version rule does not rename legacy `.patch1` or `+current` checkpoints. The legacy store materializes the original loose layout for the existing readers.
 
 ### Pin the release version before capture
 
@@ -49,13 +49,13 @@ Parser v1/v2 terminology, migration steps, and fixture ownership are documented 
 ```
 conformance/
 ├── fixtures-manifest.json                         # pins the active fixture snapshot (sha256 per shard)
-├── fixtures/                                      # LFS-tracked shard tarballs for tool-calling/reasoning fixtures
-├── fixtures-unified-v2/                            # reviewable append-only YAML history for Unified captures
+├── fixtures-v1/                                   # reviewable batch, stream, batch-on-stream, and reasoning history
+├── fixtures-unified-v2/                           # reviewable append-only YAML history for Unified captures
 ├── tests/*.rs                                     # Rust fixture tests (fixtures extracted from the store on first run)
 └── utils/                                         # render, check, and record helpers
 ```
 
-Tool-calling and reasoning archives remain under `conformance/fixtures/`, extracted into `~/.cache/dynamo/conformance-fixtures/`. Unified history uses reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores for existing consumers. Snapshot layout:
+Tool-calling and reasoning captures live under `conformance/fixtures-v1/`. Unified history lives under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores in `~/.cache/dynamo/conformance-fixtures/` for existing consumers. Snapshot layout:
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
@@ -64,7 +64,31 @@ toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Unified capture history is append-only.** Each capture is one `<implementation>-<semantic-version>.yaml` checkpoint. Its first capture retains a compact source origin in YAML metadata; source SHA does not create another capture identity. Add a family YAML only when that family changes output; later release views carry unchanged family output forward from the newest checkpoint at or before that version. Re-running an unchanged checkpoint does not create a file or manifest change. Test inputs are immutable after capture: changing one requires recapturing and updating every prior semantic version. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. The manifest-pinned snapshot, not whichever loose extracted directories happen to exist locally, determines what the chart shows.
+**Unified capture history is append-only.** Each capture is one `<implementation>-<semantic-version>.yaml` checkpoint. Its first capture retains a compact source origin in YAML metadata; source SHA does not create another capture identity. Record only changed case observations at subsequent checkpoints. A later measured version with identical output keeps its capture provenance and inherits the observations. Publishing a crate version alone does not create a capture checkpoint or relabel earlier output. Re-running an unchanged checkpoint does not create a file or manifest change. Test inputs are immutable after capture: changing one requires recapturing and updating every prior semantic version. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. The manifest-pinned snapshot determines what the chart shows.
+
+## Maintaining cases and capture history
+
+A report column is a test case shared by the applicable families. A capture file records one implementation/version for one family. Adding a column and adding a parser version therefore change different parts of the store.
+
+| Change | Inputs and files that must change | Capture and history requirement |
+|---|---|---|
+| Add a test column | Update the authored case, its applicability/description, and the affected families' `inputs_and_golden.yaml`. Unified authoring uses `utils/src/gen_unified_golden.py` and `utils/src/unified_taxonomy.py`; legacy authoring uses the loose input files and `case-taxonomy.yaml`. | Run every applicable implementation on the new input. Historical columns need captures from their actual historical producers; an unsupported API must remain explicitly unavailable. The incremental importer rejects additions to an already recorded checkpoint, so historical backfill needs a separately reviewed reconstruction of those checkpoints. It is not automatic. |
+| Modify an existing test input | A change to text, chunks, tool schema, initialization, or finish behavior changes the request that produced the output. Description-only edits do not. | Normal packaging rejects changing a captured request. Prefer a new stable case ID. Reusing the old ID requires recapturing every affected recorded version with its original producer and rebuilding the affected history together; there is no automated rewrite command for that operation. |
+| Add a parser version | Record the actual producer version and add `<implementation>-<version>.yaml` for each captured family. A Dynamo behavior change also requires the crate/version updates described above. | Capture the active cases before compaction. An unchanged measured Unified version keeps its provenance with `changes: {}`; copying an older capture into a new version directory is not a measurement. A family/version that was never captured stays unavailable. |
+| Hide an equivalent version in the report | Update the selector equivalence mapping in `utils/src/generate_conformance_table.py` and its equality regression. | Compare complete captured observations, including event order and annotations. Keep the stored version and provenance; saved links resolve to its visible equivalent. No history needs to move. |
+| Physically remove a stored version | This changes the history, not just the selector. Do not delete a checkpoint file by hand. | Resolve every retained version first, move any required observations and metadata into surviving checkpoints, and rebuild their deltas. Compare every retained result and its provenance before publishing. There is no general removal/rebase command; legacy `--prune` rejects a deletion that changes retained resolved state and does not transfer the missing data for you. Unified has no version-prune operation. |
+
+For example, if version 1 records `A`, version 2 records `B`, and version 3 inherits `B`, deleting version 2 makes version 3 inherit `A`. The required `B` observation must be stored in version 3 before version 2 can be removed. Its original producer must remain identifiable; copying `B` and assigning version 3 as its producer would falsify the history. Removing the oldest version may require a new full anchor. Removing the newest version changes the default selection and discards that recorded measurement. Neither action is equivalent to hiding a selector.
+
+Every published store change also updates `fixtures-manifest.json`, then requires extraction, reader checks, and regeneration of `CONFORMANCE_v2.html` and `CONFORMANCE_v2.json`. Captures from another parser version cannot substitute for missing historical measurements. The generated reports and extracted compatibility files are verification outputs, not additional authored sources.
+
+### What compaction guarantees
+
+Unified stores compare resolved requests and observations with the preceding capture. Equivalent inline and referenced requests share that comparison. Changed output is stored once, omitted cases inherit, and per-case absence and metadata changes have explicit representations. The small version/provenance checkpoint remains even when there is no new output. Re-importing the same checkpoint leaves its file unchanged.
+
+Legacy batch, stream, and reasoning histories also omit unchanged observations where their readers can reconstruct them. Compaction preserves case annotations, including their removal, and streaming keeps enough output for the Rust reader that excludes qualified captures. These requirements can retain an identical payload at a later version. Batch-on-stream currently stores complete blocks per implementation/version because its selected snapshots are reconstructed independently; it does not yet share the sparse compactor. This PR therefore does not promise zero repeated YAML across every corpus.
+
+The immutable-capture checks and legacy prune comparison protect the normal packaging path. They do not make arbitrary manual edits or deletions safe, and a manifest hash only identifies the resulting bytes. In particular, older Unified observations can reference the current request without storing its digest: directly editing that request can silently change the apparent historical input. Loading the store alone does not detect this; use the guarded packaging path and compare against the original store. A future rewrite/removal tool must prove equivalence against the original store, preserve capture provenance, update selection/unavailability metadata, and publish the stores and manifest together. Until that tool exists, keep historical files and use selector hiding for display cleanup.
 
 ## End-to-end test cases (a separate surface, kept elsewhere)
 
@@ -117,13 +141,13 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 ## Adding Streaming Parser V2 Fixtures
 
-Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. Keep the existing stream archive format and include only the affected family's changed captures. The Unified YAML migration does not change this workflow.
+Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. Package the affected family's changed captures into the YAML history store.
 
 The legacy streaming-v1 fixture schema is documented in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
 
 ## Fixture Workflows
 
-The commands below cover both the older archive-backed tests and Unified. Apply the plain-version YAML contract above to Unified only; do not migrate the other stores as part of a Unified change.
+The commands below cover both YAML stores. Unified uses plain semantic-version checkpoints; legacy captures retain their historical names and sparse overlays.
 
 **Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 
@@ -151,7 +175,7 @@ The commands below cover both the older archive-backed tests and Unified. Apply 
    | `Reasoning` | `capture_peer_versions.py --corpus reasoning --impl vllm_python` | — | `capture_peer_versions.py --corpus reasoning --impl sglang_python` |
 
    ‡ vLLM Rust is source-only: set `VLLM_RUST_SOURCE=<vllm checkout at the tag>` (or pass `--vllm-rust-source`) first. In vLLM ≥ 0.25 the crate is `vllm-parser` at `rust/src/parser` (was `vllm-tool-parser` at `rust/src/tool-parser`), and `ToolParserOutput` is an ordered events list. A parser that moved to the native `unified::` interface between releases is marked unavailable via the `tool::` probe — expected, not a failure.
-4. **Publish:** use plain-version YAML for Unified. Keep the existing archive packaging for the other corpora.
+4. **Publish:** run `package_fixtures.py` to update the affected family YAML and manifest pin, then extract and render the pinned snapshot.
 5. **Verify the new version shows on ALL tabs.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh` and confirm the new version is a Reference/Compare candidate on all four tabs (grep the rendered HTML), then `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. `test_model.py::test_v2_reasoning_uses_current_peers` specifically guards that the Reasoning tab surfaces every peer version dir — if it fails after you add a version, the tab lost multi-version rendering.
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
@@ -203,7 +227,7 @@ TODO (follow-up PR; Rust cleanup is deferred from #257): remove the deprecated `
 
 ### 4. What CI actually checks (the regression gate)
 
-The `rust` CI job checks out the LFS store (`lfs: true`), extracts the manifest-pinned snapshot, and runs the parity tests — current parser code vs pinned expected YAML:
+The `rust` CI job checks out the YAML stores, materializes the manifest-pinned snapshot, and runs the parity tests against the pinned expected output:
 
 - `conformance_toolcalling`: v1 code vs `expected.dynamo_v1` in the `dynamo_v1-<ver>/` dir of `fixtures-batch-v1`.
 - `conformance_toolcalling_stream`: v2 code vs `expected.dynamo_v2` folded from the LOWEST `dynamo_v2-<ver>/` dir — the v2 anchor. (The v1-jail reference lives in its own `dynamo_v1-3.0.0/` namespace and never enters the v2 fold. Overlay folding up to the pinned crate version is a follow-up; until then an intended v2 output change must be reflected in the anchor's expected blocks at re-capture.)
@@ -222,11 +246,11 @@ A "case" is one numeric-suffix sub-case shared across families. New case IDs use
 
 ### 6. Changing an existing Unified test input
 
-Changing a test input is exceptional because every published checkpoint uses the same authored input. Recapture and update every prior semantic version for the affected family, then run `package_fixtures.py`, extract the pinned snapshot, and regenerate the canonical report. Do not add a duplicate capture, source-qualified name, or patch overlay for one version; the history must remain one semantic checkpoint per meaningful output change.
+The normal importer rejects this operation because existing output would no longer describe the input shown beside it. Use a new stable case ID, or perform the separately reviewed historical reconstruction described in "Maintaining cases and capture history" above. Running the ordinary packager after changing the input does not recapture old versions or authorize rewriting their results.
 
 ### 7. Classify a v1-batch vs v2-stream difference (`known-divergences.yaml`)
 
-`conformance_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry to paper over an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
+`conformance_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry for an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
 
 ### 8. Coverage taxonomy: what "complete fixtures for a family" means (DIS-2442)
 

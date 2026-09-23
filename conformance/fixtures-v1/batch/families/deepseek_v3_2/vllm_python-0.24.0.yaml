@@ -1,0 +1,30 @@
+corpus: batch
+family: deepseek_v3_2
+capture: vllm_python-0.24.0
+documents:
+  TOOLCALLING.stream.4.yaml:
+    family: deepseek_v3_2
+    mode: stream
+    captured_with:
+      vllm_python: 0.24.0
+    cases:
+      TOOLCALLING.stream.4.b:
+        expected:
+          vllm_python:
+            calls:
+            - name: get_weather
+              arguments: '{"location":"NY'
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        expected:
+          vllm_python:
+            calls: []
+            normal_text: '<｜DSML｜invoke name="get_weather">
+
+              <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+              </｜DSML｜invoke>
+
+              </｜DSML｜invoke>
+
+              </｜DSML｜invoke>'

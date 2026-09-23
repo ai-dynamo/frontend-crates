@@ -1,0 +1,13 @@
+corpus: reasoning
+family: nemotron_deci
+capture: sglang_python-0.5.14
+documents:
+  REASONING.batch.yaml:
+    family: nemotron_deci
+    mode: batch
+    cases:
+      REASONING.batch.2.d:
+        expected:
+          sglang_python:
+            reasoning_text: before <think>thinking
+            normal_text: ' after'
