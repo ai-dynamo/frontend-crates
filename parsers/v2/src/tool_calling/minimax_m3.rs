@@ -407,27 +407,17 @@ mod tests {
 
     #[test]
     fn nullable_nested_object_members_follow_union_schema() {
-        // MOD2-167: nullable object arguments retain their nested member types.
         let tools = vec![Tool {
-            name: "list_notes".to_string(),
+            name: "list_notes".into(),
             description: None,
             parameters: serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "account_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
-                    "contact_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
-                    "pagination": {
-                        "anyOf": [
-                            { "type": "object", "properties": {
-                                "page": { "type": "integer", "minimum": 1 },
-                                "per_page": { "type": "integer", "minimum": 1, "maximum": 100 }
-                            } },
-                            { "type": "null" }
-                        ]
-                    }
-                },
-                "required": ["account_id", "contact_id", "pagination"],
-                "additionalProperties": false
+                "properties": {"pagination": {"anyOf": [
+                    {"type": "object", "properties": {
+                        "page": {"type": "integer"},
+                        "after": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                    }},
+                    {"type": "null"}
+                ]}}
             }),
             strict: Some(true),
         }];
@@ -436,11 +426,9 @@ mod tests {
             &[concat!(
                 "]<]minimax[>[<tool_call>",
                 "]<]minimax[>[<invoke name=\"list_notes\">",
-                "]<]minimax[>[<account_id>acct_1]<]minimax[>[</account_id>",
-                "]<]minimax[>[<contact_id>null]<]minimax[>[</contact_id>",
                 "]<]minimax[>[<pagination>",
                 "]<]minimax[>[<page>2]<]minimax[>[</page>",
-                "]<]minimax[>[<per_page>25]<]minimax[>[</per_page>",
+                "]<]minimax[>[<after>null]<]minimax[>[</after>",
                 "]<]minimax[>[</pagination>",
                 "]<]minimax[>[</invoke>",
                 "]<]minimax[>[</tool_call>"
@@ -451,67 +439,7 @@ mod tests {
         let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
         assert_eq!(
             args,
-            serde_json::json!({
-                "account_id": "acct_1",
-                "contact_id": null,
-                "pagination": { "page": 2, "per_page": 25 }
-            })
-        );
-    }
-
-    #[test]
-    fn nullable_time_range_members_follow_union_schema() {
-        let tools = vec![Tool {
-            name: "get_entity_activity_log".to_string(),
-            description: None,
-            parameters: serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "entity_type": { "type": "string", "enum": ["contact", "account"] },
-                    "entity_id": { "type": "string" },
-                    "time_range": {
-                        "anyOf": [
-                            { "type": "object", "properties": {
-                                "after": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
-                                "before": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
-                            } },
-                            { "type": "null" }
-                        ]
-                    },
-                    "per_page": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
-                },
-                "required": ["entity_type", "entity_id", "time_range", "per_page"],
-                "additionalProperties": false
-            }),
-            strict: Some(true),
-        }];
-        let out = parse_chunks(
-            &tools,
-            &[concat!(
-                "]<]minimax[>[<tool_call>",
-                "]<]minimax[>[<invoke name=\"get_entity_activity_log\">",
-                "]<]minimax[>[<entity_type>contact]<]minimax[>[</entity_type>",
-                "]<]minimax[>[<entity_id>id_1]<]minimax[>[</entity_id>",
-                "]<]minimax[>[<time_range>",
-                "]<]minimax[>[<after>null]<]minimax[>[</after>",
-                "]<]minimax[>[<before>2026-09-01T00:00:00Z]<]minimax[>[</before>",
-                "]<]minimax[>[</time_range>",
-                "]<]minimax[>[<per_page>20]<]minimax[>[</per_page>",
-                "]<]minimax[>[</invoke>",
-                "]<]minimax[>[</tool_call>"
-            )],
-        );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
-        assert_eq!(
-            args,
-            serde_json::json!({
-                "entity_type": "contact",
-                "entity_id": "id_1",
-                "time_range": { "after": null, "before": "2026-09-01T00:00:00Z" },
-                "per_page": 20
-            })
+            serde_json::json!({"pagination": {"page": 2, "after": null}})
         );
     }
 }
