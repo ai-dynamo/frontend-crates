@@ -18,7 +18,7 @@ not change. Run against the running dev containers:
 
     python3 recapture_batch_on_stream.py \
         --batch-v1 conformance/toolcalling/fixtures-batch-v1/inputs \
-        --out conformance/toolcalling/fixtures-batch-on-stream-v2
+        --out conformance/toolcalling/fixtures-batch-on-stream-v1
 
 Then republish the batch-on-stream tree and bump the manifest.
 """

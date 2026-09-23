@@ -89,14 +89,14 @@ _build_stage_base() {
   # Reasoning fixtures are resolved (at the pinned peer versions) by
   # build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
-  if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
+  if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v1" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
-    \cp -Rf "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" \
-      "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
+    \cp -Rf "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v1" \
+      "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v1"
   fi
   ln -s "$ROOT/parsers/v1/src/tool_calling"      "$STAGE/lib/parsers/src/tool_calling"
   ln -s "$UTILS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
-  ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+  ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md"
   ln -s "$UTILS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"
   ln -s "$TOOLS/pyproject.stub.toml"                "$STAGE/pyproject.toml"
   [ -e "$ROOT/.git" ] && ln -s "$ROOT/.git" "$STAGE/.git" || true
@@ -138,14 +138,14 @@ _copy_toolcalling_v2_fixtures() {
   local dst="$STAGE/tests/parity/toolcalling/fixtures"
   _resolve_toolcalling_fixtures "$dst"
   find "$dst" -name 'TOOLCALLING.stream*.yaml' -delete
-  # The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
+  # The legacy stream corpus is versioned like the batch corpus (no unversioned anchor):
   # inputs/ (shared per-chunk delta_text) + <impl>-<version>/ (per-impl expected;
   # lowest version = full anchor, higher = changed-only). Resolve the PINNED (latest)
   # peer versions into the flat tree the renderer expects; a genuinely single-version
   # impl (vllm_rust) defaults to its lowest. The generator re-resolves each version for
   # the compare model.
-  local sv2="$FIXTURES_ROOT/toolcalling/fixtures-stream-v2"
-  if [ -d "$sv2" ]; then
+  local sv1="$FIXTURES_ROOT/toolcalling/fixtures-stream-v1"
+  if [ -d "$sv1" ]; then
     local vllm_v sglang_v tmp family f
     vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
     sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
@@ -156,10 +156,10 @@ _copy_toolcalling_v2_fixtures() {
     # _dynamo_v2_version() reads the published dir list. Select the latest so the data
     # matches its own label.
     local dynamo_v2_v
-    dynamo_v2_v=$(ls -d "$sv2"/dynamo_v2-* 2>/dev/null | sed 's|.*/dynamo_v2-||' | sort -V | tail -1)
+    dynamo_v2_v=$(ls -d "$sv1"/dynamo_v2-* 2>/dev/null | sed 's|.*/dynamo_v2-||' | sort -V | tail -1)
     tmp="$(mktemp -d)"
     python3 "$TOOLS/resolve_stream_fixtures.py" \
-      --fixtures-root "$sv2" --out "$tmp" \
+      --fixtures-root "$sv1" --out "$tmp" \
       --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}" \
               ${dynamo_v2_v:+"dynamo_v2-${dynamo_v2_v}"}
     for f in "$tmp"/*/TOOLCALLING.stream*.yaml; do

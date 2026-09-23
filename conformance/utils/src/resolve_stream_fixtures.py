@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Resolve the versioned TC stream-v2 fixtures into a flat tree for a selected
+"""Resolve the versioned legacy stream-v1 fixtures into a flat tree for a selected
 version set, mirroring resolve_fixtures.py for the batch corpus.
 
-Layout under <root>/conformance/toolcalling/fixtures-stream-v2/ (batch convention —
+Layout under <root>/conformance/toolcalling/fixtures-stream-v1/ (batch convention —
 no unversioned "baseline"; the anchor is whichever version is lowest, per impl):
-  inputs/<family>/TOOLCALLING.streamv2.*.yaml        shared per-chunk delta_text
+  inputs/<family>/TOOLCALLING.streamv1.*.yaml        shared per-chunk delta_text
                                                      (+ finish_reason/tools) — NO expected
-  <impl>-<version>/<family>/TOOLCALLING.streamv2.*.yaml
+  <impl>-<version>/<family>/TOOLCALLING.streamv1.*.yaml
                                                      per-impl per-chunk `expected`
                                                      (+ `normal_text`); lowest version
                                                      is the full anchor, higher versions
@@ -20,7 +20,7 @@ impl merge its version dirs ascending up to the target, folding that impl's per-
 `captured_with[impl] = target`. Every impl present is included at its LOWEST version by
 default; `--select <impl>-<version>` bumps a specific impl to that version. So a
 single-version impl (vllm_rust, dynamo_v2) needs no explicit select.
-Readers (load_all_cases("streamv2")) consume the flat output unchanged.
+Readers (load_all_cases("streamv1")) consume the flat output unchanged.
 """
 import argparse
 import copy
@@ -104,7 +104,7 @@ def _merge_impl(base_doc, vdoc, impl):
                 bchunks[i]["normal_text"].pop(impl, None)
 
 
-def resolve_docs(sv2_root, select, corpus=None):
+def resolve_docs(sv1_root, select, corpus=None):
     """Resolve one version selection entirely in memory.
 
     Returns `(docs, folded)`: `docs` is {(family, filename): doc} for the whole staged
@@ -114,7 +114,7 @@ def resolve_docs(sv2_root, select, corpus=None):
     and re-emitted several times per run. Keeping the accumulator in memory does the
     identical merge with one parse of each source file and at most one dump.
     """
-    root = Path(sv2_root)
+    root = Path(sv1_root)
     if corpus is None:
         corpus = load_corpus(root)
 
@@ -151,8 +151,8 @@ def resolve_docs(sv2_root, select, corpus=None):
     return docs, folded
 
 
-def resolve(sv2_root, out, select, verbose=False):
-    root = Path(sv2_root)
+def resolve(sv1_root, out, select, verbose=False):
+    root = Path(sv1_root)
     out = Path(out)
     docs, folded = resolve_docs(root, select)
 
@@ -169,7 +169,7 @@ def resolve(sv2_root, out, select, verbose=False):
             dst.write_text((root / "inputs" / family / name).read_text())
 
     if verbose:
-        n = len(list(out.glob("*/TOOLCALLING.streamv2.*.yaml")))
+        n = len(list(out.glob("*/TOOLCALLING.streamv1.*.yaml")))
         print(f"resolve_stream_fixtures: staged {n} files (select: {select or 'defaults'})",
               file=sys.stderr)
 
@@ -177,7 +177,7 @@ def resolve(sv2_root, out, select, verbose=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fixtures-root", required=True,
-                    help="the fixtures-stream-v2 dir (inputs/ + <impl>-<version>/)")
+                    help="the fixtures-stream-v1 dir (inputs/ + <impl>-<version>/)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--select", nargs="*", default=[],
                     help="bump an impl to a version, e.g. vllm_python-0.24.0 "

@@ -47,7 +47,7 @@ def _dynamo_key(impl: str) -> str:
 
     dirs = [
         d
-        for d in (root / "toolcalling/fixtures-stream-v2").glob(f"{impl}-*")
+        for d in (root / "toolcalling/fixtures-stream-v1").glob(f"{impl}-*")
         if d.is_dir()
     ]
     latest = max(

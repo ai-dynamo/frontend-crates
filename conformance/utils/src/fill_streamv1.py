@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Generate the TC stream-v2 fixtures for the non-harmony families.
+"""Generate the legacy TC stream-v1 fixtures for the non-harmony families.
 
 For each family + each batch case that has `model_text`, chunk the text into ~1-3
 "token" pieces, run the vLLM and SGLang streaming parsers over the chunks (inside
@@ -11,13 +11,13 @@ Dynamo is marked unavailable/TODO (no parser v2 stream parser for these families
 yet); the synthetic partial-token case `50` has no batch source and is left
 untouched.
 
-This mirrors each family's streamv2 tab to its batch taxonomy (the same sub-cases
+This mirrors each family's streamv1 tab to its batch taxonomy (the same sub-cases
 the batch tab shows). Harmony / harmony_text are NOT handled here — they use the
 token-id capture flow (capture_driver.py).
 
 Usage:
-  python3 conformance/utils/fill_streamv2.py                 # all non-harmony families
-  python3 conformance/utils/fill_streamv2.py qwen25 mistral  # specific families
+  python3 conformance/utils/fill_streamv1.py                 # all non-harmony families
+  python3 conformance/utils/fill_streamv1.py qwen25 mistral  # specific families
 """
 import argparse
 import glob
@@ -89,7 +89,7 @@ def _expects_calls(case):
 
 def build_sources(family, fixtures_root, srcdir):
     """Write one source fixture per batch case-number (every batch sub-case that
-    has model_text) so the family's streamv2 tab mirrors the batch taxonomy.
+    has model_text) so the family's streamv1 tab mirrors the batch taxonomy.
     Returns {num: source_path}."""
     os.makedirs(srcdir, exist_ok=True)
     by_num = {}
@@ -102,7 +102,7 @@ def build_sources(family, fixtures_root, srcdir):
             if not m:
                 continue
             num, suffix = m.group(1), m.group(2)
-            scid = f"TOOLCALLING.streamv2.{num}{suffix}"
+            scid = f"TOOLCALLING.streamv1.{num}{suffix}"
             if not isinstance(c.get("model_text"), str):
                 unavailable = c.get("unavailable") or {}
                 by_num.setdefault(num, {})[scid] = {
@@ -126,8 +126,8 @@ def build_sources(family, fixtures_root, srcdir):
             }
     out = {}
     for num, cases in by_num.items():
-        src = {"family": family, "model_label": label, "mode": "streamv2", "cases": cases}
-        p = os.path.join(srcdir, f"{family}__streamv2.{num}.yaml")
+        src = {"family": family, "model_label": label, "mode": "streamv1", "cases": cases}
+        p = os.path.join(srcdir, f"{family}__streamv1.{num}.yaml")
         yaml.safe_dump(src, open(p, "w"), allow_unicode=True, sort_keys=False)
         out[num] = p
     return out
@@ -139,7 +139,7 @@ def write_sources(family_sources, out_root):
         family_out = os.path.join(inputs_root, family)
         os.makedirs(family_out, exist_ok=True)
         for num, fp in srcs.items():
-            shutil.copyfile(fp, os.path.join(family_out, f"TOOLCALLING.streamv2.{num}.yaml"))
+            shutil.copyfile(fp, os.path.join(family_out, f"TOOLCALLING.streamv1.{num}.yaml"))
     print(f"wrote shared stream inputs under {inputs_root}", file=sys.stderr)
 
 
@@ -161,8 +161,8 @@ def main():
     args = ap.parse_args()
 
     fixtures_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
-    out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-stream-v2")
-    work = args.work or tempfile.mkdtemp(prefix="streamv2_fill_")
+    out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-stream-v1")
+    work = args.work or tempfile.mkdtemp(prefix="streamv1_fill_")
     srcdir = os.path.join(work, "src")
     os.makedirs(srcdir, exist_ok=True)
     families = args.families or sorted(cd.VLLM.keys())
@@ -204,7 +204,7 @@ def main():
     # 3. assemble each fixture
     for family, srcs in family_sources.items():
         for num, fp in srcs.items():
-            base = f"TOOLCALLING.streamv2.{num}.yaml"
+            base = f"TOOLCALLING.streamv1.{num}.yaml"
             outdir = os.path.join(out_root, family)
             os.makedirs(outdir, exist_ok=True)
             outfp = os.path.join(outdir, base)
@@ -223,7 +223,7 @@ def main():
                                  sglang_caps.get(fp, {}), sglang_ver, work, f"{family}_{num}", fp)
             subprocess.run(cmd, check=True)
             # build_stream_fixtures.py hardcodes `mode: stream`; this is the v2 tab.
-            txt = open(outfp).read().replace("\nmode: stream\n", "\nmode: streamv2\n", 1)
+            txt = open(outfp).read().replace("\nmode: stream\n", "\nmode: streamv1\n", 1)
             open(outfp, "w").write(txt)
             print(f"  built {family}/{base}", file=sys.stderr)
     write_sources(family_sources, out_root)

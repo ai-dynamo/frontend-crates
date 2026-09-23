@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Schema validation for the v2 overlay fixtures (audit D3).
 
-The frontend-crate-owned v2 overlays (`fixtures-stream-v2/`,
-`fixtures-batch-on-stream-v2/`) must use canonical impl keys only — `dynamo_v2`,
+The frontend-crate-owned v2 overlays (`fixtures-stream-v1/`,
+`fixtures-batch-on-stream-v1/`) must use canonical impl keys only — `dynamo_v2`,
 `vllm_python`, `sglang_python`, `vllm_rust` — never the legacy `dynamo`/`vllm`/`sglang`
 spellings. The renderer accepts both via aliases (the legacy v1 corpus still
 uses legacy keys), so legacy keys in a v2 overlay are silent drift; this validator
@@ -26,8 +26,8 @@ from impls import LEGACY_IMPL_ALIASES
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 V2_OVERLAY_GLOBS = (
-    "conformance/toolcalling/fixtures-stream-v2/*/*.yaml",
-    "conformance/toolcalling/fixtures-batch-on-stream-v2/*/*.yaml",
+    "conformance/toolcalling/fixtures-stream-v1/*/*.yaml",
+    "conformance/toolcalling/fixtures-batch-on-stream-v1/*/*.yaml",
 )
 _LEGACY_KEYS = set(LEGACY_IMPL_ALIASES)  # {"dynamo", "vllm", "sglang"}
 # Peer impls that, when present with captured output, require a captured_with stamp.

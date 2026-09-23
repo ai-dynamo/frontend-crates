@@ -35,16 +35,20 @@ Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `c
 | Store path (inside snapshot) | Used By |
 |---|---|
 | `toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
-| `toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
-| `toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
+| `toolcalling/fixtures-batch-on-stream-v1/` | Legacy streaming v1 convention. Complete batch text through non-Unified streaming parsers. |
+| `toolcalling/fixtures-stream-v1/` | Legacy streaming v1 convention. Incremental chunks through non-Unified streaming parsers. |
 | `reasoning/fixtures-v1/inputs/` | Reasoning parser tabs. |
 
 ## Parser Implementations
 
 Keep the implementation and mode separate when reading or updating fixtures.
 
+The original incremental parser was called `stream-v2` because it was intended to replace batch+jail. Unified later created a second v2 convention. Corpus names now use **streaming v1** for legacy/non-Unified data and **Unified v2** for the ordered reasoning+text+tool protocol. Implementation labels remain `dynamo_v1` and `dynamo_v2`, so `expected.dynamo_v2` inside `fixtures-stream-v1` is correct.
+
+At runtime, `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not force the non-Unified parser. Dynamo checks Unified first. The exact Qwen3 tool+reasoning parser pair uses Unified when the flag is on. If no Unified pair matches, eligible Qwen3-Coder or DeepSeek V4 requests use the non-Unified incremental parser. Other tool-parsing requests use batch+jail; DeepSeek V4.1 and Muse have separate Unified routes that do not depend on the flag.
+
 - Dynamo v1 is batch only. It writes `expected.dynamo_v1` in `conformance/toolcalling/fixtures-batch-v1/`. This is the current batch baseline, not the upcoming v2 stream parser. **v1 is interim** — it is removed outright once v2 reaches parity.
-- Dynamo v2 Rust is stream and batch-on-stream. It writes `expected.dynamo_v2` in new v2 fixture shapes. This is the upcoming Dynamo-owned Rust stream parser — **the ultimate implementation (WIP)** that fully replaces v1. Harmony is only the example wired today; DS4 and the other v2 stream parsers should use the same flow as they land.
+- Dynamo v2 Rust writes `expected.dynamo_v2` for both the legacy non-Unified stream convention and Unified. The directory or case ID identifies the convention; the expected-output key identifies the implementation.
 - vLLM Python is batch and stream. Legacy batch fixtures use `expected.vllm`; v2 fixtures use `expected.vllm_python`. Batch output is vLLM's complete-text parser. Stream output is vLLM's streaming parser.
 - vLLM Rust is stream only. It writes `expected.vllm_rust`. vLLM Rust does not expose a separate batch parser here. Complete text is tested by feeding the full text through the Rust streaming parser.
 - SGLang Python is batch and stream where SGLang has a detector for that family. Legacy batch fixtures use `expected.sglang`; v2 fixtures use `expected.sglang_python`. Missing detectors are recorded under `unavailable.sglang_python`.
@@ -68,7 +72,7 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 # Example: check Dynamo v1 batch behavior against extracted `expected.dynamo_v1` blocks in `toolcalling/fixtures-batch-v1/`.
 conformance/utils/check.sh dynamo batch
 
-# Example: check Dynamo v2 stream fixtures and Dynamo v2 batch-on-stream behavior.
+# Example: check the legacy stream corpus with Dynamo v2 stream and batch-on-stream parsers.
 conformance/utils/check.sh dynamo stream
 
 # Example: check vLLM Python batch and stream behavior against extracted legacy `expected.vllm` and v2 `expected.vllm_python` blocks.
@@ -102,8 +106,8 @@ Use the same pattern for capture commands: `conformance/utils/capture.sh <target
 
 `capture.sh` is not the v1 batch rewrite tool for the Dynamo `expected.dynamo_v1` blocks — those are verified in Section 1 against extracted fixtures; update the YAMLs locally and re-package when the expected batch output changes.
 
-Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. One shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}`, captures every corpus x engine (it replaces the per-corpus `capture_streamv2_versions.py`; `recapture_peer.py` still exists separately). Omit `--impl` to capture ALL engines valid for the corpus. A full refresh runs one command per corpus so every tab gets the new version (see [`../README.md`](../README.md#fixture-workflows) workflow 1 for the ordered runbook):
-- `--corpus stream` — vLLM Python + SGLang Python stream parsers over the resolved streamv2 anchors → changed-only full-case dir `fixtures-stream-v2/<impl>-<ver>/` (written straight to the top level; `package_fixtures.py` shards it directly); `--impl vllm_rust` drives the cargo probe over the `inputs/` cases → full-chunk changed-case dir `fixtures-stream-v2/vllm_rust-<ver>/` (needs `VLLM_RUST_SOURCE` / `--vllm-rust-source`, see below).
+Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. One shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}`, captures every corpus x engine (it replaces the per-corpus `capture_streamv1_versions.py`; `recapture_peer.py` still exists separately). Omit `--impl` to capture ALL engines valid for the corpus. A full refresh runs one command per corpus so every tab gets the new version (see [`../README.md`](../README.md#fixture-workflows) workflow 1 for the ordered runbook):
+- `--corpus stream` — vLLM Python + SGLang Python stream parsers over the resolved streamv1 anchors → changed-only full-case dir `fixtures-stream-v1/<impl>-<ver>/` (written straight to the top level; `package_fixtures.py` shards it directly); `--impl vllm_rust` drives the cargo probe over the `inputs/` cases → full-chunk changed-case dir `fixtures-stream-v1/vllm_rust-<ver>/` (needs `VLLM_RUST_SOURCE` / `--vllm-rust-source`, see below).
 - `--corpus batch` — vLLM Python / SGLang Python non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds → `fixtures-batch-v1/<impl>-<ver>/` (TC batch tab).
 - `--corpus reasoning` — vLLM Python / SGLang Python reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds → `reasoning/fixtures-v1/<impl>-<ver>/` (Reasoning tab; this tab is multi-version — both old and new versions must render).
 - `recapture_batch_on_stream.py` — refreshes the single-snapshot batch-on-stream tree in place (preserves the `vllm_rust`/`dynamo_v2` blocks); the vLLM Rust batch-on-stream block is refreshed by the full `capture.sh batch-on-stream` flow.
@@ -115,16 +119,16 @@ Harmony fixture paths below are examples only. Harmony is not the intended scope
 ```bash
 # Example: capture one Dynamo v2 Rust stream fixture into JSON for manual fixture editing.
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/inputs/harmony/TOOLCALLING.streamv2.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
   --output /tmp/dynamo_stream.json
 
-# Example: capture all vLLM Python, vLLM Rust, and SGLang Python stream behavior, then refresh `fixtures-stream-v2/`.
+# Example: capture all vLLM Python, vLLM Rust, and SGLang Python stream behavior, then refresh `fixtures-stream-v1/`.
 conformance/utils/capture.sh stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
   --vllm-rust-source ~/dynamo/vllm-0.23.0
 
-# Example: capture all Dynamo v2 Rust, vLLM Python, vLLM Rust, and SGLang Python batch-on-stream behavior, then refresh `fixtures-batch-on-stream-v2/`.
+# Example: capture all Dynamo v2 Rust, vLLM Python, vLLM Rust, and SGLang Python batch-on-stream behavior, then refresh `fixtures-batch-on-stream-v1/`.
 conformance/utils/capture.sh batch-on-stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
@@ -202,7 +206,7 @@ conformance/utils/check.sh status --model qwen3 --tab unified
 
 Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
 
-Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
+Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the legacy stream and batch-on-stream tabs.
 
 ### UnifiedParser conversion collection
 
@@ -248,7 +252,7 @@ Run these from `conformance/utils/`:
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
 | `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
 
-The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py` / `model.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`).
+The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py` / `model.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv1.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`).
 
 **Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former parser-marker shorthand mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs with full descriptive parser labels. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
 

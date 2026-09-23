@@ -238,13 +238,9 @@ def _select_fixtures(fixtures, args):
 
 def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
-    # A3: stream-capture SEEDS are the extracted v1 corpus's shared stream inputs
-    # (`fixtures-batch-v1/inputs/<family>/TOOLCALLING.stream.*.yaml`) —
-    # the chunking derives from the same model_text. Captured per-chunk output is
-    # written locally, then committed to the in-repo LFS store via package_fixtures.py.
-    # To add a new family's stream case, add its TOOLCALLING.stream.*.yaml seed
-    # under the fixtures-batch-v1/inputs/ tree and re-package.
-    conf = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
+    # Stream captures use the legacy, non-Unified corpus's shared inputs. Captured
+    # per-chunk output is written locally, then committed via package_fixtures.py.
+    conf = os.path.join(args.root, "conformance/toolcalling/fixtures-stream-v1/inputs")
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
     vllm_rust_source = _vllm_rust_source_arg(args)
@@ -253,7 +249,7 @@ def _run_stream(args):
     vllm_jobs, vllm_rust_jobs, sglang_jobs = [], [], []
     family_fixtures = {}
     for family in families:
-        fixtures = sorted(glob.glob(f"{conf}/{family}/TOOLCALLING.stream.*.yaml"))
+        fixtures = sorted(glob.glob(f"{conf}/{family}/TOOLCALLING.streamv1*.yaml"))
         fixtures = _select_fixtures(fixtures, args)
         family_fixtures[family] = fixtures
         for fp in fixtures:
@@ -278,7 +274,7 @@ def _run_stream(args):
             continue
         for fp in fixtures:
             base = os.path.basename(fp)
-            outdir = os.path.join(args.root, "conformance", "toolcalling", "fixtures-stream-v2", family)
+            outdir = os.path.join(args.root, "conformance", "toolcalling", "fixtures-stream-v1", family)
             os.makedirs(outdir, exist_ok=True)
             outfp = os.path.join(outdir, base)
 
@@ -438,7 +434,7 @@ def _run_batch_on_stream(args):
     versions = {"vllm_python": vllm_ver, "sglang_python": sglang_ver}
     if vllm_rust_ver or vllm_rust_source_version:
         versions["vllm_rust"] = vllm_rust_ver or vllm_rust_source_version
-    out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-on-stream-v2")
+    out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-on-stream-v1")
     for src in sources:
         family = os.path.basename(os.path.dirname(src))
         outfp = os.path.join(out_root, family, os.path.basename(src))

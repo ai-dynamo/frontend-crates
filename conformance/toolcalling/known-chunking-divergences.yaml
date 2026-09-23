@@ -21,7 +21,7 @@
 # Empty on purpose — an explicit `{}` because the loader deserializes this file into a
 # map and a comments-only document reads as null.
 #
-# The last entry (glm47 TOOLCALLING.streamv2.5.h) was deleted when the streamv2 inputs
+# The last entry (glm47 TOOLCALLING.streamv1.5.h) was deleted when the streamv1 inputs
 # were normalized across families. It documented a real single-shot bug: on
 # `I will check that. </tool_call> ok` the single-shot parse read the prose word `that.`
 # as a bare function name attached to the orphan `</tool_call>`. The normalized input no

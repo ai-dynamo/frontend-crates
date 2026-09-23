@@ -10,9 +10,9 @@ stores and the manifest to git; no external service is involved.
 Shard layout (relative to conformance/fixtures/):
   toolcalling/fixtures-batch-v1/inputs.tar.gz
   toolcalling/fixtures-batch-v1/<impl>-<ver>.tar.gz   (one per immediate subdir)
-  toolcalling/fixtures-stream-v2/inputs.tar.gz
-  toolcalling/fixtures-stream-v2/<impl>-<ver>.tar.gz
-  toolcalling/fixtures-batch-on-stream-v2.tar.gz      (whole tree as one tarball)
+  toolcalling/fixtures-stream-v1/inputs.tar.gz
+  toolcalling/fixtures-stream-v1/<impl>-<ver>.tar.gz
+  toolcalling/fixtures-batch-on-stream-v1.tar.gz      (whole tree as one tarball)
   reasoning/fixtures-v1/inputs.tar.gz
 
 Usage:
@@ -48,9 +48,9 @@ UNIFIED_HISTORY_DIR = ROOT / "conformance" / "fixtures-unified-v2"
 # its loose capture tree is staged, then is written to the separate YAML history store.
 PER_SUBDIR_TREES = [
     "toolcalling/fixtures-batch-v1",
-    # TODO: Misnamed convention: this is older, non-Unified streaming. Rename the
-    # fixture path to v1 later; this does not rename the parser crate or its versions.
-    "toolcalling/fixtures-stream-v2",
+    # Legacy, non-Unified streaming uses the v1 corpus convention. This does not
+    # rename the parser crate or its implementation versions.
+    "toolcalling/fixtures-stream-v1",
     "reasoning/fixtures-v1",
     "unified",
 ]
@@ -58,8 +58,8 @@ PER_SUBDIR_TREES = [
 # Tuple: (source rel-path in conformance/, shard path in the store)
 WHOLE_TREE_SHARDS = [
     (
-        "toolcalling/fixtures-batch-on-stream-v2",
-        "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
+        "toolcalling/fixtures-batch-on-stream-v1",
+        "toolcalling/fixtures-batch-on-stream-v1.tar.gz",
     ),
 ]
 
