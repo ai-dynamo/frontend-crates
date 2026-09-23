@@ -16,6 +16,18 @@ DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
 
 
+def version_sort_key(version: str) -> tuple:
+    release_text, separator, prerelease = version.partition("-")
+    match = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", release_text)
+    release = tuple(int(part) for part in match.group(1).split(".")) if match else ()
+    post = int(match.group(2)) if match and match.group(2) else 0
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return release, post, 0 if separator else 1, prerelease_key
+
+
 def is_source_capture(name: str) -> bool:
     if not name.startswith("dynamo_v2-"):
         return False

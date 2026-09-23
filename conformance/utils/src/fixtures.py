@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+import fixture_disposition
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
@@ -57,15 +58,7 @@ def _version_slug(version: str) -> str:
 
 def _version_sort_key(version: str) -> tuple:
     """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    release_text, separator, prerelease = version.partition("-")
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", release_text)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    prerelease_key = tuple(
-        (0, int(part)) if part.isdigit() else (1, part)
-        for part in prerelease.split(".")
-    )
-    return (release, post, 0 if separator else 1, prerelease_key)
+    return fixture_disposition.version_sort_key(version)
 
 
 def _impl_versions() -> dict[str, list[str]]:

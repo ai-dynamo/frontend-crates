@@ -12,7 +12,7 @@ import yaml
 from fixture_disposition import (
     CAPTURE_SNAPSHOT, capture_layer_sort_key, capture_snapshot_members,
     canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
-    is_source_capture,
+    is_source_capture, version_sort_key,
 )
 from unified_tools import unified_tools
 
@@ -199,13 +199,7 @@ def validated_family_capture_docs(root: Path, input_dirs: list[Path]) -> list[di
     ]
     def sort_key(path: Path) -> tuple:
         base, patch = capture_layer_sort_key(path.name)
-        version = base.removeprefix("dynamo_v2-")
-        release, separator, prerelease = version.partition("-")
-        prerelease_key = tuple(
-            (0, int(part)) if part.isdigit() else (1, part)
-            for part in prerelease.split(".")
-        )
-        return tuple(int(part) for part in release.split(".")), 0 if separator else 1, prerelease_key, patch
+        return version_sort_key(base.removeprefix("dynamo_v2-")), patch
 
     for directory in sorted(directories, key=sort_key):
         for ident, value in _effective_capture_records(directory, input_aliases).items():

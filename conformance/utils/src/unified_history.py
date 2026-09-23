@@ -1082,14 +1082,7 @@ def _materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
 
 
 def _capture_release_sort_key(runtime_version: str) -> tuple:
-    release_version = runtime_version
-    release, separator, prerelease = release_version.partition("-")
-    numeric = tuple(int(part) for part in release.split("."))
-    prerelease_key = tuple(
-        (0, int(part)) if part.isdigit() else (1, part)
-        for part in prerelease.split(".")
-    )
-    return numeric, 0 if separator else 1, prerelease_key
+    return fixture_disposition.version_sort_key(runtime_version)
 
 
 def materialize_store(
