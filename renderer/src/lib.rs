@@ -249,6 +249,13 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
 
+    /// Source message indices in rendered media order; `None` preserves arrival order.
+    /// An explicit order must be a permutation of all source-message indices.
+    /// Parts within each message retain their original order.
+    fn media_message_order(&self, _request: &dyn OAIChatLikeRequest) -> Option<Vec<usize>> {
+        None
+    }
+
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)
     }

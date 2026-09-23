@@ -86,7 +86,7 @@ def _hrefs_for_context() -> dict[str, str]:
             ),
             "toolcalling_stream_fixtures": _url_join(
                 _LINK_CONTEXT.fixture_base_url,
-                "toolcalling/fixtures-stream-v2/inputs/",
+                "toolcalling/fixtures-stream-v1/inputs/",
             ),
             # Batch-on-stream reuses the v1 batch inputs.
             "toolcalling_batch_on_stream_fixtures": _url_join(
@@ -103,7 +103,7 @@ def _hrefs_for_context() -> dict[str, str]:
                 "conformance/fixtures/toolcalling/fixtures-batch-v1/"
             ),
             "toolcalling_stream_fixture_store": repository_href(
-                "conformance/fixtures/toolcalling/fixtures-stream-v2/"
+                "conformance/fixtures/toolcalling/fixtures-stream-v1/"
             ),
             "reasoning_fixture_store": repository_href(
                 "conformance/fixtures/reasoning/fixtures-v1/"
@@ -115,10 +115,10 @@ def _hrefs_for_context() -> dict[str, str]:
                 "conformance/toolcalling/fixtures-v1/"
             ),
             "toolcalling_stream_fixtures": repository_href(
-                "conformance/toolcalling/fixtures-stream-v2/"
+                "conformance/toolcalling/fixtures-stream-v1/"
             ),
             "toolcalling_batch_on_stream_fixtures": repository_href(
-                "conformance/toolcalling/fixtures-batch-on-stream-v2/"
+                "conformance/toolcalling/fixtures-batch-on-stream-v1/"
             ),
             "reasoning_fixtures": repository_href("conformance/reasoning/fixtures/"),
         }
@@ -135,7 +135,7 @@ def _hrefs_for_context() -> dict[str, str]:
             "conformance/utils/lib/parsers/TOOLCALLING_CASES.md"
         ),
         "toolcalling_streaming_cases": repository_href(
-            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md"
         ),
         "reasoning_cases": repository_href(
             "conformance/utils/lib/parsers/REASONING_CASES.md"
@@ -173,8 +173,8 @@ def _fixture_cache_relpath(rel: str) -> str:
     family = parts[-2] if len(parts) >= 2 else ""
     if fname.startswith("REASONING."):
         corpus = "reasoning/fixtures-v1/inputs"
-    elif fname.startswith("TOOLCALLING.streamv2"):
-        corpus = "toolcalling/fixtures-stream-v2/inputs"
+    elif fname.startswith("TOOLCALLING.streamv1"):
+        corpus = "toolcalling/fixtures-stream-v1/inputs"
     # Batch + v1 stream both live in the v1 corpus.
     elif fname.startswith("TOOLCALLING."):
         corpus = "toolcalling/fixtures-batch-v1/inputs"

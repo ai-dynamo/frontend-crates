@@ -22,6 +22,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 
 MODEL_RE = re.compile(
     r'<script type="application/json" id="conformance-model">(.*?)</script>', re.DOTALL
@@ -104,6 +106,100 @@ def reference(tab: dict) -> dict:
             f"{tab.get('id')}: expected exactly one default Reference candidate, found {len(matches)}"
         )
     return matches[0]
+
+
+def validate_unified_inventory(model: dict, fixtures: Path) -> list[str]:
+    """Compare the report with the pinned snapshot, independently of render inputs."""
+    tabs = select_tabs(model, ["unified"])
+    if len(tabs) != 1:
+        raise ValueError("expected exactly one Unified tab")
+    tab = tabs[0]
+    candidates = tab.get("candidates") or []
+    keys = [candidate["key"] for candidate in candidates]
+    if len(keys) != len(set(keys)):
+        raise ValueError("Unified has duplicate candidate keys")
+    if "golden" not in keys:
+        raise ValueError("Unified missing GOLDEN comparison column")
+
+    # These are the capture implementations the Unified compare bar supports.
+    # Its historical vLLM keys predate the version-qualified Python key.
+    identities = {}
+    for candidate in candidates:
+        key = candidate["key"].split("@", 1)[0]
+        source = {"dynamo": "dynamo_v2", "vllm": "vllm_python"}.get(key, key)
+        identity = (source, candidate.get("version"))
+        if identity in identities:
+            raise ValueError(f"Unified has duplicate version column: {identity}")
+        identities[identity] = candidate
+    required = set()
+    for directory in fixtures.iterdir():
+        source, separator, version = directory.name.partition("-")
+        if directory.is_dir() and separator and source in {"dynamo_v2", "vllm_python", "vllm_rust"}:
+            required.add((source, version))
+    if not required:
+        raise ValueError(f"no Unified captures found under {fixtures}")
+    missing = required - identities.keys()
+    if missing:
+        raise ValueError(f"Unified missing recorded version columns: {sorted(missing)}")
+
+    rows = select_rows(tab, [])
+    families = [row["family"] for row in rows]
+    if len(families) != len(set(families)):
+        raise ValueError("Unified has duplicate family rows")
+    by_family = {row["family"]: row for row in rows}
+    input_files = sorted((fixtures / "inputs").glob("*/*.yaml"))
+    if not input_files:
+        raise ValueError(f"no Unified inputs found under {fixtures}")
+    columns = [column["sub"] for column in tab.get("columns") or []]
+    if not columns or len(columns) != len(set(columns)):
+        raise ValueError("Unified has empty or duplicate scenario columns")
+    for path in input_files:
+        document = yaml.safe_load(path.read_text())
+        family = path.parent.name
+        if family not in by_family:
+            raise ValueError(f"Unified missing recorded family: {family}")
+        for case in document["cases"].values():
+            scenario = case["scenario"]
+            if scenario not in columns:
+                raise ValueError(f"Unified missing recorded scenario: {family}/{scenario}")
+
+    usable = dict.fromkeys(keys, 0)
+    absent = dict.fromkeys(keys, 0)
+    for row in rows:
+        for scenario in columns:
+            location = f"Unified {row['family']}/{scenario}"
+            cell = row.get("cells", {}).get(scenario)
+            if not cell or cell.get("kind") != "cell":
+                raise ValueError(f"{location}: missing cell")
+            comparisons = cell.get("cmp") or {}
+            payloads = {
+                item["key"]: item.get("block")
+                for item in (cell.get("tooltip") or {}).get("candidates") or []
+            }
+            for key in keys:
+                comparison = comparisons.get(key)
+                block = payloads.get(key)
+                if not comparison or not isinstance(block, dict) or not block:
+                    raise ValueError(f"{location}: missing comparison or popup data for {key}")
+                if not {"sig", "na", "err", "leak"} <= comparison.keys():
+                    raise ValueError(f"{location}: incomplete comparison for {key}")
+                if cell.get("status") == "na":
+                    continue
+                if comparison["na"]:
+                    absent[key] += 1
+                else:
+                    if not ("events" in block or "error" in block):
+                        raise ValueError(f"{location}: missing captured output for {key}")
+                    usable[key] += 1
+    warnings = []
+    for candidate in candidates:
+        key = candidate["key"]
+        if absent[key]:
+            warnings.append(
+                f"Unified {candidate['label']}: {absent[key]} applicable cells unavailable; "
+                f"{usable[key]} captured results (including recorded errors)"
+            )
+    return warnings
 
 
 def cell_state(cell: dict | None, ref: dict) -> tuple[str, str]:
@@ -203,16 +299,31 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", action="append", default=[], help="model family or row label; repeatable")
     parser.add_argument("--tab", action="append", default=[], help="tab id, kind, or label; repeatable")
     parser.add_argument("--status-path", type=Path, help="write the machine-readable status JSON")
+    parser.add_argument("--report-path", type=Path, help="final HTML path recorded in status JSON when validating a temporary file")
+    parser.add_argument("--unified-fixtures", type=Path, help="pinned snapshot Unified directory; require its versions, families and cases in the report")
     parser.add_argument("--require-green", action="store_true", help="exit 1 when any selected cell is empty or red")
     parser.add_argument("--summary-only", action="store_true", help="print totals without listing each issue")
     args = parser.parse_args(argv)
 
     try:
         model = load_model(args.html)
-        status = build_status(model, select_tabs(model, args.tab), args.model, args.html)
-    except (OSError, ValueError, json.JSONDecodeError) as error:
-        parser.error(str(error))
+        if args.unified_fixtures:
+            for warning in validate_unified_inventory(model, args.unified_fixtures):
+                print(f"WARNING: {warning}", file=sys.stderr)
+        status = build_status(model, select_tabs(model, args.tab), args.model, args.report_path or args.html)
+    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 2
 
+    blocked = any(report["empty"] or report["red"] for report in status["reports"])
+    if args.require_green and blocked:
+        print("ERROR: selected conformance cells are empty or red", file=sys.stderr)
+        print_summary(status)
+        return 1
+    if blocked:
+        empty = sum(report["empty"] for report in status["reports"])
+        red = sum(report["red"] for report in status["reports"])
+        print(f"WARNING: selected Reference cells include {empty} empty and {red} red; use --require-green to reject them", file=sys.stderr)
     if args.status_path:
         args.status_path.parent.mkdir(parents=True, exist_ok=True)
         args.status_path.write_text(json.dumps(status, indent=2) + "\n")
@@ -220,8 +331,7 @@ def main(argv: list[str] | None = None) -> int:
         print_totals(status)
     else:
         print_summary(status)
-    blocked = any(report["empty"] or report["red"] for report in status["reports"])
-    return 1 if args.require_green and blocked else 0
+    return 0
 
 
 if __name__ == "__main__":

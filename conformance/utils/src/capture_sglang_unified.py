@@ -30,6 +30,7 @@ from sglang.srt.parser.reasoning_parser import ReasoningParser
 FAMILY_PARSERS = {
     "gemma4": ("gemma4", "gemma4"),
     "qwen3": ("qwen3", "qwen3_coder"),
+    "glm47": ("glm45", "glm47"),
     "kimi_k2": ("kimi_k2", "kimi_k2"),
     # SGLang names both Muse Glimmer detectors `muse` (PR #34262). vLLM has no
     # released muse parser, so `capture_vllm_unified.py` gets no entry — an entry

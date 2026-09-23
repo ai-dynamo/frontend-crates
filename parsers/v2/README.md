@@ -4,7 +4,9 @@ Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 
 
 This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the v1 batch crate (`../parsers/`) and this v2 streaming crate, and `../parsers/README.md` defers here.
 
-**Two parser paths exist today (universal convention).** v1 (`../parsers/`) is the **batch** parser, used two ways: plain **batch** (complete text parsed in one call) and **jail+batch** (streaming input is buffered — "jailed" — until a call completes, then batch-parsed and emitted all at once; a call is never streamed incrementally). v2 (this crate) is the **streaming** parser — its primary mode emits deltas per chunk as input arrives, and it can also take batch input (the whole text as one chunk, the batch-on-stream path). v2 is still under development. The two are kept in agreement (goal 8 below). v1 is not being merged into v2; when v2 is done it will fully replace v1, and all v1 code and docs will be removed outright. Put new parser work and documentation here, not in v1.
+**Implementation names and conformance convention names are different axes.** `dynamo-parsers` / `dynamo_v1` is the batch implementation, used for plain batch parsing and for jail+batch, where streaming input is buffered until a call completes and then emitted all at once. `dynamo-parsers-v2` / `dynamo_v2` is this newer crate; it contains both the first incremental tool-only parsers and the later Unified parsers. The first incremental path was originally called `stream-v2` because it was intended to replace batch+jail. Unified later introduced a second meaning for “v2.” Conformance now calls the older non-Unified convention **streaming v1** (`fixtures-stream-v1`, `TOOLCALLING.streamv1.*`) and reserves **v2** for Unified (`fixtures-unified-v2`). A `dynamo_v2-*` implementation capture inside `fixtures-stream-v1` is therefore expected, not contradictory.
+
+**Runtime selection is separate from this naming cleanup.** Dynamo reads parser names from the model deployment. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not choose one by itself. Routing checks Unified first: the exact `tool_call_parser=qwen3_coder` plus `reasoning_parser=qwen3` pair uses Qwen3 Unified when the flag is on. If no Unified pair matches, eligible `qwen3_coder` or `deepseek_v4` requests use the older non-Unified incremental parser. All remaining tool-parsing requests use batch+jail. DeepSeek V4.1 and Muse have separate Unified routes that do not depend on this flag. A parser failure does not trigger a general Unified-to-incremental-to-jail retry chain.
 
 ## Parser goals (read first)
 
@@ -35,7 +37,7 @@ Tool-call families:
 | Family | Grammar | Batch impl (`parsers/v1/src/tool_calling/`) | Examples |
 | -- | -- | -- | -- |
 | **DSML** | `<｜DSML｜tool_calls>...` with typed `string="true\|false"` parameters | `dsml/parser.rs` | DeepSeek V3.2, V4 |
-| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, glm47 (own file), kimi_k2 (own file, special-token XML) |
+| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, GLM-4.7/5.x via `glm47` (shared implementation), kimi_k2 (own file, special-token XML) |
 | **JSON** | Start sentinel + JSON `{name, arguments}` (single object or array) | `json/base_json_parser.rs` (+ variant files) | deepseek_v3, deepseek_v3_1, nemotron_deci, nemotron_nano, jamba, mistral, phi4, llama3_json, qwen25 |
 | **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
 | **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
@@ -54,6 +56,8 @@ Reasoning families:
 | **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair | `muse_glimmer_parser.rs` | Muse-Glimmer-30B |
 
 Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
+
+The `deepseek_v4` tool-only selector also accepts V4.1's spaced DSML tags (`<｜DSML｜ calls>`, `<｜DSML｜ invoke ...>`). Both dialects use one scanner with their existing boundary parsers and decoders; there is no separate tool-only selector. Reasoning behavior and V4.1 JSON-body support remain separate changes (#253 and #250).
 
 ## Why It Mimics vLLM Rust
 
@@ -150,15 +154,15 @@ For a new streaming parser family, add or update these files:
 
 - `parsers/v2/src/tool_calling/<family>.rs` for the parser implementation.
 - `parsers/v2/src/tool_calling/registry.rs` for the family registry entry.
-- `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
-- `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
+- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` for per-chunk stream captures.
+- `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
 
 New conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
-- `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
-- `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
+- `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` when adding a new stream-only case or changing stream case descriptions.
+- `conformance/toolcalling/fixtures-stream-v1/README.md` only if the fixture schema or capture convention changes.
 
-Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-batch-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
+Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-batch-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v1/`, and `fixtures-batch-on-stream-v1/` until v2 replaces v1.
 
 ## Fixture Format
 
@@ -166,14 +170,14 @@ v2 fixtures should use explicit implementation names. Do not rely on renderer in
 
 ```yaml
 captured_with:
-  dynamo_rust: Dynamo parser v2
+  dynamo_v2: Dynamo parser v2
   vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
   vllm_python: 0.22.0
   sglang_python: 0.5.12.post1
 cases:
-  TOOLCALLING.streamv2.4.a:
+  TOOLCALLING.streamv1.4.a:
     expected:
-      dynamo_rust:
+      dynamo_v2:
         calls: []
         normal_text: ''
       vllm_rust:
@@ -211,7 +215,7 @@ In order:
 
 ### Unified parser hard gate
 
-Capture publication follows [the v2 plain-version YAML contract](../../conformance/README.md#v2-storage-contract-plain-versioned-yaml-only). Existing archive/hash consumers must be migrated; they do not permit new legacy-format captures.
+Unified capture publication follows [the plain-version YAML contract](../../conformance/README.md#unified-storage-contract-plain-versioned-yaml-only). The older tool-calling stream and batch-on-stream tests keep their existing storage; they are outside this migration.
 
 Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 
@@ -228,10 +232,10 @@ Harmony is only the first example; DS4 and the other streaming families follow t
 ## Which Fixture Do I Edit?
 
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
-- `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
-- `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
+- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
+- `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
 
-Decision rule for a new model: add the stream cases under `fixtures-stream-v2/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
+Decision rule for a new model: add the stream cases under `fixtures-stream-v1/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
 
 ## How To Record Divergences
 
@@ -249,7 +253,7 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 For a new parser family, done means:
 
 - Rust parser unit tests pass and the Dynamo fixture tests pass.
-- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the stream-v2 corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
+- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the legacy stream corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
 - vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
 - vLLM Rust captures include the source tag/commit in `captured_with` when available.
 - The HTML matrix is regenerated locally and has no unexplained `?`, no accidental tool-call markup leaks (`↯`), and no red-orphan tokens in the popups (undeclared markers).
@@ -274,11 +278,11 @@ Capture one Dynamo v2 stream fixture into JSON:
 
 ```bash
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/inputs/harmony/TOOLCALLING.streamv2.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
   --output /tmp/dynamo_stream.json
 ```
 
-Capture all stream behavior and refresh v2 stream fixtures:
+Capture all stream behavior and refresh the legacy v1 stream corpus:
 
 ```bash
 conformance/utils/capture.sh stream \
@@ -287,7 +291,7 @@ conformance/utils/capture.sh stream \
   --vllm-rust-source ~/dynamo/vllm-0.22.0
 ```
 
-Capture all batch-on-stream behavior and refresh v2 batch-on-stream fixtures:
+Capture all batch-on-stream behavior and refresh the legacy v1 batch-on-stream corpus:
 
 ```bash
 conformance/utils/capture.sh batch-on-stream \
