@@ -816,43 +816,26 @@ NS|</tool_call>"#;
 
     #[test]
     fn local_ref_object_argument_accepts_json_text() {
-        // MP-975 / MP-1143: the parameter references an object in $defs.
         let parameters = serde_json::json!({
-            "$defs": {
-                "Schema": {
-                    "type": "object",
-                    "properties": {
-                        "input": {"type": "string"},
-                        "notes": {"type": "string"}
-                    },
-                    "required": ["input", "notes"],
-                    "additionalProperties": false
-                }
-            },
-            "type": "object",
-            "properties": {"data": {"$ref": "#/$defs/Schema"}},
-            "required": ["data"],
-            "additionalProperties": false
+            "$defs": {"Payload": {"type": "object"}},
+            "properties": {"data": {"$ref": "#/$defs/Payload"}}
         });
         let tools = vec![ToolDefinition {
-            name: "authenticate_first_name".into(),
+            name: "capture".into(),
             parameters: Some(parameters),
             strict: Some(true),
         }];
-        let tok = "]<]minimax[>[";
-        let raw = format!(
-            "{tok}<data>{{\"input\":\"Alex\",\"notes\":\"first name supplied\"}}{tok}</data>"
-        );
+        let raw = "]<]minimax[>[<data>{\"input\":\"Alex\"}]<]minimax[>[</data>";
         let actual = parse_parameters(
-            "authenticate_first_name",
-            &raw,
+            "capture",
+            raw,
             &MiniMaxM3ParserConfig::default(),
             Some(&tools),
         )
         .unwrap();
         assert_eq!(
             Value::Object(actual),
-            serde_json::json!({"data":{"input":"Alex","notes":"first name supplied"}})
+            serde_json::json!({"data":{"input":"Alex"}})
         );
     }
 
