@@ -292,7 +292,7 @@ git add conformance/fixtures conformance/fixtures-unified-v2 conformance/fixture
 git commit -s -m "fixtures: snapshot <stamp printed by the script>"
 ```
 
-The script builds deterministic per-version tarball shards for tool-calling and reasoning fixtures, updates the reviewable Unified YAML store, preserves hash-pinned inactive evidence, and writes the manifest that pins both stores.
+The script builds deterministic per-version tarball shards for tool-calling and reasoning fixtures, updates the reviewable Unified YAML store, and writes the manifest that pins both stores.
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 

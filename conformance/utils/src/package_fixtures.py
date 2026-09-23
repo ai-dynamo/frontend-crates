@@ -327,7 +327,6 @@ def sync_store(
         p
         for p in fixtures_dir.rglob("*.tar.gz")
         if str(p.relative_to(fixtures_dir)) not in new_paths | inactive.keys()
-        and not str(p.relative_to(fixtures_dir)).startswith("unified/")
     ]
     if dry_run:
         archive_shards = [shard for shard in shards if shard.get("format") != "unified-history"]
@@ -351,6 +350,10 @@ def sync_store(
         if prune:
             print(f"  removing stale {p.relative_to(fixtures_dir)}")
             p.unlink()
+            parent = p.parent
+            while parent != fixtures_dir and not any(parent.iterdir()):
+                parent.rmdir()
+                parent = parent.parent
         else:
             print(f"  keeping {p.relative_to(fixtures_dir)} (not in this package run; --prune removes)")
 
