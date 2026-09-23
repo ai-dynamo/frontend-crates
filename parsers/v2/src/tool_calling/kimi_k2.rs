@@ -132,7 +132,7 @@ fn native_id_len(text: &str, flush: bool) -> NativeId {
 ///   as policy P2) instead of being dropped as if it were genuinely
 ///   truncated. `K2Emitter` synthesizes the missing closer before typing it.
 ///   BUT only for `tool_index == 0`: the captured batch contract
-///   (`TOOLCALLING.batch.5.d`/`TOOLCALLING.streamv2.5.d`, independently
+///   (`TOOLCALLING.batch.5.d`/`TOOLCALLING.streamv1.5.d`, independently
 ///   pinned against the real `parse_section_block` regex and its own
 ///   streaming golden capture) drops a later call that never gets its own
 ///   `call_end`, while still recovering an incomplete FIRST call at EOF
@@ -1036,7 +1036,7 @@ mod tests {
         // giving this call its own `call_end`. This is NOT the same as
         // running out of tokens mid-call (`suppresses_truncated_call_at_eof`)
         // or completing right at EOF with nothing else following
-        // (`UNIFIED.tool_no_close`, `TOOLCALLING.streamv2.5.a`) -- a real
+        // (`UNIFIED.tool_no_close`, `TOOLCALLING.streamv1.5.a`) -- a real
         // section-end marker DOES follow, so the model had more to say and
         // chose not to close this call. Batch mode's regex requires a
         // literal `call_end` unconditionally and drops it; streaming must

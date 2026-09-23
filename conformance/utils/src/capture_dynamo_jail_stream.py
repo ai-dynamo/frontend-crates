@@ -4,10 +4,10 @@
 """Capture the Dynamo v1 batch parser run against STREAM data (the streaming jail),
 now that the jail buffer + v1 batch parser live together in dynamo-parsers (DIS-2296).
 
-For each family under fixtures-stream-v2/inputs/, feed the per-chunk `delta_text` to
+For each family under fixtures-stream-v1/inputs/, feed the per-chunk `delta_text` to
 `JailedStream` (via the record_dynamo_jail_stream bin) and write the per-chunk output
-to fixtures-stream-v2/dynamo_v1-3.0.0/<family>/<file> — the v1 (jail) stream
-candidate, alongside the v2 stream parser at dynamo_v1-0.1.11/. The gpt-oss token-id
+to fixtures-stream-v1/dynamo_v1-3.0.0/<family>/<file> — the v1 (jail) stream
+    candidate, alongside the v2 stream parser at dynamo_v2-0.1.11/. The gpt-oss token-id
 row (harmony) is recorded as unavailable (the v1 parser is text-only — see the module
 note below); every other family records the jail's real per-chunk output, including an
 empty result when the jail drops a call (a real divergence, not n/a).
@@ -95,10 +95,10 @@ def main(argv=None):
     ap.add_argument("--root", default=str(Path(__file__).resolve().parents[3]))
     args = ap.parse_args(argv)
     repo = Path(args.root)
-    sv2 = repo / "conformance/toolcalling/fixtures-stream-v2"
-    inputs = sv2 / "inputs"
+    sv1 = repo / "conformance/toolcalling/fixtures-stream-v1"
+    inputs = sv1 / "inputs"
     ver = dynamo_v1_version(repo)
-    out_root = sv2 / f"dynamo_v1-{ver}"
+    out_root = sv1 / f"dynamo_v1-{ver}"
 
     families = sorted(d.name for d in inputs.iterdir() if d.is_dir())
     for family in families:
@@ -136,7 +136,7 @@ def main(argv=None):
             dst = out_root / family / fp.name
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_text(yaml.safe_dump(
-                {"family": doc.get("family", family), "mode": "streamv2",
+                {"family": doc.get("family", family), "mode": "streamv1",
                  "captured_with": {"dynamo_v1": ver}, "cases": out_cases},
                 sort_keys=False, allow_unicode=True, width=4096,
             ))

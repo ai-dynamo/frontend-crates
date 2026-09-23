@@ -71,21 +71,21 @@ def _batch_tree(root: Path) -> None:
 
 
 def _stream_tree(root: Path) -> None:
-    _write(root / "inputs" / FAMILY / "TOOLCALLING.streamv2.1.yaml", (
+    _write(root / "inputs" / FAMILY / "TOOLCALLING.streamv1.1.yaml", (
         "family: famx\n"
-        "mode: streamv2\n"
+        "mode: streamv1\n"
         "cases:\n"
-        "  TOOLCALLING.streamv2.1:\n"
+        "  TOOLCALLING.streamv1.1:\n"
         "    chunks:\n"
         "    - delta_text: 'x'\n"
         "    - delta_text: 'y'\n"
     ))
     for ver in ("0.1.11", "0.1.22"):
-        _write(root / f"dynamo_v2-{ver}" / FAMILY / "TOOLCALLING.streamv2.1.yaml", (
+        _write(root / f"dynamo_v2-{ver}" / FAMILY / "TOOLCALLING.streamv1.1.yaml", (
             "family: famx\n"
-            "mode: streamv2\n"
+            "mode: streamv1\n"
             "cases:\n"
-            "  TOOLCALLING.streamv2.1:\n"
+            "  TOOLCALLING.streamv1.1:\n"
             "    chunks:\n"
             "    - expected: &shared\n"
             "      - index: 0\n"
@@ -97,7 +97,7 @@ def _stream_tree(root: Path) -> None:
 RESOLVERS = {
     "batch": (resolve_fixtures, _batch_tree, "TOOLCALLING.batch.yaml",
               ["vllm_python-0.23.0"], ["vllm_python-0.24.0"]),
-    "stream": (resolve_stream_fixtures, _stream_tree, "TOOLCALLING.streamv2.1.yaml",
+    "stream": (resolve_stream_fixtures, _stream_tree, "TOOLCALLING.streamv1.1.yaml",
                ["dynamo_v2-0.1.11"], ["dynamo_v2-0.1.22"]),
 }
 
