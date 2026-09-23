@@ -496,18 +496,40 @@ impl StackItem {
             return Some(item_schema);
         }
 
-        let schema = self.schema.as_ref()?;
-        if let Some(child_schema) = schema
-            .get("properties")
-            .and_then(|properties| properties.get(tag))
-        {
-            return Some(child_schema.clone());
-        }
+        self.schema
+            .as_ref()
+            .and_then(|schema| schema_for_object_child(schema, tag))
+    }
+}
 
-        schema
-            .get("additionalProperties")
-            .filter(|additional| additional.is_object())
-            .cloned()
+// A nullable object commonly wraps its properties inside an anyOf/oneOf branch.
+// Only use a child schema when all branches that define it agree. Otherwise the
+// emitted text must stay a string: selecting a branch requires more context.
+fn schema_for_object_child(schema: &Value, tag: &str) -> Option<Value> {
+    let mut candidates = Vec::new();
+    collect_object_child_schemas(schema, tag, &mut candidates);
+    let first = candidates.first()?;
+    candidates
+        .iter()
+        .all(|candidate| candidate == first)
+        .then(|| first.clone())
+}
+
+fn collect_object_child_schemas(schema: &Value, tag: &str, candidates: &mut Vec<Value>) {
+    if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+        candidates.push(child.clone());
+    } else if let Some(additional) = schema
+        .get("additionalProperties")
+        .filter(|additional| additional.is_object())
+    {
+        candidates.push(additional.clone());
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(key).and_then(Value::as_array) {
+            for branch in branches {
+                collect_object_child_schemas(branch, tag, candidates);
+            }
+        }
     }
 }
 
@@ -749,5 +771,37 @@ mod tests {
     fn schemaless_null_stays_a_string() {
         // With no schema the intended type is unknown, so the literal is preserved.
         assert_eq!(convert_scalar_value("null", None), json!("null"));
+    }
+
+    #[test]
+    fn ambiguous_union_child_type_preserves_emitted_text() {
+        let config = MiniMaxM3ParserConfig::default();
+        let schema = json!({
+            "oneOf": [
+                { "type": "object", "properties": { "value": { "type": "integer" } } },
+                { "type": "object", "properties": { "value": { "type": "string" } } }
+            ]
+        });
+        let raw = format!("{TOK}<value>2{TOK}</value>");
+        assert_eq!(
+            parse_nested_minimax_xml(&raw, Some(schema), &config),
+            json!({ "value": "2" })
+        );
+    }
+
+    #[test]
+    fn matching_union_child_types_still_coerce() {
+        let config = MiniMaxM3ParserConfig::default();
+        let schema = json!({
+            "anyOf": [
+                { "type": "object", "properties": { "value": { "type": "integer" } } },
+                { "type": "object", "properties": { "value": { "type": "integer" } } }
+            ]
+        });
+        let raw = format!("{TOK}<value>2{TOK}</value>");
+        assert_eq!(
+            parse_nested_minimax_xml(&raw, Some(schema), &config),
+            json!({ "value": 2 })
+        );
     }
 }
