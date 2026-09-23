@@ -9,6 +9,7 @@
 //! format so named and required tool choices can be constrained without
 //! changing what the K3 parser expects.
 
+use percent_encoding::percent_decode_str;
 use serde_json::{Map, Value};
 
 use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
@@ -115,7 +116,8 @@ fn resolve_argument_schema_inner(
             return None; // Do not discard sibling validation constraints.
         }
         let pointer = reference.as_str()?.strip_prefix('#')?;
-        return resolve_argument_schema_inner(root, root.pointer(pointer)?, depth + 1, remaining);
+        let pointer = percent_decode_str(pointer).decode_utf8().ok()?;
+        return resolve_argument_schema_inner(root, root.pointer(&pointer)?, depth + 1, remaining);
     }
     let mut resolved = object.clone();
     // Active references are inlined below; unused definitions need no new scope.
@@ -512,6 +514,16 @@ mod tests {
             resolved["properties"]["literal"]["const"],
             json!({"$ref": "this is data"})
         );
+    }
+
+    #[test]
+    fn percent_encoded_reference_retains_argument_type() {
+        let root = json!({
+            "$defs": {"Foo Bar": {"type": "integer"}},
+            "properties": {"value": {"$ref": "#/$defs/Foo%20Bar"}}
+        });
+        let resolved = resolve_argument_schema(&root, &root["properties"]["value"], 0).unwrap();
+        assert_eq!(resolved, json!({"type": "integer"}));
     }
 
     #[test]
