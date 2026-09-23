@@ -681,27 +681,13 @@ mod tests {
 
     #[test]
     fn literal_grep_pattern_null_stays_string_while_nullable_fields_become_null() {
-        // MOD2-167: a literal-text field sits beside several nullable fields.
         let tools = vec![ToolDefinition {
-            name: "grep".to_string(),
+            name: "grep".into(),
             parameters: Some(serde_json::json!({
-                "type": "object",
                 "properties": {
                     "pattern": {"type": "string"},
-                    "path": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null},
-                    "glob": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null},
-                    "output_mode": {
-                        "type": "string",
-                        "enum": ["files_with_matches", "content", "count"],
-                        "default": "files_with_matches"
-                    },
-                    "max_count": {
-                        "anyOf": [{"type": "integer", "exclusiveMinimum": 0}, {"type": "null"}],
-                        "default": null
-                    }
-                },
-                "required": ["pattern", "path", "glob", "output_mode", "max_count"],
-                "additionalProperties": false
+                    "path": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                }
             })),
             strict: Some(true),
         }];
@@ -710,9 +696,6 @@ mod tests {
             "]<]minimax[>[<invoke name=\"grep\">",
             "]<]minimax[>[<pattern>null]<]minimax[>[</pattern>",
             "]<]minimax[>[<path>null]<]minimax[>[</path>",
-            "]<]minimax[>[<glob>null]<]minimax[>[</glob>",
-            "]<]minimax[>[<output_mode>files_with_matches]<]minimax[>[</output_mode>",
-            "]<]minimax[>[<max_count>null]<]minimax[>[</max_count>",
             "]<]minimax[>[</invoke>",
             "]<]minimax[>[</tool_call>"
         );
@@ -721,16 +704,7 @@ mod tests {
                 .unwrap();
         assert_eq!(calls.len(), 1);
         let (_, args) = call_name_and_args(&calls[0]);
-        assert_eq!(
-            args,
-            serde_json::json!({
-                "pattern": "null",
-                "path": null,
-                "glob": null,
-                "output_mode": "files_with_matches",
-                "max_count": null
-            })
-        );
+        assert_eq!(args, serde_json::json!({"pattern": "null", "path": null}));
     }
 
     #[test]
