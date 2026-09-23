@@ -354,6 +354,9 @@ impl KimiK3CallBoundary {
             .iter()
             .copied()
             .find(|outer| outer.at >= header_len)
+            && (TOOLS_CLOSE.prefix_len(&text[outer.at..]).is_some()
+                || MESSAGE_CLOSE.prefix_len(&text[outer.at..]).is_some()
+                || text[outer.at..].starts_with(END_OF_MSG))
             && self.body_kind == CallBodyKind::Arguments
             && let Some(open) = self
                 .arg_opens
@@ -387,6 +390,11 @@ impl KimiK3CallBoundary {
                         .strip_suffix(ARG_CLOSE.spaced.expect("paired marker"))
                 })
                 .unwrap_or(&text[open.at + value_start..outer.at]);
+            if raw.contains(CALL_CLOSE.canonical)
+                || raw.contains(CALL_CLOSE.spaced.expect("paired marker"))
+            {
+                return CallBoundary::Malformed;
+            }
             let Ok(value) = serde_json::from_str(&encode_argument_value(arg_type, raw)) else {
                 return CallBoundary::Malformed;
             };
@@ -412,6 +420,11 @@ impl KimiK3CallBoundary {
                 )
             })
             .map_or(text.len(), |outer| outer.at);
+        if text[header_len..recovery_limit].contains(CALL_CLOSE.canonical)
+            || text[header_len..recovery_limit].contains(CALL_CLOSE.spaced.expect("paired marker"))
+        {
+            return CallBoundary::Malformed;
+        }
         if let Some(body_end) = self.recovery_body_end(text, header_len, recovery_limit) {
             return self.recover_at(text, header_len, body_end);
         }
