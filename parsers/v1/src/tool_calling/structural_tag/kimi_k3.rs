@@ -146,6 +146,56 @@ fn argument_tag(
     })
 }
 
+fn argument_format(
+    key: &str,
+    schema: &Value,
+    root_defs: Option<&Map<String, Value>>,
+) -> Option<Format> {
+    if let Some(tag) = argument_tag(key, schema, root_defs) {
+        return Some(Format::Tag(tag));
+    }
+    let object = schema.as_object()?;
+    let union_key = if object.get("type").is_some_and(Value::is_array) {
+        "type"
+    } else {
+        "anyOf"
+    };
+    // Expanding a union must not discard sibling validation constraints.
+    // More complex compositions retain the existing permissive fallback.
+    if object.keys().any(|key| {
+        key != union_key
+            && !matches!(
+                key.as_str(),
+                "description"
+                    | "title"
+                    | "$comment"
+                    | "default"
+                    | "examples"
+                    | "deprecated"
+                    | "readOnly"
+                    | "writeOnly"
+            )
+    }) {
+        return None;
+    }
+    let options = object.get(union_key)?.as_array()?;
+    if options.is_empty() {
+        return None;
+    }
+    let formats = options
+        .iter()
+        .map(|option| {
+            let branch = if union_key == "type" {
+                serde_json::json!({"type": option})
+            } else {
+                option.clone()
+            };
+            argument_tag(key, &branch, root_defs).map(Format::Tag)
+        })
+        .collect::<Option<Vec<_>>>()?;
+    Some(one_of(formats))
+}
+
 fn permissive_argument_tag() -> TagFormat {
     TagFormat {
         begin: format!("{OPEN}argument "),
@@ -186,9 +236,8 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
     let tags = properties
         .iter()
         .map(|(key, schema)| {
-            Format::Tag(
-                argument_tag(key, schema, Some(&root_defs)).unwrap_or_else(permissive_argument_tag),
-            )
+            argument_format(key, schema, Some(&root_defs))
+                .unwrap_or_else(|| Format::Tag(permissive_argument_tag()))
         })
         .collect();
     star(one_of(tags))
@@ -327,6 +376,65 @@ mod tests {
             schema_mode: StructuralTagSchemaMode::Auto,
             starts_in_reasoning: false,
         }
+    }
+
+    #[test]
+    fn mp1670_nullable_arguments_keep_key_and_type_constraints() {
+        // MP-1670 uses both nullable encodings in one tool.
+        let tools = vec![ToolDefinition {
+            name: "set_labels".into(),
+            strict: None,
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "label": {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "The label, or null when there is none"},
+                    "note": {"type": ["string", "null"], "description": "The note, or null when there is none"}
+                },
+                "required": ["label", "note"]
+            })),
+        }];
+        let choice = ToolChoice::Named("set_labels".into());
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["elements"][2]["content"]["tags"][0]["content"]["elements"]
+            [2]["content"]["elements"];
+        for (index, key) in ["label", "note"].into_iter().enumerate() {
+            let alternatives = arguments[index]["elements"]
+                .as_array()
+                .expect("typed alternatives");
+            assert_eq!(alternatives.len(), 2);
+            assert_eq!(
+                alternatives[0]["begin"],
+                format!("{OPEN}argument key=\"{key}\" type=\"string\"{SEP}")
+            );
+            assert_eq!(
+                alternatives[1]["begin"],
+                format!("{OPEN}argument key=\"{key}\" type=\"null\"{SEP}")
+            );
+            assert_eq!(alternatives[1]["content"]["json_schema"]["type"], "null");
+        }
+    }
+
+    #[test]
+    fn unsupported_union_constraints_are_not_silently_discarded() {
+        for schema in [
+            json!({"anyOf": [{"type": "string"}, {"$ref": "#/$defs/Payload"}]}),
+            json!({"type": ["string", "null"], "enum": ["fixed"]}),
+            json!({"anyOf": [{"type": "string"}, {"type": "null"}], "not": {"type": "null"}}),
+        ] {
+            assert!(argument_format("value", &schema, None).is_none());
+        }
+        let format = argument_format(
+            "value",
+            &json!({
+                "anyOf": [{"type": "string", "enum": ["fixed"]}, {"type": "null"}]
+            }),
+            None,
+        )
+        .unwrap();
+        let value = serde_json::to_value(format).unwrap();
+        assert_eq!(value["elements"][0]["content"]["value"], "fixed");
     }
 
     #[test]
