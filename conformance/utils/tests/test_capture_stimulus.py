@@ -193,6 +193,35 @@ def test_current_release_overlays_replace_invalid_records_and_add_cases(tmp_path
         capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"])
 
 
+def test_latest_family_guard_orders_prereleases_and_ignores_source_snapshots(tmp_path):
+    current = _input("same") | {"tools": unified_tools()}
+    _write(tmp_path, "inputs", current)
+    for version in ("0.6.0", "0.7.0-rc.2", "0.7.0-rc.10"):
+        _write(
+            tmp_path,
+            f"dynamo_v2-{version}",
+            {
+                "capture_input": capture_stimulus.capture_input(current),
+                "assembled": [{"kind": "text", "text": version}],
+            },
+        )
+    _write(
+        tmp_path,
+        "dynamo_v2-0.8.0+source." + "a" * 64,
+        {
+            "capture_input": capture_stimulus.capture_input(current),
+            "assembled": [{"kind": "text", "text": "source"}],
+        },
+    )
+
+    docs = capture_stimulus.validated_family_capture_docs(
+        tmp_path, [tmp_path / "inputs"]
+    )
+
+    assert docs[0]["version"] == "0.7.0-rc.10"
+    assert docs[0]["cases"]["UNIFIED.7-2"]["assembled"][0]["text"] == "0.7.0-rc.10"
+
+
 @pytest.mark.parametrize("invalid", [{"error": "failed"}, {"unavailable": "missing"},
                                      {"capture_input": _input("other")}])
 def test_current_release_rejects_surviving_invalid_records(tmp_path, invalid):

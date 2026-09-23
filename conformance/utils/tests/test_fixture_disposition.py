@@ -432,7 +432,6 @@ def test_extract_holds_generation_lock_through_shard_materialization(tmp_path, m
         _source,
         destination,
         *,
-        derived_release_versions=None,
         verbose=False,
     ):
         destination.mkdir(parents=True, exist_ok=True)
@@ -612,17 +611,16 @@ def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
     assert cases[0]["dynamo"][0]["text"] == "captured"
 
 
-def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_path, monkeypatch):
+def test_loose_reader_keeps_an_older_capture_at_its_actual_version(tmp_path):
     base = tmp_path / "unified"
     key = "UNIFIED.gemma-1"
     _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
     _case(base, "golden", key, {"assembled": []})
     _case(base, "dynamo_v2-0.6.0", key, {"assembled": [{"kind": "text", "text": "captured"}]})
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
     cases, _caps, versions = table._load_unified_fixtures(base)
-    assert versions["dynamo_v2_all"] == ["0.6.0", "0.6.1"]
+    assert versions["dynamo_v2_all"] == ["0.6.0"]
+    assert versions["dynamo_v2"] == {"gemma4": "0.6.0"}
     assert cases[0]["dynamo"][0]["text"] == "captured"
-    assert cases[0]["dynamo_by_ver"]["0.6.1"]["inherited_from"] == "0.6.0"
 
 
 @pytest.mark.parametrize(("family", "old", "new"), [

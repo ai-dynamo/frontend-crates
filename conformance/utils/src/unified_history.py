@@ -1085,7 +1085,11 @@ def _capture_release_sort_key(runtime_version: str) -> tuple:
     release_version = runtime_version
     release, separator, prerelease = release_version.partition("-")
     numeric = tuple(int(part) for part in release.split("."))
-    return numeric, 0 if separator else 1, prerelease
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return numeric, 0 if separator else 1, prerelease_key
 
 
 def materialize_store(
@@ -1093,7 +1097,6 @@ def materialize_store(
     destination: Path,
     *,
     include_current_inputs: bool = True,
-    derived_release_versions: dict[str, str] | None = None,
 ) -> None:
     store = load_store(root)
     destination = Path(destination)
@@ -1181,63 +1184,9 @@ def materialize_store(
             if relative not in written:
                 add_document(directory, family_name, case_key, document)
 
-    capture_ids_by_implementation: dict[str, set[str]] = {}
-    for (family_name, _implementation), history in sorted(store.histories.items()):
-        capture_ids_by_implementation.setdefault(history.implementation, set()).update(
-            history.captures
-        )
+    for (_family_name, _implementation), history in sorted(store.histories.items()):
         for capture_id, capture in history.captures.items():
             add_capture_state(capture_id, history, history.resolve(capture_id))
-
-    # The YAML store remains sparse: a release with no changed family output has
-    # no checkpoint file. Consumers still need a complete directory for the
-    # released version, so extraction may request a derived release view.
-    for implementation, runtime_version in (derived_release_versions or {}).items():
-        if not isinstance(implementation, str) or not isinstance(runtime_version, str):
-            raise ValueError("derived release versions must map strings to strings")
-        if not fixture_disposition.DYNAMO_VERSION_RE.fullmatch(runtime_version):
-            raise ValueError(f"invalid derived release version: {runtime_version}")
-        if implementation not in capture_ids_by_implementation:
-            raise ValueError(f"no Unified captures for derived implementation: {implementation}")
-        capture_ids_by_implementation[implementation].add(
-            f"{implementation}-{runtime_version}"
-        )
-
-    # A capture directory is a complete release view. If only one family was
-    # recaptured for a source identity, carry every other family forward from its
-    # newest capture at the same or an earlier crate version.
-    for implementation, target_ids in sorted(capture_ids_by_implementation.items()):
-        histories = [
-            history
-            for (_family, impl), history in sorted(store.histories.items())
-            if impl == implementation
-        ]
-        for target_id in sorted(
-            target_ids,
-            key=lambda capture_id: _capture_release_sort_key(
-                capture_id.removeprefix(f"{implementation}-")
-            ),
-        ):
-            target_version = target_id.removeprefix(f"{implementation}-")
-            target_release = _capture_release_sort_key(target_version)[:3]
-            for history in histories:
-                if target_id in history.captures:
-                    continue
-                eligible = [
-                    capture_id
-                    for capture_id, capture in history.captures.items()
-                    if _capture_release_sort_key(capture["runtime_version"])[:3]
-                    <= target_release
-                ]
-                if not eligible:
-                    continue
-                source_id = max(
-                    eligible,
-                    key=lambda capture_id: _capture_release_sort_key(
-                        history.captures[capture_id]["runtime_version"]
-                    ),
-                )
-                add_capture_state(target_id, history, history.resolve(source_id))
 
     _write_materialized_documents(documents)
 

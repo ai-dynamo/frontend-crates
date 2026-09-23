@@ -2330,33 +2330,31 @@ def _load_unified_fixtures(base: Path):
     for ver, dirname in engine_versions.get("dynamo_v2", []):
         dynamo_by_ver[ver] = _read_dir(dirname)
 
-    current_dynamo_ver = _unified_dynamo_label()
-    target_release = fixtures._version_sort_key(current_dynamo_ver)
-    inherited_current_cases = {}
-    for version in sorted(
-        (
-            version
-            for version in dynamo_by_ver
-            if fixtures._version_sort_key(version) <= target_release
-        ),
-        key=fixtures._version_sort_key,
-    ):
-        for case_key, record in dynamo_by_ver[version].items():
-            inherited = dict(record)
-            if version != current_dynamo_ver:
-                inherited["inherited_from"] = version
-            inherited_current_cases[case_key] = inherited
-    inherited_current_cases.update(dynamo_by_ver.get(current_dynamo_ver, {}))
-    dynamo_by_ver[current_dynamo_ver] = inherited_current_cases
-    current_dynamo_cases = inherited_current_cases
+    families = {family for family, _key in inputs}
+    current_dynamo_versions = {
+        family: max(
+            (
+                version for version, cases in dynamo_by_ver.items()
+                if any(captured_family == family for captured_family, _key in cases)
+            ),
+            key=fixtures._version_sort_key,
+        )
+        for family in families
+        if any(
+            any(captured_family == family for captured_family, _key in cases)
+            for cases in dynamo_by_ver.values()
+        )
+    }
+    current_dynamo_cases = {
+        (family, key): dynamo_by_ver[version][(family, key)]
+        for family, version in current_dynamo_versions.items()
+        for captured_family, key in dynamo_by_ver[version]
+        if captured_family == family
+    }
     missing_current_case_keys = {
         (family, key)
-        for (family, key), input_case in inputs.items()
+        for family, key in inputs
         if (family, key) not in current_dynamo_cases
-        and (
-            (input_case.get("scenario") or key) not in unified_taxonomy.UNIFIED_TAX
-            or family in gen_unified_golden.scenario_families(input_case.get("scenario") or key)
-        )
     }
     engine_cases["dynamo_v2"] = current_dynamo_cases
 
@@ -2385,6 +2383,7 @@ def _load_unified_fixtures(base: Path):
             "dynamo": ddoc.get("assembled") or [],
             "dynamo_failure": _unified_capture_failure(ddoc),
             "dynamo_missing": (fam, key) in missing_current_case_keys,
+            "dynamo_version": current_dynamo_versions.get(fam),
             # Per-capture payloads, latest included. A version that never recorded this
             # case is ABSENT here rather than empty: an older capture predating the case
             # has no opinion about it, and scoring [] against golden would invent a
@@ -2450,7 +2449,7 @@ def _load_unified_fixtures(base: Path):
                     "parser": edoc.get("parser"),
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
-    versions["dynamo_v2"] = current_dynamo_ver
+    versions["dynamo_v2"] = current_dynamo_versions
     for impl, captures in peer_by_ver.items():
         versions[impl] = max(captures, key=fixtures._version_sort_key)
     # Captured history stays separate from the selected source, which may be missing.
@@ -2545,10 +2544,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
     dynamo_ver_label = _vers["dynamo_v2"]
-    dynamo_history_vers = [
-        version for version in dynamo_all_vers if version != dynamo_ver_label
-    ]
-    dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
+    dynamo_history_vers = dynamo_all_vers
+    dynamo_label = "Dynamo v2 Rust latest (captured per family)"
     peer_specs = []
     for ver in reversed(vllm_python_vers):
         peer_specs.append({
@@ -2576,7 +2573,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         # the base — a golden REF never diverges from itself, so it would color every cell
         # green. See conformance_view.compareBarHtml (golden's hidden ref radio is dropped
         # when an engine is the default REF).
-        _cand("dynamo", dynamo_label, "A", dynamo_ver_label),  # Reference (default, starred)
+        _cand("dynamo", dynamo_label, "A"),  # Reference (default, starred)
         # Only the Reference is on by default — same rule as the stream and batch tabs.
         # Reset reloads at these defaults, so anything B here comes back checked every
         # time the reader clears the board, which reads as the page re-selecting itself.
@@ -2679,6 +2676,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
+            family_dynamo_ver = c.get("dynamo_version")
             dyn = _assemble_stream(dyn_chunk_deltas)
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
@@ -2786,13 +2784,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                           "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
                     {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
-                     "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
+                     "version": family_dynamo_ver, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
                                 "todo": _TODO if dverd != "MATCH" else None,
                                 "explanation": (
-                                    f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')}."
-                                    if c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')
+                                    f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(family_dynamo_ver, {}).get('inherited_from')}."
+                                    if c['dynamo_by_ver'].get(family_dynamo_ver, {}).get('inherited_from')
                                     else None
                                 )})},
                     {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",

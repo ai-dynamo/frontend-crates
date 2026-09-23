@@ -748,6 +748,8 @@ fn render_unified_conformance_html() {
 #[derive(Deserialize)]
 struct CaptureDoc {
     family: String,
+    #[serde(default)]
+    version: Option<String>,
     cases: BTreeMap<String, CaptureCase>,
 }
 
@@ -808,23 +810,25 @@ fn validate_committed_dynamo_capture(root: &std::path::Path) {
             root.display()
         );
     }
-    // Select the parser identity before resolving its effective per-case owners.
-    // A release's sparse patches and a source's complete snapshot differ here.
-    let capture_dir = common::version_dirs_ascending_with_current(
+    let source_capture = common::version_dirs_ascending_with_current(
         root,
         "dynamo_v2-",
         common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
     )
     .pop()
-    .expect("no committed dynamo_v2-<ver> capture dir");
-
-    validate_selected_dynamo_capture(root, &capture_dir);
+    .filter(|path| path.to_string_lossy().contains("+source."));
+    validate_selected_dynamo_capture(root, source_capture.as_deref().unwrap_or(root));
 }
 
 fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
-    let validation = common::capture_stimulus_command()
-        .arg("--validate-current")
+    let mut command = common::capture_stimulus_command();
+    command.arg(if capture_dir == root {
+        "--validate-latest-by-family"
+    } else {
+        "--validate-current"
+    });
+    let validation = command
         .arg(capture_dir)
         .args(["--format", "json"])
         .arg("--inputs")
@@ -890,11 +894,12 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             };
             checked += 1;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
+            let version = doc.version.as_deref().unwrap_or("selected");
 
             let live_assembled = dynamo_events(&doc.family, input, init);
             if live_assembled != committed.assembled {
                 stale.push(format!(
-                    "{id} [{key}] assembled\n    committed: {}\n         live: {}",
+                    "{id} [{key}] at {version} assembled\n    committed: {}\n         live: {}",
                     committed
                         .assembled
                         .iter()
@@ -918,7 +923,7 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             let committed_chunks: Vec<Vec<Value>> =
                 committed.chunks.into_iter().map(|c| c.expected).collect();
             if live_chunks != committed_chunks {
-                stale.push(format!("{id} [{key}] per-chunk deltas differ"));
+                stale.push(format!("{id} [{key}] at {version} per-chunk deltas differ"));
             }
         }
     }

@@ -57,10 +57,15 @@ def _version_slug(version: str) -> str:
 
 def _version_sort_key(version: str) -> tuple:
     """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", version)
+    release_text, separator, prerelease = version.partition("-")
+    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", release_text)
     release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
     post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return (release, post, 0 if separator else 1, prerelease_key)
 
 
 def _impl_versions() -> dict[str, list[str]]:

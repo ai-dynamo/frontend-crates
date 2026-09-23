@@ -184,6 +184,61 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
     return [{"family": family, "cases": records} for family, records in families.items()]
 
 
+def validated_family_capture_docs(root: Path, input_dirs: list[Path]) -> list[dict]:
+    raw_inputs = {}
+    for input_dir in input_dirs:
+        for path in sorted(input_dir.glob("*/*.yaml")):
+            doc = yaml.safe_load(path.read_bytes())
+            for key, record in doc["cases"].items():
+                raw_inputs[(doc["family"], key)] = record
+    inputs, input_aliases = canonicalize_unified_inputs(raw_inputs)
+    records = {}
+    directories = [
+        directory for directory in root.glob("dynamo_v2-*")
+        if directory.is_dir() and ".patch" not in directory.name and "+source." not in directory.name
+    ]
+    def sort_key(path: Path) -> tuple:
+        base, patch = capture_layer_sort_key(path.name)
+        version = base.removeprefix("dynamo_v2-")
+        release, separator, prerelease = version.partition("-")
+        prerelease_key = tuple(
+            (0, int(part)) if part.isdigit() else (1, part)
+            for part in prerelease.split(".")
+        )
+        return tuple(int(part) for part in release.split(".")), 0 if separator else 1, prerelease_key, patch
+
+    for directory in sorted(directories, key=sort_key):
+        for ident, value in _effective_capture_records(directory, input_aliases).items():
+            records[ident] = (directory, value)
+    selected = {}
+    for ident in inputs:
+        if ident in records:
+            selected[ident] = records[ident]
+    if inputs.keys() != selected.keys():
+        raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - selected.keys())}, extra=[]")
+    tools = unified_tools()
+    families = {}
+    for ident, current in inputs.items():
+        if current.get("tools") != tools:
+            raise ValueError(f"current input tools differ from executable shared schema: {ident}")
+        directory, (record, raw, relative, bindings) = selected[ident]
+        failure = comparison_failure(record, current, raw, relative, bindings)
+        if failure:
+            raise ValueError(f"{ident}: {failure}")
+        if "unavailable" in record or "error" in record:
+            raise ValueError(f"current capture did not succeed: {ident}")
+        family = families.setdefault(ident[0], {"version": None, "cases": {}})
+        version = capture_layer_sort_key(directory.name)[0].removeprefix("dynamo_v2-")
+        if family["version"] not in (None, version):
+            raise ValueError(f"family spans multiple latest capture versions: {ident[0]}")
+        family["version"] = version
+        family["cases"][ident[1]] = record
+    return [
+        {"family": family, **capture}
+        for family, capture in sorted(families.items())
+    ]
+
+
 def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
     return sum(len(doc["cases"]) for doc in validated_current_capture_docs(directory, input_dirs))
 
@@ -193,6 +248,7 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--select-source-snapshot", type=Path, help="deprecated Rust harness compatibility")
     mode.add_argument("--validate-current", type=Path)
+    mode.add_argument("--validate-latest-by-family", type=Path)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")
     args = parser.parse_args()
@@ -200,13 +256,18 @@ def main():
         if args.format != "count":
             parser.error("--format json requires --validate-current")
         print(current_source_snapshot(args.select_source_snapshot))
-    else:
+    elif args.validate_current is not None:
         if not args.inputs:
             parser.error("--validate-current requires --inputs")
         if args.format == "json":
             print(json.dumps(validated_current_capture_docs(args.validate_current, args.inputs)))
         else:
             print(validate_current_capture(args.validate_current, args.inputs))
+    else:
+        if not args.inputs:
+            parser.error("--validate-latest-by-family requires --inputs")
+        docs = validated_family_capture_docs(args.validate_latest_by_family, args.inputs)
+        print(json.dumps(docs) if args.format == "json" else sum(len(doc["cases"]) for doc in docs))
 
 
 if __name__ == "__main__":

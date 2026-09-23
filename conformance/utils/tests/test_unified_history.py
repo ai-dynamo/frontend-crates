@@ -256,24 +256,26 @@ def test_schema_v3_rewrite_is_byte_deterministic(tmp_path):
     assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
 
 
-def test_schema_v3_materializes_a_derived_release_view_without_a_checkpoint(tmp_path):
+def test_capture_order_uses_numeric_prerelease_identifiers():
+    assert unified_history._capture_release_sort_key("0.7.0-rc.2") < (
+        unified_history._capture_release_sort_key("0.7.0-rc.10")
+    )
+    assert unified_history._capture_release_sort_key("0.7.0-rc.10") < (
+        unified_history._capture_release_sort_key("0.7.0")
+    )
+
+
+def test_schema_v3_does_not_materialize_an_uncaptured_release(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
 
-    unified_history.materialize_store(
-        root,
-        loose,
-        derived_release_versions={"dynamo_v2": "0.6.1"},
-    )
+    unified_history.materialize_store(root, loose)
 
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
-    document = unified_history.load_yaml(loose / "dynamo_v2-0.6.1/gemma4/UNIFIED.1-1.yaml")
-    assert document["capture_provenance"] == {"format": "schema_v3"}
-    assert document["captured_with"] == {"dynamo_v2": "0.5.0"}
-    assert document["inherited_from"] == "0.5.0"
+    assert not (loose / "dynamo_v2-0.6.1").exists()
 
 
-def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_path):
+def test_schema_v3_materialization_does_not_add_an_uncaptured_checkpoint(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
     family_path = root / "families/gemma4/inputs_and_golden.yaml"
@@ -288,11 +290,7 @@ def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_pa
     family_path.write_text(unified_history.dump_yaml(family), encoding="utf-8")
     before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
 
-    unified_history.materialize_store(
-        root,
-        loose,
-        derived_release_versions={"dynamo_v2": "0.6.1"},
-    )
+    unified_history.materialize_store(root, loose)
     changed = unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
 
     assert changed == []

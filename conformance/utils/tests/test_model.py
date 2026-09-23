@@ -270,9 +270,8 @@ def test_v2_every_tab_has_candidates(model_v2):
 def test_v2_every_candidate_is_versioned(model_v2):
     for t in model_v2["tabs"]:
         for c in t["candidates"]:
-            # The golden oracle is authored, not captured from an engine build, so it
-            # carries no version (the unified tab measures every engine against it).
-            if c.get("key") == "golden":
+            # The golden oracle and per-family Dynamo reference are not one engine build.
+            if c.get("key") == "golden" or (t["id"] == "tab-unified" and c.get("key") == "dynamo"):
                 continue
             assert _VER_PAREN.search(c["label"]), f"{t['id']}: unversioned candidate {c['label']!r}"
 
@@ -306,16 +305,21 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
 def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
     tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
-    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
-    requested = dynamo_v2_label(REPO)
-    assert dynamo["version"] == requested
-    assert dynamo["label"] == f"Dynamo v2 Rust {requested} (stream, Combined & Unified)"
+    assert dynamo["version"] is None
+    assert "latest" in dynamo["label"] and "per family" in dynamo["label"]
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
-    assert release["default_bucket"] == "C"
+    for row in tab["rows"]:
+        versions = {
+            candidate["version"]
+            for cell in row["cells"].values()
+            if cell.get("kind") == "cell"
+            for candidate in cell["tooltip"]["candidates"]
+            if candidate["key"] == "dynamo"
+        }
+        assert len(versions - {None}) <= 1
 
 
 @pytest.mark.parametrize("changed_field,value,missing_family", [
@@ -412,7 +416,7 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
     ("current_present", "capture_failure"),
     [(True, None), (False, None), (True, "error")],
 )
-def test_unified_source_selection_inherits_previous_family_capture(
+def test_unified_source_selection_uses_each_familys_latest_capture(
     tmp_path, monkeypatch, current_present, capture_failure
 ):
     selected = "0.6.1"
@@ -421,7 +425,6 @@ def test_unified_source_selection_inherits_previous_family_capture(
     generator = table.gen_unified_golden
     authored = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     key = table.unified_taxonomy.numbered_id(scenario)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: selected)
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] == scenario])
     monkeypatch.setattr(generator, "EDGE", [])
@@ -446,23 +449,26 @@ def test_unified_source_selection_inherits_previous_family_capture(
 
     cases, _caps, versions = table._load_unified_fixtures(tmp_path)
     case = next(case for case in cases if case["family"] == family)
-    assert versions["dynamo_v2"] == selected
-    assert set(versions["dynamo_v2_all"]) == {previous, selected}
-    assert not case["dynamo_missing"]
     expected_version = selected if current_present else previous
+    assert versions["dynamo_v2"] == {family: expected_version}
+    assert set(versions["dynamo_v2_all"]) == ({previous, selected} if current_present else {previous})
+    assert case["dynamo_missing"] is False
     assert case["dynamo"] == (
-        [{"kind": "text", "text": expected_version}] if not capture_failure else []
+        [] if capture_failure else [{"kind": "text", "text": expected_version}]
     )
 
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
-    assert candidates["dynamo"]["version"] == selected
-    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
-    assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
+    assert candidates["dynamo"]["version"] is None
+    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust latest (captured per family)"
+    expected_history = {f"dynamo@{previous}"}
+    if current_present:
+        expected_history.add(f"dynamo@{selected}")
+    assert {key for key in candidates if key.startswith("dynamo@")} == expected_history
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
     assert current["label"] == candidates["dynamo"]["label"]
-    assert current["version"] == selected
+    assert current["version"] == expected_version
     assert {candidate["key"] for candidate in cell["tooltip"]["candidates"]} == set(candidates)
     assert set(cell["cmp"]) == set(candidates)
     assert (tmp_path / f"dynamo_v2-{previous}" / family / f"{key}.yaml").is_file()
