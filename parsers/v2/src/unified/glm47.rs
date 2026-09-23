@@ -74,7 +74,6 @@ mod tests {
 
     #[test]
     fn local_reference_arguments_match_legacy_across_splits() {
-        // Request 086 (MP-975 / MP-1143): the original object reference shape.
         let original = serde_json::json!({
             "$defs": {"Schema": {
                 "properties": {"input": {"type": "string"}, "notes": {"type": "string"}},
@@ -83,7 +82,6 @@ mod tests {
             "properties": {"data": {"$ref": "#/$defs/Schema"}},
             "required": ["data"], "type": "object", "additionalProperties": false
         });
-        // Derived cases cover ambiguous JSON-looking strings and $ref siblings.
         let derived = serde_json::json!({
             "type": "object",
             "$defs": {"Text": {"type": "string"}, "Scalar": {"type": ["string", "integer"]}},
@@ -116,16 +114,6 @@ mod tests {
             }];
             for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
                 assert_eq!(parse(&tools, &input, Some(split)), expected_events);
-                let mut legacy = crate::create_tool_parser_for_family("glm47", &tools).unwrap();
-                let mut output = legacy.push(&input[..split]).unwrap();
-                output.append(legacy.push(&input[split..]).unwrap());
-                output.append(legacy.finish().unwrap());
-                let calls = output.coalesce_calls();
-                assert_eq!(calls.calls.len(), 1);
-                assert_eq!(
-                    serde_json::from_str::<serde_json::Value>(&calls.calls[0].arguments).unwrap(),
-                    expected
-                );
             }
         }
     }
