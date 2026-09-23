@@ -72,6 +72,64 @@ mod tests {
         assemble(&deltas)
     }
 
+    #[test]
+    fn local_reference_arguments_match_legacy_across_splits() {
+        // Request 086 (MP-975 / MP-1143): the original object reference shape.
+        let original = serde_json::json!({
+            "$defs": {"Schema": {
+                "properties": {"input": {"type": "string"}, "notes": {"type": "string"}},
+                "required": ["input", "notes"], "type": "object", "additionalProperties": false
+            }},
+            "properties": {"data": {"$ref": "#/$defs/Schema"}},
+            "required": ["data"], "type": "object", "additionalProperties": false
+        });
+        // Derived cases cover ambiguous JSON-looking strings and $ref siblings.
+        let derived = serde_json::json!({
+            "type": "object",
+            "$defs": {"Text": {"type": "string"}, "Scalar": {"type": ["string", "integer"]}},
+            "properties": {"data": {"$ref": "#/$defs/Text"}, "count": {"$ref": "#/$defs/Scalar", "type": "integer"}}
+        });
+        for (name, schema, body, expected) in [
+            (
+                "authenticate_first_name",
+                original,
+                "<arg_key>data</arg_key><arg_value>{\"input\":\"Alex\",\"notes\":\"first name supplied\"}</arg_value>",
+                serde_json::json!({"data":{"input":"Alex","notes":"first name supplied"}}),
+            ),
+            (
+                "capture_payload",
+                derived,
+                "<arg_key>data</arg_key><arg_value>{\"x\":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value>",
+                serde_json::json!({"data":"{\"x\":1}","count":42}),
+            ),
+        ] {
+            let tools = vec![Tool {
+                name: name.into(),
+                description: None,
+                parameters: schema,
+                strict: Some(true),
+            }];
+            let input = format!("<tool_call>{name}{body}</tool_call>");
+            let expected_events = vec![UnifiedEvent::ToolCall {
+                name: name.into(),
+                arguments: expected.clone(),
+            }];
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(parse(&tools, &input, Some(split)), expected_events);
+                let mut legacy = crate::create_tool_parser_for_family("glm47", &tools).unwrap();
+                let mut output = legacy.push(&input[..split]).unwrap();
+                output.append(legacy.push(&input[split..]).unwrap());
+                output.append(legacy.finish().unwrap());
+                let calls = output.coalesce_calls();
+                assert_eq!(calls.calls.len(), 1);
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(&calls.calls[0].arguments).unwrap(),
+                    expected
+                );
+            }
+        }
+    }
+
     fn parse_guided(input: &str, split: Option<usize>) -> Vec<UnifiedEvent> {
         let mut parser = create_unified_parser_for_family("glm47", &tools()).expect("registry");
         parser

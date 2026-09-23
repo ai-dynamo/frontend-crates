@@ -770,14 +770,16 @@ fn schema_has_type(root: &Value, schema: &Value, expected: &str, depth: usize) -
 
 // None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
 fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize) -> Option<bool> {
+    // Local references are common in strict tool schemas. Limit traversal so a
+    // cyclic definition cannot recurse indefinitely while deciding a type hint.
     if depth >= 16 {
         return None;
     }
-    if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-        && let Some(target) = resolve_null_schema_ref(reference, root)
-    {
-        return schema_type_match(root, target, expected, depth + 1);
-    }
+    let reference_hint = schema
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|reference| resolve_null_schema_ref(reference, root))
+        .and_then(|target| schema_type_match(root, target, expected, depth + 1));
     let matches = |ty: &Value| {
         ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
     };
@@ -785,6 +787,11 @@ fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize)
         ty.as_array()
             .map_or_else(|| matches(ty), |types| types.iter().any(matches))
     });
+    // Modern JSON Schema applies $ref siblings as additional constraints.
+    hint = match (hint, reference_hint) {
+        (Some(left), Some(right)) => Some(left && right),
+        (left, right) => left.or(right),
+    };
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;
