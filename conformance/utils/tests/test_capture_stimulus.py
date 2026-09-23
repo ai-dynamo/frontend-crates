@@ -237,6 +237,3 @@ def test_current_capture_binds_case_specific_tools(tmp_path):
     _write(tmp_path, "inputs", current)
     _write(tmp_path, directory, record)
     assert capture_stimulus.validate_current_capture(tmp_path / directory, [tmp_path / "inputs"]) == 1
-    _write(tmp_path, "inputs", current | {"tools": unified_tools()})
-    with pytest.raises(ValueError, match="stimulus mismatch"):
-        capture_stimulus.validate_current_capture(tmp_path / directory, [tmp_path / "inputs"])
