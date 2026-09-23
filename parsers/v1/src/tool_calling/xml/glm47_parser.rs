@@ -630,21 +630,46 @@ fn parse_tool_call_block(
     let arg_key_start_escaped = regex::escape(&config.arg_key_start);
     let arg_key_end_escaped = regex::escape(&config.arg_key_end);
     let arg_value_start_escaped = regex::escape(&config.arg_value_start);
-    let arg_value_end_escaped = regex::escape(&config.arg_value_end);
-
-    // Pattern to match: <arg_key>key</arg_key><arg_value>value</arg_value>
-    // (?s) enables dotall mode so (.*?) matches across newlines — required
-    // because models often emit multi-line content in arg values.
+    // Find each argument opener, then balance literal value markers in its body.
     let pattern = format!(
-        r"(?s){}([^<]+){}{}(.*?){}",
-        arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
+        r"{}([^<]+){}{}",
+        arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped
     );
 
     let regex = Regex::new(&pattern)?;
-
-    for cap in regex.captures_iter(args_section) {
+    let mut cursor = 0;
+    while let Some(cap) = regex.captures(&args_section[cursor..]) {
         let key = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-        let raw_value = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+        let value_start = cursor + cap.get(0).unwrap().end();
+        let mut scan = value_start;
+        let mut depth = 0;
+        let value_end = loop {
+            let next_open = args_section[scan..]
+                .find(config.arg_value_start.as_str())
+                .map(|at| scan + at);
+            let next_close = args_section[scan..]
+                .find(config.arg_value_end.as_str())
+                .map(|at| scan + at);
+            match (next_open, next_close) {
+                (Some(open), Some(close)) if open < close => {
+                    depth += 1;
+                    scan = open + config.arg_value_start.len();
+                }
+                (_, Some(close)) if depth > 0 => {
+                    depth -= 1;
+                    scan = close + config.arg_value_end.len();
+                }
+                (_, Some(close)) => {
+                    cursor = close + config.arg_value_end.len();
+                    break close;
+                }
+                _ => {
+                    cursor = args_section.len();
+                    break cursor;
+                }
+            }
+        };
+        let raw_value = &args_section[value_start..value_end];
 
         if !key.is_empty() {
             // Decode XML entities (e.g. &lt; → <, &amp; → &) before parsing
@@ -688,6 +713,26 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn literal_xml_string_preserves_inner_argument_tags() {
+        let tools = vec![ToolDefinition {
+            name: "capture_payload".to_string(),
+            strict: None,
+            parameters: Some(
+                serde_json::json!({"type":"object","properties":{"payload":{"type":"string"},"tail":{"type":"integer"}},"required":["payload","tail"]}),
+            ),
+        }];
+        let input = "<tool_call>capture_payload<arg_key>payload</arg_key><arg_value><arg_key>x</arg_key><arg_value>001</arg_value><arg_key>y</arg_key><arg_value>2</arg_value></arg_value><arg_key>tail</arg_key><arg_value>3</arg_value></tool_call>";
+        let (calls, _) =
+            try_tool_call_parse_glm47(input, &get_test_config(), Some(&tools)).unwrap();
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(
+            args["payload"],
+            "<arg_key>x</arg_key><arg_value>001</arg_value><arg_key>y</arg_key><arg_value>2</arg_value>"
+        );
+        assert_eq!(args["tail"], 3);
     }
 
     #[test] // helper

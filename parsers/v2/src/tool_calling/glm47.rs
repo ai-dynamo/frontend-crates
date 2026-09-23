@@ -438,6 +438,31 @@ mod tests {
     }
 
     #[test]
+    fn literal_xml_string_preserves_inner_argument_tags() {
+        let tools = vec![Tool {
+            name: "capture_payload".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"object","properties":{"payload":{"type":"string"},"tail":{"type":"integer"}},"required":["payload","tail"]}),
+            strict: None,
+        }];
+        let input = "<tool_call>capture_payload<arg_key>payload</arg_key><arg_value><arg_key>x</arg_key><arg_value>001</arg_value><arg_key>y</arg_key><arg_value>2</arg_value></arg_value><arg_key>tail</arg_key><arg_value>3</arg_value></tool_call>";
+        let want = legacy(&tools, &[input]).coalesce_calls();
+        assert_eq!(want.calls.len(), 1);
+        let args: serde_json::Value = serde_json::from_str(&want.calls[0].arguments).unwrap();
+        assert_eq!(
+            args["payload"],
+            "<arg_key>x</arg_key><arg_value>001</arg_value><arg_key>y</arg_key><arg_value>2</arg_value>"
+        );
+        assert_eq!(args["tail"], 3);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools, &[&input[..split], &input[split..]]).coalesce_calls(),
+                want
+            );
+        }
+    }
+
+    #[test]
     fn large_integer_keeps_numeric_bytes_in_nullable_schemas() {
         let value = "9".repeat(400);
         for schema in [

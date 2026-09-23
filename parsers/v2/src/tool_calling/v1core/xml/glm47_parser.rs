@@ -567,30 +567,47 @@ pub fn parse_glm47_invoke(
     let arg_key_start_escaped = regex::escape(&config.arg_key_start);
     let arg_key_end_escaped = regex::escape(&config.arg_key_end);
     let arg_value_start_escaped = regex::escape(&config.arg_value_start);
-    let arg_value_end_escaped = regex::escape(&config.arg_value_end);
-
-    // Pattern: <arg_key>key</arg_key> whitespace* <arg_value>value(</arg_value> | end-of-block)
-    // The `</arg_value>` close is treated as OPTIONAL. A final value whose close
-    // tag was dropped (mismatched/missing fences — batch case 4.d
-    // `<arg_value>NYC</tool_call>`, whose trailing `</tool_call>` is stripped
-    // before this regex, leaving the value at end-of-block) is recovered by
-    // terminating at `\z` instead of being dropped to empty args. `</arg_value>`
-    // is listed first so a well-formed value (including a multi-line one) still
-    // terminates exactly there; `\z` only applies when the close tag is absent.
-    // (The `regex` crate has no lookahead, so the terminator is a plain
-    // alternation of the close tag and the end-of-text anchor.)
-    // (?s) enables dotall mode so (.*?) matches across newlines — required
-    // because models often emit multi-line content in arg values.
+    // Find each argument opener, then balance any literal value markers inside
+    // its body. A string argument can itself contain GLM-looking markup.
     let pattern = format!(
-        r"(?s){}([^<]+){}\s*{}(.*?)(?:{}|\z)",
-        arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
+        r"{}([^<]+){}\s*{}",
+        arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped
     );
 
     let regex = Regex::new(&pattern)?;
-
-    for cap in regex.captures_iter(args_section) {
+    let mut cursor = 0;
+    while let Some(cap) = regex.captures(&args_section[cursor..]) {
         let key = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-        let raw_value = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+        let value_start = cursor + cap.get(0).unwrap().end();
+        let mut scan = value_start;
+        let mut depth = 0;
+        let value_end = loop {
+            let next_open = args_section[scan..]
+                .find(config.arg_value_start.as_str())
+                .map(|at| scan + at);
+            let next_close = args_section[scan..]
+                .find(config.arg_value_end.as_str())
+                .map(|at| scan + at);
+            match (next_open, next_close) {
+                (Some(open), Some(close)) if open < close => {
+                    depth += 1;
+                    scan = open + config.arg_value_start.len();
+                }
+                (_, Some(close)) if depth > 0 => {
+                    depth -= 1;
+                    scan = close + config.arg_value_end.len();
+                }
+                (_, Some(close)) => {
+                    cursor = close + config.arg_value_end.len();
+                    break close;
+                }
+                _ => {
+                    cursor = args_section.len();
+                    break cursor;
+                }
+            }
+        };
+        let raw_value = &args_section[value_start..value_end];
 
         if !key.is_empty() {
             // Decode XML entities (e.g. &lt; → <, &amp; → &) before parsing
