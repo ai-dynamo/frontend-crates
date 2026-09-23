@@ -380,24 +380,12 @@ mod tests {
 
     #[test]
     fn mp1670_nullable_arguments_keep_key_and_type_constraints() {
-        let tools = vec![ToolDefinition {
-            name: "set_labels".into(),
-            strict: None,
-            parameters: Some(json!({
-                "type": "object",
-                "properties": {
-                    "label": {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "The label, or null when there is none"},
-                    "note": {"type": ["string", "null"], "description": "The note, or null when there is none"}
-                },
-                "required": ["label", "note"]
-            })),
-        }];
-        let choice = ToolChoice::Named("set_labels".into());
-        let value =
-            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
-                .unwrap();
-        let arguments = &value["format"]["elements"][2]["content"]["tags"][0]["content"]["elements"]
-            [2]["content"]["elements"];
+        let parameters = json!({"properties": {
+            "label": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+            "note": {"type": ["string", "null"]}
+        }});
+        let value = serde_json::to_value(arguments_block(Some(&parameters))).unwrap();
+        let arguments = &value["content"]["elements"];
         for (index, key) in ["label", "note"].into_iter().enumerate() {
             let alternatives = arguments[index]["elements"]
                 .as_array()
