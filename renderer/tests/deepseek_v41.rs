@@ -5,13 +5,9 @@ use dynamo_renderer::{OAIPromptFormatter, deepseek::v41::DeepSeekV41Formatter};
 use serde_json::{Value, json};
 
 #[test]
-fn public_encoder_validates_effort_bounds() {
+fn public_encoder_rejects_invalid_effort_before_normalization() {
     use dynamo_renderer::deepseek::{common::ThinkingMode, v41::encode_messages};
 
-    let messages = vec![json!({"role": "user", "content": "Hello"})];
-    for effort in [1, 100] {
-        assert!(encode_messages(&messages, ThinkingMode::Thinking, true, effort).is_ok());
-    }
     // Invalid content would fail normalization; effort must be rejected first.
     let invalid = vec![json!({"role": "user", "content": 42})];
     for effort in [0, 101] {

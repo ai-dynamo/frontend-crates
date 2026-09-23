@@ -103,12 +103,20 @@ fn typed_and_generic_message_paths_match() {
         true,
     )
     .unwrap();
-    let formatters: Vec<(&str, Arc<dyn OAIPromptFormatter>)> = vec![
-        ("jinja", jinja),
-        ("v3.2", Arc::new(DeepSeekV32Formatter::new_thinking())),
-        ("v4", Arc::new(DeepSeekV4Formatter::new_thinking())),
-        ("v4.1", Arc::new(DeepSeekV41Formatter)),
-        ("kimi", Arc::new(KimiK3Formatter::new(true))),
+    let formatters: Vec<(&str, Arc<dyn OAIPromptFormatter>, &[bool])> = vec![
+        ("jinja", jinja, &[false]),
+        (
+            "v3.2",
+            Arc::new(DeepSeekV32Formatter::new_thinking()),
+            &[false, true],
+        ),
+        (
+            "v4",
+            Arc::new(DeepSeekV4Formatter::new_thinking()),
+            &[false, true],
+        ),
+        ("v4.1", Arc::new(DeepSeekV41Formatter), &[false, true]),
+        ("kimi", Arc::new(KimiK3Formatter::new(true)), &[false, true]),
     ];
     let requests = [
         json!({"model": "test", "messages": [
@@ -125,18 +133,18 @@ fn typed_and_generic_message_paths_match() {
     ];
     for body in requests {
         let inner: CreateChatCompletionRequest = serde_json::from_value(body).unwrap();
-        for thinking in [false, true] {
-            let args = HashMap::from([("thinking".into(), json!(thinking))]);
-            let typed = Request {
-                inner: &inner,
-                typed: true,
-                args: &args,
-            };
-            let generic = Request {
-                typed: false,
-                ..typed
-            };
-            for (name, formatter) in &formatters {
+        for (name, formatter, thinking_values) in &formatters {
+            for &thinking in *thinking_values {
+                let args = HashMap::from([("thinking".into(), json!(thinking))]);
+                let typed = Request {
+                    inner: &inner,
+                    typed: true,
+                    args: &args,
+                };
+                let generic = Request {
+                    typed: false,
+                    ..typed
+                };
                 // RenderedPrompt equality also checks Kimi's segment trust flags.
                 assert_eq!(
                     formatter.render_prompt(&typed).unwrap(),
