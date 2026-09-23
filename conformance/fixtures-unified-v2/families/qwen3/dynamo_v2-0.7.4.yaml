@@ -1,0 +1,69 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.4
+    git_commit: d2a7b93f7ef16deebee5d007251f86d0dbe5aafc
+    source_sha256: ed476bdc46c57216a4cfe4ec0fbc861d544c98dc45ba8d12be0794ce2784e3ee
+document:
+  mode: unified
+changes:
+  qwen_nullable_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 7b4d4e29494c02532b5cf4686df91a84150679b05afaa22aae58d93e591c617f
+  qwen_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 9732b6945959ed7895a88e2344b2420012d97b427299eeb61e2f064010d9c7af
+metadata_changes: {}
+document_overrides: {}

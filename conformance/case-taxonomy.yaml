@@ -208,6 +208,8 @@ suites:
           d: {desc: Nested object + array values, required: false}
           e: {desc: Large / deep argument payload, required: false}
           f: {desc: Numeric precision edge preserves integer-like literal, required: false}
+          "1": {desc: Qwen3 non-nullable string schema preserves literal null text as a string, required: false}
+          "2": {desc: Qwen3 nullable string schema converts literal null text to JSON null, required: false}
       "8":
         title: Narration around calls
         required: true

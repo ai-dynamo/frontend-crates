@@ -1791,10 +1791,15 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
+def _edge_case_family_policy(edge_case):
+    return edge_case[-2] if len(edge_case) == 8 else edge_case[-1]
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
-    if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+    if not isinstance(_edge_case_family_policy(spec), OnlyFamilies)
+    or "deepseek_v41" in _edge_case_family_policy(spec)
 }
 
 
@@ -1845,6 +1850,46 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+EDGE += [
+    (
+        "qwen_string_null",
+        'Qwen3 only: parameter text `null` under a non-nullable string schema is the string "null", not JSON null. This is also covered in TOOLCALLING.streamv1.7-1.',
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "null"}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({
+            "qwen3": (
+                "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+                M,
+                M,
+            ),
+        }),
+        [{"name": "get_weather", "parameters": {
+            "type": "object", "properties": {"city": {"type": "string"}}
+        }}],
+    ),
+    (
+        "qwen_nullable_string_null",
+        'Qwen3 only: parameter text `null` under a nullable string schema is JSON null, not the string "null". This is also covered in TOOLCALLING.streamv1.7-2.',
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": None}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({
+            "qwen3": (
+                "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+                M,
+                M,
+            ),
+        }),
+        [{"name": "get_weather", "parameters": {
+            "type": "object", "properties": {"city": {"type": ["string", "null"]}}
+        }}],
+    ),
+]
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -1873,10 +1918,13 @@ def build_cases(fam):
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
-        # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
+        # Support legacy tuples, stream config, and per-case request tool schemas.
+        case_tools = None
         if len(edge_case) == 6:
             name, desc, policy, golden, init, per_fam = edge_case
             stream_config = {"finish_reason": "stop"}
+        elif len(edge_case) == 8:
+            name, desc, policy, golden, init, stream_config, per_fam, case_tools = edge_case
         else:
             name, desc, policy, golden, init, stream_config, per_fam = edge_case
 
@@ -1952,7 +2000,7 @@ def _build_edge_cases(fam, specs):
                 "vLLM base case does not set a starting channel state; conformance "
                 "captures default generation only",
             )
-        cases[cid] = {
+        case = {
             "description": desc,
             "policy": policy,
             "input": inp,
@@ -1961,6 +2009,9 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if case_tools is not None:
+            case["tools"] = case_tools
+        cases[cid] = case
     return cases
 
 
@@ -1980,7 +2031,7 @@ def scenario_families(scenario):
         name = edge_case[0]
         if name != scenario:
             continue
-        per_fam = edge_case[-1]
+        per_fam = _edge_case_family_policy(edge_case)
         return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
@@ -2022,6 +2073,8 @@ def emit_yaml(fam):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
+        if c.get("tools") is not None:
+            lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
     return "\n".join(lines) + "\n"
 
 

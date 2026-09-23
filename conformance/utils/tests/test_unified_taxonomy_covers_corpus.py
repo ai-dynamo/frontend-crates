@@ -388,7 +388,7 @@ def test_deepseek_v41_follows_declared_scope_including_prefilled_cases() -> None
     declared = {
         spec[0]
         for spec in (*CLEAN, *EDGE)
-        if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+        if "deepseek_v41" in G.scenario_families(spec[0])
     }
     actual = {case_id.split(".", 2)[1] for case_id in build_cases("deepseek_v41")}
     assert actual == declared
@@ -513,6 +513,8 @@ def test_scenario_families_matches_declared_scope():
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
+    assert G.scenario_families("qwen_string_null") == {"qwen3"}
+    assert G.scenario_families("qwen_nullable_string_null") == {"qwen3"}
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
@@ -564,6 +566,7 @@ def test_every_authored_case_survives_emission_and_reload():
             )
             assert loaded["golden"] == case["golden"], f"{cid}: golden changed"
             assert loaded["init"] == case["init"], f"{cid}: init changed"
+            assert loaded.get("tools") == case.get("tools"), f"{cid}: tools changed"
 
 
 # --- counts live where they can be checked, not in registry prose ---------------
@@ -586,17 +589,17 @@ def test_unified_case_counts_match_the_generator():
             "kimi_k2": 80,
             "kimi_k3": 88,
             "muse_glimmer": 81,
-            "qwen3": 80,
+            "qwen3": 82,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 651
+    assert sum(per_family.values()) == 653
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "7-3", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 92
+    assert len(UNIFIED_TAX) == 94
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -979,6 +982,19 @@ def _assert_input_carries_events(family, scenario, case):
     if tools:
         if case["init"]["tool_output_mode"] == "Native":
             candidates = _native_input_calls(family, raw)
+            for candidate in candidates:
+                tool_schema = next(
+                    (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
+                    None,
+                )
+                if tool_schema is None:
+                    continue
+                properties = tool_schema.get("parameters", {}).get("properties", {})
+                for key, value in candidate["arguments"].items():
+                    schema = properties.get(key, {})
+                    schema_type = schema.get("type")
+                    if value == "null" and isinstance(schema_type, list) and "null" in schema_type:
+                        candidate["arguments"][key] = None
         else:
             candidates = []
             for value in _json_values(raw):
@@ -1020,6 +1036,8 @@ def _assert_input_carries_events(family, scenario, case):
             if isinstance(value, str):
                 spellings = (value, json.dumps(value, ensure_ascii=False)[1:-1], json.dumps(value)[1:-1])
                 assert any(spelling in raw for spelling in spellings), (family, scenario, "input argument value", key, value)
+            elif value is None:
+                assert "null" in raw, (family, scenario, "input null argument value", key)
     reasons = [event for event in case["golden"] if event["kind"] == "reasoning"]
     if reasons and case["init"]["starting_state"] == "None":
         assert control_tokens(family)[0] in raw, (family, scenario, "missing reasoning opener")

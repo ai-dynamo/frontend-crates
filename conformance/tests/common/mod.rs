@@ -21,6 +21,21 @@ pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {
     serde_json::from_value(unified_tool_schemas()).expect("Unified corpus tool schemas")
 }
 
+pub fn unified_tools_for_schemas(
+    schemas: Option<&serde_json::Value>,
+) -> Vec<dynamo_parsers_v2::Tool> {
+    match schemas {
+        Some(schemas) => {
+            serde_json::from_value(schemas.clone()).expect("case-specific Unified tool schemas")
+        }
+        None => unified_tools(),
+    }
+}
+
+pub fn unified_tool_schemas_for_case(schemas: Option<&serde_json::Value>) -> serde_json::Value {
+    schemas.cloned().unwrap_or_else(unified_tool_schemas)
+}
+
 pub fn unified_tool_schemas() -> serde_json::Value {
     serde_json::from_str(include_str!("../../utils/src/unified_tools.json"))
         .expect("Unified corpus tool schemas")
