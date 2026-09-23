@@ -502,35 +502,31 @@ impl StackItem {
     }
 }
 
-// A nullable object commonly wraps its properties inside an anyOf/oneOf branch.
-// Only use a child schema when all branches that define it agree. Otherwise the
-// emitted text must stay a string: selecting a branch requires more context.
+// Nested XML identifies an object, but does not select among object variants.
+// Follow a union only when exactly one branch can describe that object.
 fn schema_for_object_child(schema: &Value, tag: &str) -> Option<Value> {
-    let mut candidates = Vec::new();
-    collect_object_child_schemas(schema, tag, &mut candidates);
-    let first = candidates.first()?;
-    candidates
-        .iter()
-        .all(|candidate| candidate == first)
-        .then(|| first.clone())
-}
-
-fn collect_object_child_schemas(schema: &Value, tag: &str, candidates: &mut Vec<Value>) {
     if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
-        candidates.push(child.clone());
-    } else if let Some(additional) = schema
+        return Some(child.clone());
+    }
+    if let Some(additional) = schema
         .get("additionalProperties")
-        .filter(|additional| additional.is_object())
+        .filter(|value| value.is_object())
     {
-        candidates.push(additional.clone());
+        return Some(additional.clone());
     }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(branches) = schema.get(key).and_then(Value::as_array) {
-            for branch in branches {
-                collect_object_child_schemas(branch, tag, candidates);
-            }
-        }
+    let branches = match (schema.get("anyOf"), schema.get("oneOf")) {
+        (Some(branches), None) | (None, Some(branches)) => branches.as_array()?,
+        _ => return None,
+    };
+    let mut objects = branches.iter().filter(|branch| {
+        branch != &&Value::Bool(false)
+            && (branch.get("type").is_none() || schema_has_type(Some(branch), "object"))
+    });
+    let object = objects.next()?;
+    if objects.next().is_some() {
+        return None;
     }
+    schema_for_object_child(object, tag)
 }
 
 // Looks up the selected tool's parameter schema so parsed strings can be type-coerced.
@@ -774,34 +770,39 @@ mod tests {
     }
 
     #[test]
-    fn ambiguous_union_child_type_preserves_emitted_text() {
+    fn nested_union_object_types_and_ambiguity() {
+        let tok = "]<]minimax[>[";
         let config = MiniMaxM3ParserConfig::default();
-        let schema = json!({
-            "oneOf": [
-                { "type": "object", "properties": { "value": { "type": "integer" } } },
-                { "type": "object", "properties": { "value": { "type": "string" } } }
-            ]
-        });
-        let raw = format!("{TOK}<value>2{TOK}</value>");
-        assert_eq!(
-            parse_nested_minimax_xml(&raw, Some(schema), &config),
-            json!({ "value": "2" })
-        );
-    }
-
-    #[test]
-    fn matching_union_child_types_still_coerce() {
-        let config = MiniMaxM3ParserConfig::default();
-        let schema = json!({
-            "anyOf": [
-                { "type": "object", "properties": { "value": { "type": "integer" } } },
-                { "type": "object", "properties": { "value": { "type": "integer" } } }
-            ]
-        });
-        let raw = format!("{TOK}<value>2{TOK}</value>");
-        assert_eq!(
-            parse_nested_minimax_xml(&raw, Some(schema), &config),
-            json!({ "value": 2 })
-        );
+        // MOD2-167: nullable pagination and the object branch of the stress schema.
+        for union in ["anyOf", "oneOf"] {
+            let schema = serde_json::json!({union: [
+                {"type":"object","properties":{"page":{"type":"integer","minimum":1},"per_page":{"type":"integer","minimum":1,"maximum":100}}},
+                {"type":"null"}
+            ]});
+            let raw = format!("{tok}<page>2{tok}</page>{tok}<per_page>25{tok}</per_page>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(schema), &config),
+                serde_json::json!({"page":2,"per_page":25})
+            );
+            let object = serde_json::json!({"type":"object","properties":{"enabled":{"type":"boolean"},"mode":{"type":"string","enum":["one","two","three","four"]}},"required":["enabled"]});
+            let schema = serde_json::json!({union:[{"type":"string"},{"type":"array","items":{"type":"string"},"maxItems":20},object]});
+            let raw = format!("{tok}<enabled>true{tok}</enabled>{tok}<mode>one{tok}</mode>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(schema), &config),
+                serde_json::json!({"enabled":true,"mode":"one"})
+            );
+            for alternative in [
+                serde_json::json!({"type":"object"}),
+                serde_json::json!({}),
+                serde_json::json!({"type":"object","properties":{"value":{"type":"string"}}}),
+            ] {
+                let schema = serde_json::json!({union:[{"type":"object","properties":{"value":{"type":"integer"}}}, alternative]});
+                let raw = format!("{tok}<value>2{tok}</value>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&raw, Some(schema), &config),
+                    serde_json::json!({"value":"2"})
+                );
+            }
+        }
     }
 }
