@@ -310,11 +310,13 @@ pub fn smart_resize(
     let f = factor as f64;
     let mut h_bar = ((h / f).round_ties_even() * f) as usize;
     let mut w_bar = ((w / f).round_ties_even() * f) as usize;
-    if h_bar * w_bar > max_pixels {
+    // Rounded metadata dimensions can have an area larger than usize::MAX.
+    let pixels = h_bar as u128 * w_bar as u128;
+    if pixels > max_pixels as u128 {
         let beta = (h * w / max_pixels as f64).sqrt();
         h_bar = (((h / beta / f).floor() * f) as usize).max(factor);
         w_bar = (((w / beta / f).floor() * f) as usize).max(factor);
-    } else if h_bar * w_bar < min_pixels {
+    } else if pixels < min_pixels as u128 {
         let beta = (min_pixels as f64 / (h * w)).sqrt();
         h_bar = ((h * beta / f).ceil() * f) as usize;
         w_bar = ((w * beta / f).ceil() * f) as usize;
@@ -509,6 +511,27 @@ mod tests {
     fn smart_resize_thin_images_match_hf() {
         assert_eq!(smart_resize(10, 2000, 28, 3136, 3136).unwrap(), (28, 812));
         assert_eq!(smart_resize(28, 5600, 28, 3136, 3136).unwrap(), (28, 784));
+    }
+
+    #[test]
+    fn num_media_tokens_handles_large_dimensions() {
+        let proc = QwenVlProcessor::new(QwenVlSpec {
+            patch_size: 16,
+            min_pixels: 65536,
+            max_pixels: 16777216,
+            ..valid_spec()
+        })
+        .unwrap();
+        // Rounding these dimensions to factor 32 gives an area of 2^64.
+        // HF downsizes to 4096x4096, producing 16384 merged image tokens.
+        assert_eq!(
+            proc.num_media_tokens(&MediaMetadata::Image {
+                width: u32::MAX,
+                height: u32::MAX,
+            })
+            .unwrap(),
+            16384
+        );
     }
 
     /// The consumer's message layer gates modalities on what a family
