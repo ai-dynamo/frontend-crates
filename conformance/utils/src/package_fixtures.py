@@ -350,6 +350,10 @@ def sync_store(
         if prune:
             print(f"  removing stale {p.relative_to(fixtures_dir)}")
             p.unlink()
+            parent = p.parent
+            while parent != fixtures_dir and not any(parent.iterdir()):
+                parent.rmdir()
+                parent = parent.parent
         else:
             print(f"  keeping {p.relative_to(fixtures_dir)} (not in this package run; --prune removes)")
 

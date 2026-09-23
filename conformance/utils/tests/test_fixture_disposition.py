@@ -586,6 +586,7 @@ def test_prune_removes_stale_unified_archive(tmp_path):
     )
 
     assert not stale.exists()
+    assert not stale.parent.exists()
 
 
 @pytest.mark.parametrize("records", [["missing.yaml"], [], ["a.yaml", "a.yaml"], [1]])
