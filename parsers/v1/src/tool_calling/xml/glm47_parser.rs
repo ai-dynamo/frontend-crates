@@ -560,8 +560,10 @@ fn get_param_schema_type<'a>(
     if schema_has_type(schema, param, "string", 0) {
         return Some("string");
     }
-    let resolved = resolve_schema_ref(schema, param, 0)?;
-    resolved.get("type")?.as_str()
+    param
+        .get("type")
+        .and_then(Value::as_str)
+        .or_else(|| resolve_schema_ref(schema, param, 0)?.get("type")?.as_str())
 }
 
 fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> Option<&'a Value> {
@@ -575,31 +577,58 @@ fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> O
 }
 
 fn schema_has_type(root: &Value, schema: &Value, expected: &str, depth: usize) -> bool {
-    let Some(schema) = resolve_schema_ref(root, schema, depth) else {
-        return false;
-    };
-    if let Some(schema_type) = schema.get("type") {
-        if schema_type.as_str() == Some(expected) {
-            return true;
-        }
-        if schema_type
-            .as_array()
-            .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected)))
-        {
-            return true;
-        }
-    }
+    schema_type_match(root, schema, expected, depth) == Some(true)
+}
 
-    ["anyOf", "oneOf", "allOf"].iter().any(|key| {
-        schema
-            .get(key)
-            .and_then(Value::as_array)
-            .is_some_and(|options| {
-                options
-                    .iter()
-                    .any(|option| schema_has_type(root, option, expected, depth + 1))
-            })
-    })
+// None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
+fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize) -> Option<bool> {
+    // Local references are common in strict tool schemas. Limit traversal so a
+    // cyclic definition cannot recurse indefinitely while deciding a type hint.
+    if depth >= 16 {
+        return None;
+    }
+    let reference_hint = schema
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|reference| reference.strip_prefix('#'))
+        .and_then(|pointer| root.pointer(pointer))
+        .and_then(|target| schema_type_match(root, target, expected, depth + 1));
+    let matches = |ty: &Value| {
+        ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
+    };
+    let mut hint = schema.get("type").map(|ty| {
+        ty.as_array()
+            .map_or_else(|| matches(ty), |types| types.iter().any(matches))
+    });
+    // Modern JSON Schema applies $ref siblings as additional constraints.
+    hint = match (hint, reference_hint) {
+        (Some(left), Some(right)) => Some(left && right),
+        (left, right) => left.or(right),
+    };
+    for keyword in ["anyOf", "oneOf", "allOf"] {
+        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
+            continue;
+        };
+        let branches = options
+            .iter()
+            .map(|option| schema_type_match(root, option, expected, depth + 1));
+        let branch_hint = if keyword == "allOf" {
+            branches.flatten().reduce(|left, right| left && right)
+        } else {
+            branches
+                .reduce(|left, right| match (left, right) {
+                    (Some(true), _) | (_, Some(true)) => Some(true),
+                    (Some(false), Some(false)) => Some(false),
+                    _ => None,
+                })
+                .flatten()
+        };
+        hint = match (hint, branch_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
+    hint
 }
 
 /// Parse a single GLM-4.7 tool call block
@@ -702,6 +731,39 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn referenced_types_intersect_siblings_and_bound_cycles() {
+        let schema = serde_json::json!({
+            "$defs": {
+                "Scalar": {"type": ["string", "integer"]},
+                "Loop": {"$ref": "#/$defs/Loop"}
+            },
+            "properties": {
+                "narrow": {"$ref": "#/$defs/Scalar", "type": "integer"},
+                "cycle": {"$ref": "#/$defs/Loop"},
+                "typed_cycle": {"$ref": "#/$defs/Loop", "type": "integer"}
+            }
+        });
+        for (field, expected) in [
+            ("narrow", serde_json::json!(42)),
+            ("cycle", serde_json::json!("42")),
+            ("typed_cycle", serde_json::json!(42)),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "capture_payload".into(),
+                strict: None,
+                parameters: Some(schema.clone()),
+            }];
+            let input = format!(
+                "<tool_call>capture_payload<arg_key>{field}</arg_key><arg_value>42</arg_value></tool_call>"
+            );
+            let (calls, _) =
+                try_tool_call_parse_glm47(&input, &get_test_config(), Some(&tools)).unwrap();
+            let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args[field], expected, "{field}");
+        }
     }
 
     #[test]
