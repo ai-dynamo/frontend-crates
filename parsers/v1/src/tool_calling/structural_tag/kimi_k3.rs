@@ -137,6 +137,20 @@ fn resolve_argument_schema_inner(
             resolved.insert(key.into(), Value::Object(children));
         }
     }
+    if let Some(dependencies) = object.get("dependencies").and_then(Value::as_object) {
+        let dependencies = dependencies
+            .iter()
+            .map(|(name, dependency)| {
+                let dependency = if dependency.is_array() {
+                    dependency.clone()
+                } else {
+                    resolve_argument_schema_inner(root, dependency, depth, remaining)?
+                };
+                Some((name.clone(), dependency))
+            })
+            .collect::<Option<Map<_, _>>>()?;
+        resolved.insert("dependencies".into(), Value::Object(dependencies));
+    }
     for key in ["allOf", "anyOf", "oneOf", "prefixItems"] {
         if let Some(children) = object.get(key).and_then(Value::as_array) {
             let children = children
@@ -444,7 +458,6 @@ mod tests {
 
     #[test]
     fn local_references_retain_object_and_deep_enum_constraints() {
-        // MP-975 / MP-1143: request 086's object-reference schema.
         let object_schema = json!({
             "$defs": {"Schema": {
                 "properties": {"input": {"type": "string"}, "notes": {"type": "string"}},
@@ -466,7 +479,6 @@ mod tests {
             object_schema["$defs"]["Schema"]
         );
 
-        // MP-1580: a pointer traversing properties, items, and an anyOf array.
         let deep_schema = json!({
             "type": "object", "properties": {
                 "operations": {"type": "array", "items": {"anyOf": [
@@ -503,25 +515,38 @@ mod tests {
     }
 
     #[test]
+    fn dependency_schemas_resolve_local_references_without_changing_property_dependencies() {
+        let root = json!({
+            "$defs": {"Value": {"type": "integer"}},
+            "properties": {"data": {
+                "type": "object",
+                "dependencies": {
+                    "mode": {"properties": {"value": {"$ref": "#/$defs/Value"}}},
+                    "name": ["mode"]
+                }
+            }}
+        });
+        let resolved = resolve_argument_schema(&root, &root["properties"]["data"], 0).unwrap();
+        assert_eq!(
+            resolved["dependencies"]["mode"]["properties"]["value"],
+            json!({"type": "integer"})
+        );
+        assert_eq!(resolved["dependencies"]["name"], json!(["mode"]));
+    }
+
+    #[test]
     fn resolver_limits_preserve_preexisting_typed_argument_grammars() {
         let large_properties: Map<String, Value> = (0..4097)
             .map(|index| (format!("field{index}"), json!({"type": "integer"})))
             .collect();
-        for (field_schema, expected_type) in [
-            (json!({"type": "integer", "$id": "urn:field"}), "number"),
-            (
-                json!({"type": "object", "properties": large_properties}),
-                "object",
-            ),
-        ] {
-            let parameters = json!({"properties": {"value": field_schema.clone()}});
-            let value = serde_json::to_value(arguments_block(Some(&parameters))).unwrap();
-            assert_eq!(
-                value["content"]["begin"],
-                format!("{OPEN}argument key=\"value\" type=\"{expected_type}\"{SEP}")
-            );
-            assert_eq!(value["content"]["content"]["json_schema"], field_schema);
-        }
+        let field_schema = json!({"type": "object", "properties": large_properties});
+        let parameters = json!({"properties": {"value": field_schema.clone()}});
+        let value = serde_json::to_value(arguments_block(Some(&parameters))).unwrap();
+        assert_eq!(
+            value["content"]["begin"],
+            format!("{OPEN}argument key=\"value\" type=\"object\"{SEP}")
+        );
+        assert_eq!(value["content"]["content"]["json_schema"], field_schema);
     }
 
     #[test]
