@@ -577,11 +577,21 @@ fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> O
 }
 
 fn schema_has_type(root: &Value, schema: &Value, expected: &str, depth: usize) -> bool {
-    schema_type_match(root, schema, expected, depth) == Some(true)
+    let mut remaining = 1024;
+    let matched = schema_type_match(root, schema, expected, depth, &mut remaining);
+    remaining > 0 && matched == Some(true)
 }
 
 // None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
-fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize) -> Option<bool> {
+fn schema_type_match(
+    root: &Value,
+    schema: &Value,
+    expected: &str,
+    depth: usize,
+    remaining: &mut usize,
+) -> Option<bool> {
+    // A branching reference cycle can expand exponentially even at bounded depth.
+    *remaining = remaining.checked_sub(1)?;
     // Local references are common in strict tool schemas. Limit traversal so a
     // cyclic definition cannot recurse indefinitely while deciding a type hint.
     if depth >= 16 {
@@ -592,7 +602,7 @@ fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize)
         .and_then(Value::as_str)
         .and_then(|reference| reference.strip_prefix('#'))
         .and_then(|pointer| root.pointer(pointer))
-        .and_then(|target| schema_type_match(root, target, expected, depth + 1));
+        .and_then(|target| schema_type_match(root, target, expected, depth + 1, remaining));
     let matches = |ty: &Value| {
         ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
     };
@@ -611,7 +621,7 @@ fn schema_type_match(root: &Value, schema: &Value, expected: &str, depth: usize)
         };
         let branches = options
             .iter()
-            .map(|option| schema_type_match(root, option, expected, depth + 1));
+            .map(|option| schema_type_match(root, option, expected, depth + 1, remaining));
         let branch_hint = if keyword == "allOf" {
             branches.flatten().reduce(|left, right| left && right)
         } else {
@@ -731,6 +741,27 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn branching_reference_cycles_exhaust_a_shared_budget() {
+        let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
+        let schema = serde_json::json!({
+            "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
+            "properties": {"value": reference}
+        });
+        let mut remaining = 64;
+        assert_eq!(
+            schema_type_match(
+                &schema,
+                &schema["properties"]["value"],
+                "string",
+                0,
+                &mut remaining
+            ),
+            None
+        );
+        assert_eq!(remaining, 0);
     }
 
     #[test]
