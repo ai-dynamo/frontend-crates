@@ -213,6 +213,11 @@ impl MmFamilyProcessor for QwenVlProcessor {
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem> {
         let DecodedMedia::Image { rgb, height, width } = media;
         let (h, w) = (*height, *width);
+        if h.checked_mul(w).and_then(|n| n.checked_mul(3)) != Some(rgb.len()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl: rgb length does not match height * width * 3",
+            ));
+        }
         let (th, tw) = smart_resize(
             h,
             w,
@@ -566,6 +571,22 @@ mod tests {
             .unwrap();
         assert_eq!(item.feature_token_count, counted);
         assert_eq!(item.feature.shape, vec![48, 1176]);
+    }
+
+    #[test]
+    fn process_item_rejects_mismatched_rgb_length() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        // 112x84 needs no resize, so a short buffer would reach patchify.
+        for len in [112 * 84 * 3 - 1, 112 * 84 * 3 + 3] {
+            assert!(matches!(
+                proc.process_item(&DecodedMedia::Image {
+                    rgb: vec![7u8; len],
+                    height: 112,
+                    width: 84,
+                }),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
     }
 
     #[test]
