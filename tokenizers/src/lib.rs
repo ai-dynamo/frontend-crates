@@ -379,7 +379,9 @@ impl Tokenizer {
         )?))
     }
 
-    /// Create a stateful sequence object for decoding token_ids into text
+    /// Create a stateful sequence object for decoding token_ids into text.
+    /// Append the result of [`DecodeStream::finish`] when input ends; `step` may
+    /// retain a trailing byte-fallback run even when it currently forms valid UTF-8.
     pub fn decode_stream(
         &self,
         prompt_token_ids: &[TokenIdType],
@@ -537,6 +539,8 @@ impl DecodeStream {
     }
 
     /// Decode the remaining suffix once no further tokens can reinterpret it.
+    /// Call this at end-of-input and append its output after all `step` chunks.
+    /// Dropping the stream without finishing discards any buffered text.
     pub fn finish(&mut self) -> Result<Option<String>> {
         self.decode_pending(true)
     }
