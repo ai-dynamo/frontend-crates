@@ -166,6 +166,12 @@ impl Tokenizer for BasetenTokenizer {
         Ok(())
     }
 
+    // Post-processing runs once over the joined ids, so segmented output composes only
+    // while that post-processing adds nothing — the same condition as the text path.
+    fn validate_segmented_prefix_cache(&self) -> Result<()> {
+        self.validate_prefix_cache()
+    }
+
     fn with_options(mut self, options: TokenizerOptions) -> Self {
         self.options = options;
         self

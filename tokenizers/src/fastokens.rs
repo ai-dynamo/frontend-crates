@@ -77,6 +77,12 @@ impl Tokenizer for FastTokenizer {
         Ok(())
     }
 
+    // `fastokens::Tokenizer::encode_segments` tokenizes each segment independently,
+    // never merges across a segment boundary, and adds no post-processor tokens.
+    fn validate_segmented_prefix_cache(&self) -> Result<()> {
+        Ok(())
+    }
+
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
     // so the HF side's vocabulary introspection applies to both.
     fn vocab_size(&self) -> Option<usize> {

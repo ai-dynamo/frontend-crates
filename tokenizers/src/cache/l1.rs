@@ -22,13 +22,6 @@
 //! entries are keyed by the blake3 digest of `input[0..boundary]` and weighed by their
 //! resident token-vector bytes, so the byte budget is enforced — and recency/frequency
 //! tracked — by moka rather than by hand.
-//!
-//! Segmented inputs ([`Encoder::encode_segments`]) share the same cache but cut at
-//! segment ends instead of special-token occurrences: the trait contract encodes each
-//! segment independently and concatenates, so every segment end is a safe split point.
-//! Their keys are derived under a separate blake3 context and frame each segment with
-//! its `allow_special` flag and byte length, so a segmented prefix can never alias a
-//! plain-text prefix, a different trust layout, or a different split of the same text.
 
 use std::{
     hash::BuildHasherDefault,
@@ -101,8 +94,6 @@ fn frame_segment(hasher: &mut blake3::Hasher, segment: &EncodeSegment<'_>) {
     hasher.update(segment.text.as_bytes());
 }
 
-/// Hash sorted segment-count boundaries incrementally: the digest at boundary `k` covers
-/// `segments[..k]`, framed by [`frame_segment`] under [`SEGMENT_KEY_CONTEXT`].
 fn hash_segment_prefixes<'a, 'b: 'a>(
     segments: &'a [EncodeSegment<'b>],
     boundaries: &'a [usize],
@@ -309,8 +300,6 @@ impl L1Cache {
         self.resolve_prefix(hash_segment_prefixes(segments, &boundaries).collect())
     }
 
-    /// Probe boundary digests deepest-first; the first entry present is the longest cached
-    /// prefix. Shared by the plain-text and segmented lookups.
     fn resolve_prefix(&self, prefix_hashes: Vec<(usize, Blake3Hash)>) -> PrefixLookup {
         for &(boundary, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(tokens) = self.cache.get(&hash_bytes) {
@@ -610,7 +599,6 @@ impl L1Cache {
         let hash_bytes = deepest_hash.unwrap_or_else(deepest_digest);
         debug_assert_eq!(hash_bytes, deepest_digest());
 
-        // Copy only the populated prefix, excluding capacity reserved for the tail.
         let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
         self.cache.insert(hash_bytes, tokens);
 

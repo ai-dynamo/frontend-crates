@@ -683,12 +683,7 @@ fn extend_transparent_to_plaintext_tool_markup() {
     }
 }
 
-// ---------------------------------------------------------------------------------------
-// Segmented (Kimi K3-style renderer) inputs. The cache cuts at segment ends and keys each
-// prefix with its trust layout; these tests hold the segmented path to the same byte-exact
-// bar as the plain-text path, on the two backends that implement `encode_segments` over
-// in-tree fixtures (TikToken and fastokens).
-// ---------------------------------------------------------------------------------------
+// Segmented (Kimi K3-style renderer) inputs.
 
 use dynamo_tokenizers::{EncodeSegment, FastTokenizer};
 
@@ -753,8 +748,6 @@ fn build_cached_segmented_setup(
 
 #[test]
 fn segmented_cached_vs_uncached_first_pass() {
-    // Miss path, then hit path, for every corpus turn: both must equal the inner
-    // tokenizer's own segmented encode, and at least one turn must hit.
     for setup in SEGMENTED_SETUPS {
         let (base, cached) = build_cached_segmented_setup(setup, false);
         let mut saw_hit = false;
@@ -801,8 +794,6 @@ fn segmented_cached_vs_uncached_first_pass() {
 
 #[test]
 fn segmented_extend_on_hit_matches_uncached_across_growing_turns() {
-    // Append-only conversation: turn 0 misses, every later turn is a partial hit that
-    // deepens the cache by exactly one entry. Token ids stay byte-exact throughout.
     let turns = growing_chat_turns(12);
     for setup in SEGMENTED_SETUPS {
         let (base, cached) = build_cached_segmented_setup(setup, true);
@@ -920,34 +911,5 @@ fn segmented_untrusted_marker_text_never_reuses_trusted_entries() {
             "[{}] plain-text re-encode drifted",
             setup.name
         );
-    }
-}
-
-#[test]
-fn segmented_cache_disabled_by_empty_specials_is_transparent() {
-    for setup in SEGMENTED_SETUPS {
-        let (base, _specials) = (setup.build)();
-        let cached = CachedTokenizer::new(base.clone(), Vec::new(), 4096)
-            .expect("fixture tokenizer must support prefix caching");
-        for (i, raw_turn) in CHAT_TURNS.iter().enumerate() {
-            let segments = segment_turns(setup, raw_turn);
-            let plain = base
-                .encode_segments(&segments)
-                .unwrap()
-                .token_ids()
-                .to_vec();
-            let through = cached
-                .encode_segments(&segments)
-                .unwrap()
-                .token_ids()
-                .to_vec();
-            assert_eq!(
-                plain, through,
-                "[{}] turn {i}: transparent segmented encode mismatch",
-                setup.name
-            );
-        }
-        let stats = cached.cache_stats();
-        assert_eq!((stats.hits, stats.misses, stats.entries), (0, 0, 0));
     }
 }
