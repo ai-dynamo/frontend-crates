@@ -6,9 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 # Releasing
 
 Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`,
-`dynamo-tokenizers`, and `dynamo-renderer` to crates.io are automated by
-`.github/workflows/release.yml`. This document covers what the workflow does,
-what one-time setup it requires, and how to recover when it goes wrong.
+`dynamo-tokenizers`, `dynamo-renderer`, and `dynamo-mm-preprocessor` to
+crates.io are automated by `.github/workflows/release.yml`. This document
+covers what the workflow does, what one-time setup it requires, and how to
+recover when it goes wrong.
 
 ## What happens on every push to `main`
 
@@ -34,7 +35,25 @@ what one-time setup it requires, and how to recover when it goes wrong.
 
 To release a crate at a **specific, deliberate version** — e.g. so a conformance fixture snapshot (`conformance/fixtures/`, git-lfs) and the crates.io release carry the same pegged number — edit the crate's `version` in its `Cargo.toml` in your PR (any jump you want: patch, minor, major). On merge, the workflow sees the version differs from the last release tag, skips any auto-bump for that crate, and publishes exactly that version. `Cargo.toml` is the single source of truth: fixture provenance embeds the built crate's version, so both artifacts stay in sync by construction.
 
-The same mechanism covers a crate's **first release**: a crate with no release tag yet is never auto-bumped — set its version manually and merge.
+The same version mechanism covers a crate's **first release**: a crate with no
+release tag yet is never auto-bumped, so set its intended version manually.
+However, crates.io trusted publishing cannot create a new crate. After the
+enabling PR merges, an existing crates.io owner must bootstrap the exact
+merged revision with a short-lived API token that permits creating crates:
+
+```bash
+git switch --detach <MERGED_MAIN_SHA>
+cargo publish -p dynamo-mm-preprocessor --locked \
+  --token "$CARGO_REGISTRY_TOKEN"
+git tag -s -m "release dynamo-mm-preprocessor 0.1.0" \
+  dynamo-mm-preprocessor-v0.1.0 <MERGED_MAIN_SHA>
+git push origin dynamo-mm-preprocessor-v0.1.0
+```
+
+The first release workflow may fail at its trusted-publishing step before this
+bootstrap is complete. Once the crate exists, configure its trusted publisher
+as described below and rerun the workflow; the already-published version is a
+no-op, and later releases are automatic.
 
 Note: a manual peg skips the auto-changelog; add a `CHANGELOG.md` entry in the same PR if the release warrants one.
 
@@ -54,7 +73,15 @@ breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 | `feat!:` / `BREAKING CHANGE:`   | 2.0.0 (major)   |
 | `chore:`, `ci:`, `build:`, etc. | no bump         |
 
-`dynamo-parsers-v2` is at `0.x`, where the minor slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking, `0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot and breaking changes bump the minor slot. Lifecycle note: v1 (`dynamo-parsers`) is interim and will be removed outright once v2 reaches parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to keep moving while v1 stays quiet. Downstream exact pins like vLLM's `dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them — another reason auto-bumps stay scoped to crates whose own code changed.
+`dynamo-parsers-v2` and `dynamo-mm-preprocessor` are at `0.x`, where the minor
+slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking,
+`0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot
+and breaking changes bump the minor slot. Lifecycle note: v1
+(`dynamo-parsers`) is interim and will be removed outright once v2 reaches
+parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to
+keep moving while v1 stays quiet. Downstream exact pins like vLLM's
+`dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them —
+another reason auto-bumps stay scoped to crates whose own code changed.
 
 ### What `cargo-semver-checks` validates
 
@@ -92,7 +119,7 @@ These admin actions must be done before the workflow can run end-to-end.
 
 2. **Configure trusted publishing on crates.io.** For each published crate
    (`dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`,
-   `dynamo-tokenizers`, `dynamo-renderer`), go to
+   `dynamo-tokenizers`, `dynamo-renderer`, `dynamo-mm-preprocessor`), go to
    crates.io → crate Settings → Trusted Publishers → add a GitHub trusted
    publisher with:
    - Repository: `ai-dynamo/frontend-crates`
