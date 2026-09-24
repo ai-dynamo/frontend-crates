@@ -1890,62 +1890,46 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+# Both columns preserve one JSON type across families. Qwen/GLM use schema
+# typing for bare text; the other grammars encode the type in their native syntax.
+_NULL_TEXT_INPUTS = {
+    "qwen3": "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+    "glm47": "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
+}
+
 EDGE += [
     (
-        "qwen_string_null",
-        'Qwen3 and GLM: the request schema declares `city` as `string` (non-nullable), so bare parameter text `null` stays the string "null". Other families: the request schema declares `city` as `string | null`, and native null syntax must produce JSON null. The schema and expected type intentionally differ between these variants. The Qwen3/GLM variant is also covered in TOOLCALLING.streamv1.7-1.',
+        scenario,
+        description,
         ["I7"],
-        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "null"}}],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop"},
         OnlyFamilies({
-            "qwen3": (
-                "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+            family: (
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M),
                 M,
-                M,
-            ),
-            "glm47": (
-                "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
-                M,
-                M,
-            ),
-            **{
-                family: (
-                    r_tool(family, "get_weather", "city", None, 0),
-                    VLLM_UNCAPTURABLE.get(family, M),
-                    M,
-                    [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": None}}],
-                )
-                for family in FAMILIES if family not in {"qwen3", "glm47"}
-            },
+            )
+            for family in FAMILIES
         }),
         {
             family: [{"name": "get_weather", "parameters": {
                 "type": "object", "properties": {"city": {
-                    "type": "string" if family in {"qwen3", "glm47"} else ["string", "null"],
+                    "type": ("string" if value is not None else
+                             "null" if family == "glm47" else ["string", "null"]),
                 }},
             }}]
             for family in FAMILIES
         },
-    ),
-    (
-        "qwen_nullable_string_null",
-        'The request schema declares `city` as `string | null`. With the same input text as 7-4, Qwen3 emits JSON null rather than the string "null". This is also covered in TOOLCALLING.streamv1.7-2.',
-        ["I7"],
-        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": None}}],
-        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-        {"finish_reason": "stop"},
-        OnlyFamilies({
-            "qwen3": (
-                "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
-                M,
-                M,
-            ),
-        }),
-        [{"name": "get_weather", "parameters": {
-            "type": "object", "properties": {"city": {"type": ["string", "null"]}}
-        }}],
-    ),
+    )
+    for scenario, value, description in (
+        ("arg_json_null", None,
+         'Every family must emit JSON null: {"city": null}. The request schema declares `city` as `string | null`, except GLM uses `null` because its nullable-string schema prefers string. Qwen3 and GLM use the same bare parameter text as 7-5; other families use native null syntax. Also covered in TOOLCALLING.streamv1.7-4.'),
+        ("arg_string_null", "null",
+         'Every family must preserve the string "null": {"city": "null"}. The request schema declares `city` as `string` (non-nullable). Qwen3 and GLM use the same bare parameter text as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.'),
+    )
 ]
 
 

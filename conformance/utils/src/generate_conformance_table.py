@@ -1281,7 +1281,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
             fam = doc.get("family") or family
             for cid, vc in (doc.get("cases") or {}).items():
                 if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
-                    counts[(fam, cid)] = len(vc["chunks"])
+                    counts[(fam, fixtures.canonical_toolcalling_case_key(cid))] = len(vc["chunks"])
         return counts
 
     def _record(cases, impl, version):

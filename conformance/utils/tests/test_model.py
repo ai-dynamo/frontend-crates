@@ -344,7 +344,7 @@ def test_toolcalling_tooltip_omits_schema_without_a_baseline_result(expected):
 def test_null_case_descriptions_explain_schema_difference(model_v2):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
-    scenarios = ("qwen_string_null", "qwen_nullable_string_null")
+    scenarios = ("arg_string_null", "arg_json_null")
     tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
     assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
     assert "`city` as `string` (non-nullable)" in tips[0]["description"]
@@ -831,20 +831,20 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
 def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == family)
-    for scenario in ("deepseek_v41_mixed_control_text_in_string", "qwen_string_null"):
+    for scenario in ("deepseek_v41_mixed_control_text_in_string", "arg_json_null", "arg_string_null"):
         cell = row["cells"][scenario]
         assert cell["status"] != "na"
         block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
                      if candidate["key"] == "dynamo")
         assert "error" not in block and "unavailable" not in block
         assert block["events"]
-        if scenario == "qwen_string_null":
-            expected_value = "null" if family in {"qwen3", "glm47"} else None
+        if scenario in {"arg_json_null", "arg_string_null"}:
+            expected_value = "null" if scenario == "arg_string_null" else None
             assert block["events"] == [{"kind": "tool_call", "name": "get_weather",
                                         "arguments": {"city": expected_value}}]
             assert block["verdict"] == "MATCH"
             assert "schema" in cell["tooltip"]["description"]
-            assert "expected type" in cell["tooltip"]["description"]
+            assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
 
 
 def test_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
@@ -867,3 +867,27 @@ def test_v2_reasoning_uses_current_peers(model_v2):
     for impl in ("vllm_python", "sglang_python"):
         for ver in peers.get(impl, set()):
             assert ver in r, f"reasoning missing current peer {impl} {ver}"
+
+
+@pytest.mark.parametrize("old_id,new_id", [("7-1", "7-5"), ("7-2", "7-4")])
+def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeypatch):
+    monkeypatch.setattr(table.fixtures, "FIXTURES", Path(table.fixtures.__file__).parent / "fixtures")
+    monkeypatch.setattr(table.fixtures, "_CAPTURED_WITH_BY_MODE", {})
+    original = {"description": "null type", "chunks": [{"delta_text": "null", "expected": {"dynamo_v2": []}}]}
+    docs = {("qwen3_coder", f"TOOLCALLING.streamv1.{old_id}.yaml"): {
+        "family": "qwen3_coder", "mode": "streamv1", "cases": {f"TOOLCALLING.streamv1.{old_id}": original},
+    }}
+    cases, _ = table.fixtures.load_all_cases("streamv1", docs)
+    assert set(cases) == {("qwen3_coder", new_id)}
+    case = cases["qwen3_coder", new_id]
+    assert case["__case_id"] == f"TOOLCALLING.streamv1.{new_id}"
+    assert case["chunks"] == original["chunks"]
+    assert case["expected"]["dynamo_v2"] == {"calls": [], "normal_text": ""}
+
+
+def test_stream_null_columns_match_unified_numbers(model_v2):
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3_coder")
+    assert "7-1" not in row["cells"] and "7-2" not in row["cells"]
+    for label in ("7-4", "7-5"):
+        assert row["cells"][label]["case_id"] == "TOOLCALLING.streamv1." + label

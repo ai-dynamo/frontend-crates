@@ -69,5 +69,32 @@ changes:
             arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
             complete: true
         - expected: []
+  arg_json_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: e783adc74ccee714b37461cff77a2ab44915535be38b0389760c901857a3e7b0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

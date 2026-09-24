@@ -7884,8 +7884,8 @@ cases:
           x: " <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n "
   qwen_string_null:
     lifecycle: active
-    scenario: qwen_string_null
-    description: 'Qwen3 and GLM: the request schema declares `city` as `string` (non-nullable), so bare parameter text `null` stays the string "null". Other families: the request schema declares `city` as `string | null`, and native null syntax must produce JSON null. The schema and expected type intentionally differ between these variants. The Qwen3/GLM variant is also covered in TOOLCALLING.streamv1.7-1.'
+    scenario: arg_json_null
+    description: 'Every family must emit JSON null: {"city": null}. The request schema declares `city` as `string | null`, except GLM uses `null` because its nullable-string schema prefers string. Qwen3 and GLM use the same bare parameter text as 7-5; other families use native null syntax. Also covered in TOOLCALLING.streamv1.7-4.'
     policy:
     - I7
     display_id: UNIFIED.7-4
@@ -7945,3 +7945,64 @@ cases:
         name: get_weather
         arguments:
           city: null
+  arg_string_null:
+    lifecycle: active
+    scenario: arg_string_null
+    description: 'Every family must preserve the string "null": {"city": "null"}. The request schema declares `city` as `string` (non-nullable). Qwen3 and GLM use the same bare parameter text as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'

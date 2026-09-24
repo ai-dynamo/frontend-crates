@@ -75,5 +75,34 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: fa5b682c79c28e393dd3d7944fb6a3237e44bc10d0dfbefe5368368d01175ba9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

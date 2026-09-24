@@ -513,8 +513,8 @@ def test_scenario_families_matches_declared_scope():
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
-    assert G.scenario_families("qwen_string_null") == set(FAMILIES)
-    assert G.scenario_families("qwen_nullable_string_null") == {"qwen3"}
+    assert G.scenario_families("arg_string_null") == set(FAMILIES)
+    assert G.scenario_families("arg_json_null") == set(FAMILIES)
     assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == set(FAMILIES)
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
@@ -529,37 +529,36 @@ def test_only_families_rejects_an_empty_or_unknown_scope():
 
 def test_schema_null_cases_keep_their_native_inputs_and_history():
     qwen = build_cases("qwen3")
-    string = qwen["UNIFIED.qwen_string_null.qwen3"]
-    nullable = qwen["UNIFIED.qwen_nullable_string_null.qwen3"]
+    string = qwen["UNIFIED.arg_string_null.qwen3"]
+    nullable = qwen["UNIFIED.arg_json_null.qwen3"]
     assert string["input"] == nullable["input"]
     assert string["tools"][0]["parameters"]["properties"]["city"] == {"type": "string"}
     assert nullable["tools"][0]["parameters"]["properties"]["city"] == {"type": ["string", "null"]}
-    glm = build_cases("glm47")["UNIFIED.qwen_string_null.glm47"]
+    glm = build_cases("glm47")["UNIFIED.arg_string_null.glm47"]
     assert "<arg_value>null</arg_value>" in glm["input"]
     assert glm["tools"] == string["tools"]
     assert glm["golden"] == string["golden"]
-    assert numbered_id("qwen_string_null") == "UNIFIED.7-4"
-    assert numbered_id("qwen_nullable_string_null") == "UNIFIED.qwen-1"
-    assert historical_unified_case_key("qwen3", "UNIFIED.7-5") == "UNIFIED.qwen-1"
+    assert numbered_id("arg_string_null") == "UNIFIED.7-5"
+    assert numbered_id("arg_json_null") == "UNIFIED.7-4"
+    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-4"
 
 
 @pytest.mark.parametrize("family", FAMILIES)
-def test_null_variants_preserve_the_declared_json_type(family):
-    case = build_cases(family)["UNIFIED.qwen_string_null." + family]
-    string_variant = family in {"qwen3", "glm47"}
-    expected_type = "string" if string_variant else ["string", "null"]
+@pytest.mark.parametrize("scenario,value", [("arg_json_null", None), ("arg_string_null", "null")])
+def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    expected_type = "string" if value is not None else "null" if family == "glm47" else ["string", "null"]
     assert case["tools"][0]["parameters"]["properties"]["city"] == {"type": expected_type}
-    expected = [{"kind": "tool_call", "name": "get_weather",
-                 "arguments": {"city": "null" if string_variant else None}}]
-    assert case["golden"] == expected
-    assert _native_input_calls(family, case["input"]) == expected
-    assert "schema" in case["description"] and "expected type" in case["description"]
+    assert case["golden"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
+    _assert_input_carries_events(family, scenario, case)
+    assert "schema" in case["description"]
 
 
 @pytest.mark.parametrize("family", FAMILIES)
-def test_null_variant_contract_rejects_a_changed_schema(family):
+@pytest.mark.parametrize("scenario", ["arg_json_null", "arg_string_null"])
+def test_null_variant_contract_rejects_a_changed_schema(family, scenario):
     corpus = {name: build_cases(name) for name in FAMILIES}
-    case = corpus[family]["UNIFIED.qwen_string_null." + family]
+    case = corpus[family][f"UNIFIED.{scenario}.{family}"]
     case["tools"] = json.loads(json.dumps(case["tools"]))
     case["tools"][0]["parameters"]["properties"]["city"]["type"] = "number"
     with pytest.raises(AssertionError):
@@ -643,17 +642,17 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 82,
-            "deepseek_v41": 82,
-            "gemma4": 84,
-            "glm47": 82,
-            "kimi_k2": 82,
-            "kimi_k3": 90,
-            "muse_glimmer": 83,
+            "deepseek_v4": 83,
+            "deepseek_v41": 83,
+            "gemma4": 85,
+            "glm47": 83,
+            "kimi_k2": 83,
+            "kimi_k3": 91,
+            "muse_glimmer": 84,
             "qwen3": 83,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 668
+    assert sum(per_family.values()) == 675
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -1060,7 +1059,7 @@ def _assert_input_carries_events(family, scenario, case):
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
                     schema_type = schema.get("type")
-                    if value == "null" and isinstance(schema_type, list) and "null" in schema_type:
+                    if value == "null" and (schema_type == "null" or isinstance(schema_type, list) and "null" in schema_type):
                         candidate["arguments"][key] = None
         else:
             candidates = []
@@ -1139,15 +1138,11 @@ def _assert_cross_family_contract(corpus):
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
             events = _logical_events(scenario, family, case["golden"])
-            if scenario == "qwen_string_null":
-                # 7-4 deliberately compares two schema variants; verify each type
-                # before comparing the remaining shared request/event contract.
-                string_variant = family in {"qwen3", "glm47"}
-                expected_type = "string" if string_variant else ["string", "null"]
+            if scenario in {"arg_json_null", "arg_string_null"}:
+                value = None if scenario == "arg_json_null" else "null"
+                expected_type = "string" if value is not None else "null" if family == "glm47" else ["string", "null"]
                 assert case["tools"][0]["parameters"]["properties"]["city"]["type"] == expected_type
-                assert events == [{"kind": "tool_call", "name": "get_weather",
-                                   "arguments": {"city": "null" if string_variant else None}}]
-                events[0]["arguments"]["city"] = "SCHEMA_SELECTED_NULL_VALUE"
+                assert events == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
             if scenario == "tool_no_close":
                 # DSML's public EOF contract drops an invoke without its closer.
                 # Assert that exception independently; do not normalize [] to a call.

@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+from fixture_disposition import canonical_toolcalling_case_key
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
@@ -296,8 +297,8 @@ BATCH_SUB_CASE_GROUPS = [
             "7.d",
             "7.e",
             "7.f",
-            "7-1",
-            "7-2",
+            "7-4",
+            "7-5",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -534,6 +535,7 @@ def load_all_cases(
         for impl, ver in (doc.get("captured_with") or {}).items():
             captured_with.setdefault(_canonical_impl_key(str(impl)), str(ver))
         for cid, case in doc["cases"].items():
+            cid = canonical_toolcalling_case_key(cid)
             case["__family"] = family
             sub = cid.replace(f"TOOLCALLING.{mode}.", "")
             case["__fixture_path"] = rel
@@ -547,6 +549,8 @@ def load_all_cases(
                 case["expected"] = _derive_stream_expected(case)
             elif isinstance(case.get("expected"), dict):
                 case["expected"] = _normalize_impl_mapping(case["expected"])
+            if (family, sub) in cases:
+                raise ValueError(f"duplicate case after ID normalization: {family}/{cid}")
             cases[(family, sub)] = case
     _CAPTURED_WITH_BY_MODE[mode] = captured_with
     if mode == "streamv1":

@@ -33,6 +33,8 @@ def _assert_value(value, schema):
         assert isinstance(value, list), value
         for item in value:
             _assert_value(item, schema["items"])
+    elif kind == "null":
+        assert value is None, value
     elif kind == "number":
         assert type(value) in (int, float), value
     else:
