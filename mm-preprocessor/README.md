@@ -276,11 +276,12 @@ Three layers, all pinned to bitwise-equality:
 
 ## 5. Roadmap
 
-The pipeline is implemented and golden-tested end to end for
-`models::qwen_vl`. What remains:
+The published crate implements and golden-tests the image pipeline end to end
+for `models::qwen_vl`. What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
-   its implementation flips the crate to publishable.
+   the feature currently exposes signatures only and must not be used at
+   runtime.
 2. **Family coverage** — GLM and Kimi are the validated candidates after
    `models::qwen_vl`.
 
