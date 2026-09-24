@@ -486,6 +486,17 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
+def test_tc_source_capture_versions_survive_label_parsing():
+    impl = "dynamo_v2"
+    versions = ["0.7.0+source.0abc123", "0.6.1"]
+    items = [
+        {"key": f"{impl}-{version}", "label": table._full_label(impl, version, "stream")}
+        for version in reversed(versions)
+    ]
+    candidates = table._candidate_model(table._sort_candidates(items))
+    assert [candidate["version"] for candidate in candidates] == versions
+
+
 def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
