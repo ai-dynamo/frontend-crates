@@ -361,27 +361,67 @@ fn merge_compatible_all_of(schema: &Map<String, Value>) -> Option<Map<String, Va
             _ => return None,
         };
         for (key, value) in option {
-            if merged.get(&key).is_some_and(|existing| existing != &value) {
-                return None;
+            match merged.get_mut(&key) {
+                Some(existing) if *existing == value => {}
+                Some(existing) if key == "enum" => {
+                    // The raw XTML string path can enumerate this intersection.
+                    // Leave other enum types on the existing fallback path.
+                    let allowed = value.as_array()?;
+                    let candidates = existing.as_array_mut()?;
+                    if !allowed.iter().all(Value::is_string)
+                        || !candidates.iter().all(Value::is_string)
+                    {
+                        return None;
+                    }
+                    candidates.retain(|item| allowed.contains(item));
+                }
+                Some(_) => return None,
+                None => {
+                    merged.insert(key, value);
+                }
             }
-            merged.insert(key, value);
         }
     }
     Some(merged)
 }
 
-fn string_content_format(schema: &Value) -> Format {
+fn string_content_format(schema: &Value) -> Option<Format> {
     let root = schema;
     let Some(schema) = schema.as_object() else {
-        return Format::AnyText(AnyTextFormat {
+        return Some(Format::AnyText(AnyTextFormat {
             excludes: vec![CLOSE.to_string()],
-        });
+        }));
     };
     // XTML string arguments contain raw text rather than a JSON string, so they
     // cannot use JsonSchemaFormat. Flatten compatible allOf branches before
     // translating their string constraints to raw-text formats.
     let merged_schema = merge_compatible_all_of(schema);
     let schema = merged_schema.as_ref().unwrap_or(schema);
+
+    // Apply outer constraints to each union branch before choosing a raw XTML
+    // string format. A top-level length regex alone would discard an inner enum.
+    for keyword in ["anyOf", "oneOf"] {
+        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
+            continue;
+        };
+        let common = Value::Object(
+            schema
+                .iter()
+                .filter(|(key, _)| key.as_str() != keyword)
+                .map(|(key, value)| (key.clone(), value.clone()))
+                .collect(),
+        );
+        let formats = options
+            .iter()
+            .filter(|option| {
+                schema_types(option, root, &HashSet::new()).contains(&JsonType::String)
+            })
+            .filter_map(|option| {
+                string_content_format(&serde_json::json!({"allOf": [common.clone(), option]}))
+            })
+            .collect::<Vec<_>>();
+        return (!formats.is_empty()).then(|| one_of(formats));
+    }
 
     let enum_values = schema
         .get("enum")
@@ -394,17 +434,19 @@ fn string_content_format(schema: &Value) -> Format {
                 .map(|value| vec![Value::String(value.to_string())])
         });
     if let Some(values) = enum_values {
+        if values.is_empty() {
+            return None;
+        }
         let pattern = schema.get("pattern").and_then(Value::as_str);
         let compiled_pattern = pattern.map(regex::Regex::new);
-        if !values.is_empty()
-            && values.len() <= 256
+        if values.len() <= 256
             && values.iter().all(|value| value.as_str().is_some())
             && compiled_pattern.as_ref().is_none_or(Result::is_ok)
         {
             let min_len = schema.get("minLength").and_then(Value::as_u64);
             let max_len = schema.get("maxLength").and_then(Value::as_u64);
             let const_value = schema.get("const").and_then(Value::as_str);
-            let values = values
+            let formats = values
                 .iter()
                 .filter_map(Value::as_str)
                 .filter(|value| !value.contains("<|"))
@@ -417,17 +459,13 @@ fn string_content_format(schema: &Value) -> Format {
                             pattern.as_ref().is_ok_and(|re| re.is_match(value))
                         })
                 })
-                .collect::<Vec<_>>();
-            return one_of(
-                values
-                    .iter()
-                    .map(|value| {
-                        Format::ConstString(ConstStringFormat {
-                            value: (*value).to_string(),
-                        })
+                .map(|value| {
+                    Format::ConstString(ConstStringFormat {
+                        value: value.to_string(),
                     })
-                    .collect(),
-            );
+                })
+                .collect::<Vec<_>>();
+            return (!formats.is_empty()).then(|| one_of(formats));
         }
     }
 
@@ -456,34 +494,18 @@ fn string_content_format(schema: &Value) -> Format {
         } else {
             format!("{STRING_ATOM}*")
         };
-        return Format::Regex(RegexFormat {
+        return Some(Format::Regex(RegexFormat {
             pattern: format!("{prefix}(?:{pattern}){suffix}"),
-        });
+        }));
     }
 
     if let Some(pattern) = string_length_regex(schema) {
-        return Format::Regex(RegexFormat { pattern });
+        return Some(Format::Regex(RegexFormat { pattern }));
     }
 
-    for keyword in ["anyOf", "oneOf"] {
-        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
-            continue;
-        };
-        let formats = options
-            .iter()
-            .filter(|option| {
-                schema_types(option, root, &HashSet::new()).contains(&JsonType::String)
-            })
-            .map(string_content_format)
-            .collect::<Vec<_>>();
-        if !formats.is_empty() {
-            return one_of(formats);
-        }
-    }
-
-    Format::AnyText(AnyTextFormat {
+    Some(Format::AnyText(AnyTextFormat {
         excludes: vec![CLOSE.to_string()],
-    })
+    }))
 }
 
 fn resolved_root_parameters(root: &Value) -> Option<Value> {
@@ -602,7 +624,7 @@ fn rewrite_local_schema_refs(schema: &mut Value, prefix: &str) {
     }
 }
 
-fn has_unresolved_local_refs(schema: &Value, root: &Value) -> bool {
+fn has_local_schema_refs(schema: &Value) -> bool {
     let Some(object) = schema.as_object() else {
         return false;
     };
@@ -610,10 +632,7 @@ fn has_unresolved_local_refs(schema: &Value, root: &Value) -> bool {
     if object
         .get("$ref")
         .and_then(Value::as_str)
-        .is_some_and(|reference| {
-            (reference == "#" || reference.starts_with("#/"))
-                && resolve_local_ref(reference, root).is_none()
-        })
+        .is_some_and(|reference| reference == "#" || reference.starts_with("#/"))
     {
         return true;
     }
@@ -621,29 +640,20 @@ fn has_unresolved_local_refs(schema: &Value, root: &Value) -> bool {
         object
             .get(*key)
             .and_then(Value::as_object)
-            .is_some_and(|values| {
-                values
-                    .values()
-                    .any(|value| has_unresolved_local_refs(value, root))
-            })
-    }) || SCHEMA_VALUE_KEYWORDS.iter().any(|key| {
-        object
-            .get(*key)
-            .is_some_and(|value| has_unresolved_local_refs(value, root))
-    }) || SCHEMA_ARRAY_KEYWORDS.iter().any(|key| {
-        object
-            .get(*key)
-            .and_then(Value::as_array)
-            .is_some_and(|values| {
-                values
-                    .iter()
-                    .any(|value| has_unresolved_local_refs(value, root))
-            })
-    })
+            .is_some_and(|values| values.values().any(has_local_schema_refs))
+    }) || SCHEMA_VALUE_KEYWORDS
+        .iter()
+        .any(|key| object.get(*key).is_some_and(has_local_schema_refs))
+        || SCHEMA_ARRAY_KEYWORDS.iter().any(|key| {
+            object
+                .get(*key)
+                .and_then(Value::as_array)
+                .is_some_and(|values| values.iter().any(has_local_schema_refs))
+        })
 }
 
 fn preserve_recursive_root_refs(mut schema: Value, root: &Value) -> Value {
-    if !has_unresolved_local_refs(&schema, &schema) {
+    if !has_local_schema_refs(&schema) {
         return schema;
     }
 
@@ -854,7 +864,7 @@ fn argument_format(key: &str, schema: &Value, root: &Value) -> Option<Format> {
         .into_iter()
         .filter_map(|xtml_type| {
             let content = if xtml_type == "string" {
-                string_content_format(&schema_for_xtml_type(schema, root, xtml_type)?)
+                string_content_format(&schema_for_xtml_type(schema, root, xtml_type)?)?
             } else {
                 Format::JsonSchema(JsonSchemaFormat {
                     json_schema: schema_for_xtml_type(schema, root, xtml_type)?,
@@ -1442,6 +1452,52 @@ mod tests {
     }
 
     #[test]
+    fn string_all_of_intersects_distinct_enums() {
+        let format = string_content_format(&json!({
+            "allOf": [
+                {"type": "string", "enum": ["safe", "other"]},
+                {"enum": ["safe", "third"]}
+            ]
+        }));
+        let value = serde_json::to_value(format).unwrap();
+        assert_eq!(value["type"], "const_string");
+        assert_eq!(value["value"], "safe");
+    }
+
+    #[test]
+    fn string_outer_length_keeps_any_of_enum_restrictions() {
+        let format = string_content_format(&json!({
+            "type": "string",
+            "minLength": 1,
+            "anyOf": [{"enum": ["safe"]}, {"enum": ["other"]}]
+        }));
+        let value = serde_json::to_value(format).unwrap();
+        assert_eq!(value["type"], "or");
+        let values = value["elements"].as_array().unwrap();
+        assert_eq!(values.len(), 2);
+        assert!(values.iter().any(|item| item["value"] == "safe"));
+        assert!(values.iter().any(|item| item["value"] == "other"));
+    }
+
+    #[test]
+    fn impossible_optional_string_enum_does_not_emit_empty_or() {
+        let root = json!({
+            "type": "object",
+            "properties": {"value": {"type": "string", "enum": ["a"], "minLength": 2}}
+        });
+        assert!(argument_format("value", &root["properties"]["value"], &root).is_none());
+        let tools = vec![ToolDefinition {
+            name: "optional".to_string(),
+            parameters: Some(root),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let tag = serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+            .unwrap();
+        assert!(!tag.to_string().contains("\"elements\":[]"));
+    }
+
+    #[test]
     fn auto_string_arguments_preserve_schema_constraints_and_allow_empty_values() {
         let tools = vec![ToolDefinition {
             name: "strings".to_string(),
@@ -1579,8 +1635,40 @@ mod tests {
         );
         let schema = &arguments["content"]["content"]["json_schema"];
         assert_eq!(schema["type"], "object");
-        assert_eq!(schema["properties"]["next"]["$ref"], "#/$defs/node");
+        assert_eq!(
+            schema["properties"]["next"]["$ref"],
+            "#/$defs/__dynamo_root/$defs/node"
+        );
+        assert!(
+            resolve_local_ref(
+                schema["properties"]["next"]["$ref"].as_str().unwrap(),
+                schema
+            )
+            .is_some()
+        );
         assert_eq!(schema["$defs"]["node"]["type"], "object");
+    }
+
+    #[test]
+    fn recursive_root_hash_retains_original_parameter_scope() {
+        let root = json!({
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "object",
+                    "properties": {"parent": {"$ref": "#"}},
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        });
+        let schema = schema_for_xtml_type(&root["properties"]["value"], &root, "object")
+            .expect("object argument schema");
+        assert_eq!(
+            schema["properties"]["parent"]["properties"]["value"]["properties"]["parent"]["$ref"],
+            "#/$defs/__dynamo_root"
+        );
+        assert_eq!(schema["$defs"]["__dynamo_root"]["type"], "object");
     }
 
     #[test]
@@ -1606,7 +1694,7 @@ mod tests {
             .unwrap();
 
         assert!(resolve_local_ref(reference, &schema).is_some());
-        assert!(!has_unresolved_local_refs(&schema, &schema));
+        assert!(has_local_schema_refs(&schema));
         assert!(reference.starts_with("#/$defs/__dynamo_root"));
         assert_eq!(
             schema["properties"]["metadata"]["const"],
