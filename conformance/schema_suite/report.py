@@ -7,6 +7,7 @@ import argparse
 import collections
 import datetime as dt
 import hashlib
+import html
 import json
 import os
 from pathlib import Path
@@ -67,6 +68,66 @@ def execute(command, log, env=None, timeout=600):
     }
 
 
+def remaining_failures(combined):
+    """Rank saved failing observations; effort is an estimate, counts are measured."""
+    data = json.loads(combined.read_text())
+    pair = data["prs"][0]
+    path = combined.parent / "runs" / pair["headRefOid"] / "results.jsonl"
+    assert sha(path) == pair["after"]["results_sha256"]
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line]
+    failed = [r for r in rows if r["status"] in {"fail", "error", "not_run"}]
+    definitions = HERE / "remaining_failures.json"
+    categories = json.loads(definitions.read_text())
+    by_group = {}
+    for c in categories:
+        for group in c["groups"]:
+            assert group not in by_group, group
+            by_group[group] = c["rank"]
+        c["rows"] = [r for r in failed if r["group"] in c["groups"]]
+        c["models"] = dict(collections.Counter(r["family"] for r in c["rows"]))
+    assert all(r["group"] in by_group for r in failed), "Update triage for new failing groups"
+    models = sorted({r["family"] for r in rows} - {"harness", "generic"},
+                    key=lambda model: (-sum(r["family"] == model for r in failed), model))
+    summary = {
+        "production_sha": pair["headRefOid"], "results_sha256": sha(path),
+        "ranking_source_sha256": sha(definitions), "failed_rows": len(failed),
+        "categories": [{k: v for k, v in c.items() if k != "rows"} | {"failed_rows": len(c["rows"])} for c in categories],
+        "models": {m: {c["category"]: c["models"].get(m, 0) for c in categories} for m in models},
+    }
+    (combined.parent / "remaining-failures.json").write_text(json.dumps(summary, indent=2) + "\n")
+    esc = html.escape
+    parts = ['<section id="remaining-failures"><h2>Remaining failures: easiest fixes first</h2>',
+             f'<p><strong>{len(failed)} failing case/surface rows</strong> at <code>{esc(pair["headRefOid"])}</code>. '
+             'Each row belongs to exactly one category below. Counts are not distinct bugs or guaranteed fixes. '
+             'Effort and confidence are source-review estimates, not measured implementation times. '
+             'Compatibility and proposed capability targets remain distinguishable in each raw observation.</p>',
+             '<div class="scroll"><table id="remaining-priority"><thead><tr><th>Priority / category</th><th>Estimated effort</th><th>Rows</th><th>Models (rows)</th><th>Fix direction</th></tr></thead><tbody>']
+    for c in categories:
+        sources = ' · '.join(f'<a href="https://github.com/ai-dynamo/frontend-crates/blob/{pair["headRefOid"]}/{s["path"]}#L{s["line"]}">{esc(s["path"])}:{s["line"]}</a>' for s in c["source"])
+        parts.append(f'<tr><td><a href="#remaining-{c["rank"]}">{c["rank"]}. {esc(c["category"])}</a><br><code>{", ".join(c["groups"])}</code></td>'
+                     f'<td>{esc(c["effort"])}<br><small>{esc(c["confidence"])} confidence</small></td><td>{len(c["rows"])}</td>'
+                     f'<td>{esc(", ".join(f"{m}: {n}" for m,n in c["models"].items()))}</td>'
+                     f'<td>{esc(c["recommendation"])}<details><summary>Source locations</summary>{sources}</details></td></tr>')
+    parts.append('</tbody></table></div><h3>Model × category</h3><p>Column numbers match the ranked categories above. Models are sorted by failing-row count. Zero failures applies only to evaluated surfaces; unavailable paths are not passes.</p><div class="scroll"><table id="remaining-models"><thead><tr><th>Model / dialect</th><th>Failed</th><th>Unavailable</th>')
+    parts.extend(f'<th title="{esc(c["category"])}">{c["rank"]}</th>' for c in categories)
+    parts.append('</tr></thead><tbody>')
+    for model in models:
+        parts.append(f'<tr><td>{esc(model)}</td><td>{sum(r["family"]==model for r in failed)}</td><td>{sum(r["family"]==model and r["status"]=="unavailable" for r in rows)}</td>')
+        parts.extend(f'<td>{c["models"].get(model, 0) or "—"}</td>' for c in categories)
+        parts.append('</tr>')
+    parts.append('</tbody></table></div><h3>Remaining failure evidence by category and model</h3>')
+    for c in categories:
+        parts.append(f'<details class="details" id="remaining-{c["rank"]}"><summary>{c["rank"]}. {esc(c["category"])} — {len(c["rows"])} rows</summary>')
+        for model in sorted(c["models"]):
+            parts.append(f'<details><summary>{esc(model)} — {c["models"][model]} rows</summary>')
+            for row in sorted((r for r in c["rows"] if r["family"] == model), key=lambda r: (r["id"], r["surface"])):
+                parts.append(f'<details><summary><code>{esc(row["id"])} / {esc(row["surface"])}</code> · {esc(row.get("contract", "unspecified"))}</summary><pre>{esc(json.dumps(row, indent=2, ensure_ascii=False))}</pre></details>')
+            parts.append('</details>')
+        parts.append('</details>')
+    parts.append('</section>')
+    return ''.join(parts)
+
+
 def render(out, comparisons=None, combined=None):
     metadata = json.loads((out / "metadata.json").read_text())
     results = [
@@ -101,6 +162,9 @@ def render(out, comparisons=None, combined=None):
         if interactions.exists():
             combined_data["interactions"] = json.loads(interactions.read_text())
             metadata["combined_interactions_sha256"] = sha(interactions)
+    triage = remaining_failures(combined) if combined else ""
+    if combined:
+        metadata["remaining_failure_ranking_sha256"] = sha(HERE / "remaining_failures.json")
     payload = json.dumps(
         {
             "metadata": metadata,
@@ -112,7 +176,7 @@ def render(out, comparisons=None, combined=None):
         },
         ensure_ascii=False,
     ).replace("<", "\\u003c")
-    page = HTML.replace("__PR_SCRIPT__", PR_SCRIPT).replace("__DATA__", payload)
+    page = HTML.replace("__PR_SCRIPT__", PR_SCRIPT).replace("__REMAINING__", triage).replace("__DATA__", payload)
     (out / "report.html").write_text(page)
     (out / "summary.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return metadata
@@ -124,6 +188,7 @@ HTML = r"""<!doctype html>
 :root{color-scheme:light;--ink:#162126;--muted:#58676f;--border:#d8e0e3;--green:#236800;--red:#a82624;--bg:#f5f7f8}*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif;color:var(--ink);background:var(--bg)}header{background:#172327;color:white;padding:32px max(24px,calc((100% - 1440px)/2));border-top:5px solid #76b900}header p{color:#cdd8db;max-width:1000px}h1{font-size:29px;margin:8px 0}h2{font-size:19px;margin:26px 0 12px}main{max-width:1488px;margin:auto;padding:0 24px 48px}a{color:#176192}header a{color:#b5dff3}code{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:650;font-size:12px}.pass{background:#e5f2df;color:var(--green)}.fail,.error,.not_run{background:#fde8e7;color:var(--red)}.unavailable,.not_applicable{background:#edf0f2;color:#55616a}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0}.card{background:white;border:1px solid var(--border);padding:18px;text-align:left;border-radius:7px;color:inherit;cursor:pointer}.card strong{display:block;font-size:30px}.card small{color:var(--muted)}.note{border-left:4px solid #83ae50;background:white;padding:14px 18px;margin:16px 0}.scroll{overflow:auto;background:white;border:1px solid var(--border);border-radius:6px}table{border-collapse:collapse;width:100%;text-align:left}th{background:#edf1f2;font-size:12px;text-transform:uppercase;letter-spacing:.04em}th,td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:top}td.num{font-variant-numeric:tabular-nums}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #277db1;outline-offset:2px}.matrix-button{border:0;background:none;padding:0;text-align:left;color:inherit}.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:white;padding:14px;border:1px solid var(--border);border-radius:6px;position:sticky;top:0;z-index:1}label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}input,select{padding:8px;border:1px solid #adbcc3;border-radius:4px;background:white;max-width:260px}.details summary{cursor:pointer;color:#176192}.details pre{margin:6px 0 12px;background:#f5f7f8;border:1px solid #d8e0e3;border-radius:4px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;font-size:12px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}summary{font-weight:600}.subtle{color:var(--muted)}.pager{display:flex;gap:12px;align-items:center;padding:15px 0}.pager button,.reset{padding:7px 12px;background:white;border:1px solid #aebcc2;border-radius:4px}.count{font-size:12px;color:var(--muted)}.pill{padding:2px 6px;background:#eef1f3;border-radius:4px;font-size:11px}footer{margin-top:30px;color:var(--muted)}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}header{padding:24px}main{padding:0 14px 30px}.filters{position:static}}
 </style></head><body><header><div class="subtle" style="color:#a9c879">FRONTEND-CRATES · CPU CORRECTNESS BASELINE</div><h1>Schema and type coercion across parser generations</h1><p id="headline"></p><div id="revision"></div></header><main>
 <section id="combined-comparison" hidden></section>
+__REMAINING__
 <section id="pr-comparisons" hidden></section>
 <h2>Original main baseline</h2>
 <div class="cards" id="cards"></div>

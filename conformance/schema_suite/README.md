@@ -189,3 +189,11 @@ To repeat the combined comparison, use `compare_prs.py run` with `--output`
 pointing to a copy of the combined manifest directory and an isolated audit
 worktree. Its manifest uses `kind: "combined"` and one comparison entry whose
 `merge_base` is current main and `headRefOid` is the production merge commit.
+
+The report also ranks the combined branch's remaining failures by estimated fix
+effort. `remaining_failures.json` owns the reviewed category definitions and
+source locations; the renderer derives counts from the hashed combined run.
+Every failing row belongs to exactly one category. The model/category matrix
+includes unavailable counts, and category/model expanders retain complete raw
+failure evidence. Estimates are not implementation timings or promised fix
+counts; no parser changes or additional suite runs were made for this triage.

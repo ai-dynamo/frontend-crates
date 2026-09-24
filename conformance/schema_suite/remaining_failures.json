@@ -1,0 +1,316 @@
+[
+  {
+    "rank": 1,
+    "category": "Preserve explicit string null",
+    "effort": "Easy",
+    "confidence": "High",
+    "groups": [
+      "A02",
+      "A11",
+      "B01"
+    ],
+    "recommendation": "Port the existing v2 schema-aware null guard to shared v1 XML coercion. The current v1 early return turns null into JSON null before checking the declared string type.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 561
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/v1core/xml/parser.rs",
+        "line": 510
+      }
+    ]
+  },
+  {
+    "rank": 2,
+    "category": "Preserve string whitespace",
+    "effort": "Easy–medium",
+    "confidence": "High",
+    "groups": [
+      "A01",
+      "A04",
+      "E04"
+    ],
+    "recommendation": "Stop trimming decoded string payloads; retain trimming for numeric parsing and structural syntax. DSML is a small local fix; Qwen streaming also buffers and discards edge whitespace.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/dsml/parser.rs",
+        "line": 353
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 562
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/qwen3_coder.rs",
+        "line": 320
+      }
+    ]
+  },
+  {
+    "rank": 3,
+    "category": "Correct entity decoding",
+    "effort": "Easy–medium",
+    "confidence": "High",
+    "groups": [
+      "E06",
+      "E07",
+      "E08",
+      "E09"
+    ],
+    "recommendation": "Keep GLM literal entities unchanged, matching v2. For XML dialects, decode exactly once: chained replacements decode newly exposed &quot; after &amp;. Preserve each dialect’s wire contract.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/glm47_parser.rs",
+        "line": 736
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 806
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 707
+      }
+    ]
+  },
+  {
+    "rank": 4,
+    "category": "Parse Gemma exponent numbers",
+    "effort": "Easy–medium",
+    "confidence": "High",
+    "groups": [
+      "A07",
+      "F02"
+    ],
+    "recommendation": "Extend both Gemma numeric scanners to accept exponent syntax and require exponent digits. The scanner currently stops after the integer/fraction.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/gemma4/parser.rs",
+        "line": 679
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/v1core/gemma4/parser.rs",
+        "line": 398
+      }
+    ]
+  },
+  {
+    "rank": 5,
+    "category": "Preserve integers through u64",
+    "effort": "Easy–medium",
+    "confidence": "High",
+    "groups": [
+      "A08"
+    ],
+    "recommendation": "Replace i64-only integer handling with signed/unsigned or existing raw-number handling. Gemma needs both parser copies; shared v1 XML covers MiniMax M2 and Qwen3-Coder.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 618
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/gemma4/parser.rs",
+        "line": 708
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/v1core/xml/parser.rs",
+        "line": 567
+      }
+    ]
+  },
+  {
+    "rank": 6,
+    "category": "Honor enum, const and unconstrained alternatives",
+    "effort": "Medium",
+    "confidence": "High",
+    "groups": [
+      "B07",
+      "B08",
+      "B09",
+      "B16",
+      "B17"
+    ],
+    "recommendation": "Include enum/const in candidate selection and intersect them with type constraints. Unknown or unconstrained alternatives must not prove strings impossible. Do not blindly copy the GLM matcher: its missing literal constraints cause the 10 current regression rows.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/glm47_parser.rs",
+        "line": 611
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/v1core/xml/parser.rs",
+        "line": 767
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 578
+      }
+    ]
+  },
+  {
+    "rank": 7,
+    "category": "Resolve parameter schema references",
+    "effort": "Medium",
+    "confidence": "High",
+    "groups": [
+      "C02",
+      "C03",
+      "C06",
+      "C07",
+      "C14",
+      "C15"
+    ],
+    "recommendation": "Resolve against the selected tool’s original schema root before extracting properties or coercing values. Cover root refs, percent-decoded fragments and per-tool ownership; preserve bounded cycle handling. Reuse the existing MiniMax resolver where its semantics apply.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 438
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 519
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 550
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/glm47_parser.rs",
+        "line": 557
+      }
+    ]
+  },
+  {
+    "rank": 8,
+    "category": "Intersect composed schema types",
+    "effort": "Medium",
+    "confidence": "High",
+    "groups": [
+      "B05",
+      "B11",
+      "B12",
+      "B13",
+      "B14",
+      "B15",
+      "B18"
+    ],
+    "recommendation": "Bring shared v1 XML union handling up to parity, then handle allOf and sibling intersections across XML coercers. Number includes integer; annotation-only schemas are unconstrained. A type-set fix must still respect enum/const constraints.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parser.rs",
+        "line": 580
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/v1core/xml/parser.rs",
+        "line": 767
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 578
+      }
+    ]
+  },
+  {
+    "rank": 9,
+    "category": "Replace duplicate parameters without concatenation",
+    "effort": "Medium",
+    "confidence": "Medium",
+    "groups": [
+      "D09"
+    ],
+    "recommendation": "Separate duplicate top-level parameter replacement from legitimate repeated-tag array construction. Qwen incremental argument emission must agree with the final last-value result and preserve first key position.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/minimax_m3_parser.rs",
+        "line": 273
+      },
+      {
+        "path": "parsers/v2/src/tool_calling/qwen3_coder.rs",
+        "line": 93
+      }
+    ]
+  },
+  {
+    "rank": 10,
+    "category": "Handle truncated calls consistently",
+    "effort": "Medium–hard",
+    "confidence": "Medium",
+    "groups": [
+      "F05"
+    ],
+    "recommendation": "Review finalization and complete-inner-call recovery per dialect. These are policy-sensitive compatibility targets: establish intended recovery boundaries before changing emission.",
+    "source": [
+      {
+        "path": "parsers/v2/src/unified/kimi_k3.rs",
+        "line": 465
+      }
+    ]
+  },
+  {
+    "rank": 11,
+    "category": "Ignore closing-marker text inside quoted payloads",
+    "effort": "Hard",
+    "confidence": "Medium",
+    "groups": [
+      "E05",
+      "E11"
+    ],
+    "recommendation": "Make incremental marker detection quote-aware across chunk boundaries in DeepSeek V4.1 and Gemma jailed streaming. Final batch output alone will not validate the fix.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/gemma4/parser.rs",
+        "line": 112
+      },
+      {
+        "path": "parsers/v2/src/unified/deepseek_v41.rs",
+        "line": 73
+      }
+    ]
+  },
+  {
+    "rank": 12,
+    "category": "Enforce strict Kimi grammar constraints",
+    "effort": "Hard",
+    "confidence": "High",
+    "groups": [
+      "G02",
+      "G04",
+      "G05",
+      "G06",
+      "G07",
+      "G12",
+      "G13"
+    ],
+    "recommendation": "Preserve constraints through nullable alternatives and permissive fallback; implement string patterns and required/unique argument rules. The current grammar repeats an unrestricted choice of argument tags, so requiredness and uniqueness need more than a scalar coercion patch.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/structural_tag/kimi_k3.rs",
+        "line": 60
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/structural_tag/kimi_k3.rs",
+        "line": 245
+      },
+      {
+        "path": "parsers/v1/src/tool_calling/structural_tag/kimi_k3.rs",
+        "line": 339
+      }
+    ]
+  },
+  {
+    "rank": 13,
+    "category": "Preserve integers beyond u64 end to end",
+    "effort": "Hard / contract decision",
+    "confidence": "Medium",
+    "groups": [
+      "A09"
+    ],
+    "recommendation": "Avoid lossy Value/f64 round trips across parser adapters and event serialization, or provide an explicit supported fallback. This spans 14 dialects; choose the numeric contract first rather than applying a local cast fix.",
+    "source": [
+      {
+        "path": "parsers/v1/src/tool_calling/xml/parsed_value.rs",
+        "line": 1
+      }
+    ]
+  }
+]
