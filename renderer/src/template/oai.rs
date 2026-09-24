@@ -545,6 +545,10 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         self.supports_add_generation_prompt
     }
 
+    fn requires_content_arrays(&self) -> bool {
+        self.requires_content_arrays
+    }
+
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let mixins = Value::from_dyn_object(self.mixins.clone());
 
@@ -992,6 +996,31 @@ mod tests {
         let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
         assert_eq!(with_tools.matches("<|im_start|>system").count(), 1);
         assert!(with_tools.contains("<|im_start|>user\nmid-conversation reminder<|im_end|>"));
+    }
+
+    #[test]
+    fn public_content_array_flag_matches_rendering() {
+        for (template, converts) in [
+            (
+                "{% for m in messages %}{% for p in m.content %}{{ p.text }}{% endfor %}{% endfor %}",
+                true,
+            ),
+            (
+                "{{ strftime_now('%Y') }}{% for m in messages %}{{ m.content }}{% endfor %}",
+                false,
+            ),
+            (
+                "{% for m in messages %}{% if m.content is string %}{{ m.content }}{% else %}{% for p in m.content %}{{ p.text }}{% endfor %}{% endif %}{% endfor %}",
+                false,
+            ),
+        ] {
+            let f = formatter_for(template);
+            let formatter: &dyn OAIPromptFormatter = &f;
+            assert_eq!(formatter.requires_content_arrays(), converts);
+            let out = render_shape(&f, json!([{"role": "user", "content": "hello"}])).unwrap();
+            assert!(out.contains("hello"), "{out}");
+            assert!(!out.contains("type"), "{out}");
+        }
     }
 
     #[test]
