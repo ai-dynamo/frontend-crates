@@ -117,6 +117,45 @@ impl OAIPromptFormatter for KimiK3Formatter {
         true
     }
 
+    fn media_message_order(&self, req: &dyn OAIChatLikeRequest) -> Option<Vec<usize>> {
+        use dynamo_protocols::types::ChatCompletionRequestMessage as Message;
+        let order = if let Some(messages) = req.typed_messages() {
+            if !messages
+                .iter()
+                .any(|message| matches!(message, Message::Tool(_)))
+            {
+                return None;
+            }
+            tool_result_order(messages.iter().map(|message| {
+                match message {
+                    Message::Assistant(assistant) => OrderMessage::Assistant(
+                        assistant
+                            .tool_calls
+                            .iter()
+                            .flatten()
+                            .map(|call| (call.id.as_str(), Some(call.function.name.as_str())))
+                            .collect(),
+                    ),
+                    Message::Tool(tool) => OrderMessage::Tool(Some(tool.tool_call_id.as_str())),
+                    _ => OrderMessage::Other,
+                }
+            }))
+        } else {
+            let messages = json_value(req.messages()).ok()?;
+            let messages = messages.as_array()?;
+            if !messages.iter().any(|message| message["role"] == "tool") {
+                return None;
+            }
+            return Some(
+                raw_tool_result_order(messages)
+                    .into_iter()
+                    .map(|(index, _)| index)
+                    .collect(),
+            );
+        };
+        Some(order.into_iter().map(|(index, _)| index).collect())
+    }
+
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         Ok(RenderedPrompt::segmented(self.build_segments(req)?).into_text())
     }
@@ -731,88 +770,97 @@ fn render_assistant_segments(
     Ok(())
 }
 
-fn tool_call_index(tool_calls: Option<&Value>) -> HashMap<String, (usize, Option<String>)> {
-    let mut index = HashMap::new();
-    let Some(tool_calls) = tool_calls.and_then(Value::as_array) else {
-        return index;
-    };
-    for (position, tool_call) in tool_calls.iter().enumerate() {
-        let Some(id) = tool_call.get("id").and_then(Value::as_str) else {
-            continue;
-        };
-        let function = tool_call.get("function").unwrap_or(tool_call);
-        let name = function
-            .get("name")
-            .and_then(Value::as_str)
-            .map(str::to_string);
-        index.entry(id.to_string()).or_insert((position + 1, name));
+enum OrderMessage<'a> {
+    Assistant(Vec<(&'a str, Option<&'a str>)>),
+    Tool(Option<&'a str>),
+    Other,
+}
+
+// Rendering and media collection share K3's contiguous-run ordering. If any
+// result is unresolved, preserve the whole run and leave its tool names alone.
+fn tool_result_order<'a>(
+    messages: impl Iterator<Item = OrderMessage<'a>>,
+) -> Vec<(usize, Option<&'a str>)> {
+    let mut output = Vec::new();
+    let mut current_index = HashMap::new();
+    let mut messages = messages.enumerate().peekable();
+    while let Some((index, message)) = messages.next() {
+        match message {
+            OrderMessage::Assistant(calls) => {
+                current_index.clear();
+                for (position, (id, name)) in calls.into_iter().enumerate() {
+                    current_index.entry(id).or_insert((position, name));
+                }
+                output.push((index, None));
+            }
+            OrderMessage::Tool(id) => {
+                let mut run = vec![(index, id)];
+                while let Some((index, OrderMessage::Tool(id))) =
+                    messages.next_if(|(_, message)| matches!(message, OrderMessage::Tool(_)))
+                {
+                    run.push((index, id));
+                }
+                let matched: Option<Vec<_>> = run
+                    .iter()
+                    .map(|&(index, id)| {
+                        id.and_then(|id| current_index.get(id))
+                            .map(|&(position, name)| (position, index, name))
+                    })
+                    .collect();
+                if let Some(mut matched) = matched {
+                    matched.sort_by_key(|&(position, index, _)| (position, index));
+                    output.extend(matched.into_iter().map(|(_, index, name)| (index, name)));
+                } else {
+                    output.extend(run.into_iter().map(|(index, _)| (index, None)));
+                }
+            }
+            OrderMessage::Other => output.push((index, None)),
+        }
     }
-    index
+    output
+}
+
+fn raw_tool_result_order(messages: &[Value]) -> Vec<(usize, Option<&str>)> {
+    tool_result_order(messages.iter().map(|message| {
+        match message["role"].as_str() {
+            Some("assistant") => OrderMessage::Assistant(
+                message
+                    .get("tool_calls")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|call| {
+                        let id = call.get("id")?.as_str()?;
+                        let function = call.get("function").unwrap_or(call);
+                        Some((id, function.get("name").and_then(Value::as_str)))
+                    })
+                    .collect(),
+            ),
+            Some("tool") => OrderMessage::Tool(
+                message
+                    .get("tool_call_id")
+                    .or_else(|| message.get("id"))
+                    .and_then(Value::as_str),
+            ),
+            _ => OrderMessage::Other,
+        }
+    }))
 }
 
 fn normalize_tool_result_messages(messages: &[Value]) -> Result<Vec<Value>> {
-    let mut output = Vec::with_capacity(messages.len());
-    let mut current_index = HashMap::new();
-    let mut position = 0;
-
-    while position < messages.len() {
-        let message = &messages[position];
-        let role = message.get("role").and_then(Value::as_str);
-        if role == Some("assistant") {
-            current_index = tool_call_index(message.get("tool_calls"));
-            output.push(message.clone());
-            position += 1;
-            continue;
-        }
-        if role != Some("tool") {
-            output.push(message.clone());
-            position += 1;
-            continue;
-        }
-
-        let mut run: Vec<(Option<usize>, usize, Value, Option<String>)> = Vec::new();
-        let mut unresolved = false;
-        let mut offset = 0;
-        while position < messages.len()
-            && messages[position].get("role").and_then(Value::as_str) == Some("tool")
-        {
-            let tool_message = &messages[position];
-            let call_id = tool_message
-                .get("tool_call_id")
-                .or_else(|| tool_message.get("id"))
-                .and_then(Value::as_str);
-            let matched = call_id.and_then(|id| current_index.get(id));
-            if let Some((tool_position, name)) = matched {
-                run.push((
-                    Some(*tool_position),
-                    offset,
-                    tool_message.clone(),
-                    name.clone(),
-                ));
-            } else {
-                unresolved = true;
-                run.push((None, offset, tool_message.clone(), None));
-            }
-            offset += 1;
-            position += 1;
-        }
-
-        if unresolved {
-            output.extend(run.into_iter().map(|(_, _, message, _)| message));
-            continue;
-        }
-        run.sort_by_key(|(tool_position, offset, _, _)| (*tool_position, *offset));
-        for (_, _, mut message, name) in run {
+    Ok(raw_tool_result_order(messages)
+        .into_iter()
+        .map(|(index, name)| {
+            let mut message = messages[index].clone();
             if let (Some(name), Some(message)) = (name, message.as_object_mut()) {
-                message.insert("tool".to_string(), Value::String(name.clone()));
+                message.insert("tool".to_string(), Value::String(name.to_string()));
                 if message.contains_key("name") {
-                    message.insert("name".to_string(), Value::String(name));
+                    message.insert("name".to_string(), Value::String(name.to_string()));
                 }
             }
-            output.push(message);
-        }
-    }
-    Ok(output)
+            message
+        })
+        .collect())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1135,6 +1183,7 @@ mod tests {
 
     #[test]
     fn renders_one_media_pad_per_image() {
+        assert!(fmt().media_message_order(&image_request()).is_none());
         let segments = image_segments(&fmt(), &image_request());
 
         let matches: Vec<_> = segments
@@ -1152,6 +1201,68 @@ mod tests {
                 .iter()
                 .any(|segment| segment.text.contains("kimi_image_placeholder")),
         );
+    }
+
+    #[test]
+    fn tool_media_order_matches_rendered_placeholders() {
+        let assistant = json!({"role":"assistant", "tool_calls":[
+            {"id":"a","type":"function","function":{"name":"first","arguments":"{}"}},
+            {"id":"b","type":"function","function":{"name":"second","arguments":"{}"}}
+        ]});
+        let tool = |id: &str, labels: &[&str]| {
+            json!({
+                "role":"tool", "tool_call_id":id,
+                "content":labels.iter().flat_map(|label| [
+                    json!({"type":"text","text":label}),
+                    json!({"type":"image_url","image_url":{"url":format!("https://example.com/{label}")},"uuid":label})
+                ]).collect::<Vec<_>>()
+            })
+        };
+        let a = tool("a", &["MEDIA_A1", "MEDIA_A2"]);
+        let b = tool("b", &["MEDIA_B"]);
+        let user = json!({"role":"user","content":[
+            {"type":"text","text":"MEDIA_USER"},
+            {"type":"image_url","image_url":{"url":"https://example.com/user"},"uuid":"MEDIA_USER"}
+        ]});
+        for (messages, expected) in [
+            (json!([assistant, b, a]), vec![0, 2, 1]),
+            (json!([assistant, b, user, a]), vec![0, 1, 2, 3]),
+            (
+                json!([assistant, b, tool("unknown", &["MEDIA_UNKNOWN"])]),
+                vec![0, 1, 2],
+            ),
+        ] {
+            let typed: dynamo_protocols::types::CreateChatCompletionRequest =
+                serde_json::from_value(json!({"model":"kimi-k3","messages":messages})).unwrap();
+            let raw = Request::new(messages.clone());
+            for request in [&typed as &dyn OAIChatLikeRequest, &raw] {
+                let order = fmt()
+                    .media_message_order(request)
+                    .unwrap_or_else(|| (0..messages.as_array().unwrap().len()).collect());
+                assert_eq!(order, expected);
+                // Text labels beside real images make placeholder order observable.
+                let labels: Vec<_> = order
+                    .iter()
+                    .flat_map(|&index| {
+                        messages[index]["content"]
+                            .as_array()
+                            .into_iter()
+                            .flatten()
+                            .filter_map(|part| part["text"].as_str())
+                    })
+                    .collect();
+                let prompt = fmt().render(request).unwrap();
+                let positions: Vec<_> = labels
+                    .iter()
+                    .map(|label| prompt.find(label).unwrap())
+                    .collect();
+                assert!(
+                    positions.windows(2).all(|pair| pair[0] < pair[1]),
+                    "{prompt}"
+                );
+                assert_eq!(prompt.matches(MEDIA_PAD).count(), labels.len());
+            }
+        }
     }
 
     #[test]
