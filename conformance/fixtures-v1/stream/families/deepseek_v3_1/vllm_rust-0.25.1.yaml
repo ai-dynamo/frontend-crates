@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: deepseek_v3_1
 capture: vllm_rust-0.25.1
@@ -7,22 +8,34 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "nonsense<｜tool▁calls▁end｜>": )'
-      TOOLCALLING.streamv1.4.c:
-        exception: 'ToolParserError::ParsingFailed (near "<｜tool▁sep｜>": )'
-      TOOLCALLING.streamv1.4.d:
-        exception: 'ToolParserError::ParsingFailed (near "<｜tool▁calls▁end｜>": )'
   TOOLCALLING.streamv1.5.yaml:
     family: deepseek_v3_1
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: deepseek_v3_1
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 1d9503c9c8727cacf2a679ae0bb2bcc2bc27e8cad660818ab70ca906af35b248
+        producer: a271a6d9483ce2569eae5a79dfd1ce73b9f13601b7b9741dc970eb32da914410
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 43567a105ccec9285b70ae09b111e765ad878ea3b54ee23fd7fb8a77d7ae50ae
+        producer: a271a6d9483ce2569eae5a79dfd1ce73b9f13601b7b9741dc970eb32da914410
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 391ce452c0e32d984773409b9b5196aa76d3f912513c7f216bbcd3d49cb9ba8c
+        producer: a271a6d9483ce2569eae5a79dfd1ce73b9f13601b7b9741dc970eb32da914410
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

@@ -11,15 +11,13 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv31_tool_parser.py#L39
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,22 +28,52 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.c:
         description: Parallel with surrounding narration
         ref: dynamo
         model_text: 'Both: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice (id distinctness)
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.4.yaml:
     family: deepseek_v3_1
     mode: batch
@@ -55,8 +83,7 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -67,19 +94,34 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: Missing function name (no token before tool_sep)
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜><｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Mismatched fences (calls_end without call_end)
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁calls▁end｜>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed-prefix recovery — n/a for this family's syntax
         explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
@@ -95,8 +137,7 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -107,25 +148,45 @@ documents:
         ref: dynamo
         model_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-arguments JSON
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York"}
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: deepseek_v3_1
     mode: batch
@@ -135,8 +196,7 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -145,13 +205,19 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{ }<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No tool_sep / args section
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: deepseek_v3_1
     mode: batch
@@ -237,8 +303,7 @@ documents:
         ref: dynamo
         model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -249,19 +314,34 @@ documents:
         ref: dynamo
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
         model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: deepseek_v3_1
     model_label: DeepSeek V3.1
@@ -271,8 +351,7 @@ documents:
         description: Single tool call (happy path)
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -282,7 +361,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -308,7 +392,12 @@ documents:
         description: Duplicate calls (same name twice)
         model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30:
         description: Separator-character case not applicable
         explanation: This case is not applicable to deepseek_v3_1 because <｜tool▁sep｜> separates the function name from JSON arguments, not calls from each other.
@@ -341,7 +430,7 @@ documents:
         - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -361,7 +450,13 @@ documents:
         - delta_text: <｜tool▁calls▁end｜>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: deepseek_v3_1
     model_label: DeepSeek V3.1

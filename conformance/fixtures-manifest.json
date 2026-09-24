@@ -11,16 +11,22 @@
   },
   "shards": [
     {
+      "path": "capture-policy.yaml",
+      "format": "capture-policy",
+      "sha256": "5a271fc9eefd46ab267e1ef5578c167539b2d89fb9876f3556a7a8eb24370346",
+      "size": 1726
+    },
+    {
       "path": "legacy-history",
       "format": "legacy-history",
-      "sha256": "eeb0f3029231c6ef8c20d7a0ab0f94a78686ba31207f6bb7bb4f0cb187fbee38",
-      "size": 4413160
+      "sha256": "03d9602783dcdb5f8b186741e2d9417d3879de9be5dc50dc825553f849cf7d25",
+      "size": 15557631
     },
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "c0c6e09290b702acc8bc4c8f32c693cba512b2953366bd5c1690811c766054fa",
-      "size": 3586048
+      "sha256": "ae8d2fc4e9b66946cb30eb01e35e61509e94d304c5bd1cb688b875f9f8c1dd03",
+      "size": 7332712
     }
   ],
   "inactive_shards": []

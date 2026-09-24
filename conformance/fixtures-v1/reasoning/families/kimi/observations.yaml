@@ -1,0 +1,513 @@
+schema: bound-observations-v1
+observations:
+  29b3dd171c80df0ca7d98ee77b4816145a2c42fbe083525e94e742e7f4c7b53d:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  2ce527fed52c164f6f5e7cebf563f36226fe509b4f9f6975e8e6ce78c77ecb88:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  ae33883042d817806242058875daead75c420ea5881b175e8868131c6bf38cc3:
+    request:
+      model_text: ◁think▷thinking◁/think▷answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  4bd0e845d63c17e4971aaebc5704563435113679af34c612ae8e909cf32cedb1:
+    request:
+      model_text: ◁think▷compute◁/think▷answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: compute
+          normal_text: answer
+  f2603e96cc47dab871120a2ceaf09dd5d1a7c9e43d1e28e87cab78d4aa8a9b05:
+    request:
+      model_text: before ◁think▷thinking◁/think▷ after
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: before ◁think▷thinking
+          normal_text: ' after'
+  fa2eebd8c0c4a06f68f4ea26a1ff71a497c4e25052cf26cf2c18c0b5efccfece:
+    request:
+      model_text: ◁think▷◁/think▷answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: answer
+  67011c709d50640b5cfc5dfe090bf0c5588285f73788580b0171a3065acbf7a7:
+    request:
+      model_text: '◁think▷Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}◁/think▷Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  28620d6a68bab72099bb3d5606612520dddcd2f389bcd6f84438266691b067f8:
+    request:
+      model_text: ◁think▷choose tool◁/think▷<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: choose tool
+          normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+  bdadcabb8505a379d03a21c585163cee6123f110e6b7d2d9b467a891579e2e7c:
+    request:
+      model_text: normal◁/think▷answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: normal◁/think▷answer
+  2c6c3642135c52b9f9976e6c6c55097e5eff35490f86e02d21e89b54c551907e:
+    request:
+      model_text: ◁think▷partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  b4ce4f0f55bd33b574bbf5bde8c6c92455da863de5d6e633cce99cb264ac55f5:
+    request:
+      model_text: ◁think▷first◁/think▷ middle ◁think▷second◁/think▷ done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle ◁think▷second◁/think▷ done'
+  bffd729488a0173b4b8218c652dc03316ec075aa21dfb8c7314834303507767f:
+    request:
+      model_text: ◁think▷preamble◁/think▷body◁/think▷answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body◁/think▷answer
+  0ad1b2f085fbe189f7349f3ae7bf7089ebcd3a3de93f3b9f87961ccc1f150b13:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  999a8eb8293e0f22f31531b56a622cbaef613c4ea5d086f0e23bc6be1bb342e1:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  20731c81161ddb18b0d8b6dfa321fa38efe14f179f649277658bc96dc6470c7c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ◁think▷thin
+      - king◁/think▷
+      - answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  5f8e2178d17561cb1976884d060641694517363b33a8d21324fa0b44909d8617:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ◁think▷first◁/think▷
+      - ' middle '
+      - ◁think▷second◁/think▷ done
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle ◁think▷second◁/think▷ done'
+  661b916ab5ce800d475eb5027d0e094b69a92b9c707fada6265d192bb4e88e06:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ◁think▷preamble◁/think▷
+      - body◁/think▷
+      - answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body◁/think▷answer
+  376795a7fdb4e2959c0e45d548b3209e60bb0b78c301de5977a08aaf31991054:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ◁thi
+      - nk▷thinking◁/think▷answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  04c9f6e076f501484d1b22c5e4bb096e9375ac9941c7affbeede9882f9f1fdaf:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - ◁think▷thinking◁/thi
+      - nk▷answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking◁/think▷answer
+          normal_text: ''
+  75c8cf436af24d6d2ea9417b7b80a716aee6e52d683826c7796a4d2140eb9afc:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi
+      mode: stream
+      chunks:
+      - plain ◁th
+      - esis answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain ◁thesis answer
+producers:
+  f0c8d31668dbdd9036c15ddb1fb52a06e07cad3d1146286e9c17618b15c9792b:
+    capture: inputs
+    document:
+      family: kimi
+      model_label: Kimi Unicode reasoning
+      mode: batch
+      captured_with:
+        sglang_python: 0.5.12.post1
+    provenance: null
+  fd34264316bf187f03a5ad1f08b3f08286267db820efc1983e98f4f8ccbd9e6b:
+    capture: sglang_python-0.5.14
+    document:
+      family: kimi
+      mode: batch
+    provenance: null
+  ea4413362bf5f3d0150a693b4e3621b511f26c69bcf147acfa49e755362b8176:
+    capture: inputs
+    document:
+      family: kimi
+      model_label: Kimi Unicode reasoning
+      mode: stream
+      captured_with:
+        sglang_python: 0.5.12.post1
+    provenance: null

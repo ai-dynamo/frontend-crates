@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: inkling
 capture: sglang_python-0.5.14
@@ -7,156 +8,160 @@ documents:
     mode: batch
     captured_with:
       sglang_python: 0.5.14
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.2.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.2.d:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.4.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.4.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.4.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.4.d:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.4.e:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.5.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.5.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.6.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.6.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.6.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.d:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.e:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.7.f:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.8.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.11.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.11.b:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.11.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.13.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.30.c:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
-      TOOLCALLING.batch.31.a:
-        expected:
-          sglang_python:
-            unavailable: Current SGLang Inkling batch detector has not been live-recaptured for this taxonomy-expanded corpus; output is intentionally not inferred from older captures.
+views:
+  python:
+    base: sglang_python-0.5.12.post1
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: b9908747dfcc327e8f15e76060b9e3e22aaf80f58d707043bfd69ce9b9440939
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: 265518048d1afbb0861835aedd94dc4dd55b5d1b0775d5bd05899cede2ba234d
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.a"]':
+        observation: f46960e06d9d351c541e370b92d87ccb8023e61aed05ce19f725efecaa92e7ea
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.b"]':
+        observation: 93bcacfdb4728abe12574ec41dffa54fe9c8fa8aaf4eb4120455fd472bac2c1c
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.c"]':
+        observation: e0b393d0314041111375c886ba81ae3c9979a1f12643a2114597e1cc62b59b6c
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 158c588a383a026463846cc8bbb71b3ff69273a0a5d83310675dfc5a7494626f
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]':
+        observation: 0797c92e5ea970772101571677ef2a44d7b153fa56bbdf8918de2d7aae2dbc3a
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.b"]':
+        observation: 94b9db4a98df8a72a8450a55af5f239b05eee57b655faec024c212c2d534dc61
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.c"]':
+        observation: 9634aba586457a1f9a5c4c9b7b8460e0370c9173162dd73b488d0e3e240c9301
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.d"]':
+        observation: 265518048d1afbb0861835aedd94dc4dd55b5d1b0775d5bd05899cede2ba234d
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 34aa27343d3195f2f6d77567e466c813e8b9fb7f383c9af43eb9578902a94754
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.30.c"]':
+        observation: 83835708dd60275dba10dacf534e51113e5701ca514aee171f577af55613011f
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.31.a"]':
+        observation: 7a29eb333f4fb91c20ee0866377edd3f15d10a34ec1a1f7289f5fe6b4170c0bf
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 4a2d874bf2fac53cf34556d3a16277cb02108f93e5606d28a39d68066ef528fa
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.b"]':
+        observation: 84506c7cab58d3411a33d796c7e4acdcbee16d111d8e4bee98c7a93ec42375ee
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.c"]':
+        observation: fc7d384943615b3d89812900a761963d871fefa46eecce1b3ad21ee67dc63a74
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 95190719f58a5d23c1e641eb18bddc07067cfb9482e5c9a8c7414be458ccdf5e
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.e"]':
+        observation: a1bf97ef3b88568bc4f540fe82384ab2f1f443630871598cf12c61dd3b69f02f
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.a"]':
+        observation: 5f0442408274ee57dbe4773296c9da55cc797236ffeb47ecaa2252b75363110e
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.b"]':
+        observation: 21accb84d6394d908ff37fb2a8a6c693936899e34070ed105d882fcc1e4a4c34
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]':
+        observation: d93e65b9d1c7983b0dc016978695b6aefe1548e8a170294b47d0ac7ca694bebd
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 3d6b0c8ed991ccd0990f1647e93dca43b70f6991cfae42153a92d93b55dc3508
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.e"]':
+        observation: eb18ad5989c4f8799ba8e0d2e8318e4381ff351d76ef9d83a90b11f77b64529b
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 3118a95f7780565d18cb41794214a900d6ff185aa377b7bf0f2ecdd2a0921c3c
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 346256fb37369cb69d5fb691cd479f5459085d5d86f0650fae798f56e71675d4
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.c"]':
+        observation: 2c3f589dff0f5551311eec9e981c5e1c4120f96ec253dc58f564fdadef0e283c
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 35b34ab91310541808c00fae21270d73b30988e73258f344ea3040f8a45cbfd8
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 47e6ff91ef3cfa364e402769d85b4072851a3f0ac377f136f5b5af3f38d53380
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.c"]':
+        observation: 189180d491f60e8aa475d874495511c3eaea24c34378770c4c4d7f1ab12674eb
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.d"]':
+        observation: a09de4a55662fe681bad9877b68c61de99df9b525b26eaa6f8f9be63228a4eae
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.e"]':
+        observation: 6c841a5242ba57a00aa43e5756bf011e58e1218eadaa33788d87675ccb292008
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 3758c47cda7b2546d97cb3092db9bb31713dc22534cf8c57d1e56a5648fdaeb4
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.a"]':
+        observation: d92cb456c12ef461a52a293a1cffd600c6f3a16a4ebf712fb737b4d7ddbae344
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 430cb3c07c3d9919eb3dcaa29d4b716840f7a7076f7f34e3f76b303faef35b76
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 694b26fee3ec9255e03440dfeb0b41fe1a015230be5e4e241d85da102f6064aa
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 0806dfb60944f1f928d749b160d13d6bfe188a51c14f05578698dff36fa612e5
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 421b01427d1a0e1f6d4f10f7288448d7b38fca9fb30f2dc15697c99266deb1b2
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 6f0bdc3b2562cf71d2685f1473ace1f66fae41f6c5e596196d1f370567b77fb0
+        producer: a68f7da51387c2c916c4b02e6c1bf0dd2941bd3bf94d4969ac90f21b11dd2a20
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.30.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.31.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.c"]': {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: mistral
 capture: vllm_rust-0.23.0
@@ -7,680 +8,381 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.1:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.10.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.10:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}},'
-        - expected: []
-          normal_text: ' {"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "LA"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.13.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.13.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "unknown_tool",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.13.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}},'
-        - expected: []
-          normal_text: ' {"name": "unknown_tool",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "LA"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.2.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.2.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}},'
-        - expected: []
-          normal_text: ' {"name": "get_time",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"timezone": "EST"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-          normal_text: 'Both: '
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather", "arguments": {"location":'
-        - expected: []
-          normal_text: ' "NYC"}}, {"name":'
-        - expected: []
-          normal_text: ' "get_time",'
-        - expected: []
-          normal_text: ' "arguments": {"timezone":'
-        - expected: []
-          normal_text: ' "EST"}}][/TOOL_CALLS] Done.'
-        - expected: []
-      TOOLCALLING.streamv1.2.d:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}},'
-        - expected: []
-          normal_text: ' {"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "LA"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.3.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.3:
-        chunks:
-        - expected: []
-          normal_text: Hello, how
-        - expected: []
-          normal_text: ' can'
-        - expected: []
-          normal_text: ' I help you'
-        - expected: []
-          normal_text: ' today?'
-        - expected: []
   TOOLCALLING.streamv1.30.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.30.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "run_query",'
-        - expected: []
-          normal_text: ' "arguments": {"sql": "SELECT'
-        - expected: []
-          normal_text: ' a, SELECT'
-        - expected: []
-          normal_text: ' b"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.30.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "run_query",'
-        - expected: []
-          normal_text: ' "arguments": {"sql": "SELECT'
-        - expected: []
-          normal_text: ' value WHERE'
-        - expected: []
-          normal_text: ' note'
-        - expected: []
-          normal_text: ' has brace'
-        - expected: []
-          normal_text: ' } and bracket'
-        - expected: []
-          normal_text: ' ]'
-        - expected: []
-          normal_text: '"}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.30.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "run_query",'
-        - expected: []
-          normal_text: ' "arguments": {"sql": "literal'
-        - expected: []
-          normal_text: ' [TOOL_CALLS marker]'
-        - expected: []
-          normal_text: '[]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS marker]'
-        - expected: []
-          normal_text: ' stays text"}}][/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.31.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.31.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "run_query",'
-        - expected: []
-          normal_text: ' "arguments": {"sql": "SELECT'
-        - expected: []
-          normal_text: ' a, SELECT'
-        - expected: []
-          normal_text: ' b"}},'
-        - expected: []
-          normal_text: ' {"name": "get_time",'
-        - expected: []
-          normal_text: ' "arguments": {"timezone": "EST"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.31.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "run_query",'
-        - expected: []
-          normal_text: ' "arguments": {"sql": "SELECT'
-        - expected: []
-          normal_text: ' value WHERE'
-        - expected: []
-          normal_text: ' note'
-        - expected: []
-          normal_text: ' has brace'
-        - expected: []
-          normal_text: ' } and bracket'
-        - expected: []
-          normal_text: ' ]'
-        - expected: []
-          normal_text: '"}}, {"name":'
-        - expected: []
-          normal_text: ' "get_time",'
-        - expected: []
-          normal_text: ' "arguments": {"timezone":'
-        - expected: []
-          normal_text: ' "EST"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.4.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS]no'
-        - expected: []
-          normal_text: n
-        - expected: []
-          normal_text: sense[/TOOL_CALLS]
-        - expected: []
-      TOOLCALLING.streamv1.4.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.4.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"arguments":'
-        - expected: []
-          normal_text: ' {"location":'
-        - expected: []
-          normal_text: ' "NYC"}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.4.d:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}}]'
-        - expected: []
   TOOLCALLING.streamv1.5.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.5.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}}]'
-        - expected: []
-      TOOLCALLING.streamv1.5.b:
-        chunks:
-        - expected: []
-          normal_text: '[{"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "NYC"}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.5.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"loc'
-        - expected: []
-      TOOLCALLING.streamv1.5.d:
-        chunks:
-        - expected: []
-          normal_text: I'll start
-        - expected: []
-          normal_text: ' by'
-        - expected: []
-          normal_text: ' fetching the weather'
-        - expected: []
-          normal_text: ' for both'
-        - expected: []
-          normal_text: ' Boston'
-        - expected: []
-          normal_text: ' and New'
-        - expected: []
-          normal_text: ' York at the'
-        - expected: []
-          normal_text: ' same'
-        - expected: []
-          normal_text: ' time![TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location":'
-        - expected: []
-          normal_text: ' "Boston"}},'
-        - expected: []
-          normal_text: ' {"name": "get_weather", "arguments":'
-        - expected: []
-          normal_text: ' {"location": "New'
-        - expected: []
-          normal_text: ' York"}}]'
-        - expected: []
-      TOOLCALLING.streamv1.5.e:
-        chunks:
-        - expected: []
-          normal_text: I'll start
-        - expected: []
-          normal_text: ' by'
-        - expected: []
-          normal_text: ' fetching the weather'
-        - expected: []
-          normal_text: ' for both'
-        - expected: []
-          normal_text: ' Boston'
-        - expected: []
-          normal_text: ' and New'
-        - expected: []
-          normal_text: ' York at the'
-        - expected: []
-          normal_text: ' same'
-        - expected: []
-          normal_text: ' time![TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location":'
-        - expected: []
-          normal_text: ' "Boston"}},'
-        - expected: []
-          normal_text: ' {"name": "get_weather", "arguments":'
-        - expected: []
-          normal_text: ' {"location": "New'
-        - expected: []
-          normal_text: ' York'
-        - expected: []
   TOOLCALLING.streamv1.50.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.50:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather", "ar'
-        - expected: []
-          normal_text: gu
-        - expected: []
-          normal_text: men
-        - expected: []
-          normal_text: 'ts": '
-        - expected: []
-          normal_text: '{"location"'
-        - expected: []
-          normal_text: ': "NYC"}}][/TOOL_CA'
-        - expected: []
-          normal_text: LL
-        - expected: []
-          normal_text: S]
-        - expected: []
   TOOLCALLING.streamv1.6.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.6.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_time",'
-        - expected: []
-          normal_text: ' "arguments": {}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.6.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_time",'
-        - expected: []
-          normal_text: ' "arguments": { }}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.6.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_time"}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.7.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.7.a:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "book_flight",'
-        - expected: []
-          normal_text: ' "arguments": {"destination": "Paris",'
-        - expected: []
-          normal_text: ' "passengers": 2,'
-        - expected: []
-          normal_text: ' "first_class":'
-        - expected: []
-          normal_text: ' true}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.7.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "Tōkyō'
-        - expected: []
-          normal_text: ' \"central\""}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.7.c:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "set_temperature",'
-        - expected: []
-          normal_text: ' "arguments": {"celsius": "20"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.7.d:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "process_data",'
-        - expected: []
-          normal_text: ' "arguments": {"items": [1,2,3]'
-        - expected: []
-          normal_text: ', "config":'
-        - expected: []
-          normal_text: ' {"nested":'
-        - expected: []
-          normal_text: ' true}}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.7.e:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "process_data",'
-        - expected: []
-          normal_text: ' "arguments": {"payload": {"regions":'
-        - expected: []
-          normal_text: ' [{"name": "west",'
-        - expected: []
-          normal_text: ' "scores":'
-        - expected: []
-          normal_text: ' [1, 2,'
-        - expected: []
-          normal_text: ' 3]}, {"name":'
-        - expected: []
-          normal_text: ' "east",'
-        - expected: []
-          normal_text: ' "scores": [4,'
-        - expected: []
-          normal_text: ' 5,'
-        - expected: []
-          normal_text: ' 6]}]'
-        - expected: []
-          normal_text: ','
-        - expected: []
-          normal_text: ' "flags": {"enabled": true,'
-        - expected: []
-          normal_text: ' "retry": null},'
-        - expected: []
-          normal_text: ' "empty":'
-        - expected: []
-          normal_text: ' {}}}}][/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.7.f:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "set_limit",'
-        - expected: []
-          normal_text: ' "arguments": {"count": 9007199254740993}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.8.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.8.a:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
-      TOOLCALLING.streamv1.8.b:
-        chunks:
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather",'
-        - expected: []
-          normal_text: ' "arguments": {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS] Let'
-        - expected: []
-          normal_text: ' me'
-        - expected: []
-          normal_text: ' know if'
-        - expected: []
-          normal_text: ' you need more.'
-        - expected: []
-      TOOLCALLING.streamv1.8.c:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS] Let me'
-        - expected: []
-          normal_text: ' know'
-        - expected: []
-          normal_text: ' if you'
-        - expected: []
-          normal_text: ' need'
-        - expected: []
-          normal_text: ' more.'
-        - expected: []
-      TOOLCALLING.streamv1.8.d:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name": "get_weather",'
-        - expected: []
-          normal_text: ' "arguments":'
-        - expected: []
-          normal_text: ' {"location": "NYC"}}]'
-        - expected: []
-          normal_text: '[/TOOL_CALLS] Then check'
-        - expected: []
-          normal_text: ' LA'
-        - expected: []
-          normal_text: ' weather. '
-        - expected: []
-          normal_text: '[TOOL_CALLS][{"name":'
-        - expected: []
-          normal_text: ' "get_weather", "arguments":'
-        - expected: []
-          normal_text: ' {"location":'
-        - expected: []
-          normal_text: ' "LA"}}][/TOOL_CALLS]'
-        - expected: []
   TOOLCALLING.streamv1.9.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_rust: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.9.a:
-        chunks:
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.9.b:
-        chunks:
-        - expected: []
-          normal_text: '   '
-        - expected: []
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 52cbdfb0eeb935217a22e8724833cfb131670f965b975253cd8b33299c9effbb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 4f981289a8e0ae503497138718e72f34ddc353c4e8518d3af22a9ec277093eb5
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.a"]':
+        observation: 35962b66fa1000f5874b8907987e7586a7740f90cbe45bf5d675b4a4a861dcbf
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.c"]':
+        observation: d0c236614bc15d5961ccef33233656fa00893512f0cc32809171384a23f41508
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: 9e3277a9efbe53153f061f9adc979826f713f92eb0ed732c9f64667753dfe6bc
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: 875020c8ce8deb2236ce2d088e88a93ccd7585267ff1062b6e62a6648eadc95a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: 11f05e6694a1bb410fe844e6a13aa6fb0e28a372fcd85dfdbb503d190a7713ca
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: c16c03128307ab2edc742f913d1807e886cd97a0ffe48a11d6e46a56498d1c5d
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.a"]':
+        observation: a24c8e9f12eee71330bd38260998e383c37e70bb56cd0193c37bba9cfae6c0bb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.b"]':
+        observation: 0d347538435a4c403fce6031b2686344e32e1078bb551cc7c16b2ad0de3e5412
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.c"]':
+        observation: 9dbdcc99eebb8eb924962bba07cc6373baddbe0b7aca8f60010c9085f8b1ce7e
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.a"]':
+        observation: c1f6d9868e04ed6ab0d2c23b89448cabae1760b62f2d357b4b112a2f20c473eb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: 9c0db708766d29d4b064b4a925d99dc432a7f08a345f31e2b9bc7e2a8c1629a3
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 10a5527e8036f3cae6a8b3f89e8abb33ae6916be2c2220e50522583ad2680600
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]':
+        observation: 728e27a837e29ccaa5f1d26ac02ccbdface7ffe87e795bac9fdfbb05f916742c
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 4271a10bca24bc0f732fad126bea7b758010a46b5b68d7000a432fdc9294428a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: e0d028c9beff0357eaa02de1986a0c5352508c5c9eee2c689c819962d6470a0a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: e0d028c9beff0357eaa02de1986a0c5352508c5c9eee2c689c819962d6470a0a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: c6af11542621064a61f7cb4765cafd16d0087f5ec60cab8c3f206d25f2a262ee
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 6c38a0159a43b234da9fd3f148e60224af3a50e902c572f18a64893d49b35908
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 7ff3f26470834247907018df53c5e4e4ccb2dbc82dcfbf34152836a84019e384
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: e163e3a3802c7b4e2ce932ce480af243330af9f69929e90296b078241afde1a2
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: 7cce3b968195af14498a9a271e5685d4405f1ecceb0187721b79397b68b04637
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: dd8d11412c11a546b082958984123a42495982d79d4540cf387a19f4573409ac
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: b1e87cac50d838385f6c43b8ba290364773f94eb7abbbaf80e642bb72b524523
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]':
+        observation: c96acf54da5d449967e9a244252474f849c156e4f88476f229711ff7954dab7b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: a32c76dee3f8608236f74d57b487a1158604f14baf4ed8a7a92bd5b18de13583
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: d6ef82a5137f70812b7c85efadf0f0b496a27de461d4936e5692d0aba88bb33b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.c"]':
+        observation: cec701d843fad200d9c7c12b7f501184fc5693ad9c7b6e283de24e6d0ac9e47b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.d"]':
+        observation: 9b1a4b3a79a0f5f2d5b9476ce4a0fc8e783908a0351b5cedde156088ce8bbb77
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.e"]':
+        observation: ff6b3d26d042b82514fd4944bd93504cfd52ba44bd44fc7e86510208cfa3e098
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: e4f30654d1fb2456dbaa938a5d8d65b426c65bb3a3ff7cf662d3270764142a6c
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 7d49d79f7d3247cbde695107d6db492dd3edc83a011ddd21a5d52ed9f843d86f
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 5b53a26c8ef32ec99ed4ff1bef34440b19e104af2204eb2f8d14604df52318b1
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: ef96d81e9156a49e4f16d564081402ae1ccc101a03e320faf40c9bbb88270a05
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: a5f237f865bba9b19cc774797608d8b848c4604c0ab05a5e5b4a30e19fdf5a48
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]':
+        observation: 9e978c4778dfc597a65816778dfc7a94c68d99ff78e001f901e5f2b334949c04
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 830d967af255a8bce86539eeae191960e451313f47800835818a2b49faa0d930
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.c"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.a"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.e"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.d"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.b"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.c"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.c"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}
+  rust:
+    base: null
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 52cbdfb0eeb935217a22e8724833cfb131670f965b975253cd8b33299c9effbb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 4f981289a8e0ae503497138718e72f34ddc353c4e8518d3af22a9ec277093eb5
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.a"]':
+        observation: 35962b66fa1000f5874b8907987e7586a7740f90cbe45bf5d675b4a4a861dcbf
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.c"]':
+        observation: d0c236614bc15d5961ccef33233656fa00893512f0cc32809171384a23f41508
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: 9e3277a9efbe53153f061f9adc979826f713f92eb0ed732c9f64667753dfe6bc
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: 875020c8ce8deb2236ce2d088e88a93ccd7585267ff1062b6e62a6648eadc95a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: 11f05e6694a1bb410fe844e6a13aa6fb0e28a372fcd85dfdbb503d190a7713ca
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: c16c03128307ab2edc742f913d1807e886cd97a0ffe48a11d6e46a56498d1c5d
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.a"]':
+        observation: a24c8e9f12eee71330bd38260998e383c37e70bb56cd0193c37bba9cfae6c0bb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.b"]':
+        observation: 0d347538435a4c403fce6031b2686344e32e1078bb551cc7c16b2ad0de3e5412
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.c"]':
+        observation: 9dbdcc99eebb8eb924962bba07cc6373baddbe0b7aca8f60010c9085f8b1ce7e
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.a"]':
+        observation: c1f6d9868e04ed6ab0d2c23b89448cabae1760b62f2d357b4b112a2f20c473eb
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: 9c0db708766d29d4b064b4a925d99dc432a7f08a345f31e2b9bc7e2a8c1629a3
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 10a5527e8036f3cae6a8b3f89e8abb33ae6916be2c2220e50522583ad2680600
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]':
+        observation: 728e27a837e29ccaa5f1d26ac02ccbdface7ffe87e795bac9fdfbb05f916742c
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 4271a10bca24bc0f732fad126bea7b758010a46b5b68d7000a432fdc9294428a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: e0d028c9beff0357eaa02de1986a0c5352508c5c9eee2c689c819962d6470a0a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: e0d028c9beff0357eaa02de1986a0c5352508c5c9eee2c689c819962d6470a0a
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: c6af11542621064a61f7cb4765cafd16d0087f5ec60cab8c3f206d25f2a262ee
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 6c38a0159a43b234da9fd3f148e60224af3a50e902c572f18a64893d49b35908
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 7ff3f26470834247907018df53c5e4e4ccb2dbc82dcfbf34152836a84019e384
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: e163e3a3802c7b4e2ce932ce480af243330af9f69929e90296b078241afde1a2
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: 7cce3b968195af14498a9a271e5685d4405f1ecceb0187721b79397b68b04637
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: dd8d11412c11a546b082958984123a42495982d79d4540cf387a19f4573409ac
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: b1e87cac50d838385f6c43b8ba290364773f94eb7abbbaf80e642bb72b524523
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]':
+        observation: c96acf54da5d449967e9a244252474f849c156e4f88476f229711ff7954dab7b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: a32c76dee3f8608236f74d57b487a1158604f14baf4ed8a7a92bd5b18de13583
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: d6ef82a5137f70812b7c85efadf0f0b496a27de461d4936e5692d0aba88bb33b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.c"]':
+        observation: cec701d843fad200d9c7c12b7f501184fc5693ad9c7b6e283de24e6d0ac9e47b
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.d"]':
+        observation: 9b1a4b3a79a0f5f2d5b9476ce4a0fc8e783908a0351b5cedde156088ce8bbb77
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.e"]':
+        observation: ff6b3d26d042b82514fd4944bd93504cfd52ba44bd44fc7e86510208cfa3e098
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: e4f30654d1fb2456dbaa938a5d8d65b426c65bb3a3ff7cf662d3270764142a6c
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 7d49d79f7d3247cbde695107d6db492dd3edc83a011ddd21a5d52ed9f843d86f
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 5b53a26c8ef32ec99ed4ff1bef34440b19e104af2204eb2f8d14604df52318b1
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: ef96d81e9156a49e4f16d564081402ae1ccc101a03e320faf40c9bbb88270a05
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: a5f237f865bba9b19cc774797608d8b848c4604c0ab05a5e5b4a30e19fdf5a48
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]':
+        observation: 9e978c4778dfc597a65816778dfc7a94c68d99ff78e001f901e5f2b334949c04
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 830d967af255a8bce86539eeae191960e451313f47800835818a2b49faa0d930
+        producer: 3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.c"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.a"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.e"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.d"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.30.yaml","TOOLCALLING.streamv1.30.b"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.c"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13.c"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}

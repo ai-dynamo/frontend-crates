@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: deepseek_v3_2
 capture: vllm_python-0.24.0
@@ -7,24 +8,16 @@ documents:
     mode: stream
     captured_with:
       vllm_python: 0.24.0
-    cases:
-      TOOLCALLING.stream.4.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments: '{"location":"NY'
-            normal_text: ''
-      TOOLCALLING.stream.4.c:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<｜DSML｜invoke name="get_weather">
-
-              <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
-
-              </｜DSML｜invoke>
-
-              </｜DSML｜invoke>
-
-              </｜DSML｜invoke>'
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 1f005aff441c80cf88cc1535087794554e208bcb54f9e5e432a6d1c1d492d36d
+        producer: e970a0b8ec2fa0bdb12d6fac1bfa18d9722cfebb06cbdf82bfad3416940ed66e
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 95e1731e065ab0c36ec35fe8fcb1882570f977ecd244218b3d908fa279532048
+        producer: e970a0b8ec2fa0bdb12d6fac1bfa18d9722cfebb06cbdf82bfad3416940ed66e
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}

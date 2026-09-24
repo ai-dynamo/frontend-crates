@@ -19,21 +19,29 @@ documents:
           enable_thinking: false
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id001
-          sglang_python: *id001
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
       REASONING.batch.2.a:
         description: Single reasoning block
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <think>thinking</think>answer
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id002
-          sglang_python: *id002
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.batch.3.a:
         description: Reasoning followed by downstream tool-call text
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -47,7 +55,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: choose tool
             normal_text: '<｜DSML｜tool_calls>
 
@@ -58,8 +66,28 @@ documents:
               </｜DSML｜invoke>
 
               </｜DSML｜tool_calls>'
-          vllm_python: *id003
-          sglang_python: *id003
+          vllm_python:
+            reasoning_text: choose tool
+            normal_text: '<｜DSML｜tool_calls>
+
+              <｜DSML｜invoke name="get_weather">
+
+              <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+              </｜DSML｜invoke>
+
+              </｜DSML｜tool_calls>'
+          sglang_python:
+            reasoning_text: choose tool
+            normal_text: '<｜DSML｜tool_calls>
+
+              <｜DSML｜invoke name="get_weather">
+
+              <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+              </｜DSML｜invoke>
+
+              </｜DSML｜tool_calls>'
       REASONING.batch.3.b:
         description: Open reasoning interrupted by downstream tool-call text is not configured for DeepSeek V4
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -69,11 +97,15 @@ documents:
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <think>compute</think>answer
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: compute
             normal_text: answer
-          vllm_python: *id004
-          sglang_python: *id004
+          vllm_python:
+            reasoning_text: compute
+            normal_text: answer
+          sglang_python:
+            reasoning_text: compute
+            normal_text: answer
       REASONING.batch.2.d:
         description: Normal text around reasoning
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -111,21 +143,29 @@ documents:
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <think>partial reasoning
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: partial reasoning
             normal_text: ''
-          vllm_python: *id005
-          sglang_python: *id005
+          vllm_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
+          sglang_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
       REASONING.batch.2.e:
         description: Empty reasoning block
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <think></think>answer
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
-          vllm_python: *id006
-          sglang_python: *id006
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.2.f:
         description: Complex reasoning content with Unicode and newlines
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -135,25 +175,41 @@ documents:
 
           JSON-ish: {"x": [1, true]}</think>Done.'
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: 'Line 1
 
               Unicode: café
 
               JSON-ish: {"x": [1, true]}'
             normal_text: Done.
-          vllm_python: *id007
-          sglang_python: *id007
+          vllm_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
       REASONING.batch.1.a:
         description: Empty input
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id008
-          sglang_python: *id008
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.6.a:
         description: Multiple reasoning spans are concatenated by Dynamo
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -215,11 +271,15 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id009
-          sglang_python: *id009
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.a:
         description: Single reasoning block across chunks
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -228,14 +288,16 @@ documents:
         - <think>thin
         - king</think>answer
         expected:
-          dynamo_v1: &id010
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: <think>thinking
             normal_text: answer
             explanation: Dynamo strips reasoning delimiters even when the block is streamed across chunks; vLLM leaks the start delimiter.
-          sglang_python: *id010
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.2.b:
         description: Multiple reasoning spans across chunks
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -264,14 +326,16 @@ documents:
         - <th
         - ink>thinking</think>answer
         expected:
-          dynamo_v1: &id011
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: <think>thinking
             normal_text: answer
             explanation: Dynamo buffers a split start delimiter and strips it; vLLM leaks the reconstructed delimiter.
-          sglang_python: *id011
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.b:
         description: End marker split across chunks
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -300,11 +364,15 @@ documents:
         - plain <th
         - esis answer
         expected:
-          dynamo_v1: &id012
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain <thesis answer
-          vllm_python: *id012
-          sglang_python: *id012
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain <thesis answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain <thesis answer
       REASONING.stream.1.b:
         description: Plain text never enters reasoning mode in Dynamo
         ref: 'inspired by vLLM DeepSeek V4 alias coverage in DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -314,11 +382,15 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id013
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id013
-          sglang_python: *id013
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
       REASONING.stream.2.c:
         description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag)
         ref: dynamo

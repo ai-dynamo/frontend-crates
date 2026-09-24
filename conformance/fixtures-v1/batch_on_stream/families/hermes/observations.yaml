@@ -1,0 +1,2483 @@
+schema: bound-observations-v1
+observations:
+  8bfbcb9afae9c654a4ccd9d1e78c56ac76450d8a4185b048280b7ef9632f495a:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  9d8304838c1dcc626e78c16364be2069ce55d72ac16ba05d6fb04afbd3357565:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  05b91c742b0428426bc1b98c0c498f87189208eb52a27274db95c30ceb88d225:
+    request:
+      model_text: 'Both: <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'Both: '
+  13e9fc955d8e0c1f4fdfff1f41af61a481e15455eaf84f331592d2594952ba3f:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  20dd1d863a60f1007e39674b4d91377b31e33b598c9d50c25788d7f39f708182:
+    request:
+      model_text: <tool_call>nonsense</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  857fa149f942f5f1f3743a2b2c4b0ea9ef48ad978908c7a1e1284275a97e1583:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  9ac1a91fa8ad544d31b0fa7b3487cee97d7c5c94219504e6071e8a880efca366:
+    request:
+      model_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  436860e7c4a81d04dc9a579914a60623b1f296c8e1373bf1fec532fb5e945a1d:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  36271bc4b9be6f04d78f04575628e7b6a73f7706b3edfdd87f0cd45c397d22f3:
+    request:
+      model_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+  880d7a47e18ae5aab653d3ba0eac67fe906b28f973da6225745ded9dfab982ac:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  3bcf447b1696a9ed63a0d041da5298756ab5755f38497d24f2993204485dcd14:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  355beb3b0ab115f685f125c05b7f7476c14967c458b3355ff00876f431e45efa:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  5314241c8c1dc7c41a61154b81036a5bdcaef9796d724ce9b3ac26696b52e001:
+    request:
+      model_text: '<tool_call>{"name": "get_time", "arguments": {}}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  25f44481f4252d36cbb17ef08a0a7a10770bfc34da4b79bdce1bd471a3a6b395:
+    request:
+      model_text: '<tool_call>{"name": "get_time", "arguments": { }}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  f5c1a84ab27259ca2b16e1864e9b533fa0aab440f3cf16127ffab2b90c982653:
+    request:
+      model_text: '<tool_call>{"name": "get_time"}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  8939751e4bc9e9df33fcb074e2ed13f23fe408aef083a68b54009591d111f6ed:
+    request:
+      model_text: '<tool_call>{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments: {}
+  63e1512dee9cddbf985e28d8fcc7b411dcb4bc7ad585c38289479d23a66fb961:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  fe0af1128c19300e44daffdada8d29aa9cce264ec3a0a1ef1f633a113f676c11:
+    request:
+      model_text: '<tool_call>{"name": "set_temperature", "arguments": {"celsius": "20"}}</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments: {}
+  fce72cda0f46d0037bf60c38844a47d1a7de840ea1f9f37eb6eac41aca807cb8:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments: {}
+  09c3546bc7a2e4378ef0298b340ae4c281c0a977a2bc324a1342faccbfa3c35d:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments: {}
+  7421f35cf2ab1a92ee61b0d5d895928a2459e699485d5a6339fdb66b76c986d2:
+    request:
+      model_text: '<tool_call>{"name": "set_limit", "arguments": {"count": 9007199254740993}}</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments: {}
+  1f120f73750bd1e4ec79229b77c6b9ce79ef2480e5b6d1332ae07af78fe365d7:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  eaa9efc94c43df539cd6e834827fef83377e03f55e1610e7e1ee868dbadd1e72:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  d187ce418941efa98b07e56f7351974b650e1407bfb3d8efd47185aa8ca75d11:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  a466f8e0cb205a69a12aca6bea00284c835fe2e71108c525247c4add11dd4598:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Then check LA weather. <tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  012269ed20d48d651a702f1f9d5f86f9fc39eb0b187775f666204b173df4d096:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  10a9a7dc616c993be0975734c16dc3aa8ed7e8627e15628e4d231709e00bebcc:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  472314e3061cac09f5a0400d8940de700d73eff5bab43e0f4148c2b44d8f907d:
+    request:
+      model_text: '<tool_call>{"name": "unknown_tool", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  f3f4b405571c121c44ea5d09f24af764c664162dbd507dd8ccd976a70e0375be:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "unknown_tool", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  3a17aea7b0f432016a0517724ebef48df4a23e54a7b52f917654cf86df3e3c4a:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  1ef443dc4bb406c6c5310a912be108debfdcbcbd93d50c9359ffc9e10743300c:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8ba8f346353d0921b03c32b563aa957050a7da46a39198a6f2c9460200a52329:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  f684faa972c6a945822b57f8fe40ec980d4712ab6ddb57f39405da091acc4a25:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  f95a426cbcfd64c4a07897e3258db520dc6b722cb1ce70307a7c68f74f3bc7fd:
+    request:
+      model_text: 'Both: <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  66263c7695db9de1db8bae90b997272090c744b487b052c26d139cef4bc0bac7:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  9859ea3f80f9aeeaf483e1eff9341348805513d54c1432c0c28874067290da8c:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NYC"'
+  274c3d9b4e6319ff405ce70c29877354132ace094a0b5f703b634cc4a23362f5:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  359cc676460d22e542870babcd31c4692058e421c99a71129fd0293f8711e714:
+    request:
+      model_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+  0689cba1dffa7ff3e2383e0882681c08e0f5cc8122a4abd51dc45849647c5014:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"loc'
+  42a87ffb50901f711480446d930a2b8f425bca46588e67e35b5bae262870bfae:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  3de1912164391c336515b4d70f9821654371e431f8d5268c918f78160a0f74f5:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: '{"location": "New York'
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  c10111fb06e44a49d45dda0eaf5544533b9df4800248c3c7067e8abec3bf9833:
+    request:
+      model_text: '<tool_call>{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  6a8de49a3fce7a52152ee9da574f8410cfd3b932beecb08e0eb2158b71d6c094:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+  fdaf012b4b02964feeb2f2011dadb85d4c141d467b6bb8b770aeb13a7105cb08:
+    request:
+      model_text: '<tool_call>{"name": "set_temperature", "arguments": {"celsius": "20"}}</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+  506fe2f7c6dd3a719d1f8afc1a43ae62dc3ae51f10987084405c3ff8aad67a85:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+  b3e713aebcfff5245576c26005d5fbf3e73b95dca12286d9b8f879daa3512a29:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+  ae68aaed00fb1822dd45dfad2f4788aa99ba96bac41036842e060318ed577973:
+    request:
+      model_text: '<tool_call>{"name": "set_limit", "arguments": {"count": 9007199254740993}}</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+  f4b04d6dbe1811e490eedf2ad0a23568bc965b9ef8b679267afbb301a2a90868:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  b1100141c77a0a530986158c9f682cb43164e1edefdd6910c30095725d96129e:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  7aad9c597ff461f5e1aa296f9f22fa154fa3aa0e122af56c642fb06029c24da4:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  51f111f7253adc18c36e1b2a842fd653b118ea0ed8b09a08ed25626770b9fec0:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Then check LA weather. <tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather. '
+  baf74c69a7ac081eeb997affb192b3fe93f2744f3c5951e29f72155aff316089:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  1040716b1a8025eea33ffea378af9617272b0ca5fc1e46d16d13bc409167950d:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  fa99718d5d87fe05215236c101c78140a8f05f93b41eeae35be182b1deb1bfe4:
+    request:
+      model_text: '<tool_call>{"name": "unknown_tool", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  015b291e572d05fd8e77df5cdb31a120570d9107c1a4869c3ec8379c7d8883d7:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "unknown_tool", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+  f7fcdb8daf9c4f0d095c3b8ec29cf170e3d28080853397f495c7ca9ab682b5e9:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  a553f7955938c05a37d97c666018156e3b1924b3d5d1ad1240a06f6fbdd43b20:
+    request:
+      model_text: 'Both: <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both:  Done.'
+  52ab73a8380aa43759230d112612158b0d8a10efe14cf89ed594c785dbdac60e:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  451db066cd511b10cacbf52d2f1fc3e14b1f2992a461f4bbfa59a09f9f452266:
+    request:
+      model_text: <tool_call>nonsense</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  7b33225d637e4b50deb7771620f3576ed00999b8df88a688a7c3bcd7d7b5654f:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Hermes tool call'
+  58bc7a4311a1b5bac027f7093dae400a4d5910eedbb25f43ea61561e19cb1975:
+    request:
+      model_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes
+
+        expected `name`'
+  f008b01377400011bd8677e518aa0db13bca6441fbe32a2bfc22e73e02329ec0:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Hermes tool call'
+  f51cee19bdb8d8f6ced500c0166da67760aed9bf244ce2363893b60a663680a8:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Hermes tool call'
+  ae18bb040803a166a115d0ece963e9674bb898d7b577bbf9d9516a6caf62efeb:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Hermes tool call'
+  80fea50fb34e2cf603248c593171522e3a4c50dc16044ccaf18eab27d3a3c984:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Hermes tool call'
+  34c388203bc04dab8f71996cdb7a62daeab548e1f432e65bae797767fa1340ad:
+    request:
+      model_text: '<tool_call>{"name": "get_time", "arguments": {}}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  3d37faf413d084888c8476b0879d4a4fc24d73fc3b99c8a769d181bf4d7cf305:
+    request:
+      model_text: '<tool_call>{"name": "get_time", "arguments": { }}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  db24f8cd90cbd41fcab431a6daddb6d3aa386ff12a0e254fbfbb639db72b5722:
+    request:
+      model_text: '<tool_call>{"name": "get_time"}</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  4cb6f33fa44c26efb9725bc53767818ad7d826d063f4a42ed89170a9f9c1e458:
+    request:
+      model_text: '<tool_call>{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  1845b171d8dcc9e4f3cbdc403eddb3fd29d0aedc632d57a3072c6f21cb82f795:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+      normal_text: ''
+  715a14796b8c1eccb4914d5e247bb97ed630a1059cb0ada4f8b4877fdd472dfe:
+    request:
+      model_text: '<tool_call>{"name": "set_temperature", "arguments": {"celsius": "20"}}</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+      normal_text: ''
+  6eb86ac67312b7d2d437ad76cbe112a89a20ccf75455044157daa271d75d153c:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+      normal_text: ''
+  10a38cd9e137704eb491864b4b22abd8f280050114bfd6439a1e6ef3d8ffa03c:
+    request:
+      model_text: '<tool_call>{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+      normal_text: ''
+  1b8c4e07612dd35bd45605620ab98a24d40619e8140bf58cf36da06328273365:
+    request:
+      model_text: '<tool_call>{"name": "set_limit", "arguments": {"count": 9007199254740993}}</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  9db74b7be0d6f1f8b55f307f74190603e1c9969ff75b480e939126972accec0a:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  b23b94bc115b1f38eb5e5fe381d3307120e067bdb8e75f0d23811746ed75fe71:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  3bdaa7cfb518245a8c3abfce644848ca7cc42f4d1ab5ffb16e6006d420b42fea:
+    request:
+      model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call> Then check LA weather. <tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather.  Then check LA weather. '
+  a2d11acda1a38d1ad649d8d0b0d94e32266a2ad797e6eb7eabce09290533b37b:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  aec61d42d1880c99803678ef5c6d10a69690dfbc7d27099fcc445b996d970bd3:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  992a15cfa4d2a320af554772a5bac9ddf2bc205da8d67095581026f508bbdbb5:
+    request:
+      model_text: '<tool_call>{"name": "unknown_tool", "arguments": {"location": "NYC"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
+  4a589311bd87dd5f13464c0e15768cf4a82e73d06f008f9cf6640610e63914f3:
+    request:
+      model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "unknown_tool", "arguments": {"location": "LA"}}</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+      normal_text: ''
+  32c558063ad617ce6b96ad95667f816b192084ad6289349520d5c479c0fc2fda:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: hermes
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+producers:
+  99b3a7ad334ac85972c616afc774c431458b8c1f749067de43d10fe2f6ba1763:
+    capture: sglang_python-0.5.14
+    document:
+      family: hermes
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  c669c72cbe554380bb9ddf284b595e005996aaa9be5f604c0eb2289b40f6d713:
+    capture: vllm_python-0.26.0
+    document:
+      family: hermes
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  e8927fa83cbb4175a2f35fe9bd25be3029124e0cf4b57e2310bae3a7d1e9215a:
+    capture: vllm_rust-0.23.0
+    document:
+      family: hermes
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

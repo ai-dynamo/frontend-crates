@@ -32,21 +32,29 @@ documents:
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: '[THINK]thinking[/THINK]answer'
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id001
-          sglang_python: *id001
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.batch.3.a:
         description: Mistral reasoning followed by downstream tool-call text
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: '[THINK]choose tool[/THINK][TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: choose tool
             normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
-          vllm_python: *id002
-          sglang_python: *id002
+          vllm_python:
+            reasoning_text: choose tool
+            normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
+          sglang_python:
+            reasoning_text: choose tool
+            normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
       REASONING.batch.3.b:
         description: Open reasoning interrupted by downstream tool-call text is not configured for Mistral
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -56,11 +64,15 @@ documents:
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: '[THINK]compute[/THINK]answer'
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: compute
             normal_text: answer
-          vllm_python: *id003
-          sglang_python: *id003
+          vllm_python:
+            reasoning_text: compute
+            normal_text: answer
+          sglang_python:
+            reasoning_text: compute
+            normal_text: answer
       REASONING.batch.2.d:
         description: Normal text around reasoning is not applicable in force-reasoning mode
         explanation: Force-reasoning parser families start inside reasoning; marker-free prefix text is not a normal-text prefix.
@@ -99,11 +111,15 @@ documents:
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: '[THINK][/THINK]answer'
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
-          vllm_python: *id004
-          sglang_python: *id004
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.2.f:
         description: Complex Mistral reasoning content with Unicode and newlines
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -113,25 +129,41 @@ documents:
 
           JSON-ish: {"x": [1, true]}[/THINK]Done.'
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: 'Line 1
 
               Unicode: café
 
               JSON-ish: {"x": [1, true]}'
             normal_text: Done.
-          vllm_python: *id005
-          sglang_python: *id005
+          vllm_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
       REASONING.batch.1.a:
         description: Empty input
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id006
-          sglang_python: *id006
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.6.a:
         description: Multiple Mistral reasoning spans are concatenated by Dynamo
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -190,11 +222,15 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id007
-          sglang_python: *id007
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.a:
         description: Mistral THINK block across chunks
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -202,13 +238,15 @@ documents:
         - '[THINK]thin'
         - king[/THINK]answer
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: '[THINK]thinking'
             normal_text: answer
-          sglang_python: *id008
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.2.b:
         description: Multiple Mistral THINK spans across chunks
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -233,13 +271,15 @@ documents:
         - '[TH'
         - INK]thinking[/THINK]answer
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: ''
             normal_text: '[THINK]thinking[/THINK]answer'
-          sglang_python: *id009
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.b:
         description: End marker split across chunks
         ref: 'inspired by vLLM Mistral reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_mistral_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'

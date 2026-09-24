@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.3.2
 provenance:
   status: legacy
   captured_with:
@@ -6,62 +8,13 @@ document:
   mode: unified
 changes:
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: cc4f631e84691751d0eeb9c01c7bd88138d3bdcde45ebee8f68434bb587ea522
+    producer: dynamo_v2-0.3.3
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: run
-          arguments:
-            cmd: git log
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-          - kind: tool_call
-            name: run
-            arguments: '{"cmd": "git log"}'
-        - expected: []
+    observation: 71c410c5e5b8a0b31c834c054efeee7ba877bc216802760a408d981981a4a21a
+    producer: dynamo_v2-0.3.3
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        - expected: []
+    observation: 7081f5094c674c98bb338d3116fd6b7beb6d18c455149c9f762901e210159214
+    producer: dynamo_v2-0.3.3
 metadata_changes: {}
 document_overrides: {}

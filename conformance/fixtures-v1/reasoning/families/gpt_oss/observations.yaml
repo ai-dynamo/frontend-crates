@@ -1,0 +1,700 @@
+schema: bound-observations-v1
+observations:
+  1a751564e5d2a91d931db9524c202cac3d2510492dd2e0203d39723f6c10a7e7:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  cc4d1839ce5d2a16cebf5be5d911c905babf4bc4c1892eb5eca3e8174609d75b:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  98a1800cf1033f144b430863852405e330f73c93751bf2a6d9409d7706e0b4a1:
+    request:
+      model_text: <|channel|>analysis<|message|>thinking<|end|><|start|>assistant<|channel|>final<|message|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  805da3e5de9ecf68efe5b1461213d8ade1e8c97e97bccf66b17f3107b3f7f20f:
+    request:
+      model_text: <|channel|>analysis<|message|>compute<|end|><|start|>assistant<|channel|>final<|message|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: compute
+          normal_text: answer
+  9471602e51f7c66522dbfcbf28576b25ece4d1dbdab6ce9da1137b32006d559f:
+    request:
+      model_text: <|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  1e12f6d7cb73e5b091deab08060161342d3e0a33814d71efe4b734097181ce43:
+    request:
+      model_text: '<|channel|>analysis<|message|>Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}<|end|><|start|>assistant<|channel|>final<|message|>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  44a5f1a3061876d587da60a1aa8304aadf773e99851c9c86a73f875646a9ae07:
+    request:
+      model_text: <|channel|>analysis<|message|>choose tool<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: choose tool
+          normal_text: ''
+          explanation: vLLM batch reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+  ffc76ac8ab5f159e4cb6220a22de6031f477137875ba56fe87fb68519663ecd8:
+    request:
+      model_text: <|channel|>commentary<|message|>I will check that.<|end|><|start|>assistant<|channel|>final<|message|>Done.
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: Done.
+  b1759752d6f1c47dc60b9681dc7b719893c815c01b647539722379afaa1e63cc:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+          explanation: vLLM batch reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+  c391ef9975f0db9b0c247f3bbb303d23dcb82c9726e67eecad23f58a94bc5340:
+    request:
+      model_text: <|channel|>analysis to=functions.search <|constrain|>json<|message|>{"q":"x"}<|call|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: '{"q":"x"}'
+          normal_text: ''
+          explanation: 'vLLM''s reasoning layer kept the directed analysis-channel payload in reasoning_text (prior contract). FLAG: this row was previously aliased to Dynamo and has NOT been re-verified against current vLLM after Dynamo''s behavior change — confirm before relying on it.'
+  7f96e2226095007d0af937c4bf7f1a1917e0f930ea4a2685b002b12a511e3d30:
+    request:
+      model_text: <|channel|>analysis<|message|>think<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|><|start|>assistant<|channel|>final<|message|>It is sunny.
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: think
+          normal_text: It is sunny.
+          explanation: vLLM batch reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+  e07361c2732599c6cf03c7398bb7c8f972d20f69f002f87de97693e107e264b6:
+    request:
+      model_text: <|channel|>final<|message|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  becf922e777e641188df6f0561fca007b9cf9e89b35abf35b464fa30d3415cf4:
+    request:
+      model_text: <|channel|>analysis<|message|>partial reasoning<|end|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  6bf094353e86e504dad30e851e36bbf81bdf96fef1da109aded687a3cc18062b:
+    request:
+      model_text: <|channel|>analysis<|message|>first<|end|><|start|>assistant<|channel|>analysis<|message|>second<|end|><|start|>assistant<|channel|>final<|message|>done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'first
+
+            second'
+          normal_text: done
+  d1580512fb2c5966182797dd00aea2baf515d22d6de2385dde7321a050960ed2:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          unavailable: 'Pattern not applicable: gpt_oss does not use paired open/close markers, so the 1-open + 2-close unbalanced-tag shape has no direct analog.'
+  a5e3155796415fb7c72ca7c1a66096e1c09785a3c84864bb2522a396becb0594:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  4a5a5befecb5bc5dec45141a22ec3b264cc1f6a3ee0477809288dcd2b68b317c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  c102f6112b6b8702430a498a18876ddea40e65f8fbb691463355be3ef0a7f19e:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>
+      - analysis<|message|>thinking
+      - <|end|><|start|>assistant<|channel|>final<|message|>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  fb1e4d72c36908ea8de30ae537997b91c618e553bf9af17fa999852d68ab2240:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>analysis<|message|>first<|end|><|start|>assistant
+      - <|channel|>analysis<|message|>second<|end|><|start|>assistant
+      - <|channel|>final<|message|>done
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'first
+
+            second'
+          normal_text: done
+  1c386f335d7ac4888683d463fa8ff3243ddba31e8bbfd679849f16134ed5e862:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          unavailable: 'Pattern not applicable: gpt_oss parser does not use paired open/close markers, so the unbalanced-tag shape has no analog.'
+  e0aaf35817af2bebcb5e8f3378d4262abe2ae10d7f0b97e060587467782160ae:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|chan
+      - nel|>analysis<|message|>thinking<|end|><|start|>assistant<|channel|>final<|message|>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  d99ea5eecab66a9fc8f848609b2744ceefe101d1348b7d888be476d8fd8055ae:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>analysis<|message|>thinking<|e
+      - nd|><|start|>assistant<|channel|>final<|message|>answer
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM gpt-oss streaming parity for a split Harmony end token needs explicit token_chunks; text-only chunks are not faithful.
+  e4941d246c014d59b41c53c31c6dd3b589c8cd2700d58ee94b6a286a06b53420:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - plain <|chan
+      - ce answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  e679ff02a396c0cb8c26a860b2ec48f61ed1f952ee6048d0aedf0b276258d051:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>commentary<|message|>I will check that.<|end|><|start|>assistant
+      - <|channel|>final<|message|>Done.
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: Done.
+  7a2fab17885b3624e3c42ce67da992d85fbfe287cc3a678a2bcccc971f8d2155:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>commentary to=functions.get_
+      - weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+          explanation: vLLM streaming reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+  825905f93a063bd2fe61fd7bf88cffb35e605e49c95397c5370e4c9bf01a656a:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|><|start|>assistant
+      - <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"tz":"PST"}<|call|>
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+          explanation: vLLM streaming reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+  4271769b2d03411a6a7efb10cfeac861713ec49eff6977184025be5a1398f4b3:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gpt_oss
+      mode: stream
+      chunks:
+      - <|channel|>analysis to=functions.grep code<|message|>
+      - '{"pattern":"foo"}<|call|>'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: '{"pattern":"foo"}'
+          normal_text: ''
+          explanation: vLLM streaming reasoning suppresses directed Harmony analysis at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
+producers:
+  36911c1c748ffe8e765cd2f001936f270ba0d89d88272a2faac4bfe6aca3cd72:
+    capture: inputs
+    document:
+      family: gpt_oss
+      model_label: gpt-oss
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  7cca5703ae7c8604caba4b9037dde92f31b3e435f41062eff1767e00aa9eea69:
+    capture: vllm_python-0.24.0
+    document:
+      family: gpt_oss
+      mode: batch
+    provenance: null
+  3f8bf8160a9d53d46b1594074fa48e7410bc12246fd764c685e554cce4d1ec31:
+    capture: inputs
+    document:
+      family: gpt_oss
+      model_label: gpt-oss
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  501889266ca2fb4e9e479aa0a949a432431e712f45ae28102df220b80254e571:
+    capture: vllm_python-0.24.0
+    document:
+      family: gpt_oss
+      mode: stream
+    provenance: null

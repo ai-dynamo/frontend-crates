@@ -19,15 +19,13 @@ documents:
 
           </tool_call>'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -49,8 +47,18 @@ documents:
 
           </tool_call> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
@@ -64,8 +72,18 @@ documents:
 
           </tool_call>'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.4.yaml:
     family: qwen25
     mode: batch
@@ -75,8 +93,7 @@ documents:
         ref: dynamo
         model_text: <tool_call>nonsense</tool_call>
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -87,19 +104,34 @@ documents:
         ref: dynamo
         model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: Missing name key
         ref: dynamo
         model_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Missing </tool_call> close
         ref: dynamo
         model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed-prefix recovery - n/a for this family's syntax
         explanation: 'n/a: llama3_json-specific raw-JSON-prefix resync; this family uses a framed grammar (see 4.a-4.d).'
@@ -115,8 +147,7 @@ documents:
         ref: dynamo
         model_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -127,13 +158,23 @@ documents:
         ref: dynamo
         model_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-arguments JSON
         ref: dynamo
         model_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
@@ -145,7 +186,12 @@ documents:
 
           {"name": "get_weather", "arguments": {"location": "New York"}}'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
@@ -157,7 +203,12 @@ documents:
 
           {"name": "get_weather", "arguments": {"location": "New York'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: qwen25
     mode: batch
@@ -171,8 +222,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -185,13 +235,19 @@ documents:
 
           </tool_call>'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No arguments key
         ref: dynamo
         model_text: '<tool_call>{"name": "get_time"}</tool_call>'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: qwen25
     mode: batch
@@ -305,8 +361,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -321,7 +376,12 @@ documents:
 
           </tool_call> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
@@ -331,7 +391,12 @@ documents:
 
           </tool_call> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
@@ -345,7 +410,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: qwen25
     model_label: Qwen 2.5
@@ -359,8 +429,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -370,7 +439,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -404,7 +478,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13:
         description: Unknown tool name absent from supplied tools
         ref: dynamo
@@ -445,7 +524,7 @@ documents:
             </tool_call>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -466,7 +545,13 @@ documents:
             </tool_call>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: qwen25
     model_label: Qwen 2.5

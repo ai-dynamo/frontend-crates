@@ -288,6 +288,11 @@ def list_cached_snapshots(cache_root):
 
 def shard_file(shard):
     """Verify a pinned YAML store before it is materialized."""
+    if shard.get("format") == fixture_disposition.CAPTURE_POLICY_FORMAT:
+        path = MANIFEST_PATH.parent / fixture_disposition.CAPTURE_POLICY_PATH
+        if fixture_disposition.capture_policy_pin(path) != shard:
+            raise ValueError(f"capture policy differs from the manifest pin: {path}")
+        return path
     if shard.get("format") in {"unified-history", legacy_history.HISTORY_FORMAT}:
         is_legacy = shard["format"] == legacy_history.HISTORY_FORMAT
         path = LEGACY_HISTORY_DIR if is_legacy else HISTORY_DIR
@@ -353,7 +358,10 @@ def materialize_shard(
     *,
     verbose=False,
 ):
-    if shard.get("format") == legacy_history.HISTORY_FORMAT:
+    if shard.get("format") == fixture_disposition.CAPTURE_POLICY_FORMAT:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, dest_dir / fixture_disposition.CAPTURE_POLICY_PATH)
+    elif shard.get("format") == legacy_history.HISTORY_FORMAT:
         legacy_history.materialize_store(source, dest_dir)
     elif shard.get("format") == "unified-history":
         if verbose:

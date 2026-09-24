@@ -1,0 +1,520 @@
+schema: bound-observations-v1
+observations:
+  c28f359d48316031505a8df3cd4293f580e4a95cc7f2828b67b5ea26932bcf48:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  f2091fbffbf89f775c2c21bd389b2dcfe3f7e705f8dc12e110189fb1b47c7079:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+  6a4a76b782ce3123dd6dad1db22334b2444be8326a7fe92a4f2851e3371d03e7:
+    request:
+      model_text: <think>thinking</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  e00c4a7beccbb34171230ef9d59564e75901ece2f539185d2147e6e062bfd9c5:
+    request:
+      model_text: thinking without explicit tags
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking without explicit tags
+          normal_text: ''
+  e1847325ee327ba8797e166bd03b2167688652165057940fbd07ba17fa01a340:
+    request:
+      model_text: <think></think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  355af57ec187a9bccca950b382b1e0f290f91b163045e4f6bfe4fd672cf56d32:
+    request:
+      model_text: '<think>Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}</think>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  65ef6c4615b515a466d347cd5eb17e8e755c42e0c295004bf3a8c0586083ad61:
+    request:
+      model_text: <think>choose tool</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: choose tool
+          normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+  52c01bca4cfb95a340e96a5e4793a6f4782255997c0507d5babbd20fe9935c79:
+    request:
+      model_text: thinking <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'thinking '
+          normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+  8487729329daa1a4928ff072eed055ce15d54e39c917c65939ca45eeb76e289c:
+    request:
+      model_text: normal</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: normal
+          normal_text: answer
+  2b94d670321f65f1302315d029ea1217ec45c566b8f25e47090476ec6e133f08:
+    request:
+      model_text: partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  b252431cd87c42934517e65d6adc1c2d3c3876b309ef40568f107ece95d61f4a:
+    request:
+      model_text: <think>first</think> middle <think>second</think> done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: first
+          normal_text: ' middle <think>second</think> done'
+          explanation: Dynamo extracts each complete reasoning span; vLLM Kimi K2 parser leaves the later complete span in normal_text.
+  34180da162a75c5f257e95c61891ede88dee27d44f9a3427e84195a13a38582c:
+    request:
+      model_text: <think>preamble</think>body</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: preamble
+          normal_text: body</think>answer
+  acbd902a2a37be1c03059ad1087a5d89aeb318083212b6f47c32377a503956ef:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  dca799af91426359e1fe373607a160f79a15da0fc2e78f35ddbaa367229952ee:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+  d485750bf1961919efb9da927edd3a06f1c15f1fb00ba54256b384539ac61847:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - thinking
+      - </think>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: ''
+  e6cfd04f58b2066b14f088d6fc4446929c37b14229ec586db009d2efc1e95a58:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - <think>first</think>
+      - ' middle '
+      - <think>second</think> done
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>first
+          normal_text: ' middle <think>second</think> done'
+          explanation: vLLM Kimi K2 streaming parser leaks the first start marker and leaves the later complete span in normal_text.
+  9546acccc5092f5dbbd24527db4813d2cc99db142605f45a863fcd438a30e835:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - <think>preamble</think>
+      - body</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>preamble
+          normal_text: body</think>answer
+  6e62f436ac63aafe456ff39f86bd4a428e9def4f07141fbe9fe5d0b052efe57f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - <thi
+      - nk>thinking</think>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <thi
+          normal_text: ''
+  9d2b90a8694b400cafcf3a59ff5b149aa6d68a4103c46b5492c5a3cc605560eb:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - <think>thinking</th
+      - ink>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ink>answer
+          normal_text: ''
+  c0b34cb5751611a121d96c935e60643d31c749afca63958473fcd37fe50e72fd:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: true
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k25
+      mode: stream
+      chunks:
+      - plain <th
+      - esis answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain <thesis answer
+          normal_text: ''
+producers:
+  b6fd4861e5d025ca806650ef5611e7552d659c39e671a4d54c2e0fd5aac91c10:
+    capture: inputs
+    document:
+      family: kimi_k25
+      model_label: Kimi K2.5 / K2.6
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  68ef9061e03d40e134819622473e652ea21a4277cd514755e64ac61c02d17f3d:
+    capture: inputs
+    document:
+      family: kimi_k25
+      model_label: Kimi K2.5 / K2.6
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  3b7c039d221afc034945ca4930f2e5fb156d16b4196bc992c44aab5601d149d8:
+    capture: vllm_python-0.24.0
+    document:
+      family: kimi_k25
+      mode: stream
+    provenance: null

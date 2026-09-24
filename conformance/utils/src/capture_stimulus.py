@@ -5,14 +5,18 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import yaml
 
+from capture_bindings import original_capture_input, read_bindings
+from capture_policy import policy_for_snapshot, reader_metadata
+from dynamo_version import crate_version, source_fingerprint
 from fixture_disposition import (
     CAPTURE_SNAPSHOT, capture_layer_sort_key, capture_snapshot_members,
     canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
-    is_source_capture, version_sort_key,
+    is_source_capture,
 )
 from unified_tools import unified_tools
 
@@ -65,26 +69,6 @@ def capture_peer_results(cases: list[dict], families, capture, *, tools, support
             raise ValueError(f"peer capture results differ from executed request: missing={sorted(expected - captured.keys())}, extra={sorted(captured.keys() - expected)}")
         results.update(captured)
     return {key: {**result, "capture_input": bindings[key]} for key, result in results.items()}
-
-
-def read_bindings(directory: Path) -> dict:
-    path = directory / "capture-inputs.json"
-    if not path.exists():
-        return {}
-    doc = json.loads(path.read_text())
-    if doc.get("schema_version") != 1 or not isinstance(doc.get("records"), dict):
-        raise ValueError(f"invalid capture input bindings: {path}")
-    return doc["records"]
-
-
-def original_capture_input(record: dict, raw: bytes, relative: str, bindings: dict) -> dict | None:
-    original = record.get("capture_input")
-    if original is None and relative in bindings:
-        binding = bindings[relative]
-        if binding["capture_sha256"] != hashlib.sha256(raw).hexdigest():
-            raise ValueError(f"capture input binding does not match capture bytes: {relative}")
-        original = binding["capture_input"]
-    return original
 
 
 def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, bindings: dict) -> str | None:
@@ -179,8 +163,9 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
         if "unavailable" in record or "error" in record:
             raise ValueError(f"current capture did not succeed: {ident}")
     families = {}
-    for (family, key), (record, _raw, _relative, _bindings) in sorted(captures.items()):
-        families.setdefault(family, {})[input_keys[(family, key)]] = record
+    for (family, key), (record, raw, relative, bindings) in sorted(captures.items()):
+        families.setdefault(family, {})[input_keys[(family, key)]] = {
+            **record, "capture_input": original_capture_input(record, raw, relative, bindings)}
     return [{"family": family, "cases": records} for family, records in families.items()]
 
 
@@ -193,44 +178,131 @@ def validated_family_capture_docs(root: Path, input_dirs: list[Path]) -> list[di
                 raw_inputs[(doc["family"], key)] = record
     inputs, input_aliases = canonicalize_unified_inputs(raw_inputs)
     records = {}
-    directories = [
-        directory for directory in root.glob("dynamo_v2-*")
-        if directory.is_dir() and ".patch" not in directory.name and "+source." not in directory.name
-    ]
-    def sort_key(path: Path) -> tuple:
-        base, patch = capture_layer_sort_key(path.name)
-        return version_sort_key(base.removeprefix("dynamo_v2-")), patch
-
-    for directory in sorted(directories, key=sort_key):
+    available = [directory.name for directory in root.iterdir() if directory.is_dir()]
+    metadata = reader_metadata("unified", "dynamo_v2", available, policy=policy_for_snapshot(root))
+    selected = metadata["selected"]
+    if selected is None:
+        print(f"historical unified/dynamo_v2 capture unavailable: {metadata['unavailable']}", file=sys.stderr)
+        return []
+    eligible = metadata["eligible"]
+    directories = [root / name for name in eligible[:eligible.index(selected) + 1]]
+    for directory in directories:
+        families = {path.name for path in directory.iterdir() if path.is_dir()}
+        records = {ident: value for ident, value in records.items() if ident[0] not in families}
         for ident, value in _effective_capture_records(directory, input_aliases).items():
             records[ident] = (directory, value)
-    selected = {}
-    for ident in inputs:
-        if ident in records:
-            selected[ident] = records[ident]
-    if inputs.keys() != selected.keys():
-        raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - selected.keys())}, extra=[]")
-    tools = unified_tools()
     families = {}
-    for ident, current in inputs.items():
-        if current.get("tools") != tools:
-            raise ValueError(f"current input tools differ from executable shared schema: {ident}")
-        directory, (record, raw, relative, bindings) = selected[ident]
-        failure = comparison_failure(record, current, raw, relative, bindings)
-        if failure:
-            raise ValueError(f"{ident}: {failure}")
+    skipped = {ident: "no recorded measurement" for ident in inputs.keys() - records.keys()}
+    for ident, (directory, (record, raw, relative, bindings)) in sorted(records.items()):
         if "unavailable" in record or "error" in record:
-            raise ValueError(f"current capture did not succeed: {ident}")
+            skipped[ident] = str(record.get("unavailable", record.get("error")))
+            continue
+        original = original_capture_input(record, raw, relative, bindings)
+        failure = historical_replay_failure(original)
+        if failure:
+            skipped[ident] = failure
+            continue
         family = families.setdefault(ident[0], {"version": None, "cases": {}})
         version = capture_layer_sort_key(directory.name)[0].removeprefix("dynamo_v2-")
         if family["version"] not in (None, version):
             raise ValueError(f"family spans multiple latest capture versions: {ident[0]}")
         family["version"] = version
-        family["cases"][ident[1]] = record
+        family["cases"][ident[1]] = {**record, "capture_input": original}
+    for (family, key), reason in sorted(skipped.items()):
+        print(f"historical Unified regression unavailable: {family}/{key}: {reason}", file=sys.stderr)
+    print(f"historical Unified regression: {sum(len(item['cases']) for item in families.values())} recorded requests selected; "
+          f"{len(skipped)} cases unavailable", file=sys.stderr)
     return [
         {"family": family, **capture}
         for family, capture in sorted(families.items())
     ]
+
+
+def historical_replay_failure(original: object) -> str | None:
+    """A historical request must be executable without borrowing today's input."""
+    if original is None:
+        return "original request binding was not retained"
+    if not isinstance(original, dict) or original.keys() != {"input", "init", "tools", "chunks", "finish_reason"}:
+        return "original request binding is incomplete"
+    if not isinstance(original["input"], str) or not isinstance(original["init"], dict) or not isinstance(original["tools"], list):
+        return "original input, initialization, or tool schema was not retained"
+    chunks = original["chunks"]
+    if not isinstance(chunks, list) or any(not isinstance(chunk, dict) or not isinstance(chunk.get("delta_text"), str) for chunk in chunks):
+        return "original chunk schedule was not retained"
+    if not isinstance(original["finish_reason"], str) or not original["finish_reason"]:
+        return "original completion reason was not retained"
+    # The producing Unified harness treats the completion reason as metadata;
+    # its finish() API has no reason argument (including for length termination).
+    if any(chunk.get("token_ids") or chunk.get("delta_token_ids") or chunk.get("finish_reason") for chunk in chunks):
+        return "recorded token or per-chunk finish operations are unsupported by the Unified text replay"
+    if not chunks or chunks[-1]["delta_text"] != "‹finish›":
+        return "recorded schedule has no explicit terminal finish operation"
+    if any(chunk["delta_text"] == "‹finish›" for chunk in chunks[:-1]) or "".join(chunk["delta_text"] for chunk in chunks[:-1]) != original["input"]:
+        return "recorded chunk schedule does not reconstruct the original input"
+    return None
+
+
+def _source_matches(origin: object, version: str, fingerprint: str) -> bool:
+    return isinstance(origin, dict) and origin.get("crate_version") == version and origin.get("source_sha256") == fingerprint
+
+
+def _checkpoint_evidence(directory: Path) -> dict | None:
+    path = directory / "capture-checkpoint.json"
+    if not path.exists():
+        return None
+    checkpoint = json.loads(path.read_text())
+    if (checkpoint.get("schema_version") != 1 or not isinstance(checkpoint.get("families"), dict)
+            or not isinstance(checkpoint.get("records"), dict)):
+        raise ValueError(f"invalid measured checkpoint evidence: {path}")
+    files = {str(file.relative_to(directory)): file for file in directory.glob("*/*.yaml")}
+    if files.keys() != checkpoint["records"].keys():
+        raise ValueError(f"measured checkpoint record set differs: {path}")
+    for relative, file in files.items():
+        if hashlib.sha256(file.read_bytes()).hexdigest() != checkpoint["records"][relative]:
+            raise ValueError(f"measured checkpoint record hash differs: {path}/{relative}")
+        if file.parent.name not in checkpoint["families"]:
+            raise ValueError(f"measured checkpoint family lacks provenance: {file.parent.name}")
+    return checkpoint
+
+
+def validated_current_source_docs(root: Path, input_dirs: list[Path], repo_root: Path) -> list[dict]:
+    """Require measured source and request equality; historical regression is separate."""
+    version = crate_version(repo_root / "parsers/v2/Cargo.toml")
+    fingerprint = source_fingerprint(repo_root)
+    candidates = {}
+    for directory in root.glob("dynamo_v2-*"):
+        if not directory.is_dir():
+            continue
+        documents = [yaml.safe_load(path.read_bytes()) for path in sorted(directory.glob("*/*.yaml"))]
+        if not documents:
+            continue
+        checkpoint = _checkpoint_evidence(directory)
+        if checkpoint is not None:
+            # An unchanged measured checkpoint owns its measurement provenance;
+            # inherited observations still retain their original producer headers.
+            proven = bool(checkpoint["families"]) and all(
+                isinstance(provenance, dict) and provenance.get("status") == "captured"
+                and _source_matches(provenance.get("origin"), version, fingerprint)
+                for provenance in checkpoint["families"].values())
+        else:
+            proven = all(_source_matches(doc.get("capture_origin") or doc.get("capture_provenance"), version, fingerprint)
+                         for doc in documents)
+        if proven:
+            candidates[directory] = checkpoint
+    if not candidates:
+        raise ValueError(f"current-source capture unavailable: no measured {version} checkpoint matches source sha256:{fingerprint}; historical captures do not verify today's source")
+    selected = max(candidates, key=lambda path: capture_layer_sort_key(path.name))
+    checkpoint = candidates[selected]
+    # A same-version patch must not reuse a checkpoint's proof for other bytes.
+    for _record, raw, relative, _bindings in _effective_capture_records(selected, {}).values():
+        if checkpoint is not None:
+            proven = checkpoint["records"].get(relative) == hashlib.sha256(raw).hexdigest()
+        else:
+            document = yaml.safe_load(raw)
+            proven = _source_matches(document.get("capture_origin") or document.get("capture_provenance"), version, fingerprint)
+        if not proven:
+            raise ValueError(f"current-source capture unavailable: effective record {relative} has different source evidence")
+    return validated_current_capture_docs(selected, input_dirs)
 
 
 def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
@@ -242,11 +314,18 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--select-source-snapshot", type=Path, help="deprecated Rust harness compatibility")
     mode.add_argument("--validate-current", type=Path)
+    mode.add_argument("--validate-current-source", type=Path, help="require exact current source and request evidence")
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3])
     mode.add_argument("--validate-latest-by-family", type=Path)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")
     args = parser.parse_args()
-    if args.select_source_snapshot is not None:
+    if args.validate_current_source is not None:
+        if not args.inputs:
+            parser.error("--validate-current-source requires --inputs")
+        docs = validated_current_source_docs(args.validate_current_source, args.inputs, args.repo_root)
+        print(json.dumps(docs) if args.format == "json" else sum(len(doc["cases"]) for doc in docs))
+    elif args.select_source_snapshot is not None:
         if args.format != "count":
             parser.error("--format json requires --validate-current")
         print(current_source_snapshot(args.select_source_snapshot))

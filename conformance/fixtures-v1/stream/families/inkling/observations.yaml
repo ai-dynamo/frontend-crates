@@ -1,0 +1,3206 @@
+schema: bound-observations-v1
+observations:
+  763a508e370bf009d3a9035b4d1246fb19bfccc4763cf757bb4a462a8fcf8621:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"Paris","unit":"celsius"}}'
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris","unit":"celsius"}'
+      - expected: []
+  4b2c2ff3b69ac51e8bede677d5e9ca9173c15de13bce79671da361f81a3b5601:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  67cfcd7f2bc8c099e2392e71a6051f31a2dc40c9a89c24b4c1a1fb983012e431:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>
+      - delta_text: '{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>'
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+          arguments: '{"destination":"SFO"}'
+      - expected: []
+  16165ae887f3c384c5e945d1f3ccbf7e953144b1ba85c81deb9a61a5eff06575:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"",
+      - delta_text: '"args":{"x":1}}<|end_message|>'
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  b757cbb5b3451707054633d32ddbe5ea787ca857075b14b76eb881656b192a37:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: book_flight
+      - delta_text: <|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected: []
+        normal_text: book_flight
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+          arguments: '{"destination":"Paris"}'
+      - expected: []
+  ce3410ef3f2ddf59962a97cda0d9b96c05b150e84d95c83c0e2fdbfc570bf271:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool",
+      - delta_text: '"args":{"location":"NYC"}}<|end_message|>'
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  64c6014f02f8168f7e434369c746660cbe28ad3c7ce507970ed2e9d1a10d286e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected:
+        - index: 1
+          id: true
+          name: book_flight
+          arguments: '{"destination":"SFO"}'
+      - expected: []
+  d0b39fb08dd90d20b352f705ea756bb183956813077f93ca02e236d5a2bc8dc5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Before. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: ' Between. '
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+      - delta_text: ' After.'
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Before. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+        normal_text: ' Between. '
+      - expected:
+        - index: 1
+          id: true
+          name: book_flight
+          arguments: '{"destination":"SFO"}'
+      - expected: []
+        normal_text: ' After.'
+      - expected: []
+  4fcb30c2c0986440653c9424aaf9e209503e9833d7f630707a5dfe5ab31a9259:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Hello, how can '
+      - delta_text: I help you today?
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Hello, how can '
+      - expected: []
+        normal_text: I help you today?
+      - expected: []
+  d629c7b74536f79c9356bc1958eab1235cddde17f1d5d7eaa2d33777d30165d0:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a
+      - delta_text: <|end_message|>
+      - delta_text: b"}}
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: echo
+          arguments: '{"text":"a<|end_message|>b"}'
+      - expected: []
+  7d41c22e6edb0e62f443d276b90a2d10ae68b8266849e369fac012ec81af2dd9:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>
+      - delta_text: b"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: echo
+          arguments: '{"text":"a<|end_message|>b"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+  02f9d63e9ed46fa286a51198bd8abb935135d3336f377a7c64c55600f192c6c3:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>not-
+      - delta_text: json<|end_message|>
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  afb47bfe4d4110c3f23e834e96f7b8740ab031be7a5fed5f3873ce7ebe385d8c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+  a0db36a947c9d9cac17243df3be9120e7fb3c1dda95c534797343ca7fbeba025:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'prefix '
+      - delta_text: <|end_
+      - delta_text: message|>
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'prefix '
+      - expected: []
+      - expected: []
+  c75f7987a26b914edbfef243f5b6b98462c81a146d37a517ebc588350c38149d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"S'
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  6393eeb90ade8581d6f7f0d339651a37453f0362226d0e46b8dff1d0a42cf2f9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+      - expected:
+        - index: 1
+          id: true
+          name: book_flight
+          arguments: '{"destination":"SFO"}'
+  3fe0660d8726ba21f28382a9638c38e86fb4072f65e8d83edd504f3bc8370219:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"S
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+      - expected: []
+  216aa1d93fba80abd3f8556b738edd71189e4e0e51e9c6d3a436065c3ea0c91c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+  7d2815ff94715f5de03d21e3d32d78f979a00f71fe4cf35aec68309de41d4d82:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{}}
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{}'
+      - expected: []
+  78e5394b5b01d9d0d927a07c88ee5d89bf151381543c5bcca9123d420ddc510c:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{ }}
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{ }'
+      - expected: []
+  ba7e4bbc826a5de98fe85276a6340ad103d7293feda565c1e4f9be03e03b26ae:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{"s":"x",
+      - delta_text: '"n":2,"b":true}}'
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected: []
+        normal_text: f
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{"s":"x","n":2,"b":true}'
+      - expected: []
+  d2381cd92ac360f5102d5eb54dda1482c718f13e1ac59137451c95dd863a8216:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo",
+      - delta_text: '"args":{"text":"say \"hi\" — héllo"}}'
+      - delta_text: <|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: echo
+          arguments: '{"text":"say \"hi\" — héllo"}'
+      - expected: []
+  dd88e1cddc11cfe37e7de9f3d5c118cbdb02437f9ff6bcd25155278e0acfd033:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Let me check '
+      - delta_text: 'that for you. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Let me check '
+      - expected: []
+        normal_text: 'that for you. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  03cd292044261832bdbcfe799fd9388101a388b316b4f5a998605005302b0b42:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: TRAILING
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{}'
+      - expected: []
+        normal_text: TRAILING
+      - expected: []
+  eb5c030a134b767e8e49d140e68cc65399b27839cc6edc2505dafef8e39cba34:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'BEFORE '
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: ' AFTER'
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'BEFORE '
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{}'
+      - expected: []
+        normal_text: ' AFTER'
+      - expected: []
+  c6025420bbb29b7272376ddbd4ccfd9f69d0ab572fd96be726f1d5c77bddd961:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: MIDDLE
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: f
+          arguments: '{}'
+      - expected: []
+        normal_text: MIDDLE
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+  38a28a4d6383dbc60e752638cf571985606558df2b8ce3f112133102d9c96e88:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+    value:
+      chunks:
+      - expected: []
+  a4dad683b47a8ea13b018853b4bc1a7bb5243028bdc14cb62c63f87694dda674:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ' '
+      - delta_text: '  '
+    value:
+      chunks:
+      - expected: []
+        normal_text: ' '
+      - expected: []
+        normal_text: '  '
+      - expected: []
+  032d2e3355482bad7ae7de31106bd9642b81df54ddf708d6ceb6a49e57889f85:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"Paris","unit":"celsius"}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  1d7ac89e1928fbd9fc12e8374b7670aff8429f4336537cc00889fdb9ed8348d1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  ac414e0996568a229a0d995f7aa17f0ee09b80fd54dfb44264c3b2864d34f6e6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>
+      - delta_text: '{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  bfb4bdf9de0d2071b3d1a61bde7ee9df6b175dd27fc38a8a8c27c781af759d2a:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"",
+      - delta_text: '"args":{"x":1}}<|end_message|>'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  ddd7def73b44aee9a3bab4d87565d485d86f0b9392ba1549669dac17d038ff16:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: book_flight
+      - delta_text: <|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  882e0d7a314ee03e9195603a4a5ff034caeff1909ac4b82ff1bad85833ad23f6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool",
+      - delta_text: '"args":{"location":"NYC"}}<|end_message|>'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  b7b28010ef57c4b2c8fa915a04955657bd1422519217a353594bcf61125b697c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  a78977929ad5b3ffab389b95f55b54b611aaaf82ec90865f1ae0a0afd91a44bd:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Before. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: ' Between. '
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+      - delta_text: ' After.'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  dd035d32364d4e3397e1e1d271cfa3121bbcef2162834365b5db50b57df34611:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Hello, how can '
+      - delta_text: I help you today?
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  3840a0e8de5fa54fa18342a988e5d1c6352cd526de4cca17cbd072570204b278:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a
+      - delta_text: <|end_message|>
+      - delta_text: b"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  cc583d5dbb72a0e3e89131e37ca5a627984884a0f8f9cce33c915853a9189a06:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>
+      - delta_text: b"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  9b162eabfc7b3a8465f61a6796d02b05d89d3d4177081523af6094fe7f853c07:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>not-
+      - delta_text: json<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  885af3d2076eda49ba3b5b28c0250c87c7662dfcd87b0821d2a305b27d52276b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  eba87d1151dbefeb408eb73b5e2ad7fd33b46661e52ad685d21ecafcbe9619fb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'prefix '
+      - delta_text: <|end_
+      - delta_text: message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  d212ad928b28a0d45d2439656de019a9d878af866e1f57add7641ab58537034f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"S'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  1cdfe25c7ac546405c962ca3c4c09849d677bc566757d19ee5d7c82cde365760:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  1b2ab264a0c3890a79fc60336282dcc57afd35f2b850f7b7949faa4f66f3bdcd:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"S
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  d134606ec4da606f5c218c05126822f506efabdd9885b0a3bea6c831cd801eb6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  eef71413cd263a15f98585390a5abc028272f264aff37e2d7dcafc1e5d298b40:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  781361eefa278b4bf05a004fd74df9deb55c8903e3e2f15e8b825f32f5ae0e27:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{ }}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  9168c753dd0a0577d1136e0a454bb6bd64aa40c8b2adaab2e36c959f33085a19:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{"s":"x",
+      - delta_text: '"n":2,"b":true}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  19a60e622d3414e4a2079fbf0d5f281451e9d85438855973c9ffa269377d2bfd:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo",
+      - delta_text: '"args":{"text":"say \"hi\" — héllo"}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  9de0c6e000e6602f0ccbfcc9502b91c7111dcdb7fd1c4a8ddb6ed4d8b9949a0e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Let me check '
+      - delta_text: 'that for you. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  396ac7ef24bda0d526ee61ad44d6695bdc09d5876dd2ee232d5802a946fca73f:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: TRAILING
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  2350a55e0fe127cf5beae5f57ba41d0adc39062952db48315027d1358517928d:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'BEFORE '
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: ' AFTER'
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  46f6193b97da9b5b0dcabf9138dc1080073603931bc96f68c4e193a1e08a157b:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: MIDDLE
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  d07c14aabade479fa3bc7d28c33eb65a09befa51ab1a018d44312ba69fd83727:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  f3d1c4e07871a454c446fe92c0780a7208c2c438712f1f0883c27bb5836c51fb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ' '
+      - delta_text: '  '
+    value:
+      unavailable: SGLang Inkling detector was live-captured for the original subset; the taxonomy-expanded corpus needs a fresh current-engine recapture, so these new IDs are conservatively unavailable rather than copied or guessed.
+  4fcb930e32765bad7606d8fb613cb89e7841b741d8759dd39e6919b373570587:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"Paris","unit":"celsius"}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  b75c3370fff93af8794cda0f90861d9f557772bafdd31fdcfe9e6bc8f1c6e0ec:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"LA"}}<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  cb114850c737dac23f89c33529920cbc499415a3e5e227422d6179bf59de65b2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>
+      - delta_text: '{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  fc4c29cdf2c16ba72029b7e7d8b171789a6a7d34ac9045f65bee34fb48b1c2a2:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"",
+      - delta_text: '"args":{"x":1}}<|end_message|>'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  6b3a7c1f60a8cb8c5297ee7c6096c150ea4807f9fa5002727d850ca1de3ae9c6:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: book_flight
+      - delta_text: <|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  106f6a986df71f38dbe412c95e5adb8db2b79c83342a938653a4098d5a510aab:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>unknown_tool<|content_invoke_tool_json|>{"name":"unknown_tool",
+      - delta_text: '"args":{"location":"NYC"}}<|end_message|>'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  9929cc07587b5ee92d66115d9b9bbf9e702454f26e0e69acf8d2036333259b91:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  9bb6faf3a6e5d1e8f591d306d69a8ed3f435a93e2448b88af1892a86e42c0c95:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Before. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: ' Between. '
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}<|end_message|>
+      - delta_text: ' After.'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  8647afdd2702982e7bc25e164eba7ac6e333f1ca3af0d2d359a5f4d427a5b739:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Hello, how can '
+      - delta_text: I help you today?
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  ba0d0f2dcc62028ac7543ff56d7fe4be7b1ff90f9f1a109d5389e560206e96f9:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a
+      - delta_text: <|end_message|>
+      - delta_text: b"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  106cd312e80776039ff122f0a97cfdd4ec7732adcdb70a7ef984dbc093383ea9:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>
+      - delta_text: b"}}<|end_message|>
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  3e5c1fee0d4ad204c9fe42dc7babb4d81f40ae9c5dd7ecf1a7a4a843f362fc9b:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>not-
+      - delta_text: json<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  f64a0e21ac3aab524b57b64e7dc57bd5979ee8742b298e5fd5286ff42df35763:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  531fb65ef5c1c406a0c3aba037577a41fc36a738ea7f3a95fd25ef391031feda:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'prefix '
+      - delta_text: <|end_
+      - delta_text: message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  39a765d6d8c94b4bb87e501acfe0b0f3484b34c7d856fe8b5d828e1a53c60e0c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather",
+      - delta_text: '"args":{"location":"S'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  85f048e355c10c761726e2a797b0895846f1d997b467641b5b9f9a0cbe5c617d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"SFO"}}
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  dda08780ffa01c6976fdb610b5a53b597f94d9adbaecfb5684aecf8d57f4317b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+          required:
+          - destination
+          - passengers
+          - first_class
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+      - delta_text: <|message_model|>book_flight<|content_invoke_tool_json|>{"name":"book_flight","args":{"destination":"S
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  bb4f2eefe8a2d5fbd9addfeed9da1784cd9d94887595c07bc05a4deab9720b85:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: message_model|>get_weather
+      - delta_text: <|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  1438d7420899ee5e7b2f7071013676a9f4cd9af5ca132122493314902c5f8b80:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{}}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  d843f6eee486d0fc5ec16dfad49a6c3f2d92d231f1510732e6596f4a8db379b7:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{ }}
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  74b86f8551dd2ab2b658f87e240666210de476958238875f2c0ddfe43c29c4ed:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: f
+      - delta_text: <|content_invoke_tool_json|>{"name":"f","args":{"s":"x",
+      - delta_text: '"n":2,"b":true}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  3bb75b3babab82c9201b4ea701fe87bb26180100294443373adef7fc9a96b83c:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            text:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>echo<|content_invoke_tool_json|>{"name":"echo",
+      - delta_text: '"args":{"text":"say \"hi\" — héllo"}}'
+      - delta_text: <|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  54110f705e8d22056677b681013c9a12f489a74ca85ded1ceb7d321c8ccffd28:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'Let me check '
+      - delta_text: 'that for you. '
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  0f56b4c1700ac20ab9f717300a78aeab6799ee4d2adb1383eed1c3acd81c8d73:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: TRAILING
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  1f56df0ed65cbe0d5d777f40d6c088989d798fb0cf82e22dbe89e72d67254203:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: 'BEFORE '
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: ' AFTER'
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  9a6f50c1297a7b054b39cfe2c5beaf0ba092ba7b9652ad2aebb662a9a1998140:
+    request:
+      model_text: null
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            s:
+              type: string
+            n:
+              type: integer
+            b:
+              type: boolean
+            payload:
+              type: object
+            value:
+              type: integer
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: <|message_model|>f<|content_invoke_tool_json|>{"name":"f","args":{}}<|end_message|>
+      - delta_text: MIDDLE
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  eae7920d93790f1dfbc202ce54a3a7b5cfc294db47ab0ed367a1e07d782e2f2f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+  3937a0d8aade8b029400c5e01a949e9c95d3af059597f31c337d7158d18f4889:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+            unit:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: inkling
+      mode: streamv1
+      chunks:
+      - delta_text: ' '
+      - delta_text: '  '
+    value:
+      unavailable: vLLM unified Inkling parser is not supported by the current conformance capture harness; live unified-parser capture is pending.
+producers:
+  8b78a2b13b56a67b404488ee854d796d4b8159b88eb796af75845824f3be8bbf:
+    capture: dynamo_v1-5.1.2
+    document:
+      family: inkling
+      mode: streamv1
+      captured_with:
+        dynamo_v1: 5.1.2
+    provenance: null
+  2b8af229353cae6c140a475d4af19b469de84d04024a0ab27c9eee835d9f6a62:
+    capture: sglang_python-0.5.14
+    document:
+      family: inkling
+      mode: streamv1
+      captured_with:
+        sglang_python: 0.5.14
+    provenance: null
+  a105721b5021e1b94df91ab993a48a1baaf3bbb4eb689a776f2273af7bab47e5:
+    capture: vllm_python-0.24.0
+    document:
+      family: inkling
+      mode: streamv1
+      captured_with:
+        vllm_python: 0.24.0
+    provenance: null

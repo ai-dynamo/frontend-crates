@@ -1,0 +1,3781 @@
+schema: bound-observations-v1
+observations:
+  9e108af04a56aa32cb6c01f2a59248771861b138231e36679ef5d0bdfd8304e3:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              timezone: EST
+            name: get_time
+          normal_text: ''
+  6e06c28708ff6dda85f7bedb9eed1be92e39f8e124936479af8a1cbc71548408:
+    request:
+      model_text: 'Both: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              timezone: EST
+            name: get_time
+          normal_text: 'Both:  Done.'
+  fa850ba1699d88bedd41eafde101df7e78954531d815a66b2c9ed34b6b673706:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: ''
+  9ea103bf1898467e733126f5f31ec1505811b344aadc122a178f96ad0e35227e:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>nonsense<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments: nonsense
+            name: get_weather
+          normal_text: ''
+  a427a228ab4fea1ee10403f1dfd871755ca84db72e9f5efb4e8411d59a43bf57:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments: '{"location":"NYC'
+            name: get_weather
+          normal_text: ''
+  4dcd2dcaac012126f6ee86d1fd0a796e84afd1d9dc401fa4dc4ea204a4b3d91c:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  58ab0a5d08ff1229646bcf92abdc81d75b74419395e4fe6a46c2281a856ea764:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  eca782f311c7883cf63f19629ec25a7500139d7f3ef36efeac52b8ffd8bb0658:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  35e6f6c67031b228a2e8404a9a737052c4cac4de4ba3978fb19aafa9ffbe05c1:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  f9d98318384f3e76c235468cdcdcfea0e1e9c7f7b926007da5725aea4bcf17e8:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  59036f41c05eb9d46df9507ff718a9035511a499b84c5eed494d57d16f25d21d:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  cf576748bfd9f110af8509dc5680819b41a43512e97632d986dc7bbc04e9d8cb:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  631ab00386d6e3d7079660794ea7c181052486401846a6134b5886567864120d:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  6933cda142a3b859edc126027c05006be14a1715379dbbe17e7b0caa1a76fdfd:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  f1984a01e20e83090b73219f6f4b61d95327e718a9f64ca6219382e6b46ab026:
+    request:
+      model_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+  46b37c33ca0c69ff123d08a3f4ec0f905ee4c048744b7b6836f8888e158d44c5:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+  c11d9cdeda09e1285938fc39052ba63aeb52e6b1657beadbcf1e86425ff02a29:
+    request:
+      model_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+  425fe98fc959f66635be6df9b9b0c2ad50fcb8bf928204cd8e3c94da6fbbccd2:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+  983f1dd0d7e1d02ba2f66bf7f60bab52120db6331620cd1576444a96974e639b:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+  1df3bf057af2cb63fa3cfe5605e890bb6e12b9f4fdbe7e708fe0d646f43484f5:
+    request:
+      model_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  ec9d529415a72cc201f36c40d3a1e0ec937be29a2bab502c7c8df1579e45b892:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: I will check the weather.
+  9b1199d8d44401830a0185c4a05c5acf0ec8ccb2d6950c4a33dd307478cd3042:
+    request:
+      model_text: <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: Let me know if you need more.
+  4a2e8da72bd2df17a9c7d55e29f202ca4e967416914879b59449ae79b790878c:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: I will check the weather.  Let me know if you need more.
+  519899539e0b92b38c436f7d471cbdf6470ce61628f50d08886f17c1508cbb2f:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Then check LA weather. <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: I will check the weather.  Then check LA weather.
+  fa29c25bab1426a1344fcc9dfc45ed3908b49d2deb858559002bc7d9170f8c39:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: ''
+  fcc0baaf1ef90f73fd80c690f82c48c7427840e10b234e6a8f386af39d0aa9d4:
+    request:
+      model_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  e3327219197ae7e4a1ffc62ff629cac6977d9d35b1f19c052f0eff416044e680:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  13b605011f7ea50080a8a1b6d2a5410438d2564fb2c8fdc80b78fafb85d9cf34:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  47712a8d715e3432dfbaab6c9d99bf23421daa5a90f4a241479e5b0ce589f496:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  020ff6437580a8e64f113bd7c97111b3b9b29ea4a99338417f3d2ac1fb174b6b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  0ffd608074219e5232b748ebdfdf7457f94a2ab4161f27bc1c9cbdaee36b7cbc:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.
+      - delta_text: get_weather
+      - delta_text: ' <|constrain|>json'
+      - delta_text: <|message|>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  3edc17fa29007119b6a3b11ae6493e6f31a066e67fd2cf8ba80f6fdcd5de89f5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assista
+      - delta_text: nt<|channel|>
+      - delta_text: comme
+      - delta_text: ntary to=function
+      - delta_text: s.g
+      - delta_text: et_weathe
+      - delta_text: r <|con
+      - delta_text: strain|>json<
+      - delta_text: '|mess'
+      - delta_text: 'age|>{"location":'
+      - delta_text: '"NY'
+      - delta_text: C"}<|call
+      - delta_text: '|><|sta'
+      - delta_text: rt|>assistant
+      - delta_text: <|cha
+      - delta_text: 'nnel|>commentary '
+      - delta_text: to=
+      - delta_text: functions
+      - delta_text: .get_ti
+      - delta_text: me <|constrai
+      - delta_text: n|>js
+      - delta_text: on<|message|>{"ti
+      - delta_text: mez
+      - delta_text: one":"EST
+      - delta_text: '"}<|cal'
+      - delta_text: l|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  e97a417f593ef5cbcd48df816c1ad7f0051d5916543b28831670d5a0f7596d9c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|
+      - delta_text: cha
+      - delta_text: nnel|
+      - delta_text: '>commentary'
+      - delta_text: ' to=functions.get_w'
+      - delta_text: ea
+      - delta_text: the
+      - delta_text: r <|c
+      - delta_text: onstrain|>j
+      - delta_text: son<|message|>{"loc
+      - delta_text: at
+      - delta_text: ion
+      - delta_text: '":"NY'
+      - delta_text: C"}<|call|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  2dd243659eac1b45c70a84fbb04f76e77f39fa3d91c550dfc2155d836f636951:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  abc9558087f8456b2581a8b8b04858e397eaf79d850c50b01a4c491b6631ae26:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functi
+      - delta_text: ons.get_weather <|constrain|>json<|message|>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  082293b34198abfbdd39b8e0828be017b138ba2be4626066989f095fa9db7d61:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|call|><|call|>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  8d5801448ae069f54078fdecb23c7fbef3f6322aafbc462bd2b6b90a1eaf7257:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: '   '
+  fa06d20f3dd8a9d326001814e85292ef10c981007a92ad6e405dcc060bcad097:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  4c256b20c96da37bc263bbc7aeebeb064bbfa1dc60ab8cf903856d80f85603d6:
+    request:
+      model_text: 'Both: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:   Done.'
+          explanation: 'No spec-correct winner on whitespace: surrounding prose is outside Harmony messages, so this is recovery-only; SGLang extracts the same calls but preserves one extra separator space'
+  b2f63f141fa38cf0aa73961349b6d5142453ff366b7a7ab770c17868a5d1bd7b:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  d7181fe35288ff2f6844f1d874ae533c1a9ee6269a40e6604cb8d0e348d303d5:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>nonsense<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: 'Less parser-complete behavior: the Harmony envelope is a valid ''<|call|>''-terminated function call, so the parser should preserve the malformed raw payload for downstream validation rather than dropping the call.'
+  e553c2f232fafa187e1e244e202a6df30ba6799bcc75911ba9f39743667bd917:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: 'Less parser-complete behavior: the Harmony envelope is a valid ''<|call|>''-terminated function call, so the parser should preserve the malformed raw payload for downstream validation rather than dropping the call.'
+  0acd43e030d589ab53f3c1eb983c92c7e6fb44def9b8a3801aa8f63b060a215b:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  32fa10913cc5e0716167326228929840186db1fd2ceed117144e0a6f71f3c04c:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  df86db81c98072152d9e2e88489a586a2c0c31de74aa807421e9de40c9eaede8:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+          explanation: SGLang requires the full Harmony <|start|>assistant prefix before it classifies a commentary function call; Dynamo recovers the complete call without that prefix.
+  8b66cd30ae22df5005a377e4f6128c53a62175077f7353afc26771f0951b1f08:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  7100e23b0cf220ce1532840c196da1ca14c3ade70d6482ab33c69e0c379a178d:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  98c8d548e4b25591bf15c5f5845606d8530bdb90adefd6d23e554486d732a4ce:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  dabc1de1e1fff29b6ac69b3dea18451d7466c9063dfb35d000e913b248f0cff2:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
+          explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
+  513ca6d1b15ab05c2778a4930f25a27cc2b4f7fc78a90cb87e01049ba88c2515:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
+          explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
+  3426029b9576623ca7629c9096140287637634d6e898588e3d289135c6e81f33:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json
+          explanation: 'Dynamo/vLLM are more spec-correct: a commentary header without ''<|message|>'' is malformed protocol, not user-visible text; SGLang preserves raw markup'
+  c5a40959f399b1dd1107d8a73998730586f22b57764c43f8abd06a8256919a86:
+    request:
+      model_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  214c9eb74b3e7de48174b904756c1607f26895ff3e58f0ad461f06cd7c0ab8ad:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  e641377281636cab4210d3cf49027968c9bce65ccb66df110c42a9a3064eda05:
+    request:
+      model_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  69434afce26849123e6cb94452a5d337db2fc8d3a6725dbd4469bf1e6929bd86:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  6b3b220eeacbb83cf4ab15178713af158fbfe7288f1800098af5406e21b4c317:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  5b6a1df077ac4389a03a952932961f9c14be1c9f534208de8095a645d9dfa817:
+    request:
+      model_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+          explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  7a19fac70ded7f64bc1693e7e1b775af079e1f4da5644006f16d88caa8089feb:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  37614d9fe1d6ee7598336b139966bc6e0005fecaa88dd592989e7b580c8b8eb6:
+    request:
+      model_text: <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: Let me know if you need more.
+  9977f89a68bb2fe7338ba653318a75fb2989fc579a301be5dc07ccbefba0c20d:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.   Let me know if you need more.
+          explanation: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same call is extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'
+  21c1f7749c068618c3873a10bbd9a7c24457cda75e4f7bd0ca0141f871bbc7df:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Then check LA weather. <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: I will check the weather.   Then check LA weather.
+          explanation: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same calls are extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'
+  ef62880eba10620dea6fb397a077add4a545f9abd77c4ac9c8c0a4f0b552d47a:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+          explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
+  25b05234ff1bef016735be715a1da12b863ff0b1ecd72faa6b1f6a5c2c4d61bb:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: ''
+  f7fba389a47d15ee532af8f00e214f378ae28339d1443e3dff41129dee50ff10:
+    request:
+      model_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+          explanation: SGLang treats an unknown harmony recipient as ordinary content rather than forwarding a tool call by default.
+  5aa10c5fba15cf732bccc5bb1634516270349122cbb60367ee4bd2c2e445ba48:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+          explanation: 'Less spec-correct fallback: bare text is not a valid Harmony assistant response because no final message was emitted. A valid response would be ''<|channel|>final<|message|>Hello, how can I help you today?<|return|>''.'
+  5e8a7789e7133034917324723c637eaf629a6f19afccee0b1ca6956910323918:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  5b13bec9dec7302a2c036dd6504e82b18c3bdb4c61972ce598158e83d07ee63b:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: '   '
+          explanation: 'Less spec-correct fallback: blank text is not a valid Harmony assistant response because no final message was emitted.'
+  40c666b965a984fe4276c4884a80e2ab49e1d8e54dc573b67e63e4c597490eda:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  1264bdc5a98b004c0ca7aa2449cabc0e266e8f3dee34c0b4f5a9151d071ea36e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.
+      - delta_text: get_weather
+      - delta_text: ' <|constrain|>json'
+      - delta_text: <|message|>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  72f4a8c9cf9b9d04e8ea8260bd3f52915d3c317da95916a66ba8da98aa7824b6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assista
+      - delta_text: nt<|channel|>
+      - delta_text: comme
+      - delta_text: ntary to=function
+      - delta_text: s.g
+      - delta_text: et_weathe
+      - delta_text: r <|con
+      - delta_text: strain|>json<
+      - delta_text: '|mess'
+      - delta_text: 'age|>{"location":'
+      - delta_text: '"NY'
+      - delta_text: C"}<|call
+      - delta_text: '|><|sta'
+      - delta_text: rt|>assistant
+      - delta_text: <|cha
+      - delta_text: 'nnel|>commentary '
+      - delta_text: to=
+      - delta_text: functions
+      - delta_text: .get_ti
+      - delta_text: me <|constrai
+      - delta_text: n|>js
+      - delta_text: on<|message|>{"ti
+      - delta_text: mez
+      - delta_text: one":"EST
+      - delta_text: '"}<|cal'
+      - delta_text: l|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: rt|>assistant<|channel|>commentary to=functions.get_time <|constrain|>js
+          explanation: SGLang emits only the first split Harmony call and leaks the second call envelope into normal_text; Dynamo parses both complete `<|call|>`-terminated calls.
+  c76906f1629015bd64d1480489bbea61c987127c668cf112958da26bef5a89de:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|
+      - delta_text: cha
+      - delta_text: nnel|
+      - delta_text: '>commentary'
+      - delta_text: ' to=functions.get_w'
+      - delta_text: ea
+      - delta_text: the
+      - delta_text: r <|c
+      - delta_text: onstrain|>j
+      - delta_text: son<|message|>{"loc
+      - delta_text: at
+      - delta_text: ion
+      - delta_text: '":"NY'
+      - delta_text: C"}<|call|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>j
+          explanation: SGLang leaks a split Harmony commentary block into normal_text; Dynamo buffers the split marker and parses the complete `<|call|>`-terminated call.
+  573bf314a0c7a1fa68c1746a9d50e45f87b21b32d4b4bae9ff956c835abacf4e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  d521e890b51c8cbf20da09a48e2dbbdfae47e2b3377ebbf7b455b9a6c9614422:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functi
+      - delta_text: ons.get_weather <|constrain|>json<|message|>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  fe690b1a91d71f20d1f22083fde49fe94dba5646ec61015ecc21df39d8ec7523:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|call|><|call|>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  6d0d388ea4a4218344bd2eafaf35726033297eb71a1035ed3a9b24210671e715:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              timezone: EST
+            name: get_time
+          normal_text: ''
+  1c967cf4f307bcb7966cd3dae04191eff99eb4b8274502ff198734ea1d7d8d3a:
+    request:
+      model_text: 'Both: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              timezone: EST
+            name: get_time
+          normal_text: 'Both:  Done.'
+  b0ab21014918d3c487b52417c2932c069c5b1a1bb49fe913764fe4361e0a75e0:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: ''
+  796e6278215b0f82b473477c2146fc579d462d538b7149ea2bf5e4f4cc581a6a:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>nonsense<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments: nonsense
+            name: get_weather
+          normal_text: ''
+  9d9af0dbe7808d996353b5db043b0e46063d5b45ecace78215e884a6299c8628:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments: '{"location":"NYC'
+            name: get_weather
+          normal_text: ''
+  06fef48c9bf1befd4724673f56efe3d42dc6f9ba17ed85c7f9fda6c9978b74b6:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  eeb7151283fe0925711782da5c0f4bd5481bb400376048455a07cebd6dfc1cb2:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  8faf535147fc662cfbc8aaebe0d114ac287b99ace9e87553e0e1547e18d2c6ba:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  a9d0ac943d932af1141272c0aa7196d7415c0ffafe86f958b7ecb68753add168:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  cd9fb1d62d5d6c7922a743d98cd6119bb872f8c495a6429eb988ca121a3766a5:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!commentary to=functions.get_weather json{"location":"New York"}
+          explanation: 'Dynamo/SGLang are more spec-correct: they strip the incomplete trailing commentary envelope after extracting the complete first call; vLLM preserves protocol-stripped residue from the incomplete second call'
+  352af845a44c2f0be01c720964dc09d2a465b5c67efa87c1b260392c7d10d555:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!commentary to=functions.get_weather json{"location":"New York
+          explanation: 'Dynamo/SGLang are more spec-correct: they strip the incomplete trailing commentary envelope after extracting the complete first call; vLLM preserves protocol-stripped residue from the incomplete second call'
+  1e357ca2911d9b0f58c28cc9e8186539e4081b0dc63840b22c391d3a47c2b038:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  9316c97188533fdddd364f5d45bb58690ba5ad0003b578f826927dac0fd2556c:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  4060e5d2783ac6c06ede740b4f433918f458608d48c0bf28bf259ed7352b3c1e:
+    request:
+      model_text: <|channel|>commentary to=functions.get_time <|constrain|>json
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  1c38774fa5409be3f63d85c69949123a80a9154f14b4dcca2f7586a4d46802a8:
+    request:
+      model_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+  636ee3c723f490a9496c22f19d24eb52c4a8ece968dcc99517ab36c3aa43b387:
+    request:
+      model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+  a6ede26f8855c766e057ffd4f62fb7c0456b9c73a97aab3375055c70c7781173:
+    request:
+      model_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+  287daf52a7a59b1a38bdf64571e41a7661797ca538f0c9b97aea56065675ba27:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+  9bdb20ecd55f9a338c31ef2dfccc94a47fee75a2a1823d8989dde4fd049d5c0a:
+    request:
+      model_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+  65a18e6c1993d91b3e3d14538949474e772e54247df4de6dab73ed7f6d2740ab:
+    request:
+      model_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  80e37405bc10b648832c74e73b9f247fbcc091e7b6d80e0b49d2e1479cc678cb:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: I will check the weather.
+  2c9c1a44c580e52b71813b22912bcfc2552c430f305d7b78f67cb70b92d67fdf:
+    request:
+      model_text: <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: Let me know if you need more.
+  2ac888ac42b309803062c3df0c8513329888b1f74580521ca47a13441e29cf22:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: I will check the weather.  Let me know if you need more.
+  9d5bce65c81f68dc5f6b983c8499ae873f8e672803a9891beba82c0447458c46:
+    request:
+      model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Then check LA weather. <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: I will check the weather.  Then check LA weather.
+  201cc99196a9e86c7b8209f604faf9d62032f3980726459f34178a64a425cc56:
+    request:
+      model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          - arguments:
+              location: LA
+            name: get_weather
+          normal_text: ''
+  dbf3acd74f75a949413236c8522942c6fe34c7bbd221da5812e167a17dc8604f:
+    request:
+      model_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  ec3404b3117ea341af65fb66d6fddfe00c5ba0c1f1734dbc8ddde54782caa59f:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  fe0755e7dc12db8c12dea7911376e97a74e6428d09a5888343be655dc61eb4bf:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  7a25659619dbad922458c796b36926f755eb61f135be8a29a75a751279a29a94:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  4006aa1a53b9010738724898f4b40c375dc02772710fe24329c8fd081ec31904:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  0ce0e1d5b85aedcce2afdc00b7850998daf990b39628d4e92c27839bd13bb9cf:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.
+      - delta_text: get_weather
+      - delta_text: ' <|constrain|>json'
+      - delta_text: <|message|>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  a93dc77465b8655dd538880c012ed5c1a4c5abcf2b64ef994a928d63b36c2845:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assista
+      - delta_text: nt<|channel|>
+      - delta_text: comme
+      - delta_text: ntary to=function
+      - delta_text: s.g
+      - delta_text: et_weathe
+      - delta_text: r <|con
+      - delta_text: strain|>json<
+      - delta_text: '|mess'
+      - delta_text: 'age|>{"location":'
+      - delta_text: '"NY'
+      - delta_text: C"}<|call
+      - delta_text: '|><|sta'
+      - delta_text: rt|>assistant
+      - delta_text: <|cha
+      - delta_text: 'nnel|>commentary '
+      - delta_text: to=
+      - delta_text: functions
+      - delta_text: .get_ti
+      - delta_text: me <|constrai
+      - delta_text: n|>js
+      - delta_text: on<|message|>{"ti
+      - delta_text: mez
+      - delta_text: one":"EST
+      - delta_text: '"}<|cal'
+      - delta_text: l|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  5ed9afbf532b9ff5a1e61216b364c18dc5adae89b8c6f4231685be4a49f50c21:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|
+      - delta_text: cha
+      - delta_text: nnel|
+      - delta_text: '>commentary'
+      - delta_text: ' to=functions.get_w'
+      - delta_text: ea
+      - delta_text: the
+      - delta_text: r <|c
+      - delta_text: onstrain|>j
+      - delta_text: son<|message|>{"loc
+      - delta_text: at
+      - delta_text: ion
+      - delta_text: '":"NY'
+      - delta_text: C"}<|call|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  2e8375d9a73abf6fc796cb476ad51dd2d1b03dd8fc8b36c8cbbf9f4e90c804d6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  7780f6c1a58168f796a11301dd057d4049b483cdc5357764e647c770c2deb69b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functi
+      - delta_text: ons.get_weather <|constrain|>json<|message|>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+  f37a08b494e94391b6202f273d8a4fc16f24c96d122e55b1f467827ba75236d0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: harmony
+      mode: stream
+      chunks:
+      - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|call|><|call|>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        vllm_python:
+          unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks
+producers:
+  ba910962b38973bda84a2a4cc6e598aeb49c6cc6b50685bdb6a9328adf413f6f:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: harmony
+      mode: batch
+    provenance: null
+  b922c35b4126c678e4980dbd0f9df98cedda83a1120fc228502d59bd2bd30aaf:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: harmony
+      mode: stream
+    provenance: null
+  87486b7d49b452f2f632e2ec0c3ee099ed93e50571277175b3d3244b86e8053a:
+    capture: dynamo_v1-5.0.1
+    document:
+      family: harmony
+      mode: batch
+    provenance: null
+  383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: harmony
+      mode: batch
+    provenance: null
+  9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: harmony
+      mode: stream
+    provenance: null
+  5a5d30fa243b55a409ac93dba5cd82b8fd182c0e0ae0e0d02752758415b18dfa:
+    capture: vllm_python-0.23.0
+    document:
+      family: harmony
+      mode: batch
+    provenance: null
+  f4b7cb3d1893be17918922c13e323c53f07e8318e83434429db6ff67302d2d93:
+    capture: vllm_python-0.23.0
+    document:
+      family: harmony
+      mode: stream
+    provenance: null

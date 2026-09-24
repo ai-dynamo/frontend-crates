@@ -1276,15 +1276,12 @@ _REASONING_ENGINE_RUNTIME = {
 
 @functools.lru_cache(maxsize=1)
 def _reasoning_version_by_impl() -> dict[str, str | None]:
-    """{impl: display version} for reasoning candidates: Dynamo from the v1 crate
-    Cargo.toml, vLLM/SGLang from the fixtures' captured_with. Cached so the tooltip
-    section labels can carry the same version as the compare chips without reloading
-    fixtures per cell."""
+    """Use only producer versions recorded by this reasoning capture."""
     rows, _, _ = _load()
-    return {"dynamo_v1": _dynamo_v1_version(), **_peer_captured_versions(rows)}
+    return _captured_versions(rows)
 
 
-def _reasoning_cand_label(impl: str, mode: str) -> str:
+def _reasoning_cand_label(impl: str, mode: str, family: str | None = None) -> str:
     """Full compare-candidate label "<Engine> <Runtime> <version> (<mode>)", shared
     by the chips and the tooltip sections so the pop-up keys match the buckets.
     Dynamo's reasoning parser is the v1 crate (dynamo-parsers 3.x), so it reads
@@ -1293,8 +1290,13 @@ def _reasoning_cand_label(impl: str, mode: str) -> str:
     if impl == "dynamo_v1":
         eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo v1 Rust"
         base = f"{eng} v1 {rt}".strip()
-    ver = _reasoning_version_by_impl().get(impl)
-    return f"{base} {ver} ({mode})" if ver else f"{base} ({mode})"
+    ver = (_reasoning_family_versions().get(family, {}).get(impl) if family is not None
+           else _reasoning_version_by_impl().get(impl))
+    if ver:
+        return f"{base} {ver} ({mode})"
+    if family is None and any(impl in versions for versions in _reasoning_family_versions().values()):
+        return f"{base} captured per family ({mode})"
+    return f"{base} producer version unavailable ({mode})"
 
 
 def _panel_candidates(
@@ -1339,51 +1341,21 @@ def _panel_candidates(
     return candidates
 
 
-def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
-    """Captured peer reasoning-parser versions, keyed by impl (vllm/sglang).
+@functools.lru_cache(maxsize=1)
+def _reasoning_family_versions() -> dict[str, dict[str, str]]:
+    rows, _, _ = _load()
+    return {family: {impl: str(value) for impl, value in (row.get("captured_with") or {}).items()
+                     if impl in _IMPL_DISPLAY and value} for family, row in rows.items()}
 
-    Reads the `captured_with` blocks merged onto the family rows in `_load`. Only
-    one version per engine is expected across the fixtures (all captured against
-    the same container: vLLM 0.24.0 / SGLang 0.5.14). A single container per
-    engine is available, so there is no older reasoning image to support a
-    two-version compare -- each candidate just carries its real captured version.
-    The last non-empty value wins if fixtures ever disagree."""
-    key_by_impl = {"vllm_python": "vllm_python", "sglang_python": "sglang_python"}
-    out: dict[str, str] = {}
+
+def _captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """A single chip version is valid only when every measured family agrees."""
+    versions: dict[str, set[str]] = {}
     for row in rows.values():
-        captured = row.get("captured_with") or {}
-        for impl, key in key_by_impl.items():
-            version = captured.get(key)
-            if version:
-                out[impl] = str(version)
-    return out
-
-
-def _dynamo_v1_version() -> str | None:
-    """Version label for the Dynamo v1 reasoning parser, taken from the PUBLISHED fixture
-    provenance — the `dynamo-<ver>` dir in the tool-calling batch corpus (the same v1
-    crate powers reasoning and tool-calling) — NOT the live `parsers/v1/Cargo.toml`.
-
-    Sourcing the label from the fixtures keeps it consistent with the tool-calling tabs
-    (both read "3.0.0") and, crucially, matching the version the data was actually
-    captured against. Reading the live Cargo.toml instead makes the label drift ahead of
-    the fixtures the moment the crate is bumped but before a re-capture/republish — the
-    label would claim 4.1.0 while every fixture still holds 3.0.0-era output."""
-    cache = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if not cache:
-        return None
-    root = Path(cache) / "toolcalling" / "fixtures-batch-v1"
-    if not root.is_dir():
-        return None
-    versions = [
-        d.name.split("-", 1)[1]
-        for d in root.iterdir()
-        if d.is_dir() and d.name.startswith("dynamo_v1-")
-    ]
-    if not versions:
-        return None
-    # Highest recorded capture (normally exactly one v1 dynamo dir exists).
-    return max(versions, key=lambda v: tuple(int(x) for x in re.findall(r"\d+", v)))
+        for impl, value in (row.get("captured_with") or {}).items():
+            if impl in _IMPL_DISPLAY and value:
+                versions.setdefault(impl, set()).add(str(value))
+    return {impl: next(iter(values)) for impl, values in versions.items() if len(values) == 1}
 
 
 # ===== Structured JSON model builders (DIS-2434) ================================
@@ -1478,9 +1450,9 @@ def _reasoning_cell_model(
                 continue
             candidates.append({
                 "key": impl,
-                "label": _reasoning_cand_label(impl, mode),
+                "label": _reasoning_cand_label(impl, mode, family),
                 "impl": _cand_engine_group(impl),
-                "version": _reasoning_version_by_impl().get(impl),
+                "version": _reasoning_family_versions().get(family, {}).get(impl),
                 "parse_mode": mode,
                 "block": _reasoning_output_model(expected.get(impl)),
                 "leak": bool(_block_leak_reason(expected.get(impl), family)),

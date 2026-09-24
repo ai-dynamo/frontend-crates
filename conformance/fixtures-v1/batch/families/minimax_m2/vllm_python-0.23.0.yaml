@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: minimax_m2
 capture: vllm_python-0.23.0
@@ -5,435 +6,182 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.c:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both: '
-      TOOLCALLING.batch.2.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
   TOOLCALLING.batch.4.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              nonsense
-
-              </minimax:tool_call>'
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.4.c:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke>
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>'
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.4.d:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </minimax:tool_call>'
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
   TOOLCALLING.batch.5.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>'
-            explanation: vLLM preserves a MiniMax block with a missing outer </minimax:tool_call> close as content; Dynamo recovers the complete inner <invoke> call.
-      TOOLCALLING.batch.5.b:
-        expected:
-          vllm_python:
-            explanation: vLLM and SGLang preserve orphan MiniMax invoke/parameter markers as content when opening <minimax:tool_call> is missing; Dynamo recovers the complete inner <invoke> call and drops the orphan close marker.
-            calls: []
-            normal_text: '<invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>'
-      TOOLCALLING.batch.5.c:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">NY'
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.5.d:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              <minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">Boston</parameter>
-
-              </invoke>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">New York</parameter>
-
-              </invoke>'
-            explanation: vLLM preserves the unterminated MiniMax tool-call block as content; Dynamo preserves prefix text and recovers the complete inner <invoke> calls.
-      TOOLCALLING.batch.5.e:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              <minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">Boston</parameter>
-
-              </invoke>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">New York'
-            explanation: vLLM preserves the truncated MiniMax tool-call block as content; Dynamo preserves prefix text, recovers the complete prior <invoke> call, and drops the incomplete trailing invoke.
-      TOOLCALLING.batch.5.f:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: '<invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>
-
-              '
-            explanation: vLLM preserves the bare MiniMax invoke before the first <minimax:tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
-      TOOLCALLING.batch.5.g:
-        expected:
-          vllm_python:
-            explanation: vLLM and SGLang preserve orphan MiniMax invoke/parameter markers as content when opening <minimax:tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete inner <invoke> call, and drops the orphan close marker.
-            calls: []
-            normal_text: 'I will check that. <invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>'
   TOOLCALLING.batch.6.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
-      TOOLCALLING.batch.6.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
   TOOLCALLING.batch.7.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: book_flight
-              arguments:
-                destination: Paris
-                first_class: true
-                passengers: 2
-            normal_text: ''
-      TOOLCALLING.batch.7.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Tōkyō central
-            normal_text: ''
-      TOOLCALLING.batch.7.f:
-        expected:
-          vllm_python:
-            explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
-            calls:
-            - name: set_limit
-              arguments:
-                count: 9007199254740992
-            normal_text: ''
   TOOLCALLING.batch.8.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.8.c:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: 'I will check the weather. '
   TOOLCALLING.batch.yaml:
     family: minimax_m2
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.3:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: Hello, how can I help you today?
-      TOOLCALLING.batch.9.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '   '
-      TOOLCALLING.batch.10:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <minimax:tool_name>unknown_tool</minimax:tool_name>
-
-              <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
-
-              </minimax:tool_call>'
-            explanation: vLLM leaves the unknown MiniMax tool-call block in normal_text, while Dynamo drops it after tool-name validation.
   TOOLCALLING.stream.1.yaml:
     family: minimax_m2
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.stream.1.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.2.yaml:
     family: minimax_m2
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              <invoke name="get_time">
-
-              <parameter name="timezone">EST</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>'
-            explanation: 'vLLM leaks the complete MiniMax tool-call block into normal_text;
-
-              Dynamo parses it as structured tool output per the M2.7 spec.'
   TOOLCALLING.stream.3.yaml:
     family: minimax_m2
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<minimax:tool_call>
-
-              <invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </minimax:tool_call>'
-            explanation: 'vLLM leaks the complete MiniMax tool-call block into normal_text;
-
-              Dynamo parses it as structured tool output per the M2.7 spec.'
   TOOLCALLING.stream.4.yaml:
     family: minimax_m2
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.stream.4.b:
-        expected:
-          vllm_python:
-            explanation: 'Strict per MiniMax-M2.7''s published parser regexes: the outer
-
-              <minimax:tool_call>, inner <invoke>, and <parameter> blocks must all
-
-              be paired. This stream ends mid-parameter, so Dynamo recovers no call
-
-              and drops the buffered protocol block from normal_text.'
-            calls: []
-            normal_text: ''
-      TOOLCALLING.stream.4.c:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<invoke name="get_weather">
-
-              <parameter name="location">NYC</parameter>
-
-              </invoke>
-
-              </invoke>
-
-              </invoke>'
-            explanation: vLLM preserves the bare MiniMax invoke and orphan close-marker spam as content; Dynamo recovers the complete inner <invoke> call and drops the orphan marker tail.
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: e4f2b323ad0ed57187f3682dbd968e9c733a57aff540af8c091f9ff894a537c8
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]':
+        observation: 3999a47530fdc9922c840f3806fda72c5d9f7d5e133d3de0c65f20f89c86741f
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: b521705f18661920f6d6436483d4ea4184341a808776f116693c1b4ff44d76c4
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: ca1c8c53124f960193a4186cac0f2e8c2ca4178a37b2f76b4af6ca94622c787f
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 61967d01b6a4da80742fde6a7bdba5be918e7baff3c40ee0dedc3cbc97de7519
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: 3130979d4732106cedac3e9482dcf367bc4b6c8f20adc052d8b70b1e866d8b7a
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 7bb0ec8fb5331eae9bd337f68b50c4d176826a6f2d1716df19b9cd6fd9bfa679
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: fcf1c094c24be6ffa73b6ceedec24b85496071e392d983d1c8deff4037f4f7bb
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: 7ae092f418d7d23aff966d560523eb35560cdcbcd4af8a4c70e3bf4163768fb3
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: e7a7f4f228cab63956eb110b85a075e9388a88806af678af7af8b3c27967380c
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 8242de7b4fcc36ed358d1f9b6f9aa1e262bfe8ef5df96f2421e4d5ef59c674d8
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: cc0df46cc3111dc1b137ae35c491aeb2eb357b94f8ff2c59769d92a3c4a1a480
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]':
+        observation: 365055aa128ebb6b9fb031ae05c76c3a8bbf202e0447ee9a69b6eabeffd2ae34
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]':
+        observation: aac06f436197ed09561a1131541528797bc7bd5e50a2e3ba564cabb706ba3cb8
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 671c3be692408320283cfa320b5ef4084404ab4f611bd21a752372c5c24fb793
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 4ba030d609661427b6ed04a437166222b5da06abd37f97df1f318a9913525f8c
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: b0c07a679f737899f46b05de4b345f7121af63c3439b14a6d3fbf1dde7c3884f
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 1c3626a63edbad875034b0bb8840ded081fc4e3f3b1a80aaf3f0d4f6ee26943a
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 36f4b85106ee38eccef238adc82c7c2019cd510201cabcab7f4f91b7a5898f0b
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: d2dbb6b31ec39e5c089fb5789b1077ef8347784b4bdf4cec182448f263b6e496
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 389106326defbe523892043b1cf67abf1eb7a30d998e2c2b189f83cf0c261f4f
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 6df98fb97755a770f51c84b976a320aa46aae6aca691b7fa1bfd95312ddbd5ff
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 3efb3b08db27ecb2100ca58c7fcac74914d77a864c25c0cd6ccf0bbb4579b6bc
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: bab64a4874c40f5f9500787a244460ef8b39885be807e87634c0f3c9b4c63a7d
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: d03328d2f5f93cb843a014fe659e0e5c3b5680715dfe1e948fe5d699dc799731
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 553a21a31d5e4aacca359f530c016152c71afaef1dc7f4326f3e0e30028c67ea
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 3654be9baf9cb7497740f2696eba3017b29f5621246204bffaa4a72bf29b3f3b
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 47e49b20b3893bd47bf5701e5402edab0e02c0f147ce79f25cf4910c567993b0
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 36c1a5f895f45b6a069ab12cb4c7fbb80f5a2c59d458393c2295603a1a6eb6d2
+        producer: 8b345afddfb621e0eea2be0aac2d9343f9b498d9aabbb79a59611d0e7551d3e9
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: e49111f8efbf640295e9dcda00223655989507c38e29b661f964522e2a95da3a
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 670185783ccf48dc735a26d9d446903b4d255e58b99e13b3f5fe52af3e3f2666
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 8cf440b176fddae43a4037f81b4006e777d133a9b5ca02ae939331e8e74647a2
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: 87414eb1d732f802912c1ea291a7e328ad1ead4a4f701d5c41f6fd2eb952102b
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: b6311b24bbd948a59599b1376170c5eba06a7f3fe71d224070e6c23748056698
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 4de6b3a104e044ad5e409f4f7d569f3c7cbbbfc77b2dc6ef856d4259d6c96185
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 4561e3fb651e58ce4214c6d06055e1e2fa6887a4744b01461d88e2618f4baafb
+        producer: b4ae55616d83209fdf11a5ab61b6651649a6ed740456df8d1afb075fab1b842a
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

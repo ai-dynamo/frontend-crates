@@ -254,3 +254,122 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
     assert capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"]) == [
         {"family": "deepseek_v41", "cases": {"UNIFIED.7-2": record}},
     ]
+
+
+@pytest.mark.parametrize("provenance_key", ["capture_origin", "capture_provenance"])
+def test_current_source_guard_requires_measured_source_and_bound_request(tmp_path, monkeypatch, provenance_key):
+    monkeypatch.setattr(capture_stimulus, "crate_version", lambda path: "1.2.3")
+    monkeypatch.setattr(capture_stimulus, "source_fingerprint", lambda path: "a" * 64)
+    current = _input("same") | {"tools": unified_tools()}
+    _write(tmp_path, "inputs", current)
+    root = tmp_path / "dynamo_v2-1.2.3"
+    path = _write(tmp_path, root.name, {
+        "capture_input": capture_stimulus.capture_input(current), "assembled": [],
+    })
+    with pytest.raises(ValueError, match="current-source capture unavailable"):
+        capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)
+    doc = yaml.safe_load(path.read_text())
+    doc[provenance_key] = {"crate_version": "1.2.3", "source_sha256": "a" * 64}
+    path.write_text(yaml.safe_dump(doc))
+    assert len(capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)) == 1
+    doc[provenance_key]["source_sha256"] = "b" * 64
+    path.write_text(yaml.safe_dump(doc))
+    with pytest.raises(ValueError, match="current-source capture unavailable"):
+        capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)
+    doc[provenance_key]["source_sha256"] = "a" * 64
+    doc["cases"]["UNIFIED.7-2"]["capture_input"]["tools"] = []
+    path.write_text(yaml.safe_dump(doc))
+    with pytest.raises(ValueError, match="stimulus mismatch"):
+        capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)
+
+
+def test_current_source_guard_rejects_unverified_overlay(tmp_path, monkeypatch):
+    monkeypatch.setattr(capture_stimulus, "crate_version", lambda path: "1.2.3")
+    monkeypatch.setattr(capture_stimulus, "source_fingerprint", lambda path: "a" * 64)
+    current = _input("same") | {"tools": unified_tools()}
+    _write(tmp_path, "inputs", current)
+    for suffix, digest in [("", "a" * 64), (".patch1", "b" * 64)]:
+        path = _write(tmp_path, "dynamo_v2-1.2.3" + suffix, {
+            "capture_input": capture_stimulus.capture_input(current), "assembled": [],
+        })
+        doc = yaml.safe_load(path.read_text())
+        doc["capture_origin"] = {"crate_version": "1.2.3", "source_sha256": digest}
+        path.write_text(yaml.safe_dump(doc))
+    with pytest.raises(ValueError, match="effective record.*different source evidence"):
+        capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)
+
+
+def test_historical_family_selection_does_not_resurrect_absent_cases(tmp_path, capsys):
+    current = _input("same") | {"tools": unified_tools()}
+    record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []}
+    _write(tmp_path, "inputs", current, key="A")
+    _write(tmp_path, "inputs", current, key="B")
+    _write(tmp_path, "dynamo_v2-1.0.0", record, key="A")
+    _write(tmp_path, "dynamo_v2-1.0.0", record, key="B")
+    _write(tmp_path, "dynamo_v2-2.0.0", record, key="B")
+    docs = capture_stimulus.validated_family_capture_docs(tmp_path, [tmp_path / "inputs"])
+    assert set(docs[0]["cases"]) == {"UNIFIED.B"}
+    assert "deepseek_v41/UNIFIED.A: no recorded measurement" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("mutation", [None, "source", "status", "bytes", "overlay"])
+def test_unchanged_measured_checkpoint_uses_own_source_proof(tmp_path, monkeypatch, mutation):
+    monkeypatch.setattr(capture_stimulus, "crate_version", lambda path: "2.0.0")
+    monkeypatch.setattr(capture_stimulus, "source_fingerprint", lambda path: "b" * 64)
+    current = _input("same") | {"tools": unified_tools()}
+    _write(tmp_path, "inputs", current)
+    path = _write(tmp_path, "dynamo_v2-2.0.0", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
+    document = yaml.safe_load(path.read_text())
+    document["capture_origin"] = {"crate_version": "1.0.0", "source_sha256": "a" * 64}
+    path.write_text(yaml.safe_dump(document))
+    provenance = {"status": "captured", "origin": {"crate_version": "2.0.0", "source_sha256": "b" * 64}}
+    checkpoint = {"schema_version": 1, "families": {"deepseek_v41": provenance},
+                  "records": {"deepseek_v41/UNIFIED.7-2.yaml": hashlib.sha256(path.read_bytes()).hexdigest()}}
+    if mutation == "source":
+        provenance["origin"]["source_sha256"] = "a" * 64
+    elif mutation == "status":
+        provenance["status"] = "legacy"
+    elif mutation == "bytes":
+        path.write_text(path.read_text() + "\n")
+    elif mutation == "overlay":
+        _write(tmp_path, "dynamo_v2-2.0.0.patch1", {"capture_input": capture_stimulus.capture_input(current), "assembled": [{"kind": "text", "text": "changed"}]})
+    (path.parent.parent / "capture-checkpoint.json").write_text(json.dumps(checkpoint))
+    if mutation is None:
+        assert len(capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)) == 1
+        assert yaml.safe_load(path.read_text())["capture_origin"]["crate_version"] == "1.0.0"
+    else:
+        with pytest.raises(ValueError, match="current-source capture unavailable|checkpoint record hash differs"):
+            capture_stimulus.validated_current_source_docs(tmp_path, [tmp_path / "inputs"], tmp_path)
+
+
+def test_historical_requests_survive_current_edits_and_new_cases(tmp_path, capsys):
+    original = _input("original")
+    _write(tmp_path, "inputs", _input("today") | {"tools": unified_tools()}, key="retained")
+    _write(tmp_path, "inputs", _input("new") | {"tools": unified_tools()}, key="new")
+    _write(tmp_path, "dynamo_v2-1.0.0", {"capture_input": original, "assembled": []}, key="retained")
+    docs = capture_stimulus.validated_family_capture_docs(tmp_path, [tmp_path / "inputs"])
+    assert docs[0]["cases"]["UNIFIED.retained"]["capture_input"] == original
+    assert set(docs[0]["cases"]) == {"UNIFIED.retained"}
+    assert "new: no recorded measurement" in capsys.readouterr().err
+    with pytest.raises(ValueError, match="sets differ"):
+        capture_stimulus.validated_current_capture_docs(tmp_path / "dynamo_v2-1.0.0", [tmp_path / "inputs"])
+
+
+@pytest.mark.parametrize("mutation", ["missing", "input", "finish", "tokens", "unavailable"])
+def test_historical_unreplayable_records_report_unavailable(tmp_path, capsys, mutation):
+    original = _input("recorded")
+    _write(tmp_path, "inputs", original)
+    record = {"capture_input": copy.deepcopy(original), "assembled": []}
+    if mutation == "missing":
+        del record["capture_input"]
+    elif mutation == "input":
+        record["capture_input"]["input"] = "different"
+    elif mutation == "finish":
+        record["capture_input"]["chunks"].pop()
+    elif mutation == "tokens":
+        record["capture_input"]["chunks"][0]["token_ids"] = [1]
+    else:
+        record["unavailable"] = "not measured"
+    _write(tmp_path, "dynamo_v2-1.0.0", record)
+    assert capture_stimulus.validated_family_capture_docs(tmp_path, [tmp_path / "inputs"]) == []
+    assert "1 cases unavailable" in capsys.readouterr().err

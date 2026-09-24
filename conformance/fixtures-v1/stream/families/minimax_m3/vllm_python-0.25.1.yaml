@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: minimax_m3
 capture: vllm_python-0.25.1
@@ -7,21 +8,20 @@ documents:
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.5.h:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check that. '
-        - expected: []
-          normal_text: ']<]minimax[>[<invoke name="get_weather">
-
-            '
-        - expected: []
-          normal_text: ']<]minimax[>[<location>NYC]<]minimax[>[</location>
-
-            ]<]minimax[>[</invoke>
-
-            ]<]minimax[>[</tool_call>'
-        - expected: []
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 27ff60c8d9bf465f9d69e38de0c45cf9808e2e38fb9a308f75e16344ae92874a
+        producer: b5fc992c846dcc23b928bea8a9a97fbc10cc469f478af788f99f3931a0ac043f
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+  rust:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 27ff60c8d9bf465f9d69e38de0c45cf9808e2e38fb9a308f75e16344ae92874a
+        producer: b5fc992c846dcc23b928bea8a9a97fbc10cc469f478af788f99f3931a0ac043f
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}

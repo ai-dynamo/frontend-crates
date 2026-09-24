@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: nemotron_nano
 capture: vllm_python-0.23.0
@@ -7,362 +8,275 @@ documents:
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.1:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.10.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.10:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.13.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.13:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.2.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.2.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-          normal_text: 'Both: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.2.d:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.3.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.3:
-        chunks:
-        - expected: []
-          normal_text: Hello, how
-        - expected: []
-          normal_text: ' can'
-        - expected: []
-          normal_text: ' I help you'
-        - expected: []
-          normal_text: ' today?'
-        - expected: []
   TOOLCALLING.streamv1.4.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.4.d:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.5.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.5.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.5.b:
-        chunks:
-        - expected: []
-          normal_text: '<function=get_weather>
-
-            <parameter=location>'
-        - expected: []
-          normal_text: '
-
-            NYC'
-        - expected: []
-          normal_text: '
-
-            </parameter>
-
-            </function>
-
-            </tool_call>'
-        - expected: []
-      TOOLCALLING.streamv1.5.c:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.5.d:
-        chunks:
-        - expected: []
-          normal_text: I'll start
-        - expected: []
-          normal_text: ' by'
-        - expected: []
-          normal_text: ' fetching the weather'
-        - expected: []
-          normal_text: ' for both'
-        - expected: []
-          normal_text: ' Boston'
-        - expected: []
-          normal_text: ' and New'
-        - expected: []
-          normal_text: ' York at the'
-        - expected: []
-          normal_text: ' same'
-        - expected: []
-          normal_text: ' time!
-
-            '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.5.e:
-        chunks:
-        - expected: []
-          normal_text: I'll start
-        - expected: []
-          normal_text: ' by'
-        - expected: []
-          normal_text: ' fetching the weather'
-        - expected: []
-          normal_text: ' for both'
-        - expected: []
-          normal_text: ' Boston'
-        - expected: []
-          normal_text: ' and New'
-        - expected: []
-          normal_text: ' York at the'
-        - expected: []
-          normal_text: ' same'
-        - expected: []
-          normal_text: ' time!
-
-            '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.50.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.50:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.6.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.6.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.6.b:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.7.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.7.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.7.b:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.7.f:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.8.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.8.a:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.8.b:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.8.c:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.8.d:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check'
-        - expected: []
-          normal_text: ' the weather. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.9.yaml:
     family: nemotron_nano
     mode: streamv1
     captured_with:
       vllm_python: 0.23.0
-    cases:
-      TOOLCALLING.streamv1.9.a:
-        chunks:
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.9.b:
-        chunks:
-        - expected: []
-          normal_text: '   '
-        - expected: []
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 64b78a5b97f968e0fd1f4fbaff0659138639a590326ba2a54a2421ebcec49b3e
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 039a3079333e06b0ca515869b68aa3e95d3a4bd427490ef1c1a0aef1d72a40c5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]':
+        observation: 454c9757483dc58ababfdc0608058d75e21d942f6676694b1ffbf9a512f82491
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: 557bc74f5dfab355dd45f62baa99ecb3d210fac2e1933725743f66ccd8432a53
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d9385654576be7d82fd58eae1ef91b7bd724ef765a75cd2f2297b561ee1ebfbc
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: 7e41cfca14ce28c4f816ff1ed539aa9e0fc6b881075131c1609e8ed52fa69157
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: 6dde2d73967d471b8735e4d082919bbd53b962ec0dd02c095c82984bb31ed00f
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: c50406cd52738c7e546b1f775db85a463fce2a2c2d6db1347041d36aceba7d0d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 889372f6f2eb80e81400558fc65bea5a6cf6194b9e851d6c81bc64f0424069a6
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: a484624e4122516acbb3578e5f59438ef2591e203f49ff3682cc57cca29e32c4
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: 6e0478b03b6b41387c456d61ad6af23c040a8d4bf15a9e9ffe37243bb9201527
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 8bd20642f56b0958135be69a1758a74b1dd90d758384236a98c927f2fde7a632
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 2fddadf4e69d2a0c4361649672e774693cf39d7c5fb2d57b1b60a14f7fad7b5e
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: 2fee74cc01921539597b9cf288c1894e49da6ca09fbc45c46a3c54f57cc43533
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: 68c6197df7dc484c1a766508da553dc69c6c2242af31c82f70dd1a44ca59f9b5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: c29c1ac89ef3a9c8b47823f9bdaf7709d0e2ddcb5451d43536016594c716637a
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: 8538e24452c3bb0cf994e529496f2289f7c1c72bec700466d56abce1cc654b87
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: b91ed3890392f2f5cdedc9959e7aee4b04660ab1f3ad998dbf6e67b774912890
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: cd97e503c3da1f4f3bc25006a67a6e91769706b862a9f4cd948a3222a2db2efa
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: bf79b717f2782c1b3dc8def0c438a517dd28ef8209acb49a7ff655b4e787843f
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: bb6cf0f3a8a7dfcf088d4e3cf30523bbde82ba53610fd60f2956a71c32ed1f4b
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 03099489d64b6b2c7caffe95f293f737dc5022d3c246fa6386926b3612e689e5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: 5141c2260595dcdf2ba8e8142feee7a289b658d5201ba605d62b77e45be8ae3d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 7001c90e83a2917e9483b24a3e9c96d9d4dfcaf346f90578a9cdc72c789a40e0
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]':
+        observation: 1d67d51529209bff20ea968de14f042b3c3b33283682d1ccdb41bb7ffd63dd37
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 502a21c26eaff3a9bbdde16bccc0f1491e46e4bf849f3ce6417f389e62051b6d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}
+  rust:
+    base: null
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 64b78a5b97f968e0fd1f4fbaff0659138639a590326ba2a54a2421ebcec49b3e
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 039a3079333e06b0ca515869b68aa3e95d3a4bd427490ef1c1a0aef1d72a40c5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]':
+        observation: 454c9757483dc58ababfdc0608058d75e21d942f6676694b1ffbf9a512f82491
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: 557bc74f5dfab355dd45f62baa99ecb3d210fac2e1933725743f66ccd8432a53
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d9385654576be7d82fd58eae1ef91b7bd724ef765a75cd2f2297b561ee1ebfbc
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: 7e41cfca14ce28c4f816ff1ed539aa9e0fc6b881075131c1609e8ed52fa69157
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: 6dde2d73967d471b8735e4d082919bbd53b962ec0dd02c095c82984bb31ed00f
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: c50406cd52738c7e546b1f775db85a463fce2a2c2d6db1347041d36aceba7d0d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 889372f6f2eb80e81400558fc65bea5a6cf6194b9e851d6c81bc64f0424069a6
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: a484624e4122516acbb3578e5f59438ef2591e203f49ff3682cc57cca29e32c4
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: 6e0478b03b6b41387c456d61ad6af23c040a8d4bf15a9e9ffe37243bb9201527
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 8bd20642f56b0958135be69a1758a74b1dd90d758384236a98c927f2fde7a632
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 2fddadf4e69d2a0c4361649672e774693cf39d7c5fb2d57b1b60a14f7fad7b5e
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: 2fee74cc01921539597b9cf288c1894e49da6ca09fbc45c46a3c54f57cc43533
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: 68c6197df7dc484c1a766508da553dc69c6c2242af31c82f70dd1a44ca59f9b5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: c29c1ac89ef3a9c8b47823f9bdaf7709d0e2ddcb5451d43536016594c716637a
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: 8538e24452c3bb0cf994e529496f2289f7c1c72bec700466d56abce1cc654b87
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: b91ed3890392f2f5cdedc9959e7aee4b04660ab1f3ad998dbf6e67b774912890
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: cd97e503c3da1f4f3bc25006a67a6e91769706b862a9f4cd948a3222a2db2efa
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: bf79b717f2782c1b3dc8def0c438a517dd28ef8209acb49a7ff655b4e787843f
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: bb6cf0f3a8a7dfcf088d4e3cf30523bbde82ba53610fd60f2956a71c32ed1f4b
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 03099489d64b6b2c7caffe95f293f737dc5022d3c246fa6386926b3612e689e5
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: 5141c2260595dcdf2ba8e8142feee7a289b658d5201ba605d62b77e45be8ae3d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 7001c90e83a2917e9483b24a3e9c96d9d4dfcaf346f90578a9cdc72c789a40e0
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]':
+        observation: 1d67d51529209bff20ea968de14f042b3c3b33283682d1ccdb41bb7ffd63dd37
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 502a21c26eaff3a9bbdde16bccc0f1491e46e4bf849f3ce6417f389e62051b6d
+        producer: ccdcbf95aa767d78a0155aff8caf25a4d91416ff70374e2201f68f4050b68d42
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.a"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}

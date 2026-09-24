@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: qwen25
 capture: vllm_rust-0.25.1
@@ -7,24 +8,34 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "non": invalid Hermes)'
-      TOOLCALLING.streamv1.4.c:
-        exception: 'ToolParserError::ParsingFailed (near "{\"arguments\":": invalid Hermes
-
-          expected `name`)'
   TOOLCALLING.streamv1.5.yaml:
     family: qwen25
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: qwen25
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.6.c:
-        exception: 'ToolParserError::ParsingFailed (near "{\"name\": \"get_time\"}</tool_call>": invalid Hermes)'
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 8cfcb35a787e51b09fd445ed6e0c84926852ac281954dde2b9e4c828aeeb4719
+        producer: c082b675ddbbf1b2d061b8740ad186fda54857b387fee9f6b6e60ac6da88dada
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 69a199d442a1c5c47a2916447c1137053bdd896bb42e2bd7eaef67fee763e76a
+        producer: c082b675ddbbf1b2d061b8740ad186fda54857b387fee9f6b6e60ac6da88dada
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]':
+        observation: 5701992408b4f4235e9131bd2c49620ec549b701bd5d360a5e00fee1767b26ab
+        producer: c082b675ddbbf1b2d061b8740ad186fda54857b387fee9f6b6e60ac6da88dada
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

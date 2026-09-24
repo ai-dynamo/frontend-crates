@@ -1,0 +1,764 @@
+schema: bound-observations-v1
+observations:
+  6e800c8badc4569074b9ff10484f57e1fdb4afd82f6b1265b659b5d3b6f48054:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  a6ccf1678f0ac9f3742f089e35c705047338c296c9ec8416c8cf266f8b49a9af:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  0397d3d149f545abb981eb88bad77985632c02bb60fdd647b89810fe71c7a6fb:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  cb94da9fa829e3d877e99582b175025c311bc0aa288e7e0883db5bbb577269e7:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  28ce679f60a7ae6cdb78ea323f0acf623fbcf1826b49ff5d4f5a80b518cfafe2:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_stock
+        arguments:
+          symbol: NVDA
+      normal_text: ''
+  9059a7ca2f1839028244f730d92d30ae534de97a244b24ea8aea700a0a46e62e:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_stock
+        arguments:
+          symbol: NVDA
+      normal_text: ''
+  2120bf74770b003c5038c0193242d5621ff547815acdb59b812a2a13e3850b18:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  2fb39054eebc3b53178e3aeaf7e3fa5a4cec365be3ce7167d9a933764c886057:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: Let me look both up.Fetching now.
+  03be475b3cda45cee5fcbcfe8ef93e23f24ca19a1ab1934a153d31b1c4a4febe:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Paris
+      normal_text: ''
+  dafb6178b01c53192751a29e93addc91d7c8a149ba6fb61a262500fbe12ac8c8:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  90d155cf7f1c866da488e83f326d79959dbc3b058a0528c088285225cb7a4cf4:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: 'text with '
+      normal_text: ''
+  f70a4ac4aee365ef15e22732127eecb292f3f894d91ac4d864158e3d754bd55b:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments: {}
+      normal_text: ''
+  ca21848cddf6ed1006d88ecada41f42d80fe4c653f549e8761c8ba59de3d517c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: 'quote: <atem:function_calls> is the opener'
+      normal_text: ''
+  1b01cbe85ed6603cbea4844139be6b5e6a9d8e059b2447ac280fa1088928431c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: 'has '
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  66a91b426d0e3de0b1377891c52a004dbef9038e31e8aadb85440a8313282f7f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments: {}
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  09051612f15d0af8f623e40e1536b17987581ae1c141af3347ae011381044f41:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: '{"unclosed": '
+      normal_text: ''
+  0a22c2615cb238ac2fd1f05dee658bff3826bd542f91e0b414dc75e95f296939:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls: []
+      normal_text: Sure, here is the plan.
+  823c51477414c46aa1e54f5272bf3c802b72d668cd5642afaf016fe85dac4213:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: ping
+        arguments: {}
+      normal_text: ''
+  9ba0090f4459136bbe5db02df4fb1dab3c18b038fbb65768da42cc147300535a:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: muse glimmer
+          limit: 5
+          safe: true
+      normal_text: ''
+  4279f22847a52ce7a42121f24dee652e6bc7c031a486ab27df0b1e4bc977956f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query: καλημέρα 你好 — "quoted" \n tab\t
+      normal_text: ''
+  76d1795f6360beefffc57ce4e3894db977ffe6d8a6fbac3f5071af845d535122:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          limit: '5'
+      normal_text: ''
+  1d56c66c5a5feb419e634dab493e21de4afdf4a35a4af455bd74ceb9c7b4f66f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query:
+            filters:
+              lang:
+              - en
+              - el
+              site: null
+            boost:
+            - 1
+            - 2.5
+      normal_text: ''
+  5df27f1cab79424543aa1b2c04944fa81c9d2562e5fedccbb35667d9206e1970:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          query:
+            a:
+              b:
+                c:
+                  d:
+                    e:
+                    - 0
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
+                    - 6
+                    - 7
+                    - 8
+                    - 9
+                    - 10
+                    - 11
+                    - 12
+                    - 13
+                    - 14
+                    - 15
+                    - 16
+                    - 17
+                    - 18
+                    - 19
+                    - 20
+                    - 21
+                    - 22
+                    - 23
+                    - 24
+                    - 25
+                    - 26
+                    - 27
+                    - 28
+                    - 29
+                    - 30
+                    - 31
+            text: 'lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum '
+      normal_text: ''
+  df62d8e20c4bf184bb195e73c9d0de0a55340d9029acda43b7271f0bfdab0445:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: search
+        arguments:
+          limit: 9007199254740993
+          ratio: 5.0
+      normal_text: ''
+  a3248ba43ed404a53c4cf88652a8307e59b856b4a11c3ade7e64b8f1546b865a:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: Checking the weather now.
+  100ac60e49043677d3d0aff99ca5729fcaed91de19b334315502149a387bea37:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: Called the weather service.
+  e015fcdebeac621fc1f05d70329eb810187ebb37548fd327930b747bc47a9eb3:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: One moment.Done.
+  e2d8d0327679949f5a70708845b81918f2da129e20dac0d8f9aab4809227a858:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: Now the time.
+  17aae43721a26cc20b7011f6d77e5483e418c5d5a2f6830154e9630828c26fcd:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: null
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+producers:
+  bf16ab1767ede8cc9d1874fa24c8c5477023c4cfe87850347f99c5e18f414b0e:
+    capture: dynamo_v2-0.2.1
+    document:
+      family: muse_glimmer
+    provenance:
+      captured_with: 0.2.1
+      runtime_version: 0.2.1

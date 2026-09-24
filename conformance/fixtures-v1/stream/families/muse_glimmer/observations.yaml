@@ -1,0 +1,3351 @@
+schema: bound-observations-v1
+observations:
+  bd0306fb971ebb0aca186fe4e8c01ae22dd2fa9dfd6ee39b3c6cdd2b6e45f7ec:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|sta
+      - delta_text: rt|>assistant to=get_weather<|mess
+      - delta_text: age|><atem:functi
+      - delta_text: 'on_calls>
+
+          <atem:invoke name="get_w'
+      - delta_text: 'eather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:inv'
+      - delta_text: 'oke>
+
+          </atem:function_calls><|eo'
+      - delta_text: m|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+      - expected: []
+  8875f661aec654f2f3e59b3c0c1922c7a48ba56fe72fdee7b4986692347f7327:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  88c9ec1937d798bfbee8e39550831da34da42c29e07b28d1e2a3f70e329789e9:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks: []
+    value:
+      unavailable: Muse has no separate generation-primer header; assistant-prefix omission is covered by TOOLCALLING.streamv1.5.b, while headerless ATEM remains prose by design.
+  e543d239a1691885f3ffd6309e9aa62f2d8b385a90cf031da0d556f87e8aebd1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_stock<|message|><atem:function_calls>
+
+          <atem:invoke name="get_stock">
+
+          <atem:parameter name="symbol">NVDA</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_stock
+          arguments: '{"symbol":"NVDA"}'
+      - expected: []
+  564f94999d30cfa211b436cae0462a643aaa242b248b71bb469b833ae1f99f06:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=functions<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: '<atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: </atem:function_calls><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+      - expected: []
+  fc26caf6e30bfc13b6ce8ddeb08a1694e3300a8772d712f66cc08d9b8b6d0461:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'Let me look both up. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls>'
+      - delta_text: '<|eom|><|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Fetching now.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: Let me look both up.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        normal_text: ' '
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+        normal_text: ' Fetching now.'
+      - expected: []
+  405609e27740643b04ba90c1a6bbd912848d0cb6688d094b8f6bd7bd7668c742:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+      - expected: []
+  f693f5bae3663f8b24741f3a6b4458589ddc94ba8255b79695ecaeb9347575bf:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: Hello, how can I hel
+      - delta_text: p you today?
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Hello, how can I hel
+      - expected: []
+        normal_text: p you today?
+      - expected: []
+  b55f0d654408daa02cb58c5c91488c8feb8acccf1e7e1917911846f5cd1006b6:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">text with </atem:parameter> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"text with "}'
+      - expected: []
+  d24872133588f1edc5970a1526803fcca9a1b4c57780a5753bf5d70eed96f2b2:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">text with </atem:invoke> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{}'
+      - expected: []
+  e0eba79774116d5a7974a0021763603fd6d54c3918cc485defcd490fd535da1a:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">quote: <atem:function_calls> is the opener</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"quote: <atem:function_calls> is the opener"}'
+      - expected: []
+  f5eeff9d514cee6793e1d469e8682716da71eaf7ccfa2ba1bc166c883ff5769b:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">has </atem:parameter> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"has "}'
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  cae0d7a45fb7a3493163512345e5030903259b61115776fa94dbe6b24be4ead5:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">has </atem:invoke> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{}'
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  830b741c8836f39999b56d30cb2d8d5a912c288edc8f8e9d4774c16899434f08:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: 'complete nonsense, no invoke here
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  92f182bd5adca2fe8bf62c1b9949653dedef5eb45e2f15f489ae4b86629fde82:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  1021156f2214bed90af5ef7562091e925fd4f5d6717dd90a62880acabbc1cc05:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: ' to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: Sure, here is the plan.</atem:inv
+      - expected: []
+        normal_text: oke>
+      - expected: []
+  7c73335ddbc7912ebe173bbae75dea61e4c69e8182e7730b49e9eef5e477dcac:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NY'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  573b48f20bdd5e1d70b9ebd6ffa485b0a93edfac5d2b8aa00631310398df990d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          '
+      - delta_text: ''
+        finish_reason: length
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+      - expected: []
+  6faf293e32936db7ac1a63d9a4ec1ddc95d4a57da085beefa8b69d0b43b7a247:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">ES'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+      - expected: []
+  73a4cab232e379e7de18a3231dd24cbd8ce62c3c499c259de1407dc4ea3d43c0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>as
+      - delta_text: sistant to
+      - delta_text: =get_weath
+      - delta_text: er<|messag
+      - delta_text: e|><atem:f
+      - delta_text: unction_ca
+      - delta_text: 'lls>
+
+          <atem'
+      - delta_text: :invoke na
+      - delta_text: me="get_we
+      - delta_text: 'ather">
+
+          <a'
+      - delta_text: tem:parame
+      - delta_text: ter name="
+      - delta_text: location">
+      - delta_text: 'NYC</atem:'
+      - delta_text: parameter>
+      - delta_text: '
+
+          </atem:in'
+      - delta_text: 'voke>
+
+          </at'
+      - delta_text: em:functio
+      - delta_text: n_calls><|
+      - delta_text: eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  b69c00af93fe60e482a71244e005889ceec975bb4abf6d73f64bb0b4895d7a58:
+    request:
+      model_text: null
+      tools:
+      - name: ping
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=ping<|message|><atem:function_calls>
+
+          <atem:invoke name="ping"></atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: ping
+          arguments: '{}'
+      - expected: []
+  fca6612c02a02049e0001ba721a263be336a84ea454af7d8d371b34ce774475f:
+    request:
+      model_text: null
+      tools:
+      - name: ping
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: "<|start|>assistant to=ping<|message|><atem:function_calls>\n<atem:invoke name=\"ping\">\n   \n</atem:invoke>\n</atem:function_calls><|eom|>"
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: ping
+          arguments: '{}'
+      - expected: []
+  4a771a8c8e189326c399cdcde413ced6c79b2fc46babca2fdb5b6d0e655d5715:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks: []
+    value:
+      unavailable: Muse has no arguments key whose absence differs from an empty invoke; TOOLCALLING.streamv1.6.a is its parameterless form.
+  7378a7b24dd4b7e68af9141e977247062f11fc58689012bfd55f40e0cc2ba2cb:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          '
+      - delta_text: '<atem:parameter name="query">muse glimmer</atem:parameter>
+
+          <atem:parameter name="limit">5</atem:parameter>
+
+          '
+      - delta_text: '<atem:parameter name="safe">true</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"muse glimmer","limit":5,"safe":true}'
+      - expected: []
+  a3dd4af174898a3b1863981389b6bb407eaae33356c60998a99126c644f01545:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">καλημέρα '
+      - delta_text: '你好 — "quoted"</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"καλημέρα 你好 — \"quoted\""}'
+      - expected: []
+  dc320e14a046357e5fad242fb01272b1ecc8eb8098ba57eba5e9964eb1047a80:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'Checking the weather now. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: Checking the weather now.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        normal_text: ' '
+      - expected: []
+  d49af7962b65fd35b5f3ee7ee19abc905c36d7a8cf5680f67c72f645c3ebe38a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Called the weather service.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Called the weather service.'
+      - expected: []
+  a9b16e3e12085a7d5700dbd66f852ea9e55bf5a5f419abf403a0695d1a1c45be:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'One moment. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Done.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: One moment.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        normal_text: ' '
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  67a6276f44c9997d026dc7ddcbeb634a661cdc07e37abafddb73f69374ea4753:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Now the time. '
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Now the time. '
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  5a74c1d163f219f33a4fd5487363076f71d1af325f051f8662eed8ff969c888b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  94e2407aa2797784e55da11e03d1b60214f3deb3cd152c49166358266acc75ed:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+        normal_text: '   '
+  22078c84c3a2931b8b0db26fef249aa275e9c13ad9338a5cf451c464d92d5938:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|sta
+      - delta_text: rt|>assistant to=get_weather<|mess
+      - delta_text: age|><atem:functi
+      - delta_text: 'on_calls>
+
+          <atem:invoke name="get_w'
+      - delta_text: 'eather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:inv'
+      - delta_text: 'oke>
+
+          </atem:function_calls><|eo'
+      - delta_text: m|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+      - expected: []
+  c306cd15c88e841ce1554a0c78d291ba536e53ab81c61b920198e4411df3c2db:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  a304de5f1a90d68baebf5f625985b1f7a1a273a92b5ae58d48f4a15a8de45aea:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_stock<|message|><atem:function_calls>
+
+          <atem:invoke name="get_stock">
+
+          <atem:parameter name="symbol">NVDA</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_stock
+          arguments: '{"symbol":"NVDA"}'
+          complete: true
+      - expected: []
+  2f874cbf3cdfac6d031a8a7a4089f761dc21f16df5909b601d718934556fd592:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=functions<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: '<atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          '
+      - delta_text: </atem:function_calls><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+      - expected: []
+  12c3ddaca41227fea56e7e6f09d5a2070a7211da0911ce1342680a57a398aa14:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'Let me look both up. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls>'
+      - delta_text: '<|eom|><|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Fetching now.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: Let me look both up.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        normal_text: ' '
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+        normal_text: ' Fetching now.'
+      - expected: []
+  57cdd73bd96080cb64c5a87f61f318b81f54e3b6d2f6f53264be1e38e81ba9f0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+          complete: true
+      - expected: []
+  e353c57cda5238b4f517a7d7861dc0444157782da52bd8aaf1036d1256803ce0:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">text with </atem:parameter> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"text with "}'
+          complete: true
+      - expected: []
+  68f970d603bb90a620069d147120c606d0eae587c4de3427c400c641328a984d:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">text with </atem:invoke> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{}'
+          complete: true
+      - expected: []
+  736bff69752a789352a5fdca5209ab60f087a6130a269ea6ad1870b76acb0eb7:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">quote: <atem:function_calls> is the opener</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"quote: <atem:function_calls> is the opener"}'
+          complete: true
+      - expected: []
+  94e7da6e62ee35ba5044a099dea24d945c46e0e72867b4a703d0b2da20c2c72f:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">has </atem:parameter> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"has "}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  7d9d690a150d3b72d35467cb5369a4574e29140f6b8275bff58bfc24c86b5dc0:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">has </atem:invoke> inside</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  5b6260e50622d6dc695b3bcc73aefddb3b6649408b3dde29bf36e8b755dea839:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  d86358dc804388621b098ffe610ec33cb14957185927c6dfe3f9d9b02e806cc7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          '
+      - delta_text: ''
+        finish_reason: length
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+      - expected: []
+  0dddbcc0348fe42d33bab1dd69ce18f35e0fad6099fe2ae39ce10dabbcd95836:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">ES'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+      - expected: []
+  1fcca9a682e897ab96fd32f2f3af108772c6f34aed6002dd5ad903b1ec6c8e2e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>as
+      - delta_text: sistant to
+      - delta_text: =get_weath
+      - delta_text: er<|messag
+      - delta_text: e|><atem:f
+      - delta_text: unction_ca
+      - delta_text: 'lls>
+
+          <atem'
+      - delta_text: :invoke na
+      - delta_text: me="get_we
+      - delta_text: 'ather">
+
+          <a'
+      - delta_text: tem:parame
+      - delta_text: ter name="
+      - delta_text: location">
+      - delta_text: 'NYC</atem:'
+      - delta_text: parameter>
+      - delta_text: '
+
+          </atem:in'
+      - delta_text: 'voke>
+
+          </at'
+      - delta_text: em:functio
+      - delta_text: n_calls><|
+      - delta_text: eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  8fa56c685252566520f8f891073925ad76619220eafccb0bbf0b528c2e0f5af2:
+    request:
+      model_text: null
+      tools:
+      - name: ping
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=ping<|message|><atem:function_calls>
+
+          <atem:invoke name="ping"></atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: ping
+          arguments: '{}'
+          complete: true
+      - expected: []
+  dd014e3415518568de6017329e36307672df1681174c214f5ae1b6bd6ed39c63:
+    request:
+      model_text: null
+      tools:
+      - name: ping
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: "<|start|>assistant to=ping<|message|><atem:function_calls>\n<atem:invoke name=\"ping\">\n   \n</atem:invoke>\n</atem:function_calls><|eom|>"
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: ping
+          arguments: '{}'
+          complete: true
+      - expected: []
+  953799c1b746fd5b7aebe6ea5dc896c4b126386c7428ef959b0d4638b78ea446:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          '
+      - delta_text: '<atem:parameter name="query">muse glimmer</atem:parameter>
+
+          <atem:parameter name="limit">5</atem:parameter>
+
+          '
+      - delta_text: '<atem:parameter name="safe">true</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"muse glimmer","limit":5,"safe":true}'
+          complete: true
+      - expected: []
+  beba22007388ac37df1bdec8ab3cbda03271c7fb6970879c16cc2c5eedc5a750:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+            limit:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+          <atem:invoke name="search">
+
+          <atem:parameter name="query">καλημέρα '
+      - delta_text: '你好 — "quoted"</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"καλημέρα 你好 — \"quoted\""}'
+          complete: true
+      - expected: []
+  ccc1f4ee8b2049ad48a38936298b34a3a544f9fb63c5c94f473df99a35fa5c95:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'Checking the weather now. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: Checking the weather now.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        normal_text: ' '
+      - expected: []
+  b4b8345403b31d3fc6d89f6efd85427ebc74c710ed2e8e78e3529a2511e4c191:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Called the weather service.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+        normal_text: ' Called the weather service.'
+      - expected: []
+  06eb5b87f4b207a69b8c90e51fa0370d57b7d687c984968a3f58de9279656b1a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: 'One moment. '
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Done.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: One moment.
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        normal_text: ' '
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  673165bd837f8643fa02040be6bafe1e437f169596e0d0fff9d18201f395659e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ' Now the time. '
+      - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+          <atem:invoke name="get_time">
+
+          <atem:parameter name="timezone">EST</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+        normal_text: ' Now the time. '
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  0fe276dc6d9414e30becd7ec35aba04f1daf02275cbf65b30519d71a9a8f63b7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_time<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  9849117973267591d2dfa0892e98ce2b8e2e53871e6cfd0ce0021b4cbb506dcb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name=""><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  5eda851eac15089548263dd01b8d5588475b3c50a753f529b976cab579d9c5f5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=functions<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><atem:invoke name="unknown_tool"><atem:parameter name="location">LA</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: unknown_tool
+          arguments: '{"location":"LA"}'
+          complete: true
+      - expected: []
+  a5620e46377dfb95548ff913e462685d2db6ba817b20b7a67e60ba158b57392e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><atem:invoke name="get_time"><atem:parameter name="timezone">EST</atem:parameter></atem:invoke></atem:function_calls><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  3744aa84b922f38b526c19afbbf76b7adfdbc65b24cdae0315ee523bc7cc2a9a:
+    request:
+      model_text: null
+      tools:
+      - name: search
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: '<|start|>assistant to=search<|message|><atem:invoke name="search"><atem:parameter name="query">{"unclosed": </atem:parameter></atem:invoke><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: search
+          arguments: '{"query":"{\"unclosed\": "}'
+          complete: true
+      - expected: []
+  1bf3ccdbb351f12c8f1af77bacea28c1fb688f9715b0a242563cff9eb8a289c4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant<|message|>No tool recipient was supplied.<|eot|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: No tool recipient was supplied.
+      - expected: []
+  604965006254e2781790b0da84b6ab8d3e52a84444f4352c9869746df4ce60ae:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{}'
+          complete: true
+      - expected: []
+  ce40c65161ce9a224d30e7cc16e3b2f0254bbbd6a5dea2e10a153947cf1dfa96:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name=broken><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  7c712a71a4ac124379d50acbf8e2b25f11733140d24b8b58d932f9c32d6e6941:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_weather<|message|><atem:function_calls><get_weather><atem:parameter name="location">NYC</atem:parameter></get_weather></atem:function_calls><|eom|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  73b96051c1a4f5d9122be9a2b5a3fb9c0135145b677732ff0be78232090584ae:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: ' to=get_weather<|message|><atem:function_calls>
+
+          '
+      - delta_text: '<atem:invoke name="get_weather">
+
+          <atem:parameter name="location">NYC</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  0a7582b635b4caa8af970301ccf597ea6b83ac7873b6f051e21529e7d6da17da:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+      - delta_text: <|start|>assistant to=get_time<|message|><atem:function_calls><atem:invoke name="get_time"><atem:parameter name="timezone">EST</atem:parameter></atem:invoke></atem:function_calls><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  9bbc79f8245876b89283a5e28f082ebc8e58c38a2b85d89baa81bafbb136568b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: Sure, here is the plan.</atem:invoke>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Sure, here is the plan.
+      - expected: []
+  f4a1265663ab8989f61fc394543b9823ce2540259b98a63de6839cc3a648b722:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: Sure, here is the plan.</atem:inv
+      - delta_text: oke>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Sure, here is the plan.
+      - expected: []
+      - expected: []
+  c478152990794d3db2f95cf8b4ce4f04c4c7082e4dd763c8c21474b567778aae:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=set_temperature<|message|><atem:invoke name="set_temperature"><atem:parameter name="celsius">twenty</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: set_temperature
+          arguments: '{"celsius":"twenty"}'
+          complete: true
+      - expected: []
+  38f940937298666821b396a8f21493547705e1b48f48ca8854410ac225a9d853:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=process_data<|message|><atem:invoke name="process_data"><atem:parameter name="payload">{"items":[1,2,3],"config":{"nested":true}}</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: process_data
+          arguments: '{"payload":{"items":[1,2,3],"config":{"nested":true}}}'
+          complete: true
+      - expected: []
+  5d381cf1a61c5886fb3e8d5437577b7abf514a76c8c00a3f2a64bd8dfbc318b5:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=process_data<|message|><atem:invoke name="process_data"><atem:parameter name="payload">{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: process_data
+          arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+          complete: true
+      - expected: []
+  3754666dfb35c8293c3695fed7c48542fc6aad855fb709da6979c4f186b76b2e:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: muse_glimmer
+      mode: streamv1
+      chunks:
+      - delta_text: <|start|>assistant to=set_limit<|message|><atem:invoke name="set_limit"><atem:parameter name="count">9007199254740993</atem:parameter></atem:invoke><|eom|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: set_limit
+          arguments: '{"count":9007199254740993}'
+          complete: true
+      - expected: []
+producers:
+  4baa979693d8bf411501968b43763425f9b59f3d789431f5ff1e3d720843549f:
+    capture: dynamo_v2-0.3.1
+    document:
+      family: muse_glimmer
+      mode: streamv1
+      captured_with:
+        dynamo_v2: 0.3.1
+    provenance: null
+  73bab07f5574d0528c5ff8b348acccd57cf326a0d40366840eb6f0b303cb4a71:
+    capture: inputs
+    document:
+      family: muse_glimmer
+      model_label: Muse Glimmer
+      mode: streamv1
+      spec: https://huggingface.co/meta-models/Muse-Glimmer-30B
+      refs:
+        local: Muse Glimmer response_template decode spec (tokenizer_config.json)
+        corpus_contract: 'Chunks carry TOOL-STAGE input shapes: tool channels framed <|start|>assistant to=<fn><|message|>...<|eom|> (the muse_glimmer reasoning stage normalizes the primer-consumed first header) and narration unwrapped. SGLang serving feeds its detector reasoning-stage output with ALL channels framed, so its standalone captures diverge on narration-adjacent cases by construction. Raw whole-turn shapes live in the batch and reasoning corpora.'
+    provenance: null
+  efadeaf61f5fe6403af0fcf8df5a0464e3ee96911a84bbbd477434d770695001:
+    capture: dynamo_v2-0.3.4+current
+    document:
+      family: muse_glimmer
+      mode: streamv1
+      captured_with:
+        dynamo_v2: 0.3.4+current
+    provenance: null
+  9671732cf1c03b24df49395cc6e844f669ae1f786e2ab29f4ef6b8d41478adf6:
+    capture: dynamo_v2-0.4.0
+    document:
+      family: muse_glimmer
+      mode: streamv1
+      captured_with:
+        dynamo_v2: 0.4.0
+    provenance: null
+  445f636a78f6aae6fd8d517cc21e2017d997eb9ddd49906e13071c37b58b0233:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: muse_glimmer
+      mode: streamv1
+      captured_with:
+        dynamo_v2: 0.5.1
+    provenance: null

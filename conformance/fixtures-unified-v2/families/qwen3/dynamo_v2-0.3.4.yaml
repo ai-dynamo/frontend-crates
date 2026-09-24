@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.3.2
 provenance:
   status: legacy
   captured_with:
@@ -6,53 +8,10 @@ document:
   mode: unified
 changes:
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'thinking '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: 'thinking '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 0cfb6cc61787f06eea4c298cb3a9f5cf1d13c3391e6ee7b511c84070f58cb8a1
+    producer: dynamo_v2-0.3.4
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 102864a990712377524ca74c8bd8df9b4f47456862e62641375fe6c4948a23ab
+    producer: dynamo_v2-0.3.4
 metadata_changes: {}
 document_overrides: {}

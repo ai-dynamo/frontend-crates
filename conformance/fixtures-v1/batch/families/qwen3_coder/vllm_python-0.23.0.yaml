@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: qwen3_coder
 capture: vllm_python-0.23.0
@@ -5,410 +6,178 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.c:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both: '
-      TOOLCALLING.batch.2.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
   TOOLCALLING.batch.4.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<tool_call>
-
-              nonsense
-
-              </tool_call>'
-            explanation: vLLM preserves a <tool_call> wrapper with no <function=...> body as content; Dynamo/SGLang strip the invalid wrapper.
-      TOOLCALLING.batch.4.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.4.f:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<tool_call>
-
-              <terminal>
-
-              echo hello
-
-              </function>
-
-              </tool_call>'
-            explanation: <terminal> is not valid Qwen3-Coder grammar; vLLM preserves the invalid wrapper as content, while Dynamo/SGLang strip it.
   TOOLCALLING.batch.5.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.5.b:
-        expected:
-          vllm_python:
-            calls:
-            - arguments:
-                location: NYC
-              name: get_weather
-            normal_text: ''
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.5.c:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NY
-            normal_text: ''
-      TOOLCALLING.batch.5.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            - name: get_weather
-              arguments:
-                location: New York
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
-      TOOLCALLING.batch.5.e:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            - name: get_weather
-              arguments:
-                location: New York
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
-            explanation: 'vLLM recovers the partial value (location=''New York'') from the call
-
-              truncated mid-arg-value before its closing sentinel. Dynamo (the
-
-              truncation guard) and SGLang require the value to be terminated, so
-
-              they drop the truncated call.'
-      TOOLCALLING.batch.5.f:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: '<function=get_weather>
-
-              <parameter=location>
-
-              NYC
-
-              </parameter>
-
-              </function>
-
-              </tool_call>
-
-              '
-            explanation: vLLM preserves the bare Qwen function before the first <tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
-      TOOLCALLING.batch.5.g:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check that. '
   TOOLCALLING.batch.6.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
-      TOOLCALLING.batch.6.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
   TOOLCALLING.batch.7.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: book_flight
-              arguments:
-                destination: Paris
-                first_class: true
-                passengers: 2
-            normal_text: ''
-      TOOLCALLING.batch.7.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Tōkyō central
-            normal_text: ''
-      TOOLCALLING.batch.7.f:
-        expected:
-          vllm_python:
-            explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
-            calls:
-            - name: set_limit
-              arguments:
-                count: 9007199254740992
-            normal_text: null
   TOOLCALLING.batch.8.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.8.c:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.d:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: 'I will check the weather. '
   TOOLCALLING.batch.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.3:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: Hello, how can I help you today?
-      TOOLCALLING.batch.9.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '   '
-      TOOLCALLING.batch.10:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          vllm_python:
-            calls:
-            - name: unknown_tool
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: ''
-            explanation: vLLM streaming parser exits at qwen3coder_tool_parser.py:412 after detecting `<tool_call>` in delta_text and never re-processes the remainder of the same chunk; the trailing `finish_reason=tool_calls` chunk has no `delta_token_ids`, so the EOS-flush branch (qwen3coder_tool_parser.py:348-370) is skipped and no tool call is emitted. Dynamo handles the single-chunk burst correctly.
-      TOOLCALLING.stream.1.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.2.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<tool_call>
-
-              <function=get_weather>
-
-              <parameter=location>
-
-              NYC
-
-              </parameter>
-
-              </function>
-
-              </tool_call>
-
-              <tool_call>
-
-              <function=get_time>
-
-              <parameter=timezone>
-
-              EST
-
-              </parameter>
-
-              </function>
-
-              </tool_call>'
-            explanation: 'vLLM streaming parser checks for `<tool_call>` only in `delta_text` (qwen3coder_tool_parser.py:402), not the accumulated `current_text`. When the start token is split across chunk boundaries (`<tool_cal` + `l>\n<fun`), the condition never fires and every chunk falls through to the no-tool-call branch at qwen3coder_tool_parser.py:422, which emits `delta_text` as content. Result: the entire wire payload leaks into `normal_text` and no tool calls are produced.'
   TOOLCALLING.stream.3.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<tool_call>
-
-              <function=get_weather>
-
-              <parameter=location>
-
-              NYC
-
-              </parameter>
-
-              </function>
-
-              </tool_call>'
-            explanation: 'Same root cause as TOOLCALLING.stream.2: vLLM checks for `<tool_call>` in `delta_text` only (qwen3coder_tool_parser.py:402). With the start token split across chunks (`<t` + `ool` + `_call` + `>\n…`), the guard never matches and every chunk is emitted as plain content via qwen3coder_tool_parser.py:422, leaking the entire payload into `normal_text`.'
   TOOLCALLING.stream.4.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: ''
-            explanation: 'Same root cause as TOOLCALLING.stream.1.a: the full body arrives in a single delta, vLLM detects `<tool_call>` and returns at qwen3coder_tool_parser.py:412 without reprocessing the rest of the chunk. The final `finish_reason=stop` chunk has no `delta_token_ids`, so the EOS-flush branch at qwen3coder_tool_parser.py:348-370 is skipped. No header or arguments are ever emitted.'
-      TOOLCALLING.stream.4.b:
-        expected:
-          vllm_python:
-            calls:
-            - name: get_weather
-              arguments: {}
-            normal_text: ''
-            explanation: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM's per-parameter extraction loop (qwen3coder_tool_parser.py:540-579) requires either `</parameter>`, the next `<parameter=`, or `</function>` to delimit the value; when the stream ends mid-payload none of those are present, the loop breaks before emitting a json fragment, and the header ships with empty `arguments`. Matches SGLang.
-      TOOLCALLING.stream.4.c:
-        expected:
-          vllm_python:
-            calls: []
-            normal_text: '<function=get_weather>
-
-              <parameter=location>
-
-              NYC
-
-              </parameter>
-
-              </function>
-
-              </function>
-
-              </function>'
-            explanation: vLLM's streaming qwen3_coder parser does not enter tool-call mode for this bare <function=...> body because the outer <tool_call> marker is missing, so it preserves the raw function markup in normal_text. Dynamo intentionally uses Qwen3-Coder's no-wrapper backoff and emits the structured call without leaking parser tags.
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: 082b1d0384c40313ed15f84c6ced0519d54e849fb1e8ecb55bfac831b2474a28
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: a2a9bf553d3bb2a28f985c493c1bf666ac90c385994b2a140c05dfbf2df95387
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: 6e8ec104e61b418b1869ec6323e28f0ffe1cff1a3e55c5644092fca18f540477
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: e44d5fe7293421e3ae380c53da1b11a0c3950b7c08bc4aa787f039035bc3e22d
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 89a410f1189cd0050ea65852200e16a8baf4a79b2e82772559462115c9c2a661
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.f"]':
+        observation: bd0b91eaca0fd2ca66da56f8831da120fcc2eeb5e0fb510b2e7c1b208c886685
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: d7defb48882bdb6cccfba165cf9cfd36629155cc46e754e55fe2c0fba3956509
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: a941dadd875b0d0010f1a6372026902e5823086bcadbb01da353df1d0e9308d6
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: a9f10e3e4f2b7e2db93ed445232309747bbf51f1a0d7ad84c2617aa3939ded8e
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: e2b6f21e9d8fcffc2931af15ea835886a64494c3387a36cfc1f2289a03348349
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: c068bd07baf60be593430ccf2ca2b07610892c0eefc41018759c63f514bed471
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]':
+        observation: de20e4a4247f7bccbfc70a64b6dedb9acf03cc2d07c4449c38bf5f6e95fa4703
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]':
+        observation: c1d95897a611a65b326dbcac156639aba96d93c5eeca2504981374ba8e4ed757
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 07c63ebfc63fcb50e7f1167cfd64e72ccb8dbca923bd3803841b6f301a35ff0f
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: d833ea6641dc12b1b5d2eef4af4f9b18eaee93022243336ee10f2879ad7f138e
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 3d4631fecb06bdf609d18b19410ff62dbb16e4be9a0d85cef69fea33e55c26b0
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 3ac7e11f2f87f6f790f3199708db4e46e8a8da398339859bdf7ab3802b8071ec
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 538b5db119ecf35a57799b2afa9b8952cb8b6ae547d5fd6a10211156bcaafcf4
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: 92e07599ecddc737aed35dcf77064043faf2c4c1ea9b48bd3918d61560baeaa4
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 3c6cb8373e6c6e3625f5049757e9614ea044a8d83b0f4d305a94592532d2b6c8
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 1966926cdc9943b054267579a8f38e5cb0d521463b32f18e679255bd1a36046e
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 486a579527f50766ba55422a45f038d7f4ca626bad412cc876a3cbcb760ae6e9
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: 4fa6482cf9a049debc98062fc4b962fb58c7765d5ea1b9e9d09b98574fff3785
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: 59a072588916f0860a19dbafc66fe97345f940e1618dd2268733b13ad25cadfd
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 11d12f7904d4961443aab0454fd489bb9da40fdee7c6030c0c4f06474a2e284b
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 4a93724384f7ba3231e1093dbce9e6fb624f1be76151f7c3359626bf4a81aef0
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: ba25b7e3b151cf91246ae5cbac1856f799244dc2e199de662a9c4ea4fc630631
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 12d9200a4d8fc626153e5f5125b5b8b8e3945bf1f581ac3928393064faa44848
+        producer: 2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: 8a6e4f7498e2599edc70e90e7dbb7f15f501f8ff37106ada57abba3a30952baa
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 06913d43e171a25d8586b8b98129695dce80572c2c0c362862f6d2c13bd4bdca
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 353ef4435fae08955c5ff739818dc5f8bd95585f2a51c99da0fd81952a0b6115
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: ae90bdba249e99986217a55e1b199cd24700602738754de6f3a5a42486603760
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: 27070897dcfe37d8c90e7388c768774adc7506ef1875d624b6504660efd9bcf5
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 9168dc2a6ed43804b969cce96aa129ee16b528ca4c5093fb245cc28c25372387
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: f3556f927c404906aadc939ffa3d718359dae08ff16139b1fb5309ab2f53b9d5
+        producer: 6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.f"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

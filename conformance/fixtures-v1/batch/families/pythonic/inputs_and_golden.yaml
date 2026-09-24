@@ -11,15 +11,13 @@ documents:
         ref: dynamo
         model_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,15 +28,35 @@ documents:
         ref: dynamo
         model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
         model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.2.b:
         description: Two back-to-back fence pairs — not applicable to this family
         explanation: pythonic's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
@@ -51,8 +69,7 @@ documents:
         ref: dynamo
         model_text: '[nonsense]'
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -63,13 +80,23 @@ documents:
         ref: dynamo
         model_text: '[get_weather(location="NYC"'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Mismatched paren / bracket
         ref: dynamo
         model_text: '[get_weather(location="NYC"]'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: Malformed variant 4.c — not yet authored for this family
         explanation: Malformed-input variant 4.c not yet authored for pythonic; see 4.a / 4.b / 4.d for this family's malformed-input scenarios.
@@ -88,8 +115,7 @@ documents:
         ref: dynamo
         model_text: '[get_weather(location="NYC")'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -100,25 +126,45 @@ documents:
         ref: dynamo
         model_text: get_weather(location="NYC")]
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-argument value
         ref: dynamo
         model_text: '[get_weather(location="N'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: pythonic
     mode: batch
@@ -128,8 +174,7 @@ documents:
         ref: dynamo
         model_text: '[get_time()]'
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -138,7 +183,10 @@ documents:
         ref: dynamo
         model_text: '[get_time( )]'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: Empty-body variant 6.c — not yet authored for this family
         explanation: Empty-body variant 6.c not yet authored for pythonic; see 6.a / 6.b for this family's empty / whitespace scenarios.
@@ -219,8 +267,7 @@ documents:
         ref: dynamo
         model_text: I will check the weather. [get_weather(location="NYC")]
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -231,19 +278,34 @@ documents:
         ref: dynamo
         model_text: '[get_weather(location="NYC")] Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
         model_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: pythonic
     model_label: Llama 4 (pythonic fmt)
@@ -253,8 +315,7 @@ documents:
         description: Single tool call (happy path)
         model_text: '[get_weather(location="NYC")]'
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -264,7 +325,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -290,7 +356,12 @@ documents:
         description: Duplicate calls (same name twice)
         model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30.a:
         description: Pythonic call separator `,` inside one argument string value
         ref: dynamo
@@ -392,7 +463,7 @@ documents:
         - delta_text: '[get_weather(location="NYC")]'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -411,7 +482,13 @@ documents:
         - delta_text: ']'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: pythonic
     model_label: Llama 4 (pythonic fmt)

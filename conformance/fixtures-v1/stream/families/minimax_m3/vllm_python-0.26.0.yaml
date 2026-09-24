@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: minimax_m3
 capture: vllm_python-0.26.0
@@ -7,4 +8,12 @@ documents:
     mode: streamv1
     captured_with:
       vllm_python: 0.26.0
-    cases: {}
+views:
+  python:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}

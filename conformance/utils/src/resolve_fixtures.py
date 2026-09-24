@@ -22,7 +22,7 @@ from pathlib import Path
 import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 # Re-exported: callers import load/version_key/split_sel from this module by name.
-from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
+from fixture_corpus import clear_checkpoint_observations, load, load_corpus, split_sel, version_key  # noqa: F401
 
 def resolve_docs(fixtures_root, select, corpus=None):
     """Resolve one version selection entirely in memory.
@@ -58,6 +58,7 @@ def resolve_docs(fixtures_root, select, corpus=None):
             print(f"resolve_fixtures: no version dirs for {impl} <= {target}, skipping", file=sys.stderr)
             continue
         for _, vdir in applied:
+            folded.update(clear_checkpoint_observations(root, vdir, docs, impl, corpus=corpus))
             for key, src_ov in corpus.items():
                 if key[0] != vdir.name:
                     continue

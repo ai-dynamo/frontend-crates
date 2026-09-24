@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.3.3
 provenance:
   status: legacy
   captured_with:
@@ -6,160 +8,25 @@ document:
   mode: unified
 changes:
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'thinking '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: 'thinking '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: ef1c2e8a8282c2e2c0cfd61dc23f4c44e4cad199721a7f7c459d8abedac6c65a
+    producer: dynamo_v2-0.3.4
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 7b425234146237b88f2a379743c5cb8808b668190b5be54718e68165c9cc1d38
+    producer: dynamo_v2-0.3.4
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: output
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: output
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"Paris"}'
-        - expected: []
-        - expected: []
+    observation: 94c55b5590fb15e0fd4816819239b64f286c65e4c79ccedd52c0fa59eda7cff3
+    producer: dynamo_v2-0.3.4
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: cc4f631e84691751d0eeb9c01c7bd88138d3bdcde45ebee8f68434bb587ea522
+    producer: dynamo_v2-0.3.4
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: run
-          arguments:
-            cmd: git log
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-          - kind: tool_call
-            name: run
-            arguments: '{"cmd": "git log"}'
-        - expected: []
+    observation: 71c410c5e5b8a0b31c834c054efeee7ba877bc216802760a408d981981a4a21a
+    producer: dynamo_v2-0.3.4
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Working on it... '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Working on it... '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 4ca588d0c48312038788268c54d18db90824046c2c067daaece7cd0e67c53c96
+    producer: dynamo_v2-0.3.4
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        - expected: []
+    observation: 7081f5094c674c98bb338d3116fd6b7beb6d18c455149c9f762901e210159214
+    producer: dynamo_v2-0.3.4
 metadata_changes: {}
 document_overrides: {}

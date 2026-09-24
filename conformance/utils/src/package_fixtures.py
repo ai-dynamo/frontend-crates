@@ -23,6 +23,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import capture_policy
 import fixture_disposition
 import legacy_history
 import unified_history
@@ -39,6 +40,8 @@ PER_SUBDIR_TREES = [
     "unified",
 ]
 LEGACY_TREES = tuple(legacy_history.CORPORA.values())
+NON_ARCHIVE_FORMATS = {"unified-history", legacy_history.HISTORY_FORMAT,
+                       fixture_disposition.CAPTURE_POLICY_FORMAT}
 
 
 def sha256_file(path):
@@ -190,7 +193,7 @@ def sync_store(
     # Historical archive fixtures remain immutable when packaging older manifests.
     # Unified captures use the YAML store and need a new semantic version when changed.
     for shard in shards:
-        if shard.get("format") in {"unified-history", legacy_history.HISTORY_FORMAT}:
+        if shard.get("format") in NON_ARCHIVE_FORMATS:
             continue
         destination = fixtures_dir / shard["path"]
         if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
@@ -202,7 +205,7 @@ def sync_store(
         if str(p.relative_to(fixtures_dir)) not in new_paths | inactive.keys()
     ]
     if dry_run:
-        archive_shards = [shard for shard in shards if shard.get("format") not in {"unified-history", legacy_history.HISTORY_FORMAT}]
+        archive_shards = [shard for shard in shards if shard.get("format") not in NON_ARCHIVE_FORMATS]
         print(
             f"  [dry-run] would write {len(archive_shards)} archive shard(s) to {fixtures_dir} "
             f"and update {len(shards) - len(archive_shards)} history pin(s)"
@@ -212,7 +215,7 @@ def sync_store(
             print(f"  [dry-run] would {verb} {p.relative_to(fixtures_dir)}")
         return
     for s in shards:
-        if s.get("format") in {"unified-history", legacy_history.HISTORY_FORMAT}:
+        if s.get("format") in NON_ARCHIVE_FORMATS:
             continue
         src = blobs_dir / s["path"]
         dst = fixtures_dir / s["path"]
@@ -274,6 +277,11 @@ def merge_shards(
                     digest, size = legacy_history.store_digest(legacy_dir)
                     merged.append({**s, "sha256": digest, "size": size})
                 continue
+            if s.get("format") == fixture_disposition.CAPTURE_POLICY_FORMAT:
+                if s["path"] not in built_paths:
+                    merged.append(fixture_disposition.capture_policy_pin(
+                        history_dir.parent / fixture_disposition.CAPTURE_POLICY_PATH))
+                continue
             if s["path"] not in built_paths and fp.exists():
                 # RECOMPUTE the sha/size from the on-disk file — never trust the prior
                 # manifest's value. A kept shard's store file can change between runs
@@ -296,6 +304,10 @@ def _validate_candidate_package(manifest, fixtures_dir, history_dir, legacy_dir)
             digest, size = unified_history.store_digest(history_dir)
         elif shard.get("format") == legacy_history.HISTORY_FORMAT:
             digest, size = legacy_history.store_digest(legacy_dir)
+        elif shard.get("format") == fixture_disposition.CAPTURE_POLICY_FORMAT:
+            pin = fixture_disposition.capture_policy_pin(
+                history_dir.parent / fixture_disposition.CAPTURE_POLICY_PATH)
+            digest, size = pin["sha256"], pin["size"]
         else:
             path = fixtures_dir / shard["path"]
             if not path.is_file():
@@ -306,6 +318,11 @@ def _validate_candidate_package(manifest, fixtures_dir, history_dir, legacy_dir)
     if any(shard.get("format") == legacy_history.HISTORY_FORMAT for shard in shards):
         with tempfile.TemporaryDirectory(prefix="dyn-legacy-validate-") as temporary:
             legacy_history.materialize_store(legacy_dir, Path(temporary))
+            if any(s.get("format") == fixture_disposition.CAPTURE_POLICY_FORMAT for s in shards):
+                unified_history.materialize_store(history_dir, Path(temporary) / "unified")
+                policy = capture_policy.load_policy(
+                    history_dir.parent / fixture_disposition.CAPTURE_POLICY_PATH)
+                capture_policy.validate_materialized_policy(policy, Path(temporary))
 
 
 def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
@@ -321,6 +338,8 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
         candidate_history = transaction_root / "fixtures-unified-v2"
         candidate_legacy = transaction_root / "fixtures-v1"
         candidate_manifest = transaction_root / "fixtures-manifest.json"
+        policy_path = conformance_root / fixture_disposition.CAPTURE_POLICY_PATH
+        candidate_policy = transaction_root / fixture_disposition.CAPTURE_POLICY_PATH
         loose_root.mkdir()
         blobs_dir.mkdir()
 
@@ -330,6 +349,8 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
             shutil.copytree(FIXTURES_DIR, candidate_fixtures, copy_function=os.link)
             shutil.copytree(UNIFIED_HISTORY_DIR, candidate_history)
             shutil.copytree(LEGACY_HISTORY_DIR, candidate_legacy)
+            if policy_path.is_file():
+                shutil.copyfile(policy_path, candidate_policy)
             original_history_digest = unified_history.store_digest(candidate_history)
             original_legacy_digest = legacy_history.store_digest(candidate_legacy)
 
@@ -341,6 +362,8 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
                 history_root=candidate_history,
                 legacy_root=candidate_legacy,
             )
+            if candidate_policy.is_file():
+                shards.append(fixture_disposition.capture_policy_pin(candidate_policy))
             source_changed = (
                 original_history_digest != unified_history.store_digest(candidate_history)
                 or original_legacy_digest != legacy_history.store_digest(candidate_legacy)
@@ -396,13 +419,16 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
                 print(f"\n[dry-run] validated candidate manifest for: {manifest_path}")
                 return
 
+            publications = [
+                (candidate_history, UNIFIED_HISTORY_DIR),
+                (candidate_legacy, LEGACY_HISTORY_DIR),
+                (candidate_fixtures, FIXTURES_DIR),
+                (candidate_manifest, manifest_path),
+            ]
+            if candidate_policy.is_file():
+                publications.insert(-1, (candidate_policy, policy_path))
             unified_history.publish_paths_transactionally(
-                [
-                    (candidate_history, UNIFIED_HISTORY_DIR),
-                    (candidate_legacy, LEGACY_HISTORY_DIR),
-                    (candidate_fixtures, FIXTURES_DIR),
-                    (candidate_manifest, manifest_path),
-                ],
+                publications,
                 backup_parent=conformance_root,
             )
 

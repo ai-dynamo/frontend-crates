@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.5.3
 provenance:
   status: captured
   origin:
@@ -8,1682 +10,194 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: run
-          arguments:
-            cmd: git log </｜DSML｜invoke> --oneline
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: run
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"cmd":"git log </｜DSML｜invoke> --oneline"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 37782d58012076d0de39e7c088ae76aac40af7cdd08e53bc86038a8e0eab326b
+    producer: dynamo_v2-0.6.0
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: São Paulo 東京
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"São Paulo 東京"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 90c3813ec804d3ddc34d6429d7ef41e0b0f321650b250046e46b228a379f8722
+    producer: dynamo_v2-0.6.0
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Hello there. '
-        - kind: reasoning
-          text: let me recall
-        - kind: text
-          text: The capital is Paris.
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Hello there. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me recall
-        - expected: []
-        - expected:
-          - kind: text
-            text: The capital is Paris.
-        - expected: []
+    observation: d185f2f27d2c7f5285ab67702391beb725ec49c1efcb0a68f5bcfef609af9dfb
+    producer: dynamo_v2-0.6.0
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Sure, one sec. '
-        - kind: reasoning
-          text: checking the forecast
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure, one sec. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking the forecast
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 124aadc3ed8ac0dcfeb0407952703ba2ee7fbcf4f007e8c0c5d3f640fd1538f0
+    producer: dynamo_v2-0.6.0
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: daca427eff5379a270edc55f1e7c070d4023c0817935e5d7a81484a2a5def8ec
+    producer: dynamo_v2-0.6.0
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 149cbac9dadb055949230d75ec25c5ffda22a6e913e11c4a0716e9a108dbb4f4
+    producer: dynamo_v2-0.6.0
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: sum_values
-          arguments:
-            values:
-            - 2
-            - 3
-            - 5
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: sum_values
-            arguments: '{"values": [2, 3, 5]}'
-            complete: true
-        - expected: []
+    observation: f40889a6813ed9762295e6dde5a8d7c7f6f7dd93a663078ea85cc9ed20cfb155
+    producer: dynamo_v2-0.6.0
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'thinking '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: 'thinking '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: b12c8d078b6be832450e841989f5d2b061699a00f59d2c985923564f2f6ca8a3
+    producer: dynamo_v2-0.6.0
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: run
-          arguments:
-            cmd: echo "雪" > C:\tmp\a.txt
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: run
-            arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
-            complete: true
-        - expected: []
+    observation: a4abe45c27ace261e8b8564d866a2b32c80ffdddeac25e4820f52cabd08a0ab1
+    producer: dynamo_v2-0.6.0
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: a > b
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "a > b"}'
-            complete: true
-        - expected: []
+    observation: 2e628b7b9f8c3a2ebd4ea8043524d84d4919089074a990949e784d471e5ba867
+    producer: dynamo_v2-0.6.0
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: a > b
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "a > b"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 53f7988835ec994d904840b71499895cac97aedc0d42bfdbe6fd4d6009c46d39
+    producer: dynamo_v2-0.6.0
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: a > b
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "a > b"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 7308fc3f403e02ee4a76c2a8d194866b1882678364b1ed2521c081841024b859
+    producer: dynamo_v2-0.6.0
   guided_json_invalid_call:
-    case_key: UNIFIED.31-1
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{"unexpected": "shape"}'
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
-        - expected: []
+    observation: e257e289750ff42076eed66f3576bf00261fbdcf0c6ca1a647dadc11510c6df5
+    producer: dynamo_v2-0.6.0
   guided_json_list_with_broken_element:
-    case_key: UNIFIED.31-4
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+    observation: 9a0427c858904e9ad7d6ca4f3b26ea99c20405810beb72d4aafabc7b25cb7407
+    producer: dynamo_v2-0.6.0
   guided_json_malformed_json:
-    case_key: UNIFIED.31-2
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{"name": "get_weather", "arguments": {"city": "Par'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '{"name": "get_weather", "arguments": {"city": "Par'
+    observation: 4f4e4c187a947ddcc2b8ce383b80209f7feffc1440242f7232dacf7be1b7e8d4
+    producer: dynamo_v2-0.6.0
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: log
-          arguments:
-            note: </think>
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: '{"note": "</think>"}'
-            complete: true
-        - expected: []
+    observation: 2df01118771e5faa5cde90a2f0ca3aff83d9b08df1e1991b9edca07ba5a038c3
+    producer: dynamo_v2-0.6.0
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 3772e6dba54782e1f0f6893050d75b0e2d588faa3709d57e9ba0f2d019078065
+    producer: dynamo_v2-0.6.0
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31-8
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I'll use  next
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I''ll use '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ' next'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 5ebc41390a392f0b84e182a2999607d82e2c0c4ff41a5829f9d52f909d9a9947
+    producer: dynamo_v2-0.6.0
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I'll call get_weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I''ll call '
-        - expected:
-          - kind: reasoning
-            text: get_weather
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 7acee60f330af0c11070a21c84c5c2642d8edb0e9daa31e04767fc5817143375
+    producer: dynamo_v2-0.6.0
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: c4c99c599053e321e008bc97e4f5ceb64bdbe9cec6f0c43181a0218da43a2d48
+    producer: dynamo_v2-0.6.0
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31-10
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 3869361db60cd0ccc713a4bf2f50d1f35baef048160f9bb4165ae5de99c4c8a0
+    producer: dynamo_v2-0.6.0
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31-11
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 065edc61fa0a0d4f4d02d96d3bdcfa6f289a51d769093474920721aef8836e13
+    producer: dynamo_v2-0.6.0
   guided_json_partial_calls:
-    case_key: UNIFIED.31-3
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        - expected: []
+    observation: 9d9af5d5d623ec3e063ff3489fd1fe9187212f66e72413c4a445b6e23ad88e0e
+    producer: dynamo_v2-0.6.0
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31-9
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Sure. '
-        - kind: reasoning
-          text: checking
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected:
-          - kind: reasoning
-            text: checking
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: e7d2d9889f9a8f38cb759e7bd5fd64799bb352f693be4ed4cc6050bfb4476de3
+    producer: dynamo_v2-0.6.0
   guided_json_quoted_bare_header_after_payload:
-    case_key: UNIFIED.31-27
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: I mean <think>self literal</think>
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-          - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
+    observation: 9350ee75130d2db486ad8185f4d2839fe9e897a70a03e585943cbc1976c71bd4
+    producer: dynamo_v2-0.6.0
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.31-25
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I mean <think>self literal</think>
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: aa6b78b9b90fd9bc4b37d0ab8291df2d5d68210d06f50d4569c998b5d2582be3
+    producer: dynamo_v2-0.6.0
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 6e16b17ac0ff7beb8e66d863699336049d9bb5d2cbc6a91252985ac2417261d2
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        - expected: []
+    observation: 6a5c3062ed92440b8db2752cd7ec43e63178284afd4dbb5f6a3f7ac5d852d392
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31-18
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        - expected: []
-        - expected: []
+    observation: 2aed27a7cd616eaf3f195b4e915dcf058932be14354bc2cd4996f405926e512d
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31-19
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        - expected: []
-        - expected: []
+    observation: c7f6cd85704f4f3dab2e443286c8f66030e6b1d4ff365cb09781ac5df45f3fd2
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{"unexpected": "shape"}'
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
-        - expected: []
+    observation: 1e1ddccbe137a59ad75e0df5c9badc390686984c43d5992065c1b7ed92ded1ce
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31-15
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{"unexpected": "shape"}'
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
-        - expected: []
-        - expected: []
+    observation: 4657f8cac6759b6facb8d47e6398bc892a1728fd8f298bc720229f0b4fab009c
+    producer: dynamo_v2-0.6.0
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31-16
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{"unexpected": "shape"}'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
-        - expected: []
-        - expected: []
+    observation: 02bd75048b4cfcbfd28ab8edbf3dc0db43603ce73253c8d17b47758a9da29584
+    producer: dynamo_v2-0.6.0
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: secret
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: secret
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 3556f5a7f36c3eef92e7d954f48f1d758d1f16193ee77af573e3458c0e5d29e1
+    producer: dynamo_v2-0.6.0
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": '
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": '
+    observation: 3df25c3fc324baae83b84af36fe29cb0fe710ea21c56cd0632ad11303d622044
+    producer: dynamo_v2-0.6.0
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.31-12
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city":'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city":'
+    observation: 0de19ee99c522d2f79c9b307bfa7186f54667bd796c400bff055b6dac238b4a0
+    producer: dynamo_v2-0.6.0
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.31-13
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city":'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city":'
+    observation: 6d43037fc49d3cfd97a0915bb91ec211b4314368d90a744df074c4f193b659a0
+    producer: dynamo_v2-0.6.0
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31-6
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 27fa4e6b27f9d7716c5305b45e007d51abbb348dc565a8915bb226a704672545
+    producer: dynamo_v2-0.6.0
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31-5
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: dae49cba93edc9be8a39f62cd88853760984f1bd24f354febdfff4d174eacf7f
+    producer: dynamo_v2-0.6.0
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: run
-          arguments:
-            cmd: git log
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-          - kind: tool_call
-            name: run
-            arguments: '{"cmd": "git log"}'
-            complete: true
-        - expected: []
+    observation: 5400896ad1946deb236f65dbecd9ad5b9097dab5411ccda07bfc85b2cab69f80
+    producer: dynamo_v2-0.6.0
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 8585fde67762ea3a4b2ed748b37eb395099741a93a0307a11d75c0bba46b9689
+    producer: dynamo_v2-0.6.0
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31-7
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 7a6ec41d65c7ba55b0305106d893d15b85c81f0580a9dd8ad3ada06c3d45428c
+    producer: dynamo_v2-0.6.0
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: a
-        - kind: text
-          text: 'Here you go: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: a
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here you go: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 0bbcbc8938a2f4a2fb12507f837132a08e9297b5f03e49e17ead1238ead1dd09
+    producer: dynamo_v2-0.6.0
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: ' then I''ll run '
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' and '
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then I''ll run '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 220631182e31534dcc0b536f0be58ff1cd6fbb1abc218951a883005ba9ae8f91
+    producer: dynamo_v2-0.6.0
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'I will check that. '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I will check that. '
-        - expected: []
-        - expected: []
+    observation: 1de6f940d8d896379e8fff2ef6245d6a08d2cc959786736c03c7b5668df90b23
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: London
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking weather
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"London"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: f19f86e3801f4d8bda7559ff8c55d10c2e53f3945f5b33206795871cd910b94f
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: no tool needed
-        - kind: text
-          text: The answer is 42.
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: no tool needed
-        - expected: []
-        - expected:
-          - kind: text
-            text: The answer is 42.
-        - expected: []
+    observation: ef342b62261532161491862fe6334a366109a5b85258936cb2f820276551808c
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: weighing options
-        - kind: text
-          text: 'Here''s what I found: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: weighing options
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here''s what I found: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 8cd69e815e25d910320767b04046260306d809cec6b46a12c5c1e4abf688aec8
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: analyzing data
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: analyzing data
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 1385311c7032b9294f3144636d2ac2efb7bf63de6d0ba21ade0630e5a490c719
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: checking weather
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+    observation: 5312de350b49a1b3b40c2a6b6c994436b5f9c69c5ee8636d04e0735cc4fb7605
+    producer: dynamo_v2-0.6.0
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: checking weather
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 5986766a5c1d730cc4eea0f11c53755ecdc02c747eaae00c7ee1209e25d740ce
+    producer: dynamo_v2-0.6.0
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <think>literal</think> then a call
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: ' then a call'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 102452a157c58627fb7d8b01b2b3a3fb15a739878399db4e980dd8dd9441ca5d
+    producer: dynamo_v2-0.6.0
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Look it up.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: reasoning
-          text: Now answer.
-        - kind: text
-          text: It's 18C.
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Look it up.
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Now answer.
-        - expected: []
-        - expected:
-          - kind: text
-            text: It's 18C.
-        - expected: []
+    observation: ed2c8e3ee40b75a37884157d1b53023eeced57cb14d02ba2133aca98a68eefa0
+    producer: dynamo_v2-0.6.0
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: reasoning
-          text: mid
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: mid
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 4c2bc409e9ddd1c950eec11023fbdd44676b4c6c8c163dec3e1a52374c4a77e1
+    producer: dynamo_v2-0.6.0
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: reasoning
-          text: B
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 0f01b8628fb776171abb556ec560511265dae45280178357d3ea0173f49319c2
+    producer: dynamo_v2-0.6.0
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: log
-          arguments:
-            note: <think>reconsider</think>
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"note":"<think>reconsider</think>"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 9196acd9003304b965bcecfc44076909a53ee02e4112c5ad61481bfcda37d0ea
+    producer: dynamo_v2-0.6.0
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Logging now: '
-        - kind: tool_call
-          name: log
-          arguments:
-            note: <think>reconsider</think>
-        - kind: text
-          text: ' done.'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Logging now: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"note":"<think>reconsider</think>"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' done.'
-        - expected: []
+    observation: d56a7af6fa9ca47cb5f2a08e9c1a0e6d47e027e02640a9b0e57ab34fbac7a0bd
+    producer: dynamo_v2-0.6.0
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: just thinking, no answer
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: just thinking, no answer
-        - expected: []
-        - expected: []
+    observation: 681903a625d0d545a65eafd6a20b701b6879df126da2625f7ac2da99101dc63d
+    producer: dynamo_v2-0.6.0
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: let me think
-        - kind: text
-          text: The answer is 42.
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me think
-        - expected: []
-        - expected:
-          - kind: text
-            text: The answer is 42.
-        - expected: []
+    observation: 3ca062a7ea720fe10c0d3db26f7f8a88cbf4e758030258af1ce05227730e78f7
+    producer: dynamo_v2-0.6.0
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Check weather.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Check weather.
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: bb60602a095e319a7fe74c970066bd3ffb5911af53fb942dd99783e59a6a3caf
+    producer: dynamo_v2-0.6.0
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: reasoning
-          text: B
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        - kind: reasoning
-          text: C
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: C
-        - expected: []
-        - expected: []
+    observation: a5f81bc7cb1bd48177cd27826091136adedfb1ebdb23e55b735e546eb62dbe31
+    producer: dynamo_v2-0.6.0
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: working on it
-        - kind: reasoning
-          text: B
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: working on it
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: d5cd8753b099f86796fdb486c45b8d22ddf6c3f0744a58241b82c4ab0bcc6343
+    producer: dynamo_v2-0.6.0
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking but stream ends
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking but stream ends
-        - expected: []
+    observation: d5f5abbbd83051a49c707378cee52001f650de6862900f0c867f7168847db612
+    producer: dynamo_v2-0.6.0
   retired__30_14:
     absent: true
   retired__31_33:
@@ -1695,576 +209,56 @@ changes:
   retired__muse_1:
     absent: true
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'On it: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'On it: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: afbeb6d4b4b83eecce670c26bb43d56f67caccfb033c83553c432f0ef0d4714d
+    producer: dynamo_v2-0.6.0
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' then '
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: be8e26700689f2d26452e4d66a0a2c072906c625d3f597f2e3719d145ee836a5
+    producer: dynamo_v2-0.6.0
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The answer is 42, no tools needed.
-        chunks:
-        - expected:
-          - kind: text
-            text: The answer is 42, no tools needed.
-        - expected: []
+    observation: ee637fb0d4e327ad4bf0c4147734efc76c551a110e8fd3ba6a812173ca8c5c58
+    producer: dynamo_v2-0.6.0
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Sure. '
-        - kind: reasoning
-          text: check A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' and '
-        - kind: reasoning
-          text: check B
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: check A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: check B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 91829bff8607f95942e05c910cb718b13fd7c7392fe849a200130f3be0bae9ea
+    producer: dynamo_v2-0.6.0
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Before. '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: ' After.'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Before. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' After.'
-        - expected: []
+    observation: ab5c3100419ac97596e98b02eceb6f1acdedf77fc8b3b8a8d681d77638daf572
+    producer: dynamo_v2-0.6.0
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 2be61553095da05b21fea0a66f7230c812e267c9cd5ad125ed69eca52ce3eab6
+    producer: dynamo_v2-0.6.0
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'I should check. '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: reasoning
-          text: ' now answer'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
-        - expected: []
+    observation: c2e1d50c434c12da3e95e041fff1194803aaa8ffff6f983015323888e48bc93a
+    producer: dynamo_v2-0.6.0
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Sure. '
-        - kind: reasoning
-          text: 'I should check. '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: reasoning
-          text: ' now answer'
-        - kind: text
-          text: ' Here you go.'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' Here you go.'
-        - expected: []
+    observation: 3c89287b9ec95a61873bdbb7e1e0fbf97e9fdf926fd1ad0d1d3f40493099df02
+    producer: dynamo_v2-0.6.0
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: 53dc1103e055df275e0f05b6d2cd0b3947b171d8abaa80373d56fb1a5f6516af
+    producer: dynamo_v2-0.6.0
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 26a6359a89bd9f8109d355f1275552176f8ae40c35d38eea05a46b6005186fd8
+    producer: dynamo_v2-0.6.0
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 5d357d52fc8d2f571fbe11f86931408e51ff4d399743dce8d0d2f1b8907bfd11
+    producer: dynamo_v2-0.6.0
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: The forecast shows clear skies for the rest of the week.
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected:
-          - kind: text
-            text: The forecast shows clear skies for the rest of the week.
-        - expected: []
+    observation: 2b4bedb79492f3e7776b7fd3185b20de6ea44a4c77b7621286ddf3c7a3da69ed
+    producer: dynamo_v2-0.6.0
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: ok
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ok
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 3e1f65ff788da4cdef3e462b66d7a63bd671e487228d748b115efdb0108fd889
+    producer: dynamo_v2-0.6.0
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'first
-
-            second'
-        - kind: text
-          text: done
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: '
-
-              second'
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
-        - expected: []
+    observation: 7182c0bae07214da292c61ec7e6cd001894a648c9a674d5560ab69dd1c8993d8
+    producer: dynamo_v2-0.6.0
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: fbd3fb74c2e5c170b9a091b90ab01c515f8f18b659123b7dfb8187b201ddcd28
+    producer: dynamo_v2-0.6.0
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Tokyo
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Tokyo"}'
-            complete: true
-        - expected: []
-        - expected: []
+    observation: 32deebd28bfdbf16c35507c968b136c16f2aa3381f24aa62413dc1ea60c78be0
+    producer: dynamo_v2-0.6.0
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: first thought
-        - kind: text
-          text: 'interlude '
-        - kind: reasoning
-          text: second thought
-        - kind: text
-          text: done
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'interlude '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: second thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
-        - expected: []
+    observation: 1596681e7991b4ae1d55c9a7b26a6af869c268a81819c4dc30a37dd18c9a38d8
+    producer: dynamo_v2-0.6.0
 metadata_changes:
   arg_marker_in_string: {}
   arg_unicode: {}

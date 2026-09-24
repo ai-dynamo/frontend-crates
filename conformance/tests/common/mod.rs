@@ -41,6 +41,19 @@ pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+/// Missing measurements are optional; malformed or unreadable captures are errors.
+pub fn read_capture_fixture<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
+    let contents = match std::fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return None,
+        Err(error) => panic!("{}: capture read error: {error}", path.display()),
+    };
+    Some(
+        serde_yaml::from_str(&contents)
+            .unwrap_or_else(|error| panic!("{}: capture parse error: {error}", path.display())),
+    )
+}
+
 /// Ensures fixture files are available and returns the fixtures root path.
 ///
 /// Priority:
@@ -258,11 +271,86 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current GLM checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.1";
-
 // Consumers may reuse verified captures in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
+
+/// Policy owns historical eligibility; captured directories own the inventory.
+pub fn historical_capture_dirs(root: &Path, corpus: &str, reader: &str) -> Vec<PathBuf> {
+    let output = std::process::Command::new("python3")
+        .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src/capture_policy.py"))
+        .args([
+            "--reader-metadata",
+            corpus,
+            "--reader",
+            reader,
+            "--captures-root",
+        ])
+        .arg(root)
+        .output()
+        .expect("run historical capture policy resolver");
+    assert!(
+        output.status.success(),
+        "historical capture policy failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let metadata: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("historical reader metadata JSON");
+    assert!(
+        !root
+            .components()
+            .any(|part| part.as_os_str() == ".reader-views")
+            || metadata["include_qualified"] == false,
+        "the explicit Rust history has no qualified capture measurements; use release-only eligibility"
+    );
+    let Some(selected) = metadata["selected"].as_str() else {
+        eprintln!(
+            "historical {corpus}/{reader} has no measurements: {}",
+            metadata["unavailable"]
+        );
+        return Vec::new();
+    };
+    let candidates = metadata["eligible"]
+        .as_array()
+        .expect("eligible capture list");
+    let end = candidates
+        .iter()
+        .position(|value| value.as_str() == Some(selected))
+        .expect("selected capture is eligible");
+    let dirs: Vec<_> = candidates[..=end]
+        .iter()
+        .map(|value| {
+            let path = root.join(value.as_str().expect("capture identity"));
+            assert!(
+                path.is_dir(),
+                "missing historical capture {}",
+                path.display()
+            );
+            path
+        })
+        .collect();
+    dirs
+}
+
+/// Materialized checkpoints are complete within each family, including absence.
+pub fn latest_family_capture<'a>(dirs: &'a [PathBuf], relative: &Path) -> Option<&'a PathBuf> {
+    let family = relative
+        .components()
+        .next()
+        .expect("fixture family directory");
+    dirs.iter()
+        .rev()
+        .find(|directory| directory.join(family.as_os_str()).is_dir())
+}
+
+pub fn rust_stream_fixture_root(snapshot: &Path) -> PathBuf {
+    let root = snapshot.join(".reader-views/rust/toolcalling/fixtures-stream-v1");
+    assert!(
+        root.is_dir(),
+        "missing explicit Rust stream history: {}",
+        root.display()
+    );
+    root
+}
 
 fn dynamo_identity_command() -> std::process::Command {
     let repo = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
@@ -291,8 +379,8 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
-/// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
-/// readers fold them ascending so the latest capture wins per case.
+/// numeric version. This raw inventory helper is also used by synthetic legacy
+/// overlay tests; production readers use the shared historical policy below.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, Vec<(bool, u64, String)>, bool, String);
 
 pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
@@ -493,6 +581,59 @@ pub fn capture_stimulus_command() -> std::process::Command {
 mod capture_selector_tests {
     use super::*;
 
+    #[test]
+    fn selected_capture_rejects_malformed_yaml_and_io_errors() {
+        let root =
+            std::env::temp_dir().join(format!("dynamo-corrupt-capture-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("case.yaml");
+        assert!(read_capture_fixture::<serde_json::Value>(&path).is_none());
+        std::fs::write(&path, "cases: [").unwrap();
+        assert!(
+            std::panic::catch_unwind(|| read_capture_fixture::<serde_json::Value>(&path)).is_err()
+        );
+        assert!(
+            std::panic::catch_unwind(|| read_capture_fixture::<serde_json::Value>(&root)).is_err()
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn historical_reader_accepts_an_empty_capture_inventory() {
+        let root =
+            std::env::temp_dir().join(format!("dynamo-empty-history-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        assert!(historical_capture_dirs(&root, "unified", "vllm_rust").is_empty());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn complete_family_selection_preserves_absence_and_independent_families() {
+        let root =
+            std::env::temp_dir().join(format!("dynamo-family-selection-{}", std::process::id()));
+        let dirs: Vec<_> = ["1.0.0", "2.0.0", "3.0.0"]
+            .iter()
+            .map(|version| root.join(version))
+            .collect();
+        for relative in ["1.0.0/old", "2.0.0/other", "3.0.0/old"] {
+            std::fs::create_dir_all(root.join(relative)).unwrap();
+        }
+        std::fs::write(dirs[0].join("old/removed.yaml"), "{}").unwrap();
+        assert_eq!(
+            latest_family_capture(&dirs, Path::new("old/removed.yaml")),
+            Some(&dirs[2])
+        );
+        assert_eq!(
+            latest_family_capture(&dirs, Path::new("other/retained.yaml")),
+            Some(&dirs[1])
+        );
+        assert_eq!(
+            latest_family_capture(&dirs, Path::new("uncaptured/missing.yaml")),
+            None
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     fn git(root: &Path, args: &[&str]) -> String {
         let output = std::process::Command::new("git")
             .arg("-C")
@@ -692,12 +833,12 @@ mod capture_selector_tests {
         .unwrap();
         assert_eq!(select(&captures, &clone, None).last(), Some(&source_patch));
 
-        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        let stream = captures.join("dynamo_v2-0.6.1");
         std::fs::create_dir_all(&stream).unwrap();
         let stream_dirs = version_dirs_with_identity_command(
             &captures,
             "dynamo_v2-",
-            STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+            "dynamo_v2-0.6.1",
             std::process::Command::new("this-command-must-not-run"),
         );
         assert_eq!(stream_dirs.last(), Some(&stream));

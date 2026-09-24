@@ -137,6 +137,7 @@
     return shown.every(function (k) { return set.has(k); });
   }
   function updateCompareUrl(panel, ctl) {
+    if (panel._unavailableCapturesFromUrl) { return; }
     const url = new URL(window.location.href);
     const pid = panel.id;
     const base = ctlBase(ctl);
@@ -162,9 +163,19 @@
     const normalizeKey = key => aliases.get(key) || key;
     const base = normalizeKey(params.has('base_' + pid) ? params.get('base_' + pid) : ctlBase(ctl));
     const refs = Array.from(ctl.querySelectorAll('input.cmp-ref'));
-    // A removed capture in an old link is not an intentional empty reference.
-    if (base && !refs.some(function (r) { return r.value === base; })) { return; }
-    const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean).map(normalizeKey));
+    const requestedCompare = (params.get('cmp_' + pid) || '').split(',').filter(Boolean).map(normalizeKey);
+    const selectable = new Set(refs.map(ref => ref.value));
+    const missing = [base, ...requestedCompare].filter(key => key && !selectable.has(key));
+    if (missing.length) {
+      panel._unavailableCapturesFromUrl = true;
+      const notice = document.createElement('div');
+      notice.className = 'capture-unavailable';
+      notice.setAttribute('role', 'status');
+      notice.textContent = missing.map(key => 'Capture unavailable: ' + key + '. '
+        + ((panel._unavailableCaptures || new Map()).get(key) || 'No equivalent replacement is declared.')).join(' ');
+      ctl.insertAdjacentElement('afterend', notice);
+    }
+    const inB = new Set(requestedCompare.filter(key => selectable.has(key)));
     refs.forEach(function (r) { r.checked = (r.value === base); });
     ctl.querySelectorAll('input.cmp-on').forEach(function (cb) {
       cb.checked = cb.value !== base && inB.has(cb.value);
@@ -371,7 +382,11 @@
         if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
         if (e.target.matches('input.cmp-ref, input.cmp-on')) {
           const panel = ctl.closest('.tab-panel');
-          if (panel) { applyCtl(panel); }
+          if (panel) {
+            panel._unavailableCapturesFromUrl = false;
+            panel.querySelectorAll('.capture-unavailable').forEach(notice => notice.remove());
+            applyCtl(panel);
+          }
         }
       });
     });

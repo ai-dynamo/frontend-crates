@@ -37,15 +37,13 @@ documents:
 
           </tool_call>'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -82,8 +80,18 @@ documents:
 
           </tool_call> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
@@ -115,8 +123,18 @@ documents:
 
           </tool_call>'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.2.b:
         description: Two back-to-back fence pairs — not applicable to this family
         explanation: nemotron_nano's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
@@ -133,8 +151,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -155,7 +172,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.b:
         description: Malformed variant 4.b — not yet authored for this family
         explanation: Malformed-input variant 4.b not yet authored for nemotron_nano; see 4.a / 4.c / 4.d for this family's malformed-input scenarios.
@@ -187,8 +209,7 @@ documents:
 
           </function>'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -209,7 +230,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-parameter value
         ref: dynamo
@@ -221,7 +247,12 @@ documents:
 
           NY'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
@@ -253,7 +284,12 @@ documents:
 
           </function>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
@@ -281,7 +317,12 @@ documents:
 
           New York'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: nemotron_nano
     mode: batch
@@ -297,8 +338,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -314,7 +354,10 @@ documents:
 
           </tool_call>'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: Empty-body variant 6.c — not yet authored for this family
         explanation: Empty-body variant 6.c not yet authored for nemotron_nano; see 6.a / 6.b for this family's empty / whitespace scenarios.
@@ -437,8 +480,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -461,7 +503,12 @@ documents:
 
           </tool_call> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
@@ -479,7 +526,12 @@ documents:
 
           </tool_call> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
@@ -509,7 +561,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: nemotron_nano
     model_label: Nemotron Nano v3
@@ -531,8 +588,7 @@ documents:
 
           </tool_call>'
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -545,7 +601,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -597,7 +658,12 @@ documents:
 
           </tool_call>'
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30:
         description: Separator-character case not applicable
         explanation: This case is not applicable to nemotron_nano because it is a qwen3_coder-style XML parser with no vLLM/SGLang peer parser.
@@ -647,7 +713,7 @@ documents:
             </tool_call>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -679,7 +745,13 @@ documents:
         - delta_text: </tool_call>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: nemotron_nano
     model_label: Nemotron Nano v3

@@ -26,15 +26,13 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -49,8 +47,18 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.c:
         description: Parallel invokes with surrounding narration
         ref: MiniMax M3 namespace-token XML tool-call grammar
@@ -70,8 +78,18 @@ documents:
 
           ]<]minimax[>[</tool_call> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same function name twice inside one tool_call wrapper
         ref: MiniMax M3 namespace-token XML tool-call grammar
@@ -91,7 +109,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.4.yaml:
     family: minimax_m3
     model_label: MiniMax M3
@@ -106,8 +129,7 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -145,7 +167,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Missing closing invoke tag
         ref: MiniMax M3 parser malformed-input recovery contract
@@ -157,7 +184,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed-prefix recovery is not applicable to this family's syntax
         explanation: TOOLCALLING.batch.4.e is specific to raw JSON-object scanners where a malformed JSON-looking prefix may be followed by a complete object. MiniMax M3 uses namespace-prefixed XML tags, so malformed wrapper coverage lives in TOOLCALLING.batch.4.a through 4.d.
@@ -180,8 +212,7 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - &id004
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -197,7 +228,10 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id004
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: Invoke with empty body on one line
         ref: MiniMax M3 namespace-token XML tool-call grammar
@@ -207,7 +241,10 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id004
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: minimax_m3
     mode: batch
@@ -378,8 +415,7 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - &id005
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -398,7 +434,12 @@ documents:
 
           ]<]minimax[>[</tool_call> Let me know if you need more.'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after tool call
         ref: MiniMax M3 parser prefix/trailing-text contract
@@ -412,7 +453,12 @@ documents:
 
           ]<]minimax[>[</tool_call> Let me know if you need more.'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple invokes inside one tool_call wrapper
         ref: MiniMax M3 namespace-token XML tool-call grammar
@@ -434,7 +480,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: minimax_m3
     model_label: MiniMax M3
@@ -453,8 +504,7 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -464,7 +514,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.a:
         description: Missing outer tool_call close, complete invoke is recovered at EOF
         ref: Dynamo MiniMax M3 parser EOF recovery contract
@@ -476,7 +531,12 @@ documents:
 
           ]<]minimax[>[</invoke>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.b:
         description: Closing outer tool_call without matching open
         ref: Dynamo MiniMax M3 orphan-inner recovery contract
@@ -488,7 +548,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-parameter value
         ref: Dynamo MiniMax M3 parser EOF recovery contract
@@ -498,7 +563,12 @@ documents:
 
           ]<]minimax[>[<location>NY'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: Dynamo MiniMax M3 parser EOF recovery contract
@@ -518,7 +588,12 @@ documents:
 
           ]<]minimax[>[</invoke>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-argument value
         ref: Dynamo MiniMax M3 parser EOF recovery contract
@@ -536,7 +611,12 @@ documents:
 
           ]<]minimax[>[<location>New York'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.f:
         description: Bare valid invoke before a complete wrapped call
         ref: Dynamo MiniMax M3 orphan-inner recovery contract
@@ -558,7 +638,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.g:
         description: Closing outer tool_call without matching open after prefix prose
         ref: Dynamo MiniMax M3 orphan-inner recovery contract
@@ -570,17 +655,32 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.b:
         description: Blank / whitespace-only model text
         model_text: '   '
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.10:
         description: Duplicate calls (same name twice)
         model_text: ']<]minimax[>[<tool_call>
@@ -599,7 +699,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13:
         description: Unknown tool name absent from supplied tools
         model_text: ']<]minimax[>[<tool_call>
@@ -612,7 +717,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13.c:
         description: Mixed known and unknown calls
         model_text: ']<]minimax[>[<tool_call>
@@ -631,7 +741,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13.a:
         description: Unknown-only call under default parser behavior
         model_text: ']<]minimax[>[<tool_call>
@@ -644,7 +759,12 @@ documents:
 
           ]<]minimax[>[</tool_call>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13.b:
         description: Explicit forward-unknown-tools mode is not applicable
         explanation: MiniMax M3's Dynamo parser does not have a separate forward-unknown-tools mode; default behavior already forwards syntactically valid calls by name.
@@ -692,7 +812,7 @@ documents:
             ]<]minimax[>[</tool_call>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id007
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -718,7 +838,13 @@ documents:
         - delta_text: ']<]minimax[>[</tool_call>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id007
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: minimax_m3
     model_label: MiniMax M3
@@ -813,7 +939,7 @@ documents:
             ]<]minimax[>[</invoke>'
         - delta_text: ''
           finish_reason: stop
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -831,7 +957,13 @@ documents:
             ]<]minimax[>[<location>NY'
         - delta_text: ''
           finish_reason: stop
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.stream.4.c:
         description: Inner invoke payload without required outer tool_call wrapper, followed by close-marker spam
         ref: derived from TOOLCALLING.stream.4.c
@@ -847,4 +979,10 @@ documents:
             ]<]minimax[>[</invoke>'
         - delta_text: ''
           finish_reason: length
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string

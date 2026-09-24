@@ -11,15 +11,13 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_openai_tool_parser.py#L130
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,15 +28,35 @@ documents:
         ref: 'OpenAI Harmony preambles should be commentary messages: https://developers.openai.com/cookbook/articles/openai-harmony#preambles'
         model_text: 'Both: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.2.b:
         description: Two back-to-back fence pairs — not applicable to this family
         explanation: harmony's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
@@ -51,8 +69,7 @@ documents:
         ref: 'OpenAI Harmony JSON-constrained function calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>nonsense<|call|>
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -63,13 +80,23 @@ documents:
         ref: 'OpenAI Harmony JSON-constrained function calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC<|call|>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: No to=functions.X recipient
         ref: dynamo
         model_text: <|start|>assistant<|channel|>commentary <|constrain|>json<|message|>{"location":"NYC"}<|call|>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Malformed variant 4.d — not applicable to this family
         explanation: Malformed-input variant 4.d does not apply to harmony's parser syntax (no equivalent end-marker recovery scenario).
@@ -88,8 +115,7 @@ documents:
         ref: dynamo
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -100,25 +126,45 @@ documents:
         ref: 'OpenAI Harmony tool-call stop token: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-message JSON
         ref: dynamo
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"loc
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York"}
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Boston"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"New York
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: harmony
     mode: batch
@@ -128,8 +174,7 @@ documents:
         ref: 'OpenAI Harmony tool calls terminate with ''<|call|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -138,13 +183,19 @@ documents:
         ref: 'OpenAI Harmony tool calls terminate with ''<|call|>'': https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No <|message|> body
         ref: 'OpenAI Harmony tool-call message header/body format: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|channel|>commentary to=functions.get_time <|constrain|>json
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: harmony
     mode: batch
@@ -230,8 +281,7 @@ documents:
         ref: dynamo
         model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -242,19 +292,34 @@ documents:
         ref: dynamo
         model_text: <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: inspired-by https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_openai_tool_parser.py#L220
         model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: I will check the weather. <|channel|>analysis<|message|>Need to use function get_weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|> Then check LA weather. <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: harmony
     model_label: gpt-oss
@@ -265,8 +330,7 @@ documents:
         ref: 'OpenAI Harmony receiving tool calls: https://developers.openai.com/cookbook/articles/openai-harmony#receiving-tool-calls'
         model_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -277,23 +341,43 @@ documents:
         ref: 'OpenAI Harmony channels/final output: https://developers.openai.com/cookbook/articles/openai-harmony#channels'
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.b:
         description: Blank / whitespace-only model text
         ref: dynamo
         model_text: '   '
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.10:
         description: Duplicate calls (same name twice)
         model_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"LA"}<|call|>
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30:
         description: Separator-character case not applicable
         explanation: This case is not applicable to harmony because it uses channel/recipient/message envelope tokens, not delimiter-separated call bodies.
@@ -326,7 +410,7 @@ documents:
         - delta_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -344,7 +428,13 @@ documents:
         - delta_text: '{"location":"NYC"}'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: harmony
     model_label: gpt-oss

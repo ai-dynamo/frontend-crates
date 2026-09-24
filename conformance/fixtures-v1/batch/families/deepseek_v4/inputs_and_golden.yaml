@@ -50,15 +50,13 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -87,8 +85,18 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.c:
         description: Parallel with surrounding narration
         ref: dynamo
@@ -108,8 +116,18 @@ documents:
 
           </｜DSML｜tool_calls> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
@@ -129,8 +147,18 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.30.yaml:
     family: deepseek_v4
     mode: batch
@@ -171,8 +199,7 @@ documents:
             properties:
               value:
                 type: string
-        - &id003
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -187,7 +214,10 @@ documents:
             properties:
               payload:
                 type: object
-        - *id003
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.4.yaml:
     family: deepseek_v4
     mode: batch
@@ -201,8 +231,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -221,7 +250,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Missing </｜DSML｜parameter> end tag
         ref: dynamo
@@ -235,7 +269,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.b:
         description: Invalid JSON syntax in a non-string DSML parameter
         ref: DeepSeek DSML parameter grammar
@@ -249,7 +288,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed DSML invoke prefix followed by a valid complete invoke
         ref: DeepSeek DSML invoke grammar
@@ -265,7 +309,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.f:
         description: Tool-name XML tag form is unavailable in DSML
         explanation: DSML identifies a tool only through the invoke name attribute; it has no XML function opener that can be replaced by a tool-name tag.
@@ -286,8 +335,7 @@ documents:
 
           </｜DSML｜invoke>'
         tools:
-        - &id005
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -304,7 +352,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-parameter value
         ref: dynamo
@@ -314,7 +367,12 @@ documents:
 
           <｜DSML｜parameter name="location" string="true">NY'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
@@ -334,7 +392,12 @@ documents:
 
           </｜DSML｜invoke>'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
@@ -352,7 +415,12 @@ documents:
 
           <｜DSML｜parameter name="location" string="true">New York'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.f:
         description: Bare valid invoke before a complete wrapped call
         ref: dynamo
@@ -374,7 +442,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.g:
         description: Closing </｜DSML｜tool_calls> without matching open after prefix prose
         ref: dynamo
@@ -386,7 +459,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: deepseek_v4
     mode: batch
@@ -402,8 +480,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id006
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -419,7 +496,10 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id006
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: Missing arguments key is unavailable in DSML
         explanation: DSML has no arguments key; a parameterless invoke is already represented by TOOLCALLING.batch.6.a, so there is no distinct absent-key spelling.
@@ -507,8 +587,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id007
-          name: process_data
+        - name: process_data
           parameters:
             type: object
             properties:
@@ -527,7 +606,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id007
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
       TOOLCALLING.batch.7.f:
         description: Numeric precision edge preserves integer-like number literal
         ref: inferhub live capture on nvidia/deepseek-ai/deepseek-v4-pro; format follows https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/encoding/encoding_dsv32.py
@@ -564,8 +648,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id008
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -584,7 +667,12 @@ documents:
 
           </｜DSML｜tool_calls> Let me know if you need more.'
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
@@ -598,7 +686,12 @@ documents:
 
           </｜DSML｜tool_calls> Let me know if you need more.'
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
@@ -620,7 +713,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: deepseek_v4
     model_label: DeepSeek V4
@@ -638,8 +736,7 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - &id009
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -664,7 +761,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id009
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13.b:
         description: Forward-unknown-tools mode is unavailable
         explanation: DeepSeek V4 DSML exposes no request mode that changes unknown-tool forwarding; the parser returns every well-formed invoke by name.
@@ -675,7 +777,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id009
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -715,7 +822,12 @@ documents:
 
           </｜DSML｜tool_calls>'
         tools:
-        - *id009
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.13:
         description: Unknown tool name absent from supplied tools
         ref: dynamo
@@ -755,7 +867,7 @@ documents:
             </｜DSML｜tool_calls>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id010
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -783,7 +895,13 @@ documents:
         - delta_text: </｜DSML｜tool_calls>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id010
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: deepseek_v4
     model_label: DeepSeek V4

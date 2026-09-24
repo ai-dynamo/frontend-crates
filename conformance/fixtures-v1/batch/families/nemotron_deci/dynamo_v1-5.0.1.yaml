@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: nemotron_deci
 capture: dynamo_v1-5.0.1
@@ -5,59 +6,50 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: nemotron_deci
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.4.c:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.batch.5.yaml:
     family: nemotron_deci
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: nemotron_deci
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: nemotron_deci
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: nemotron_deci
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: nemotron_deci
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: nemotron_deci
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: nemotron_deci
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: nemotron_deci
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 56a6ee0a66091a01a13509889d1cd3dde3188a0da72dfa947719d06cea20267e
+        producer: b0ce0204175da7b33187ec6e17b3dc425fb7828f02c5023514004f4da36d1392
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: f2a64a96ceba9a626940d86b904bc60d618b3f2451979863851aba6364ad4d7b
+        producer: b0ce0204175da7b33187ec6e17b3dc425fb7828f02c5023514004f4da36d1392
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: d855371b8ea3ed6e294831602aca3c553866ee01a794b80d294147a13bed6442
+        producer: b0ce0204175da7b33187ec6e17b3dc425fb7828f02c5023514004f4da36d1392
+    annotations:
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}

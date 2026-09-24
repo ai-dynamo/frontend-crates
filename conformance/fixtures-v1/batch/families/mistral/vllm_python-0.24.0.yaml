@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: mistral
 capture: vllm_python-0.24.0
@@ -7,10 +8,12 @@ documents:
     mode: batch
     captured_with:
       vllm_python: 0.24.0
-    cases:
-      TOOLCALLING.batch.8.d:
-        expected:
-          vllm_python:
-            calls: []
-            error: 'ValueError: Only one BOT token should have been outputted, but got I will check the weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS] Then check LA weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "LA"}}][/TOOL_CALLS].'
-            normal_text: ''
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 67fe2add79d73fc70b0618284190a005b067bbef3e9eca5aa4330c93d8ba9d24
+        producer: 9a524b456c1a3d5ccbe04dca8797c63ef2c45c92bc1ad94af89d613f01b7f6e1
+    annotations:
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}

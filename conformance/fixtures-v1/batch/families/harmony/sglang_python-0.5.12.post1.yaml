@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: harmony
 capture: sglang_python-0.5.12.post1
@@ -5,303 +6,186 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both:   Done.'
-            explanation: 'No spec-correct winner on whitespace: surrounding prose is outside Harmony messages, so this is recovery-only; SGLang extracts the same calls but preserves one extra separator space'
-      TOOLCALLING.batch.2.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
   TOOLCALLING.batch.4.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-            explanation: 'Less parser-complete behavior: the Harmony envelope is a valid ''<|call|>''-terminated function call, so the parser should preserve the malformed raw payload for downstream validation rather than dropping the call.'
-      TOOLCALLING.batch.4.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-            explanation: 'Less parser-complete behavior: the Harmony envelope is a valid ''<|call|>''-terminated function call, so the parser should preserve the malformed raw payload for downstream validation rather than dropping the call.'
-      TOOLCALLING.batch.4.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
   TOOLCALLING.batch.5.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.5.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
-            explanation: SGLang requires the full Harmony <|start|>assistant prefix before it classifies a commentary function call; Dynamo recovers the complete call without that prefix.
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-            explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
   TOOLCALLING.batch.6.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{}<|call|>
-            explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
-      TOOLCALLING.batch.6.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{ }<|call|>
-            explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
-      TOOLCALLING.batch.6.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_time <|constrain|>json
-            explanation: 'Dynamo/vLLM are more spec-correct: a commentary header without ''<|message|>'' is malformed protocol, not user-visible text; SGLang preserves raw markup'
   TOOLCALLING.batch.7.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
-      TOOLCALLING.batch.7.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
-      TOOLCALLING.batch.7.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
-      TOOLCALLING.batch.7.d:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
-      TOOLCALLING.batch.7.e:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
-      TOOLCALLING.batch.7.f:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
-            explanation: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
   TOOLCALLING.batch.8.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: I will check the weather.
-      TOOLCALLING.batch.8.b:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: Let me know if you need more.
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: I will check the weather.   Let me know if you need more.
-            explanation: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same call is extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: I will check the weather.   Then check LA weather.
-            explanation: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same calls are extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'
   TOOLCALLING.batch.yaml:
     family: harmony
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>
-            explanation: 'Less spec-correct parsing: SGLang leaks raw Harmony markup instead of extracting a valid ''<|call|>''-terminated commentary tool call.'
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: Hello, how can I help you today?
-            explanation: 'Less spec-correct fallback: bare text is not a valid Harmony assistant response because no final message was emitted. A valid response would be ''<|channel|>final<|message|>Hello, how can I help you today?<|return|>''.'
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: '   '
-            explanation: 'Less spec-correct fallback: blank text is not a valid Harmony assistant response because no final message was emitted.'
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            calls:
-            - arguments:
-                location: NYC
-              name: get_weather
-            - arguments:
-                location: LA
-              name: get_weather
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.unknown_tool <|constrain|>json<|message|>{"location":"NYC"}<|call|>
-            explanation: SGLang treats an unknown harmony recipient as ordinary content rather than forwarding a tool call by default.
   TOOLCALLING.stream.1.yaml:
     family: harmony
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.stream.1.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.2.yaml:
     family: harmony
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: rt|>assistant<|channel|>commentary to=functions.get_time <|constrain|>js
-            explanation: SGLang emits only the first split Harmony call and leaks the second call envelope into normal_text; Dynamo parses both complete `<|call|>`-terminated calls.
   TOOLCALLING.stream.3.yaml:
     family: harmony
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>j
-            explanation: SGLang leaks a split Harmony commentary block into normal_text; Dynamo buffers the split marker and parses the complete `<|call|>`-terminated call.
   TOOLCALLING.stream.4.yaml:
     family: harmony
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.stream.4.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.stream.4.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: fa06d20f3dd8a9d326001814e85292ef10c981007a92ad6e405dcc060bcad097
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: 4c256b20c96da37bc263bbc7aeebeb064bbfa1dc60ab8cf903856d80f85603d6
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: b2f63f141fa38cf0aa73961349b6d5142453ff366b7a7ab770c17868a5d1bd7b
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: d7181fe35288ff2f6844f1d874ae533c1a9ee6269a40e6604cb8d0e348d303d5
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]':
+        observation: e553c2f232fafa187e1e244e202a6df30ba6799bcc75911ba9f39743667bd917
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: 0acd43e030d589ab53f3c1eb983c92c7e6fb44def9b8a3801aa8f63b060a215b
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: 32fa10913cc5e0716167326228929840186db1fd2ceed117144e0a6f71f3c04c
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: df86db81c98072152d9e2e88489a586a2c0c31de74aa807421e9de40c9eaede8
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: 8b66cd30ae22df5005a377e4f6128c53a62175077f7353afc26771f0951b1f08
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 7100e23b0cf220ce1532840c196da1ca14c3ade70d6482ab33c69e0c379a178d
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 98c8d548e4b25591bf15c5f5845606d8530bdb90adefd6d23e554486d732a4ce
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: dabc1de1e1fff29b6ac69b3dea18451d7466c9063dfb35d000e913b248f0cff2
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 513ca6d1b15ab05c2778a4930f25a27cc2b4f7fc78a90cb87e01049ba88c2515
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]':
+        observation: 3426029b9576623ca7629c9096140287637634d6e898588e3d289135c6e81f33
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: c5a40959f399b1dd1107d8a73998730586f22b57764c43f8abd06a8256919a86
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 214c9eb74b3e7de48174b904756c1607f26895ff3e58f0ad461f06cd7c0ab8ad
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]':
+        observation: e641377281636cab4210d3cf49027968c9bce65ccb66df110c42a9a3064eda05
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]':
+        observation: 69434afce26849123e6cb94452a5d337db2fc8d3a6725dbd4469bf1e6929bd86
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]':
+        observation: 6b3b220eeacbb83cf4ab15178713af158fbfe7288f1800098af5406e21b4c317
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 5b6a1df077ac4389a03a952932961f9c14be1c9f534208de8095a645d9dfa817
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: 7a19fac70ded7f64bc1693e7e1b775af079e1f4da5644006f16d88caa8089feb
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 37614d9fe1d6ee7598336b139966bc6e0005fecaa88dd592989e7b580c8b8eb6
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 9977f89a68bb2fe7338ba653318a75fb2989fc579a301be5dc07ccbefba0c20d
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 21c1f7749c068618c3873a10bbd9a7c24457cda75e4f7bd0ca0141f871bbc7df
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: ef62880eba10620dea6fb397a077add4a545f9abd77c4ac9c8c0a4f0b552d47a
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: 25b05234ff1bef016735be715a1da12b863ff0b1ecd72faa6b1f6a5c2c4d61bb
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: f7fba389a47d15ee532af8f00e214f378ae28339d1443e3dff41129dee50ff10
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 5aa10c5fba15cf732bccc5bb1634516270349122cbb60367ee4bd2c2e445ba48
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 5e8a7789e7133034917324723c637eaf629a6f19afccee0b1ca6956910323918
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 5b13bec9dec7302a2c036dd6504e82b18c3bdb4c61972ce598158e83d07ee63b
+        producer: 383c06c28062faf57de3da3d90811491130614f6ea2d44e3b28d3c71d1226df4
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: 40c666b965a984fe4276c4884a80e2ab49e1d8e54dc573b67e63e4c597490eda
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 1264bdc5a98b004c0ca7aa2449cabc0e266e8f3dee34c0b4f5a9151d071ea36e
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 72f4a8c9cf9b9d04e8ea8260bd3f52915d3c317da95916a66ba8da98aa7824b6
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: c76906f1629015bd64d1480489bbea61c987127c668cf112958da26bef5a89de
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: 573bf314a0c7a1fa68c1746a9d50e45f87b21b32d4b4bae9ff956c835abacf4e
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: d521e890b51c8cbf20da09a48e2dbbdfae47e2b3377ebbf7b455b9a6c9614422
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: fe690b1a91d71f20d1f22083fde49fe94dba5646ec61015ecc21df39d8ec7523
+        producer: 9c968de0061a214b61c9f16a4238ba6b7177a48c0a240b48cdb2ca86784d7aad
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]': {}

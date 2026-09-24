@@ -17,9 +17,9 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: &id001
+          vllm_python:
             unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
-          sglang_python: &id002
+          sglang_python:
             unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.1.b:
         description: Plain text without reasoning markers
@@ -29,8 +29,10 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.a:
         description: Single MiniMax M3 reasoning block
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -39,8 +41,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.b:
         description: Normal prefix before a MiniMax M3 reasoning block
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -49,8 +53,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: Before
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.c:
         description: MiniMax M3 reasoning followed by normal answer text
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -59,8 +65,10 @@ documents:
           dynamo_v1:
             reasoning_text: compute
             normal_text: answer
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.d:
         description: Normal text around a MiniMax M3 reasoning block
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -69,8 +77,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: before  after
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.e:
         description: Empty MiniMax M3 reasoning block
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -79,8 +89,10 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: answer
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.2.f:
         description: Complex MiniMax M3 reasoning content with Unicode and newlines
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -97,8 +109,10 @@ documents:
 
               JSON-ish: {"x": [1, true]}'
             normal_text: Done.
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.3.a:
         description: Reasoning followed by downstream MiniMax M3 tool-call text
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -123,8 +137,10 @@ documents:
               ]<]minimax[>[</invoke>
 
               ]<]minimax[>[</tool_call>'
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.3.b:
         description: Open reasoning interrupted by downstream tool-call text is not configured for MiniMax M3
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -153,8 +169,10 @@ documents:
           dynamo_v1:
             reasoning_text: normal
             normal_text: answer
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.5:
         description: Missing end marker keeps the remaining text as reasoning
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -163,8 +181,10 @@ documents:
           dynamo_v1:
             reasoning_text: partial reasoning
             normal_text: ''
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.6.a:
         description: Multiple MiniMax M3 reasoning spans are concatenated
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -173,8 +193,10 @@ documents:
           dynamo_v1:
             reasoning_text: firstsecond
             normal_text: middle  done
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.batch.6.b:
         description: Stray MiniMax M3 end marker after a complete reasoning span
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -184,8 +206,10 @@ documents:
             reasoning_text: preamble
             normal_text: bodyanswer
             explanation: Parser-owned dangling close syntax is stripped from normal_text after the complete reasoning span.
-          vllm_python: *id001
-          sglang_python: *id002
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
   REASONING.stream.yaml:
     family: minimax_m3
     model_label: MiniMax M3
@@ -202,9 +226,9 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: &id003
+          vllm_python:
             unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
-          sglang_python: &id004
+          sglang_python:
             unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.1.b:
         description: Plain text without reasoning markers
@@ -216,8 +240,10 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.2.a:
         description: MiniMax M3 reasoning split across chunks
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -228,8 +254,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.2.b:
         description: Multiple MiniMax M3 reasoning spans across chunks
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -241,8 +269,10 @@ documents:
           dynamo_v1:
             reasoning_text: firstsecond
             normal_text: ' middle  done'
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.2.c:
         description: Prompt-prefilled close marker after a complete MiniMax M3 span
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -255,8 +285,10 @@ documents:
             reasoning_text: preamblebody
             normal_text: answer
             explanation: MiniMax M3 enables dangling-end recovery, so a later unpaired </mm:think> chunk is treated as a prompt-prefilled reasoning close.
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.3.a:
         description: MiniMax M3 start marker split across chunks
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -267,8 +299,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.3.b:
         description: MiniMax M3 end marker split across chunks
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -279,8 +313,10 @@ documents:
           dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.3.c:
         description: Partial MiniMax M3 start-marker prefix later becomes normal text
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -291,8 +327,10 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: plain <mm:thesis answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.4:
         description: Dangling MiniMax M3 end marker split across chunks
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -303,8 +341,10 @@ documents:
           dynamo_v1:
             reasoning_text: reason
             normal_text: answer
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
       REASONING.stream.4.a:
         description: Close marker only is stripped as prompt-prefilled reasoning close
         ref: 'MiniMax M3 <mm:think> reasoning grammar; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -314,5 +354,7 @@ documents:
           dynamo_v1:
             reasoning_text: ''
             normal_text: I will check that.
-          vllm_python: *id003
-          sglang_python: *id004
+          vllm_python:
+            unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+          sglang_python:
+            unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: glm47
 capture: vllm_rust-0.25.1
@@ -7,14 +8,25 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>": )'
-      TOOLCALLING.streamv1.4.d:
-        exception: 'ToolParserError::ParsingFailed (near "get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>": )'
   TOOLCALLING.streamv1.5.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 163dae49b5ccc975a8b65ed2f2b0393e40b1123dc407f58e0b1104358ccc3fd6
+        producer: 9d6decbf25e7c67027e7752378f2be468735f461761cce9cc7141c51c6d2167b
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 7647270b33d9d09b39d427ef201ae16be21c16015405f9075d3b7988c4a9da40
+        producer: 9d6decbf25e7c67027e7752378f2be468735f461761cce9cc7141c51c6d2167b
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

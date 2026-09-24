@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Fixture, common, merge_dynamo, stream_dynamo_dirs};
+use super::{Fixture, common, merge_dynamo};
 use serde_json::{Map, Value, json};
 use std::path::PathBuf;
 
@@ -12,7 +12,13 @@ use std::path::PathBuf;
 fn export_migration_observations() {
     let root = PathBuf::from(std::env::var_os("MIGRATION_FIXTURES").expect("fixture root"));
     let output = PathBuf::from(std::env::var_os("MIGRATION_OUTPUT").expect("output path"));
-    let root = root.join("toolcalling/fixtures-stream-v1");
+    let explicit = root.join(".reader-views/rust/toolcalling/fixtures-stream-v1");
+    let independent = explicit.is_dir();
+    let root = if independent {
+        explicit
+    } else {
+        root.join("toolcalling/fixtures-stream-v1")
+    };
     let mut inputs = Vec::new();
     common::collect_yaml(&root.join("inputs"), &mut inputs);
     inputs.sort();
@@ -28,7 +34,10 @@ fn export_migration_observations() {
         .collect();
     for (mode, dirs) in [
         ("release", released),
-        ("current", stream_dynamo_dirs(&root)),
+        (
+            "current",
+            common::historical_capture_dirs(&root, "stream", "dynamo_v2"),
+        ),
     ] {
         let names: Vec<_> = dirs
             .iter()
@@ -44,7 +53,14 @@ fn export_migration_observations() {
                 let relative = path.strip_prefix(root.join("inputs")).unwrap();
                 let mut fixture: Fixture =
                     serde_yaml::from_slice(&std::fs::read(path).unwrap()).unwrap();
-                for directory in &dirs[..end] {
+                let selected: Vec<_> = if independent {
+                    common::latest_family_capture(&dirs[..end], relative)
+                        .into_iter()
+                        .collect()
+                } else {
+                    dirs[..end].iter().collect()
+                };
+                for directory in selected {
                     merge_dynamo(&mut fixture, directory, relative);
                 }
                 let cases: Map<String, Value> = fixture.cases.iter().map(|(id, case)| {

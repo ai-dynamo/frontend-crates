@@ -520,7 +520,7 @@ def test_tooltip_builds_lazily_on_first_interaction(driver):
 
 @pytest.mark.parametrize("target", ["toolcalling-batch", "toolcalling-streamv1"])
 def test_popup_columns_match_compare_bar_candidates(driver, target):
-    """Keep all history in popups; only certified equivalents lack selector rows."""
+    """Popups own cell captures; the compare bar owns all selectable history."""
     previous_tab = driver.execute_script("return document.querySelector('.tab-panel.active').id")
     try:
         _open_tab(driver, target)
@@ -532,24 +532,33 @@ def test_popup_columns_match_compare_bar_candidates(driver, target):
             const candidates = model.candidates;
             const barKeys = Array.from(tab.querySelectorAll('.cmpctl .cmprow-label[data-cand]'))
               .map(element => element.dataset.cand).sort();
-            const td = tab.querySelector('td.cell[data-ttip-id]');
+            const td = Array.from(tab.querySelectorAll('td.cell[data-ttip-id]'))
+              .find(element => element.offsetParent !== null && element.getClientRects().length);
+            const source = Array.from(tab.querySelectorAll('table[data-parity-table] td.cell[data-ttip-id]'))
+              .find(element => element.dataset.ttipId === td.dataset.ttipId);
+            const rowIndex = Array.from(source.closest('tbody').children).indexOf(source.parentElement);
+            const columnIndex = Array.from(source.parentElement.querySelectorAll(':scope > td.cell')).indexOf(source);
+            const cell = model.rows[rowIndex].cells[model.columns[columnIndex].sub];
+            const cellKeys = cell.tooltip.candidates.map(candidate => candidate.key).sort();
             window.__buildTooltip(td);
             const headers = Array.from(td.querySelectorAll('.ttip-chunks th[data-cand]'));
             const equivalents = candidates.filter(candidate => candidate.equivalent_to);
             return {
               barKeys,
               gridKeys: headers.map(header => header.dataset.cand).sort(),
-              modelKeys: candidates.map(candidate => candidate.key).sort(),
-              selectableKeys: candidates.filter(candidate => !candidate.equivalent_to)
+              cellKeys,
+              ownedKeys: cellKeys.every(key => candidates.some(candidate => candidate.key === key)),
+              selectableKeys: candidates.filter(candidate => candidate.visible !== false && !candidate.equivalent_to)
                 .map(candidate => candidate.key).sort(),
               hiddenEquivalents: equivalents.every(candidate =>
-                barKeys.includes(candidate.equivalent_to) && headers.some(header =>
-                  header.dataset.cand === candidate.key && getComputedStyle(header).display === 'none'))
+                barKeys.includes(candidate.equivalent_to) && (!cellKeys.includes(candidate.key) || headers.some(header =>
+                  header.dataset.cand === candidate.key && getComputedStyle(header).display === 'none')))
             };
             """
         )
         assert result["gridKeys"], "no candidate chart built"
-        assert result["gridKeys"] == result["modelKeys"]
+        assert result["gridKeys"] == result["cellKeys"]
+        assert result["ownedKeys"]
         assert result["barKeys"] == result["selectableKeys"]
         assert result["hiddenEquivalents"]
     finally:

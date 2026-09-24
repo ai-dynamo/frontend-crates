@@ -88,7 +88,11 @@ def test_verified_report_links_preserve_all_url_components(tmp_path, fixture):
     assert source_links(literal, html, tmp_path) == source_links(encoded, html, tmp_path)
 
 
-@pytest.mark.parametrize("corpus,impl,older,newer", table._EQUIVALENT_CAPTURE_SELECTORS)
+@pytest.mark.parametrize("corpus,impl,older,newer", [
+    (corpus, *table.capture_policy.split_sel(source), table.capture_policy.split_sel(rule["equivalent_to"])[1])
+    for corpus, rules in table.capture_policy.load_policy()["corpora"].items()
+    for source, rule in rules.get("selectors", {}).items() if rule.get("equivalent_to")
+])
 def test_hidden_selector_preserves_identical_complete_capture(corpus, impl, older, newer):
     root = fixture_snapshot_root() / f"toolcalling/fixtures-{corpus}-v1"
     names = sorted(path.name for path in root.iterdir() if path.is_dir() and path.name != "inputs")
@@ -103,18 +107,19 @@ def test_hidden_selector_preserves_identical_complete_capture(corpus, impl, olde
     assert snapshots[0] == snapshots[1]
 
 
-def test_equivalent_selector_requires_present_replacement_and_preserves_data():
-    old = {"key": "vllm_python-0-25-1", "label": "vLLM Python 0.25.1 (stream)"}
-    new = {"key": "vllm_python-0-26-0", "label": "vLLM Python 0.26.0 (stream)"}
-    assert "equivalent_to" not in table._candidate_model([old], corpus="stream")[0]
+def test_equivalent_selector_requires_present_replacement_and_preserves_data(monkeypatch):
+    policy = {"corpora": {"stream": {"selectors": {
+        "vllm_python-1.0.0": {"visible": False, "equivalent_to": "vllm_python-1.1.0"}}}}}
+    monkeypatch.setattr(table, "_capture_policy", lambda: policy)
+    old = {"key": "vllm_python-1-0-0", "label": "vLLM Python 1.0.0 (stream)"}
+    new = {"key": "vllm_python-1-1-0", "label": "vLLM Python 1.1.0 (stream)"}
+    with pytest.raises(ValueError, match="missing equivalent report candidate"):
+        table._candidate_model([old], corpus="stream")
     candidates = table._candidate_model([old, new], corpus="stream")
     assert len(candidates) == 2
-    assert candidates[0]["version"] == "0.25.1"
+    assert candidates[0]["version"] == "1.0.0"
     assert candidates[0]["equivalent_to"] == new["key"]
-    assert "equivalent_to" not in table._candidate_model([{**old, "default_bucket": "A"}, new], corpus="stream")[0]
-    for corpus in (None, "reasoning", "batch"):
-        assert all("equivalent_to" not in candidate
-                   for candidate in table._candidate_model([old, new], corpus=corpus))
+    assert candidates[0]["visible"] is False
 
 
 @pytest.mark.parametrize("before,after", [

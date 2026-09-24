@@ -1,0 +1,3882 @@
+schema: bound-observations-v1
+observations:
+  4ac632eeb159f60f8e88ad81effba9154dd0d5dbbcca94447caf8869aec5c833:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  98b0d181739f8517349977fcf3da47a3b695138e875131e9039bb4292db700f9:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: '
+
+        '
+  99dd5500bdfbe6867c0996820c7fc710cf505dd6158dc72d8761c806e5902403:
+    request:
+      model_text: 'Both: <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both:  Done.'
+  dad388c45f8c2dfd2280d72702ba15546a0fe53ddd9bd62f1d4d9b8029705ab6:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  43e95b22c3062addb0ea57e60513faa0a1df720ed387d1625136ff7749744d9e:
+    request:
+      model_text: '<minimax:tool_call>
+
+        nonsense
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  c15ff31bb861db0058a76947611e357a8a5338dd7588c850f477ddabdc74862e:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke>
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  d43ef7aa0981d149b996ba8e9970d32cc153595f3117886495b9c1e1e8d2457b:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  5439dd70d0fdfd4eefb2632cfd0700d3c98894421dc787b361ae99b4e7f3a093:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  a6dd84bb31b8a778223f4161e4f509aae48f47e918e31a526e5606b92a5b5ba9:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '
+
+        '
+  62b118b7e52a2540be73f9dd866a78f0bae90565fd97b44722ab4a65405d75f9:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  352439e58bf7eeec6e61016b13f00f7ba9fe6357152e438233490b187e2723a4:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  4df893ffde5d9b9d05c8df78a2fe6a1c43f1407a148a8dc25148abdcfc1d66cb:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  ae593548144362266dff3603591549a86aa4ec16b2ddb166d1e06e61f361e796:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: '
+
+
+        '
+  1f067c5cf9fc14b091de68145d746e4bb731c038a3af8db80068a6d92702d27a:
+    request:
+      model_text: 'I will check that. <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: "I will check that. \n"
+  828a68ad5932e4a412e986799ff8d98232858e86827dd103b3d128297552b823:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  24b0ac60d3d63ef9664369b44d6fad3688b69fd25b76df6d8661a0317a083c6c:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  6e803524dd3ce2133d7971bb8ff8dc2f729fc76a6d46bc95ce30da772038cdc5:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="book_flight">
+
+        <parameter name="destination">Paris</parameter>
+
+        <parameter name="passengers">2</parameter>
+
+        <parameter name="first_class">true</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  37f439fbf760e0ae4774594aff8d7e1bac6527ccb4ca7bd68849fa8b26ef105e:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Tōkyō central</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+      normal_text: ''
+  d2311054c81fdb7ad9de97e542d7a09032ad45432931b81c5331d7ecafbc1137:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="set_limit">
+
+        <parameter name="count">9007199254740993</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  4bcc9b8964189e211531112885f7844bf357f274f57c40d1a0adc7ca363bfab8:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  029efd559412cc7df652f0448e00ef865d117b846db2ae0b97f952514076ef8a:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  98a8d9789d88b07f2c63849388f77ce797bafe0bbdea42044afad2bf85061ee8:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  9f79461214be59bf71fcd870bace8e895d6014d279097ff8bd3bc6bc17b733b4:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Then check LA weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather.  Then check LA weather. '
+  6861f32a1ecde37d1824095a8c4a22952913b6687b464ee6dd4a906a70dac266:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  f0e9764db20632ed6e572c710dfd83c4eddfd96e1f740692ffe37af77a5b8578:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  3d6e1c157695f43a5a14df2eee749c82794f8b1a721ec1f746f511ec71fc1f36:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+        <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  c1f3bdc758697953d11b21f029ad619de677e049c5101362f2ebfde37b5fde28:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  beb09fb68655b1bf93cb141ba255817947caef9c4b8d7c93ec77c81fa1eb9edd:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  e0e2a2202e44a9689a8e48be4a144b2e86c7a7fd8d9603117eb37454e160c4d8:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  87b117500faf80eac50e511bca5fbf7d1c7fb99998c875bf2f45390bfbf4c1bf:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+          timezone: EST
+      - name: get_time
+        arguments:
+          timezone: EST
+  6b74c44594e97ef25308f2ac26bcbe3a8f1867fb88ef27739515c933e3d6e57c:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+          timezone: EST
+      - name: get_time
+        arguments:
+          timezone: EST
+  cd4a0f19c74720912dab64bc7cbd5bfc2e33bad303d0aeb2b9b2ef72b154200f:
+    request:
+      model_text: 'Both: <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+          timezone: EST
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  bad826ec4b96be15813f85e6713973e3d1281f3e247ffe4679c05cd04b980c7d:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: LA
+      - name: get_weather
+        arguments:
+          location: LA
+  3556c7ec28f9b9863dfa43394d6804d95e71f7db10193c5963b17c04afca03ba:
+    request:
+      model_text: '<minimax:tool_call>
+
+        nonsense
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  bf05b4e870b0b52eec8b66de4d197083ac5a6569fc6c72594db44cb349899b0c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  9a6119759dbdfdc5a6a004a7fd3b8c78ad54598b2001e09434f8ce1f8604fbea:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke>
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  4f56287fa07eca7ba06112efa585c24a6fa35f6dbe73706dfaff562b127e21eb:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NYC"'
+  067f02c3d1f2d3f14161ce229132ba907edfad7b1ec1fde15fd0994caaf1a036:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  887d270135d5f9c2ef00fa8ae858ebb0e47e17034ba9cd74accdbc641e31c5f2:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+  cc02f79b516ba96222f16728b41ff03fe2994d2c87c167d97ef4173b2fa059c5:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  1cad26385d44c1f6c921c04758d3e2ef13a5edd4bfb8a690fe8a3946bee8ee43:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: New York
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  2233dd27687049ee6343fd58d7478d2e5df280afcfbf2d4a70700b1ae2522040:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: {}
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  4d786b9b0a1587436a8489fe12e9534efe6a42eb760bcc1b9ea736a5b3d977f4:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        '
+  e38accae017c94363c067fbaaa1c8b209efa45508131a0050bbcaaf841204196:
+    request:
+      model_text: 'I will check that. <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check that. <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+  874e68bc14b281a5c46af3f317decb9273f4675dca4538a449486413c273918e:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  08de4409fed9d189afab675fbed2950b20dce190f519099f155f2bac11aa2ed7:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  3abf270a8d54f283652ad96e4d7c66c13a6a584fc527a124cd289e8d8589d105:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="book_flight">
+
+        <parameter name="destination">Paris</parameter>
+
+        <parameter name="passengers">2</parameter>
+
+        <parameter name="first_class">true</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  64b427806938adec2e99bf8adf62ed5ed1dd49276518443321e656934e13cf3c:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Tōkyō central</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+  1c693fc74334224ffdddbfbe1b83d81265bbe0d0ed639df0f28106ce8ef5d651:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="set_limit">
+
+        <parameter name="count">9007199254740993</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740992
+  cdd3b87b4539f6850c6d40f3ae7a1954c1c790c72a8a205128cf3cf7c1b6922c:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  6cb518ce1a79cde9c1275434af4094101de38ff626aa38a552ebe0d15f71e4b3:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  fbac5c0a6db15c5c384b9b04f44d914692e47d7c78f1c0137c82fdcff9fff13f:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Then check LA weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: LA
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather. '
+  ef09b92285b21bd60ea206d34c31a100460110de41be731a35bc18612461cea5:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  9c8f896a41b314f8411fa3ad0ea74deebcf92fd3041958b9d336592d1af0d162:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: LA
+      - name: get_weather
+        arguments:
+          location: LA
+  9797af784180f743a50ad62b841f06bead9fbc9b2f336f216798bbb72d22c271:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+        <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e0fd0e1eaffe3d94a2cbf3dc168387f5aeb9ff832e5e860b6b343ac242d3fd98:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  942b5e002eed79b8769fcdb40adb71960bcd9dc882c12d76c1f587f908b85a49:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: '<minimax:tool_call>
+
+        '
+  99388a9543d0e273a1b776965ac35efab00b74464ae1f36eecd3fd9c9b8eea86:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: '<minimax:tool_call>
+
+        '
+  32381f6dccf357d3e62999660a51c189f9e3b8dd682c4142962985342f9b1cfe:
+    request:
+      model_text: 'Both: <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: <minimax:tool_call>
+
+        '
+  9016518d7f2e963dde6580ba32028f08a6e4b40d7334bbaa59928a9b9d7b6b47:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: '<minimax:tool_call>
+
+        '
+  093bd705d8b3cc93220049ab742976930f02c3d238eda9bec451c75eae38be50:
+    request:
+      model_text: '<minimax:tool_call>
+
+        nonsense
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<minimax:tool_call>
+
+        nonsense
+
+        </minimax:tool_call>'
+  082a59c56b8d636891036755542b5375005094e18ea1103a4d5e1cd2d2a114b5:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke>
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<minimax:tool_call>
+
+        <invoke>
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+  6f6cfa890d7763738241c5f87f486ec809ceff727ba2dd75b2a2fca356744ca6:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NYC'
+      normal_text: '<minimax:tool_call>
+
+        '
+  70847139622e049fffae8b4836ba1ac1adca5dd43de98bad2e1ad7a9b78ba709:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '<minimax:tool_call>
+
+        '
+  2db83bfa15f939e4ae03d03ac3d3469d06458bc2af4dfd0a1f04529d507319c2:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  efba6036da1675396fa04bbb5d1c30cfcc07016ceeb12af7e1f4e08c876738cc:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NY'
+      normal_text: '<minimax:tool_call>
+
+        '
+  e72abe042d71417d9b7018c553624379e12a307c084d2c358e5ecc313b3d783c:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        '
+  c462e5ef446c98ca1550b60ea9083a7189dcd98ba701ada873eacd6c0b610ff4:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: '{"location": "New York'
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        '
+  5129b8fd5fa715bb73b615cbe12253032b89efaecbdf74f5418cbaf1a7d1c011:
+    request:
+      model_text: '<invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+  deda8401131ccd8025c728230d546b49533e3000cb3d3be992846b5d214a36fc:
+    request:
+      model_text: 'I will check that. <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check that. '
+  cdd8d029d65d925222757fcb7cf384c7e9160891006273f54a59fd37ee744010:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: '<minimax:tool_call>
+
+        '
+  6b2e32fa449afc43dd964fa44a171bf2aabc47696632607eaaeffb53643a9ab9:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_time">
+
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: '<minimax:tool_call>
+
+        '
+  0279e81c3eed00a683ac1cf760ad94bd6b56f04f91f1ec14250f37e5d03ff687:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="book_flight">
+
+        <parameter name="destination">Paris</parameter>
+
+        <parameter name="passengers">2</parameter>
+
+        <parameter name="first_class">true</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: '<minimax:tool_call>
+
+        '
+  c4568006b779c767f30c12b27c3cf62aeb6479e93a54f3539ef7fe74bf181a16:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Tōkyō central</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+      normal_text: '<minimax:tool_call>
+
+        '
+  7a876595214a43c63d38f3e7337d2c209a84763b4eb9fe3f9360e2c27580ed28:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="set_limit">
+
+        <parameter name="count">9007199254740993</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740992
+      normal_text: '<minimax:tool_call>
+
+        '
+  43517bc7be4728249e622d72fe8adf48b069da6050fb7a72d7dea67d6a8436ac:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. <minimax:tool_call>
+
+        '
+  e33c6e6260088d653b38eb9c2fce9bf480fdf20fe2b546fce86000444543cda6:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '<minimax:tool_call>
+
+        '
+  e45a69d2835f12e47ab6684eef56b1b360acb4a1e206584bf93595224c4aefc0:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. <minimax:tool_call>
+
+        '
+  3b40ca4693ebb2a0b4e65b5683b2fb53ed3ed37ddfa27dcadc23a185e0213a14:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Then check LA weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather. <minimax:tool_call>
+
+        '
+  62a5a9b77ee2d923a830c185c1115ab3ca4fcd6f26ad602373120d5bada50e0c:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '<minimax:tool_call>
+
+        '
+  168f04451aeb3f6301aac80bf6dfc669f505752560e81202177713b198239c98:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: '<minimax:tool_call>
+
+        '
+  d189b898a626025f790eb27b17bcfae7c9aad97d162186d9cbcfd4f4c0ab53f9:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+        <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<minimax:tool_call>
+
+        <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+        <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+        </minimax:tool_call>'
+  206f084bc927480bf8003af9ab65382599b3e11c48d417c84e01a27284ea4b49:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e11056b4939902fcd94188bec418f22571dd0952a960817e466683d058aaeafe:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>
+
+        <minimax:tool_call>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  b2a5a1ca20056d3638b7abef0bba955b5949d1d9b7bf031e804ae48ecb444d69:
+    request:
+      model_text: 'Both: <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        <invoke name="get_time">
+
+        <parameter name="timezone">EST</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  09336e46453370b9a24ec1f9dd79de3cdfafe981ca36308f0642116ee3a14299:
+    request:
+      model_text: '<minimax:tool_call>
+
+        nonsense
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  67226b420bd4e154f670e84a4c85b36936b81d66f4ff93238730373d4b1da054:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke>
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  bc0d80dbb40ae4d60122cb79175db728a5cab080bf5b0ae6023b7c9808dda617:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+  2f0caaf480354ac6216947010e26f5735f70f4fe8a6e197a85b2a1ac717aa17d:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+  80eebf597c4d4effdc68439eeb4be0c39ffa39585f6be439b94b3ef6258f946f:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+  0de5630a27716e8db849a38ae06467b9e03c91df2f7f0669eeb89d059a5d8ec4:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York</parameter>
+
+        </invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+  9bbc54128a7fddae723ae051f9e397cee78d8af17326941e31c78f69db65ffbe:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">Boston</parameter>
+
+        </invoke>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+  4912b073cc3ed1b41979fd28c26455e75d77c560e0c8a5c4e5a8fb403509d8ad:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  1fab83cc8deef8364c86339f0064bdc5ca855d504a70fac82b10075e69aa6729:
+    request:
+      model_text: 'I will check the weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call> Then check LA weather. <minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">LA</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  9caa18ac4ed0fca4286517e989fcf4e89c46417c8eb8aefd16d9f6ef25fda8bd:
+    request:
+      model_text: '<minimax:tool_call>
+
+        <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+        <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+        </minimax:tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+producers:
+  987c58e118e635e83aabd422811dbc41886be91b35992dfdaf1092be4a0d54f0:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: minimax_m2
+    provenance:
+      captured_with: 0.5.1
+      runtime_version: 0.5.1
+  8cf254acbeec984ad7115e88e072f1d3b178a7b83335f3ac39eaadadc8835316:
+    capture: sglang_python-0.5.14
+    document:
+      family: minimax_m2
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  e9130bd0bf7e8ddb50902260436b91d746c22d9c4e57bcf3a7ba351139758800:
+    capture: vllm_python-0.26.0
+    document:
+      family: minimax_m2
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  92b43f8abd31500462dd45c5e0521a23ace72772f6b2f4f8a9b154cd951033ba:
+    capture: vllm_rust-0.23.0
+    document:
+      family: minimax_m2
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

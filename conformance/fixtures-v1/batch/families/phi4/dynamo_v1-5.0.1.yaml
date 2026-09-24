@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: phi4
 capture: dynamo_v1-5.0.1
@@ -5,49 +6,42 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: phi4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: phi4
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: phi4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: phi4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: phi4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: phi4
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 19061626bcbc86bdd74b56289f57316ad7e5e64d2e8e5de02d3157cdfbf26f82
+        producer: 704f48a8d5f63b4caf7b3fe5deaa7d0437b291365174833c7f7772acde816081
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: kimi_k2
 capture: dynamo_v2-0.3.1
@@ -7,70 +8,67 @@ documents:
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.3.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.50.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.3.1
-    cases: {}
+views:
+  python:
+    base: dynamo_v2-0.1.23
+    changes: {}
+    annotations: {}
+  rust:
+    base: dynamo_v2-0.1.23
+    changes: {}
+    annotations: {}

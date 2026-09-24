@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: llama3_json
 capture: vllm_rust-0.25.1
@@ -7,8 +8,16 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.e:
-        exception: 'ToolParserError::ParsingFailed (near "{\"name\": \"get_weather\", \"arguments\":": invalid Llama JSON
-
-          expected `parameters`)'
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]':
+        observation: 7643be30bf107bb1543b9dd81e612004e4cfec8a9e381d2c667565700ce639b9
+        producer: 8e034933831eecdab835b4f6b84aeecbc4cd36dc3c0ffc6e0dcc71a11c74fb1b
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

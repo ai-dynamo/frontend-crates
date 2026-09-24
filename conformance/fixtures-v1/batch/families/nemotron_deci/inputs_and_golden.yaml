@@ -11,15 +11,13 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL>'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,22 +28,52 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL><TOOLCALL>[{"name": "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL>'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.c:
         description: With surrounding narration
         ref: dynamo
         model_text: 'Both: <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.4.yaml:
     family: nemotron_deci
     mode: batch
@@ -55,8 +83,7 @@ documents:
         ref: dynamo
         model_text: <TOOLCALL>nonsense</TOOLCALL>
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -67,19 +94,34 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC</TOOLCALL>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: Missing name key in JSON
         ref: dynamo
         model_text: '<TOOLCALL>[{"arguments": {"location": "NYC"}}]</TOOLCALL>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Mismatched JSON brackets
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}</TOOLCALL>'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed-prefix recovery — n/a for this family's syntax
         explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
@@ -95,8 +137,7 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -107,25 +148,45 @@ documents:
         ref: dynamo
         model_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-arguments JSON
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"loc'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}]'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: nemotron_deci
     mode: batch
@@ -135,8 +196,7 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_time", "arguments": {}}]</TOOLCALL>'
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -145,13 +205,19 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_time", "arguments": { }}]</TOOLCALL>'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No arguments key
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_time"}]</TOOLCALL>'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: nemotron_deci
     mode: batch
@@ -229,8 +295,7 @@ documents:
         ref: dynamo
         model_text: 'I will check the weather. <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -241,19 +306,34 @@ documents:
         ref: dynamo
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
         model_text: 'I will check the weather. <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL> Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: 'I will check the weather. <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL> Then check LA weather. <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: nemotron_deci
     model_label: Nemotron (DeciLM) v1/v2
@@ -263,8 +343,7 @@ documents:
         description: Single tool call (happy path)
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -277,7 +356,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -303,7 +387,12 @@ documents:
         description: Duplicate calls (same name twice)
         model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30:
         description: Separator-character case not applicable
         explanation: This case is not applicable to nemotron_deci because neither vLLM nor SGLang has a peer parser for this family.
@@ -333,7 +422,7 @@ documents:
         - delta_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -350,7 +439,13 @@ documents:
         - delta_text: </TOOLCALL>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: nemotron_deci
     model_label: Nemotron (DeciLM) v1/v2

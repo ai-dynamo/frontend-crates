@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: qwen3_coder
 capture: vllm_python-0.25.1
@@ -7,78 +8,70 @@ documents:
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.5.h:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check that. '
-        - expected:
-          - index: 0
-            id: true
-            name: get_weather
-        - expected:
-          - index: 0
-            arguments: '{"location": "NYC"}'
-        - expected: []
   TOOLCALLING.streamv1.50.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_python-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: fb2f868920631a4b3fff9e7dfd907362f97cf25e4c91250dbdecfbb0e88ff54e
+        producer: e5c0bb769d4d15eb595a0630e93892cd67fe27135b7af5345e8608ab9c9ee351
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+  rust:
+    base: vllm_python-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: fb2f868920631a4b3fff9e7dfd907362f97cf25e4c91250dbdecfbb0e88ff54e
+        producer: e5c0bb769d4d15eb595a0630e93892cd67fe27135b7af5345e8608ab9c9ee351
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}

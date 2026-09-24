@@ -15,29 +15,24 @@ import hashlib
 import json
 import re
 import tarfile
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
 import yaml
+import legacy_checkpoint
+import unified_history
 from fixture_corpus import split_sel, version_key
-from fixture_disposition import LEGACY_HISTORY_FORMAT, LEGACY_HISTORY_PATH
+from fixture_disposition import LEGACY_CORPORA, LEGACY_HISTORY_FORMAT, LEGACY_HISTORY_PATH, LEGACY_CAPTURE_RE, parse_legacy_capture_label
 
 
-CORPORA = {
-    "batch": "toolcalling/fixtures-batch-v1",
-    "stream": "toolcalling/fixtures-stream-v1",
-    "reasoning": "reasoning/fixtures-v1",
-    "batch_on_stream": "toolcalling/fixtures-batch-on-stream-v1",
-}
+CORPORA = LEGACY_CORPORA
 HISTORY_PATH = LEGACY_HISTORY_PATH
 HISTORY_FORMAT = LEGACY_HISTORY_FORMAT
 SHARED_NAME = "inputs_and_golden.yaml"
 SNAPSHOT_NAME = "legacy-snapshot"
 COMPONENT_RE = re.compile(r"^[A-Za-z0-9_.+-]+$")
-CAPTURE_RE = re.compile(
-    r"^[A-Za-z0-9_]+-\d+(?:\.\d+){2,}"
-    r"(?:\.(?:post|patch)\d+|\+[A-Za-z0-9_.-]+|-[A-Za-z0-9.-]+)?$"
-)
+CAPTURE_RE = LEGACY_CAPTURE_RE
 
 
 def _component(value: str) -> str:
@@ -109,7 +104,7 @@ def _validate_record(store: Path, path: Path, record: dict) -> dict:
 
 def _write(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(value, sort_keys=False, allow_unicode=True, width=4096))
+    path.write_text(unified_history.dump_yaml(value), encoding="utf-8")
 
 
 _MISSING = object()
@@ -176,6 +171,9 @@ def _compact_capture(
 
 
 def _store_records(store: Path) -> dict[Path, dict]:
+    if legacy_checkpoint.is_compact(store):
+        records = legacy_checkpoint.records(store, legacy_checkpoint.load(store))
+        return {path: _validate_record(store, path, record) for path, record in records.items()}
     return {
         path: _validate_record(store, path, _load(path))
         for path in sorted(store.glob("*/families/*/*.yaml"))
@@ -223,20 +221,7 @@ def _commit_records(before: dict[Path, dict], after: dict[Path, dict]) -> list[P
 
 
 def _legacy_capture_input(document: dict, case: dict) -> dict:
-    fields = (
-        "model_text", "tools", "init", "finish_reason", "chat_template_kwargs", "force_reasoning",
-    )
-    request = {key: case.get(key) for key in fields}
-    # Native readers consume case fields without inheriting document defaults.
-    request["document"] = {key: document.get(key) for key in fields}
-    request.update(family=document["family"], mode=document.get("mode"))
-    request["chunks"] = [
-        {key: value for key, value in chunk.items()
-         if key in {"delta_text", "delta_token_ids", "token_ids", "finish_reason"}}
-        if isinstance(chunk, dict) else chunk
-        for chunk in case.get("chunks", [])
-    ]
-    return request
+    return legacy_checkpoint.bound_request(document, case)
 
 
 def _validate_captured_inputs(before: dict[Path, dict], candidate: dict[Path, dict]) -> None:
@@ -269,6 +254,8 @@ def _apply_records(
     store: Path, staged: dict[Path, dict], *, prune: bool, archive_import: bool = False,
 ) -> list[Path]:
     """Check the complete candidate before changing any history file."""
+    if legacy_checkpoint.is_compact(store):
+        return _update_compact_records(store, staged, prune=prune)
     before = _store_records(store)
     desired = set(staged)
     candidate = {path: record for path, record in before.items() if not prune or path in desired}
@@ -356,19 +343,7 @@ def _archive_identity(relative: str) -> tuple[str, str, str]:
 
 
 def _snapshot_capture(implementation: str, label: str) -> tuple[str, dict]:
-    """Separate a recorded version from its exact producer label without guessing."""
-    _component(implementation)
-    if not isinstance(label, str) or not label:
-        raise ValueError("batch-on-stream capture label must be a nonempty string")
-    provenance = {"captured_with": label, "runtime_version": None}
-    match = re.fullmatch(r"v?(\d+\.\d+\.\d+) ([0-9a-f]{40})", label)
-    if match:
-        version, commit = match.groups()
-        provenance.update(runtime_version=version, git_commit=commit)
-    elif CAPTURE_RE.fullmatch(f"{implementation}-{label}"):
-        provenance["runtime_version"] = label
-    version = provenance["runtime_version"] or "unversioned"
-    return f"{implementation}-{version}", provenance
+    return parse_legacy_capture_label(implementation, label)
 
 
 def _validate_uncaptured_block(block: dict, location: str) -> None:
@@ -544,8 +519,13 @@ def materialize_store(store: Path, destination: Path) -> None:
         corpus = record["corpus"]
         capture = record["capture"]
         if corpus == "batch_on_stream":
+            if capture != "inputs":
+                for filename, document in record["documents"].items():
+                    target = destination / ".reader-views/batch_on_stream" / capture / record["family"] / filename
+                    planned[target] = (source, document)
             continue
         dirname = capture
+        (destination / CORPORA[corpus] / dirname / record["family"]).mkdir(parents=True, exist_ok=True)
         for filename, document in record["documents"].items():
             target = destination / CORPORA[corpus] / dirname / record["family"] / filename
             if target in planned:
@@ -555,6 +535,16 @@ def materialize_store(store: Path, destination: Path) -> None:
         planned[destination / CORPORA["batch_on_stream"] / family / filename] = (store, document)
     for target, (_source, document) in planned.items():
         _write(target, document)
+    if legacy_checkpoint.is_compact(store):
+        marker = destination / ".reader-views/legacy-checkpoints.json"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(json.dumps({"schema_version": 1, "complete_family_snapshots": True}) + "\n")
+        for record in legacy_checkpoint.records(store, legacy_checkpoint.load(store), "rust").values():
+            if record["corpus"] != "stream":
+                continue
+            (destination / ".reader-views/rust" / CORPORA["stream"] / record["capture"] / record["family"]).mkdir(parents=True, exist_ok=True)
+            for filename, document in record["documents"].items():
+                _write(destination / ".reader-views/rust" / CORPORA["stream"] / record["capture"] / record["family"] / filename, document)
 
 
 def update_from_loose(store: Path, loose: Path, *, prune: bool = False) -> list[Path]:
@@ -592,3 +582,119 @@ def update_from_loose(store: Path, loose: Path, *, prune: bool = False) -> list[
                 target = _store_file(store, corpus, family, capture)
                 staged[target] = {"corpus": corpus, "family": family, "capture": capture, "documents": documents}
     return _apply_records(store, staged, prune=prune)
+
+
+def resolved_inventory(store: Path) -> dict:
+    """Bound observations and independent historical Python/Rust views."""
+    if legacy_checkpoint.is_compact(store):
+        return legacy_checkpoint.load(store)
+    return legacy_checkpoint.from_records(_store_records(store))
+
+
+def _publish_compact(store: Path, inventory: dict) -> list[Path]:
+    documents = legacy_checkpoint.documents(store, inventory)
+    before = {path: _load(path) for path in store.glob("*/families/*/*.yaml")}
+    changed = sorted(path for path in before.keys() | documents.keys() if before.get(path) != documents.get(path))
+    if not changed:
+        return []
+    # Validate complete resolved evidence before a durable transaction changes the store.
+    store.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="legacy-checkpoint-", dir=store.parent) as temporary:
+        staged = Path(temporary) / store.name
+        staged.mkdir()
+        for path, document in documents.items():
+            _write(staged / path.relative_to(store), document)
+        if legacy_checkpoint.load(staged) != inventory:
+            raise ValueError("legacy checkpoint publication changed resolved evidence")
+        unified_history.publish_paths_transactionally([(staged, store)], backup_parent=store.parent)
+    return changed
+
+
+def migrate_store(store: Path) -> list[Path]:
+    return _publish_compact(store, resolved_inventory(store))
+
+
+def _update_compact_records(store: Path, staged: dict[Path, dict], *, prune: bool) -> list[Path]:
+    original = legacy_checkpoint.load(store)
+    before = legacy_checkpoint.records(store, original)
+    candidate = {path: record for path, record in before.items() if not prune or path in staged}
+    candidate.update({path: _validate_record(store, path, copy.deepcopy(record)) for path, record in staged.items()})
+    _validate_captured_inputs(before, candidate)
+    proposed = legacy_checkpoint.from_records(candidate)
+    for identity, snapshot in proposed.items():
+        if identity in original or "views" not in snapshot:
+            continue
+        corpus, family, _capture = identity.split("/")
+        for view, state in snapshot["views"].items():
+            for case_id, observation in state.items():
+                source = original.get(f"{corpus}/{family}/{observation['producer']['capture']}", {})
+                old = source.get("views", {}).get(view, {}).get(case_id)
+                if old is not None and old["payload"] == observation["payload"]:
+                    observation["producer"] = copy.deepcopy(old["producer"])
+    for identity, old in original.items():
+        if identity not in proposed:
+            continue
+        if "record" in old:
+            continue
+        path = _store_file(store, *identity.split("/"))
+        # A materialized full checkpoint must round-trip without changing any historical evidence.
+        if path in staged:
+            wanted = legacy_checkpoint.records(store, {identity: old})[path]
+            if staged[path] != wanted:
+                incoming = proposed[identity]
+                for view, old_state in old["views"].items():
+                    new_state = incoming["views"].get(view, {})
+                    old_values = {key: (value["payload"], value["annotations"]) for key, value in old_state.items()}
+                    new_values = {key: (value["payload"], value["annotations"]) for key, value in new_state.items()}
+                    if old_values != new_values:
+                        raise ValueError(f"versioned legacy capture is immutable: {identity}")
+        proposed[identity] = old
+    fresh = {path: record for path, record in candidate.items()
+             if record["capture"] == "inputs" or f"{record['corpus']}/{record['family']}/{record['capture']}" not in original}
+    additions = legacy_checkpoint.from_records(fresh, original)
+    proposed.update({identity: snapshot for identity, snapshot in additions.items() if "views" in snapshot})
+    _snapshot_documents(legacy_checkpoint.records(store, proposed))
+    return _publish_compact(store, proposed)
+
+
+def remove_capture(
+    store: Path, capture: str, family: str | None = None, *, corpus: str | None = None,
+    replacement: str | None = None, unavailable: str | None = None,
+) -> list[Path]:
+    inventory = resolved_inventory(store)
+    removed = [identity for identity in inventory if identity.split("/")[2] == capture
+               and (family is None or identity.split("/")[1] == family)
+               and (corpus is None or identity.split("/")[0] == corpus)]
+    if not removed:
+        raise ValueError(f"unknown legacy capture: {capture}")
+    for identity in removed:
+        corpus_name, family_name, _capture = identity.split("/")
+        if corpus_name != "batch_on_stream":
+            continue
+        shared = inventory[f"{corpus_name}/{family_name}/inputs"]["record"]
+        implementation = split_sel(capture)[0]
+        for filename, document in shared["documents"].items():
+            if document["capture_selection"].get(implementation) != capture:
+                continue
+            if replacement is not None:
+                target = inventory.get(f"{corpus_name}/{family_name}/{replacement}")
+                if target is None or split_sel(replacement)[0] != implementation:
+                    raise ValueError("replacement snapshot is unavailable")
+                old_state = inventory[identity]["views"]["python"]
+                new_state = target["views"]["python"]
+                old_values = {key: (value["payload"], value["annotations"]) for key, value in old_state.items()}
+                new_values = {key: (value["payload"], value["annotations"]) for key, value in new_state.items()}
+                if old_values != new_values or inventory[identity]["documents"] != target["documents"]:
+                    raise ValueError("replacement snapshot is not equivalent")
+                document["capture_selection"][implementation] = replacement
+            elif unavailable:
+                del document["capture_selection"][implementation]
+                document["capture_order"].remove(implementation)
+                for case_id, implementations in document["case_order"].items():
+                    if implementation in implementations:
+                        document.setdefault("uncaptured", {}).setdefault(case_id, {})[implementation] = {"unavailable": unavailable}
+            else:
+                raise ValueError("selected batch-on-stream capture requires an equivalent replacement or unavailable state")
+    candidate = {identity: snapshot for identity, snapshot in inventory.items() if identity not in removed}
+    _snapshot_documents(legacy_checkpoint.records(store, candidate))
+    return _publish_compact(store, candidate)

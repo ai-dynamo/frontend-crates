@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: qwen25
 capture: dynamo_v1-5.0.1
@@ -5,54 +6,46 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: qwen25
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: qwen25
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: qwen25
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: qwen25
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: qwen25
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.c:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call>'
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 2595f85a524404c12fe7143270c720a4cb7d822d7e7cb65ffe7cc14c02e7a4ce
+        producer: c195bb2d164fa44cf40083bf954687abd09bfef9a7af0256002844066307f340
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 5a21f3f04d7b71f3be05746913762ed7f9b3de40f125e29e953a837aff3f9eba
+        producer: c080e07aeea4c871cae7017cd3c63e8bbeb6d11307c745df3711d43f5594545b
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

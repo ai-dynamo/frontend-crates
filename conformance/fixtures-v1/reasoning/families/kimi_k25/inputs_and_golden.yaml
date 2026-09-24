@@ -18,89 +18,105 @@ documents:
         force_reasoning: true
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: plain answer
             normal_text: ''
           vllm_python:
             reasoning_text: plain answer
             normal_text: ''
-          sglang_python: *id001
+          sglang_python:
+            reasoning_text: plain answer
+            normal_text: ''
       REASONING.batch.2.a:
         description: Force-reasoning parser with explicit think tags
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: <think>thinking</think>answer
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id002
-          sglang_python: *id002
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.batch.3.b:
         description: Tool-call section marker force-exits an open reasoning block
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: thinking <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: 'thinking '
             normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
           vllm_python:
             reasoning_text: 'thinking '
             normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
-          sglang_python: *id003
+          sglang_python:
+            reasoning_text: 'thinking '
+            normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
       REASONING.batch.2.c:
         description: Force-reasoning parser treats plain output as reasoning
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: thinking without explicit tags
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: thinking without explicit tags
             normal_text: ''
           vllm_python:
             reasoning_text: thinking without explicit tags
             normal_text: ''
-          sglang_python: *id004
+          sglang_python:
+            reasoning_text: thinking without explicit tags
+            normal_text: ''
       REASONING.batch.4:
         description: Dangling end marker exits force-reasoning mode
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: normal</think>answer
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: normal
             normal_text: answer
           vllm_python:
             reasoning_text: normal
             normal_text: answer
-          sglang_python: *id005
+          sglang_python:
+            reasoning_text: normal
+            normal_text: answer
       REASONING.batch.5:
         description: Missing end marker keeps the remaining text as reasoning
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: partial reasoning
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: partial reasoning
             normal_text: ''
           vllm_python:
             reasoning_text: partial reasoning
             normal_text: ''
-          sglang_python: *id006
+          sglang_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
       REASONING.batch.2.e:
         description: Empty reasoning block
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: <think></think>answer
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
           vllm_python:
             reasoning_text: ''
             normal_text: answer
-          sglang_python: *id007
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.2.f:
         description: Complex reasoning content with Unicode and newlines
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -111,7 +127,7 @@ documents:
 
           JSON-ish: {"x": [1, true]}</think>Done.'
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: 'Line 1
 
               Unicode: café
@@ -125,20 +141,28 @@ documents:
 
               JSON-ish: {"x": [1, true]}'
             normal_text: Done.
-          sglang_python: *id008
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
       REASONING.batch.1.a:
         description: Empty input
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         force_reasoning: true
         model_text: ''
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
           vllm_python:
             reasoning_text: ''
             normal_text: ''
-          sglang_python: *id009
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.6.a:
         description: Multiple reasoning spans are concatenated
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -165,13 +189,15 @@ documents:
         force_reasoning: true
         model_text: <think>choose tool</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
         expected:
-          dynamo_v1: &id010
+          dynamo_v1:
             reasoning_text: choose tool
             normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
           vllm_python:
             reasoning_text: choose tool
             normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
-          sglang_python: *id010
+          sglang_python:
+            reasoning_text: choose tool
+            normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
       REASONING.batch.6.b:
         description: Stray end marker after a complete reasoning span(unbalanced-tag)
         ref: dynamo
@@ -217,11 +243,15 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id011
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id011
-          sglang_python: *id011
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.a:
         description: Force-reasoning stream exits on closing think tag
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -230,13 +260,15 @@ documents:
         - thinking
         - </think>answer
         expected:
-          dynamo_v1: &id012
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: thinking
             normal_text: answer
-          sglang_python: *id012
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.2.b:
         description: Multiple reasoning spans across chunks
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -265,14 +297,16 @@ documents:
         - <thi
         - nk>thinking</think>answer
         expected:
-          dynamo_v1: &id013
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             reasoning_text: <think>thinking
             normal_text: answer
             explanation: Dynamo buffers a split start delimiter and strips it; vLLM Kimi K2 streaming parser leaks the reconstructed delimiter.
-          sglang_python: *id013
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.b:
         description: End marker split across chunks
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -300,13 +334,15 @@ documents:
         - plain <th
         - esis answer
         expected:
-          dynamo_v1: &id014
+          dynamo_v1:
             reasoning_text: plain <thesis answer
             normal_text: ''
           vllm_python:
             reasoning_text: plain <thesis answer
             normal_text: ''
-          sglang_python: *id014
+          sglang_python:
+            reasoning_text: plain <thesis answer
+            normal_text: ''
       REASONING.stream.1.b:
         description: Plain text stays in force-reasoning mode until an end marker
         ref: 'inspired by vLLM Kimi K2/K2.5 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_kimi_k2_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -315,13 +351,15 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id015
+          dynamo_v1:
             reasoning_text: plain answer
             normal_text: ''
           vllm_python:
             reasoning_text: plain answer
             normal_text: ''
-          sglang_python: *id015
+          sglang_python:
+            reasoning_text: plain answer
+            normal_text: ''
       REASONING.stream.2.c:
         description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag)
         ref: dynamo

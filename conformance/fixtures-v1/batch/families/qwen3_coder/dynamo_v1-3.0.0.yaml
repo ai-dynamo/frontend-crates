@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: qwen3_coder
 capture: dynamo_v1-3.0.0
@@ -5,336 +6,178 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.c:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both: '
-      TOOLCALLING.batch.2.d:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
   TOOLCALLING.batch.4.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.4.d:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.4.f:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.batch.5.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.5.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.5.c:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.5.d:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            - name: get_weather
-              arguments:
-                location: New York
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
-      TOOLCALLING.batch.5.e:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
-      TOOLCALLING.batch.5.f:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: ''
-      TOOLCALLING.batch.5.g:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check that. '
   TOOLCALLING.batch.6.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
-      TOOLCALLING.batch.6.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
   TOOLCALLING.batch.7.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: book_flight
-              arguments:
-                destination: Paris
-                first_class: true
-                passengers: 2
-            normal_text: ''
-      TOOLCALLING.batch.7.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Tōkyō central
-            normal_text: ''
-      TOOLCALLING.batch.7.f:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: set_limit
-              arguments:
-                count: 9007199254740993
-            normal_text: ''
   TOOLCALLING.batch.8.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.8.c:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.d:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: 'I will check the weather. '
   TOOLCALLING.batch.yaml:
     family: qwen3_coder
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.3:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: Hello, how can I help you today?
-      TOOLCALLING.batch.9.a:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: '   '
-      TOOLCALLING.batch.10:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: unknown_tool
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.stream.1.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.2.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: '
-
-              '
   TOOLCALLING.stream.3.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.4.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.stream.4.b:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NY
-            normal_text: ''
-      TOOLCALLING.stream.4.c:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: a8e4bd8291053f00487d0302a39ed8812bf9a4127f39314980ecebab270adfd6
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: efebc8b72bb3d55145c26a35c62db3631a2df67cec9c8425bcd02f6d09d2fd82
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: c31595f267a38b85dd238ea292f67562a5f1f08ec4af78b8a87a689be321fbe5
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: b773b420883d478fb8ff92200f842832ba22fcc1db517a8a0988e6f263b0344e
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 317e364068b5eeeb9504f34e01a542791fa7fc7bf98f8f89c594daecf8338d94
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.f"]':
+        observation: 86941af1a83f6aaf3fd678adb22d49604dc2c5b5a511cc44c4ad1c3bd218daab
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: 43301e583ce161d81f165a163ad17de339af4100f5b012c0bfa67525579ef719
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: bede725e5856c98ecc2924b2d1ab0cfb09721488ac38a8bf96c7665a03bf084d
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: 89448df2e043ae2ac6a762245f3fec0106e4e6caf8a156373c977edaad08d934
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: c5833f33ecf7bbb87de9da0cbcc36067e7b872269eef4c5cf39ad480b4fa71c7
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 8b67e45a92d752ba3cb89c5a383a768173a64fcdbc8439d699a1723f319bc43f
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]':
+        observation: 930ac5be7f2ce76f353dce37a7260d8e03150a1ae2ed2a00d121afdc4d433375
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]':
+        observation: cdf3ac3dadf384b303fcc612f1732d7b1d21f8596ec9e347749527ede6067908
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: fe380dc6fb42e30433e7a30a3ccda6dcb0f5ce30f75e61b2496a39e8d9c21d87
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: d075cebc450b7b06a1f0ad59d8737f3c4df1ce2286d6f13cf3609709e7386070
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: c52b7457bf4e2e0785751d459c845d6cead9fa39fd0b5724b0ff817c0af5ba66
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 269920d20bc515c8e8fbc52a8e985591e7598844ac79dba1cfcc2b980f7d55be
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 3c073ebf1c80724421d6d18f6bc9fd9e5af0dec28a9a7fb02213beec2f1ef5fa
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: fe568fc0a82fd063141cecd0ebdf1b04c6ae2423c5b8469c168774ac99344987
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: d69fed4f9de1fc762174e04a2e24768e5710d69b14ded46d1a6a6904cb1ce713
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 4f3f6ec5ad8e392e93727030e2d4e9806b31d97c745108f9f6d1741678c51f2d
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 16af4f455af52f538688ea3600777ace5bdb149a5c1b45d3e90fcd7143e63ad0
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: 30a9fd0633adfd1e9706a90042f9f4f0bb65db478122b935ae5c415be2686b47
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: d6619f43d55403bbb5094adf15dd83fab669e01743815a54913edb2884e19848
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 7c0a3f5b55a6a19b446033ccc864fdefbdb3d3b2b9a5f2e9bdad14d8f4504be4
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 56d7865a9a9807f3d2b81dd391a307b8050e1f5a9f7f227fb504747d6c8b7f9b
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: db434f50658c831c7a2ca48bb7e23a4d71a038cebcda7a1a7297765e22522247
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 00be8811469385e330fb4e720ae3df0776143046d590230f7067f146bed85f67
+        producer: 1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: 01c944d05554fe91dc6ccc446606c543aae3ac9e2a9434b26c56c3d24c6eb76e
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 574103ba9f25ec7730eebb9cc33726a12ec37366e6b7257876b4ab383a403188
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 77f86856b21268146d7459ae3bde273641da49d8d9592dddc51c24ce6ddac09c
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: 258815e141309441ac989c2d41fc852d08f82a97c3febbde0275c8924ae1a21b
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: 0286cdb3da0876fea25eaaa285988181c32f7e826d6bf7fc3a34dd1eae2cb929
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: cfa6892808b2fec34289617929ecf548a27c914196e38893503ee8ad99b2f277
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 2c48ef2b75b54226ebef2fc1a6238a604a03615c79b556c352ec511f5d14e0fa
+        producer: 75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.f"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

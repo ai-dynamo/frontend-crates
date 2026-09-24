@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: inkling
 capture: sglang_python-0.5.12.post1
@@ -5,110 +6,60 @@ documents:
   TOOLCALLING.batch.yaml:
     family: inkling
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.1.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: weather
-              arguments:
-                city: SF
-            normal_text: ''
-      TOOLCALLING.batch.2:
-        expected:
-          sglang_python:
-            calls:
-            - name: weather
-              arguments:
-                city: SF
-            normal_text: ''
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: Hello, how can I help you today?
-      TOOLCALLING.batch.4:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Paris
-            - name: get_weather
-              arguments:
-                location: London
-            normal_text: ''
-      TOOLCALLING.batch.5:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'Let me check that for you. '
-            explanation: sglang preserves the prefix trailing space; dynamo trim_end()s the prefix. Cosmetic whitespace divergence.
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: <|content_invoke_tool_json|>{"name":"weather","args":{"city":"S
-            explanation: 'sglang leaks the truncated tool markup into normal_text; dynamo drops it (goal 3: never leak tool-call markup). Dynamo behavior is preferred here.'
-      TOOLCALLING.batch.7:
-        expected:
-          sglang_python:
-            calls:
-            - name: book_flight
-              arguments:
-                destination: Paris
-                first_class: true
-                passengers: 2
-            normal_text: book_flight
-            explanation: 'Real capture: the sglang InklingDetector (bundled in the live worker) run on this exact model_text surfaces the bare NAME as normal_text. dynamo and vLLM drop the header-less redundant NAME; sglang keeps it. Typed args identical.'
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: '   '
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            calls:
-            - name: unknown_tool
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.13.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: unknown_tool
-              arguments:
-                location: LA
-            normal_text: ''
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: a468e3b01909f381fb6ff54c1c77256aadedcb27bfcf7ccdf6b2c1f1bdaa9163
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1.a"]':
+        observation: ad1fb10d3df606595fffe2b153403f2b15365736aceb4a6f1ae759355491111c
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: a53d4b2f830d52b1961529920a0b5083aba869977c3afac41a07149c37e1a6f5
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: e3618bf52a00765ac0fbcb86f0a90e28f78d3ea47e59cd33dc69ded240f662e5
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]':
+        observation: 53c4264e7d3b73dbca46d1e61f676568ee75312fe28b6972786af40626f3cf7b
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2"]':
+        observation: ad1fb10d3df606595fffe2b153403f2b15365736aceb4a6f1ae759355491111c
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 138924ce61e8db34297d7024b7184cc53b2ad69bfadd8d9aa08382212091771c
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4"]':
+        observation: cc3041190ccf0558e65b5ae99b394a072133ee26e157ffb3d6cc2a6b3403463a
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5"]':
+        observation: 857be65be77f87c60d7e351afb8ca49320b0888df7ce2bf7fe8703e6dd3bbce5
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]':
+        observation: b189608fbcd6ad4718ff24251076812f5cea58e192bcd25ccc7a6bd93d9ddf7c
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7"]':
+        observation: 178e9296f31de63ffc2bb85df7837474d840537f2af9654a72aacbc1c5c17c5c
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: adff4ca191ceda23e3489a5aa7148d3f9e5bdad8bbd864a206993c0a649122f9
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 594f08c5cda18a24d383ada3084a2a5f9fe5bfe2e075bda359e24ee7325af67f
+        producer: cb47e80bbc4dbcf6fd1a1a43375acb7c669b8fe37f0dfe989f75b6d7711d06f2
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}

@@ -1,0 +1,3004 @@
+schema: bound-observations-v1
+observations:
+  d6502732f7b086090d2525d287a845f430fe27258ed50a44814000db9c53fbeb:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  c51a02a52ace866a29aa4343bfd37a4cc1c3e84be58213b9c3a2a5a5c9c380ab:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  e69f8f2fb05220eb2b0a249af487ad875fd8fffd80041328136a0dec1c94e9d3:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  61fa88c7c3b0cfd9d10054a77a40fb3ee09b7419fa886b53a06144d48e090ecc:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  859ba3be03a760bfb0f3e27b5ed2dcf15ccf8eb4abda1c1330d20ff53c6598a1:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  6ba4dafd67f84cadf11ffbe7915870f2a84e0f58401ac25ddc210d6c23fbfade:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  025492aefb7b958fb63612367328d6159392903f306879070f9e31234c4683ab:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  d0b9bd67b8eca278726d831742800d1799be336ea58e744b5e58d6689b35b117:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  0b5f0941a539a4c5ff57a981028a853eae935e34dd5d0c370234d26205e4e991:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  cea4402a332a9fadb1b9322befb4f85fd643a70e6dd9953e75f2ce1cbde63fe8:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  83437539d5a6664be7332b3ae258065a90100761d6c76f745df184e60f0cce7d:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  e266840897fe8cee283c05b3dbac14320f0685ff02d51abf65f544d7431afede:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  21de4bee4afb44dd1d36fd11c51057a184a83bb465ed1037574a543b8ef690d4:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  4725b198204943b0f3d0d56a8c875ef74118627539783de575d65dcf2a733aee:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  ca7049d5495d0bdc4b9cecce199e0475b84592ad9d61fa6b791974f659e0da9a:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  8f6d7d6918c2376db3a38ad543bed0a6de4b52d5b503446c3da1974f99779a29:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>
+
+        9007199254740993
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  72dce34a2b0f4514b2378f990d151f62033932bf95c492d211cf06a05c67ddcd:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  917c91addc407bad870a63036cc2745cc90484e23426d0967f72d179363f5a1f:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  2aaf223c681693b29564fdd8a83e95972e4eb26e766531ae9e6549ffd04fbf57:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  8df700cf237d98eec36deeeae5b87920672a46ebffc0c27783ae26d5d9ca9c44:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  743b6e8f7e33760f0b72bd6236f091fb30e886087afd11497a3fd95dc701b003:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  62dc82ddd369cb7645fb79f923e1bd9cb151954d1ff89f18fbd13a5f771943ef:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  63854b9d36daaba2ad0332540f11d9df83ab3e69c68f061404b0178b5e2fa142:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  bd255aec515620ac4e4b33aa11754e7f839674fcdf8e40d97ae940a55d6cbd18:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  57f948ef36c8a54f25b010b276a0c3c08826c357b2d26143e5170a5a8d8c92f3:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  40f5f104a788a471b5d83f9b2cab574da4813a989154708683bf5d4fa81045bc:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'nemotron_nano'.
+  9efcf6adc9d0c4217974f7be54a522f89f7341029b53330e23475f6e3399e8c1:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  2c42290cb8fcb64eba50dfff2b1411aa99218715f883fee905140f74867a6f03:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  e1becc0991f6c99a26d2c1386a9c1a39a51ab97ed493eb411fc7b8310c8ce732:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'Both: '
+  333ffe5cbb85f231eb35d8aa4a18b05b37ee56cf9e32f9fd290100e83e77c2d9:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  50e6d3617dcfaae3bdd92c4d3fb6241535d945a4ed2bc55f17a1637875e1d7ea:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  547249f00b08f1bce86d10c4f5eb6f03cd45c9e9bc55ea89e478e0e1c6c0e3fc:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8b1a9a6342175a23240661ee5750a81ba64198ea97924f40db383d1f0a261a77:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  4e7d89e4ebb81d8e908da6afff4caa4dbd7b3e140f4fa4fe85d9d770e591b2ec:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+  b853aba6f4ab00e87c685b0262a86c19501e06c9465899ed2310c91d8824c945:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  629f0fb97fce1f354b051c874fe04287dbd3aa8cbe5bf304b489bb1806af1143:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  0bb4e5fe0c1021b931c2c2052e27130dcb25ccc1c674a42dada2c0150bb9a4be:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  58d8935612efa1236a35ceae70785fde7c47a6aed769d6c7dda2ec72093fadef:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  49da1579de737018f0465a2eb8a7946d9b54c75e0e599f86711684505d2d31c0:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  0bbe1a40ccc333d07ed4a493be841cb666a642cb0278ff46ee488a82386fea94:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  3d72c82ad2e140e809c9cfd344669ec974ea888cbf18dd3987b6d0283bf61977:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  45c02f6e068498ccc67a9a11b76fb8b4e79dd0cfa6026f7f2a9568d039902edc:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>
+
+        9007199254740993
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  9debadc92d546b1f561b729e77977aebff2784078ded18f5e9c45fb310149010:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  be07ce73cc85236d842ed992453d52780721e2ca72e0ed74bae358b9fc4b91d2:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8422c401934ebf466864b7877a987523499fb8e047ba3c57471a16b3126539df:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  063b2f979c09ed19b637e41475aa0f0a1fdfa85ee1b0912bbb7efc38bfa3b341:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check the weather. '
+  fd5f5637adb5c2b04ca74a6945c58d6cfd3228d70d9a1356384327dddf4a023d:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  4bdde9316fd775e3d5ee0ca0580593e175c6488afe51c620c9628efec67d2902:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  12df8bf1584622aa9f805e9fa0ea740e8b848663175b61ce387183b8c3f1ff75:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e432462be4c6b20b8261793b9b6baf3bfce102b8bc8bcd16a5b3099e10aaf804:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  ff6f4313fd62c481d4f99597ccb2ddf262403fea95773d386a6c9dec02449e3d:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  c3d878ffc17073a3ce3cdbdc761a8a3aa77d8974e299ea622b189a7afcbe076d:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  8ec8c465afe5f751ad61db1d94c2f2ca08258adae33dd174ac3df69d7c25b94e:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  a3596fbcae737a7c5d58a7ddbfeef477b02e8d054268d14d5579b36fe1275534:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  20f6b7fbe8e6556015336397541669717fa5eed377c885088154821b81042b18:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  1d0179fa39c4eb53143acfdaa949ac639a94a8c8f2a566fa057e3547454665ee:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  2ba2412a6d86031f1b84e1e94a5ba7d88695047629dee6df1435ee2e51ef0d6e:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  141e4a30ce1ecc227772e90011480da5b199f7c467eebdf379e6bbdd3c9e7efe:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  382bb439f9c7a258b8e8891b4c7e4dfdfb3b9ec865c8b06ee3ecfdb3a53eb337:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  6c9c2c171908c7ea74a5a0af69f6d58b5daf9ad1e1f806642fec2e9174469cf4:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  9324d217ade8772adce0ee46b368da4de17b84b5c8e48bb291eb467762d21442:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  67810656f44ebbec5aa046a9fbba905d93c90a01569d6b66f631742b892d24c4:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  f417db5034cbc9abcda4c62abb324673595c12f9b5b75cf05ee6428a765eab1d:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  4e9e903e241d67a7769ded28e35fba49e2f4d9113ec46759258789bb4e8b600c:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  7b97e677db695e70bb936cc2c8871f0989574b4ae236e926c764b71fad8b35b1:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  d1cedd0a59b091e42e04b803da84f185d9181be7376ab482178465099d868472:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>
+
+        9007199254740993
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  4963aa7ac124d2a0e8b52b6bf467883df20c38c7206d877706f32aa9372f3fc9:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  6af31aa11eeedec397ba9a7f9437144798eeb498c8afec1f71ff19cd86babe94:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  146e41956d842600f73aa584652b2f1921083aa8eb2ab06b5b7642d2fadb5f7d:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  9190d939744b306a511d2c860f1e46a798cb8c49d33b63df3ad969c21c23ee60:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  d3f2ae1f1f0f58f2346d492380a3496f463f38cd2cd1c3f2100bcbb6296adf74:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  7a4d7019cc3043d48bddfe4f54abe9347374a15396fb3643a981f0238cbb5bc2:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  41a482874b6ab662799a76625963a121ac3de5d7c3241cb487f684d9a8819355:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: invalid Hermes'
+  db0c6e3cd881f179bee02c350f4e2687281bbd9a577be8e25cb5cdc748a3051a:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_nano
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+producers:
+  f3c04b4dc48d3b48fac666638ce9f75bfdfdae255d2f4893133bd26a64377f71:
+    capture: sglang_python-0.5.14
+    document:
+      family: nemotron_nano
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  b5ade447b56ebf944f0873aa6958e21d60fdac2747186a188d336b4d248e5f64:
+    capture: vllm_python-0.26.0
+    document:
+      family: nemotron_nano
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  471c4e2d921a1812986060bd9e6a92dbafeebbe450f8efc65fbb719c78210c65:
+    capture: vllm_rust-0.23.0
+    document:
+      family: nemotron_nano
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

@@ -149,14 +149,18 @@ documents:
         description: Same-name twice (id distinctness)
         ref: derived from TOOLCALLING.batch.2.d
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
         - delta_text: functions.get_weather:0<|tool_call_argument_begin|>

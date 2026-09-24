@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: deepseek_v3_2
 capture: sglang_python-0.5.14
@@ -7,65 +8,42 @@ documents:
     mode: batch
     captured_with:
       sglang_python: 0.5.14
-    cases:
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both: '
   TOOLCALLING.batch.5.yaml:
     family: deepseek_v3_2
     mode: batch
     captured_with:
       sglang_python: 0.5.14
-    cases:
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
-
-              '
   TOOLCALLING.batch.8.yaml:
     family: deepseek_v3_2
     mode: batch
     captured_with:
       sglang_python: 0.5.14
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: 'I will check the weather. '
+views:
+  python:
+    base: sglang_python-0.5.12.post1
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: 40c7fd196cfe5c09cb75f01a3880de27af52f57acfbd863ec6d66b769e6049b3
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 55cdcbdb8464c0d2941b8da889214218c483c6a712ce34b220f00e8159c4e1f4
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 7d744273bc2cd21fe7e1839bce8bf4216acb15af851cee12faaaf3a0b5c6587d
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: df4deba6eb7c989d7fa0af1973a41fb6fe4ad04b37b8cf9ce12f554f0176a0e3
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 275a5676839f47eb6824729effc6e75346f5a22c8fa754fc41ca78b9b4e864d4
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 3c564829d357daaa584d7b5e97893a22d3eceaf15b1d412e544fbc6569ba65dd
+        producer: b21467bf621855ff6648dda50b76041ec868d5888338f36e980f8fe71e474f1f
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}

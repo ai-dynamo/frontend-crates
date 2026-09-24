@@ -16,10 +16,12 @@ documents:
         ref: 'inspired by vLLM Granite reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_granite_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id001
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain answer
           sglang_python:
             unavailable: SGLang has no reasoning parser for family='granite'
       REASONING.batch.2.a:
@@ -122,10 +124,12 @@ documents:
         ref: 'inspired by vLLM Granite reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_granite_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id002
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
           sglang_python:
             unavailable: SGLang has no reasoning parser for family='granite'
       REASONING.batch.6.a:
@@ -198,10 +202,12 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id003
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
           sglang_python:
             unavailable: SGLang has no reasoning parser for family='granite'
       REASONING.stream.2.a:
@@ -276,10 +282,12 @@ documents:
         - plain Here is my thou
         - ghtful answer
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain Here is my thoughtful answer
-          vllm_python: *id004
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain Here is my thoughtful answer
           sglang_python:
             unavailable: SGLang has no reasoning parser for family='granite'
       REASONING.stream.1.b:
@@ -289,10 +297,12 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
-          vllm_python: *id005
+          vllm_python:
+            reasoning_text: ''
+            normal_text: plain answer
           sglang_python:
             unavailable: SGLang has no reasoning parser for family='granite'
       REASONING.stream.2.c:

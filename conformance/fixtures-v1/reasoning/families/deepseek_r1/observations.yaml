@@ -1,0 +1,497 @@
+schema: bound-observations-v1
+observations:
+  9fdd2054057d581a9f000aa5ba5f6dedb6d8ab71a4456f7fca10d181e977023b:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  88a07ffbf40a075aaae0e8c9fb3cdd7102f8258e326586535a7da42f01f3b3fb:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+  bed4aee22767fa2b128f1ef357a53c481bfda2007915c83ebc37ad679bb31b76:
+    request:
+      model_text: <think>thinking</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  1318411bd24d95463028e15d705f6e4d625405e7943d1d83e746e2addcfa0504:
+    request:
+      model_text: <think>compute</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: compute
+          normal_text: answer
+  ced9ec79de9d4476e15361ee25f2566c4fbf9906c3a4bdcfc54bfba27b591206:
+    request:
+      model_text: <think></think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  27c5cba3f588c60eaada2e39bf28629d5024f0b4aa98a355d58fe4e3c6fbcde6:
+    request:
+      model_text: '<think>Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}</think>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  fad44390c5144e50ac36fee78e38c4ba889fbbde0070218b803edddc0acd51c1:
+    request:
+      model_text: <think>choose tool</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: choose tool
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  ad2baa25a5a6718a225b1f40af8c3b206266318356278e083fbcf1edfe255edd:
+    request:
+      model_text: normal</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: normal
+          normal_text: answer
+  7dfcfed20821ef0de17733f5cb1157ecbc1f48300f3f02bc46e2ed1de801440f:
+    request:
+      model_text: <think>partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  2c0e8f32d3a8347f8b61411f2d46d56e34bb927b9b2d9c99f7c9e09d22ceec05:
+    request:
+      model_text: <think>first</think> middle <think>second</think> done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: first
+          normal_text: ' middle <think>second</think> done'
+          explanation: Dynamo extracts each complete reasoning span; vLLM leaves the later complete span in normal_text.
+  e9232c3c2eb277a1629e8729213e5ce147d19a5c40c53b84731092d1add918d3:
+    request:
+      model_text: <think>preamble</think>body</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: preamble
+          normal_text: body</think>answer
+  d4c207e82acc2b05c4c1e8dd4752be57834582aae7166ba7fa4d31289e540c08:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  12def1c769a689e7eabd10ebea9b204d2ed84e4724cd6613345a1ba23177b602:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+  be65b98eb8a189c636072e0f56fb7c69678dda649d0c28afc3e85bedeadf68bf:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - <think>thin
+      - king</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  bb00d4b62b67849d541c19a5dd391a32b8417b4061b96056f777268a374461b7:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - <think>first</think>
+      - ' middle '
+      - <think>second</think> done
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: first<think>second
+          normal_text: ' middle  done'
+  f2d801b6ee29321e01cda8b42b55f5e6c5d10713e284fab4f436c51f184820ef:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - <think>preamble</think>
+      - body</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: preamble
+          normal_text: answer
+  25d936b20523b2b9eac7b5df0514c8999d43eefe3146bc7a5eda3d11e523dd39:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - <th
+      - ink>thinking</think>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <th
+          normal_text: ''
+  03be2901b4df8553e6b9f828d0223def98902b79e67a53e4cbf8f830690ed3d8:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - <think>thinking</th
+      - ink>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ink>answer
+          normal_text: ''
+  d02f088e6fdd17c40d5c649aaf2c7b76cb0c75ed9c9bc0fbce07fd335d72bc6d:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_r1
+      mode: stream
+      chunks:
+      - plain <th
+      - esis answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain <thesis answer
+          normal_text: ''
+producers:
+  d7b08fb1fdd7e329a74c436402866417b7dce729ec25832d95036a2c9c2ecb1c:
+    capture: inputs
+    document:
+      family: deepseek_r1
+      model_label: DeepSeek R1 / Nemotron
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM DeepSeek R1 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekr1_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  e325f073013f22e30dc87f5a40492caabab33feef0e0777b1039a1466a728b01:
+    capture: inputs
+    document:
+      family: deepseek_r1
+      model_label: DeepSeek R1 / Nemotron
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM DeepSeek R1 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekr1_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  37b17cbbfd8f5e71f0d3e074071d051d2e5756103343fc90ff373886c2d3812b:
+    capture: vllm_python-0.24.0
+    document:
+      family: deepseek_r1
+      mode: stream
+    provenance: null

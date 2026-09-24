@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: minimax_m3
 capture: dynamo_v1-5.1.3
@@ -5,40 +6,35 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.stream.1.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-5.0.1
+    changes: {}
+    annotations: {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: glm47
 capture: dynamo_v2-0.1.23
@@ -7,101 +8,83 @@ documents:
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-          normal_text: 'Both: '
-        - expected: []
-        - expected: []
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"NYC"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - index: 1
-            name: get_time
-            arguments: '{"timezone":"EST"}'
-          normal_text: ' '
-        - expected: []
-          normal_text: Done.
   TOOLCALLING.streamv1.3.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.5.h:
-        chunks:
-        - expected: []
-          normal_text: 'I '
-        - expected: []
-          normal_text: 'will check that. '
-        - expected: []
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"NYC"}'
-        - expected: []
   TOOLCALLING.streamv1.50.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
+views:
+  python:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: c4c5349b2a6e1d3abc19bf4f30783bf88248d9d8967e5d0c3a7d46f69df768ef
+        producer: b09eac5c02781a631290eae5e8ddacfb23b5d106cc53db05c77e3a3c1ec516ae
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 117034acd4e3c63c45b2629d9fbc16dba7de86b06cb67ed3e831db2040130a85
+        producer: b09eac5c02781a631290eae5e8ddacfb23b5d106cc53db05c77e3a3c1ec516ae
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+  rust:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: c4c5349b2a6e1d3abc19bf4f30783bf88248d9d8967e5d0c3a7d46f69df768ef
+        producer: b09eac5c02781a631290eae5e8ddacfb23b5d106cc53db05c77e3a3c1ec516ae
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 117034acd4e3c63c45b2629d9fbc16dba7de86b06cb67ed3e831db2040130a85
+        producer: b09eac5c02781a631290eae5e8ddacfb23b5d106cc53db05c77e3a3c1ec516ae
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}

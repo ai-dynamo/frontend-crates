@@ -1,0 +1,4107 @@
+schema: bound-observations-v1
+observations:
+  c86b0573e4a81b4110c37d5858dfe3065e7717f164788c6ceb3d60629280938d:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  a5d8730f43787c4729a8d20ffaecfcfc5b5e7f940a8e855f4f45f43026a67c09:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  fd74b047adc24c60fa17b3f333e5342dbfb0a694557a04c9a0572118e2ed28db:
+    request:
+      model_text: 'Both: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  33367ecfbab29b0d2e1edc667708311a581071c130fff912c9ca3009778d26c2:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  99129255f6c92352e958dcdac42c9774f9ac68cf6eab7c69a8192120ddce9007:
+    request:
+      model_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  cf22712fee82622179e87da4c4ab017bf04175dc699ca782c36a2485e566a548:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  a15f32fecf851b7c7e451d310a58bda811c841c7939b1151e770cef8ec4384e8:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜><｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  358d89c5332096844e31a3b5ff89be8bee8c39f7daebae3837231a250c4a6d71:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  2f690e5dc9bfc8ed41ee4fad35db91f6829e9d19670c88540fb968dc2d6cf629:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  b739e90a85bd3590a28151a7a1cacdb1aed50443d83d0f6273d501170c785eac:
+    request:
+      model_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  85b0d102326f6b2a6eb4ac629a896dc40f81ba248fd49a63905acf60a370d6c5:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  2068c91c64e662c7a34ced96ce2f27f5eaf2f4d8a410a968836165f5bfe2a582:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  00b7ded90a65a6564e2b7cd0c2f56f41f700ef2e4a29c3abba6944ba508d0835:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  5a2f2e03cadfa50de52647401e8ca3ae0196bf204775f47118f3c3f10c30f849:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  b806b7c66ffb04488a21be90a8bf38d975dd26d8a5e76a8d3007af573f79b70c:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{ }<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  69a0839accae404a9f81652260daa07ef5a3075e9da866151d748a9046a36103:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  218d3578a1f98687630a1e0b671d816cdd23056a6c1bde7ec082cc6c30ea7795:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>book_flight<｜tool▁sep｜>{"destination":"Paris","passengers":2,"first_class":true}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+  f4c36c4cf152781c80d85ba05dabb39b6524685ffa20b3bd277974a5c76c028a:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Tōkyō \"central\""}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+  05a92d961cc1a02a5685ed4f171e62c1ce260c3a691b5f688a8383fe76bdfc1f:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_temperature<｜tool▁sep｜>{"celsius":"20"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+  180f55c739afcd9498c200627e6861b1939741e819b8ae0aabb114ca621fdc0b:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"items":[1,2,3],"config":{"nested":true}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+  56a6b3f280b641970ace942ae4c5fbd0f2f23d338e2cddeb6c9a9e9e02db62c1:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+  7ebd518b1a98295b4477447cb64d8f1b4d0024e07ecd2b4648f681af604a30df:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_limit<｜tool▁sep｜>{"count":9007199254740993}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  3628de711c4d24164bfaf81941ce58bf89fad4092313aa1176c7edac0e0b1415:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  ed56ed37767cc9b9505f90c91338428a7882ac707105f9245dc95f62d89ff093:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  9f06a10941487752d5793f402824ec0906cfb7d515d850ff2b1a8e4eb0a135ba:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  b18c692cfd507f0288a61ae4ff98d4078d006c3bc5e13e0185920c734c0935f0:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  1f2e8552a3dd6eb3d44e46bde09862aaf75d2285f73b9155b1dc4cf367f27d9f:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  76dd02516d1211b4bb06b21b2dd40b44cc7afa8238301101caef372436fbee33:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  527fe4aaa25701adaac6e3c01e150ef0f668be78111cd8302e91b385d8400532:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>unknown_tool<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  26f63ee6185262c18ebb95139a00c2ba66138abce7a8560d4dfa9c46e7bdf477:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  993444af8d22842c33f1e52f4e585c79da1b921e3fe8fd466741afe9f0482b2d:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  ac4d51f367979c6ec0917e35626c6b7f1a2143fa718a7e4238fd4b1af4aa7a7a:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: '   '
+  2afa774921a12ebb2efcaa292abfe57ceefa2cb2a4975997194c10eb2323a816:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  f3977458ebb8f1fc10035d10a402418cc2fa8762a140f64a84caba738e19b58c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜>
+      - delta_text: <｜tool▁call▁begin｜>
+      - delta_text: get_weather
+      - delta_text: <｜tool▁sep｜>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: <｜tool▁call▁end｜>
+      - delta_text: <｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  d9a1df6e8af24a77dc3e264de315404c3a11cfd6799fcb43f7a3b8b46fc10d04:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁ca
+      - delta_text: lls▁beg
+      - delta_text: in｜><｜tool▁ca
+      - delta_text: ll▁be
+      - delta_text: gin｜>get_weather<
+      - delta_text: ｜to
+      - delta_text: ol▁sep｜>{
+      - delta_text: '"locati'
+      - delta_text: on":"NYC"}<｜t
+      - delta_text: ool▁c
+      - delta_text: all▁end｜><｜tool▁c
+      - delta_text: all
+      - delta_text: ▁begin｜>g
+      - delta_text: et_time
+      - delta_text: <｜tool▁sep｜>{
+      - delta_text: '"time'
+      - delta_text: zone":"EST"}<｜too
+      - delta_text: l▁c
+      - delta_text: all▁end｜>
+      - delta_text: <｜tool▁
+      - delta_text: calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  b082d8e3a20f57905e4bb186b26688fc9483f0a169e852c6dd53e9e90929dee7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: ls▁begin｜><
+      - delta_text: ｜tool▁call▁begin｜>g
+      - delta_text: et
+      - delta_text: _we
+      - delta_text: ather
+      - delta_text: <｜tool▁sep｜
+      - delta_text: '>{"location":"NYC"}'
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: l▁end｜><｜to
+      - delta_text: ol▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  b83f309afa52972d5019458e29cde4c940d57cb793755bae82839ff7cdb23913:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  354d41f543128f3fe0c5e720e31c6311d1bb47b59a84d4dfff1ca0381e72ae75:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁b
+      - delta_text: egin｜>get_weather<｜tool▁sep｜>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  5d2a8ab002bc13046a0a1d1f988802f2cf31b19aa6b683d8023aff9dfe6c2d43:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁end｜><｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  e0a6dfb0fbaaa86e968470dce9ec3fa4d8a88fac01a06bda338a8de2841e9b0e:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  169d92a79e3b079c889b5ebe0a4aeb96b59bb736ac7effa1e059a489fb330282:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  a4c9026714259233a7e997f8e3c4a576e5652c959fbf03c4749a682af8ccd906:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  eb2e19aabe1ecafb085724f32f27fde3ee99f9cb6cb2225f86be3fb5d9c9a8c5:
+    request:
+      model_text: 'Both: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:'
+  eb04fefe9ec81cf2242f52f57a4774197aeeb76d872c401b6a34c26bb3ed71de:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  1b1db4fefe4ee884a01832192c63f55497a0f8b7a2faf34df3ed71059762a7ce:
+    request:
+      model_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  87268cb47d3d84ea4619f766cb4387c4810b78f34d730208839e84a9a0a463a1:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang preserves the malformed DeepSeek V3.1 wrapper as normal_text; Dynamo strips tool-call markup from message content.
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  f0d5f2515d04ed5d4329a7891e2dc5fb7ea8322d551fdc3201da09b04cadeb40:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜><｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  f2275895f70a60f9ebe481613b081645d98ca41d97622878d99d2e3808662c61:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  4f35a7eac259561446b8d8471fea07138e1a72d00ae4a120ebaf9fb0022b73a1:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  b710e0299eaa5e1959d49f9f53675a25e3676c69d5851862cc3aef3b8596f5ea:
+    request:
+      model_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: vLLM/SGLang deepseek_v3_1 handling leaves the <｜tool▁call…｜> envelope and <｜tool▁sep｜> in normal_text on this orphan end-marker case.
+          calls: []
+          normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  3618477bce9579e1f7499714990967286ed3d95622a5a3389f79d40da1c64652:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  8efd7ef645a89db91c8b9c0c325af521debbb53c0c6b43bca8bf1027e6769312:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  3db75583f8e12e6e93abf6a7a0a252d48bee9abb017737fa74bf225e8fe39e83:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  2f8f1315361480e2aa3c6b12f4eee099dd6bda7b48d9de40d1f458405ec503d8:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  9a1c4bb4bc212940b4eb0dc9b61f22b66ce9b6698190d7b1d1dc889105fe7186:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{ }<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  102380aeb86d79c5bc5180e652ea069afc64c85ef621cc31534d02944fa67f6d:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang preserves the minimal DeepSeek V3.1 no-args wrapper as normal_text; Dynamo and vLLM strip malformed tool-call markup from message content.
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  68c9e20623241f4b752489eaf9a8a477e5d77cb892e058db885847f51d20d42a:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>book_flight<｜tool▁sep｜>{"destination":"Paris","passengers":2,"first_class":true}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+  847ea7f4a4760e489ef69ad53d8ca400e0f98cd324205549aad90eff8c04708e:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Tōkyō \"central\""}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+  51eb833c6b4c5980fe7105501d781a209b6510ab8b623dedda5123419362031a:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_temperature<｜tool▁sep｜>{"celsius":"20"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+  99a79859f8bce895735535f8320dec45830d2c74c814e029b87979bf6538a047:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"items":[1,2,3],"config":{"nested":true}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+  700ae2b1463b56af26c8669ce0d36a03024cbf616c7754bb5212d46bac34184c:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+  a54321fb568007e460ceb1873fdb5db8abe9aad387a74c9d371fadbb81b311fd:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_limit<｜tool▁sep｜>{"count":9007199254740993}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  f6cd2e421863b0cde6dd7eb1d28d5a4779259050978cfeefa0d5e065a2fc62c5:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  5ee2373e6fb71cab1d2a1392f21d309554cd70ac78868744e88abe8ca857326d:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  4f79a3286e14158c9d909c6668f7e30f958a23cbd6782eb3c42a458149d15cdd:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  a86294ef3f67abc89f66f610bad165c6a91da02c8dd865554c81f3e8a4a0b047:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: I will check the weather.
+  bd84436e678b00422043c29dd0d6d07f3fe1a7bcd078d89f3800ad09d88bb83f:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  57cf52f7b6fc8c28d5280bb5629dfec06729bf4ea934193495c4909bfcf8b60e:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  3eca73d1978ebe647bd224e153d46b33c94522d431548c216eda8ab8537c5930:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>unknown_tool<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: SGLang drops unknown tool names by default unless SGLANG_FORWARD_UNKNOWN_TOOLS is enabled.
+  a697732a495cf99a8cfdb7117e421896f732444b12da30b848d38ee3c4951f7d:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  0cf445c17dcb22f5fb39e5d3183548d5bc9f25bf91959e968759bf7504e5ff11:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  d1328a9d77301fa593f00b8b47a32def0cf7cee2cd93ac8ab3499f47eee49d74:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: '   '
+  85f0928badf3015831da87f861c67fccb705e337880e151f991ebf3e3c6bf9e4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  dcb71a59738c606b908cae962967a4e5427cd188380cf0501a387a0f84ea5cc5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜>
+      - delta_text: <｜tool▁call▁begin｜>
+      - delta_text: get_weather
+      - delta_text: <｜tool▁sep｜>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: <｜tool▁call▁end｜>
+      - delta_text: <｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  f5bb700366f3653dc264556e223de6fab8fdfcabaf041303c242369c93d659d3:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁ca
+      - delta_text: lls▁beg
+      - delta_text: in｜><｜tool▁ca
+      - delta_text: ll▁be
+      - delta_text: gin｜>get_weather<
+      - delta_text: ｜to
+      - delta_text: ol▁sep｜>{
+      - delta_text: '"locati'
+      - delta_text: on":"NYC"}<｜t
+      - delta_text: ool▁c
+      - delta_text: all▁end｜><｜tool▁c
+      - delta_text: all
+      - delta_text: ▁begin｜>g
+      - delta_text: et_time
+      - delta_text: <｜tool▁sep｜>{
+      - delta_text: '"time'
+      - delta_text: zone":"EST"}<｜too
+      - delta_text: l▁c
+      - delta_text: all▁end｜>
+      - delta_text: <｜tool▁
+      - delta_text: calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  c2c18b3d9b49b687257d8f9e5e5aed3f00ba192e062c30e8fbe3408db2dd562b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: ls▁begin｜><
+      - delta_text: ｜tool▁call▁begin｜>g
+      - delta_text: et
+      - delta_text: _we
+      - delta_text: ather
+      - delta_text: <｜tool▁sep｜
+      - delta_text: '>{"location":"NYC"}'
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: l▁end｜><｜to
+      - delta_text: ol▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  d8b9645268319fdf1aa57b2de3cc3eb12e5a6beda04cdaa43459396645db196b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  5101a8b5a5c008bbe198fe1e27451e0a7024fa3f83ab1574b6800391351e653b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁b
+      - delta_text: egin｜>get_weather<｜tool▁sep｜>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: '{"loc'
+          normal_text: ''
+  ae5c35d0f9360d6a854b092b334f7c64f69370b12cd7f1d581d8222863cd3604:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁end｜><｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: ''
+  09a4ff9089ca4818e45da2ff977794433b203bc61ad3f5a1f62b2954cc25364b:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  529568a828bc6851386dc9006aad76b40913fb3335b0ea31d33eedec9b5d1ec8:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  fcb6fb7286c08c532b1c671010b0b4c720aa3881722f668bde18c1cffda32200:
+    request:
+      model_text: 'Both: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  00632551074b264610c9349a8f27fde50c90ece442f226a25546f994c17a3392:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  1c63357b175f1a63da802b3b4639372dd146a2dc85301f2c62982d4d57026256:
+    request:
+      model_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  d9774be7fab5ac87b25e52c91c0c1f78b08e3542796edd0bad632f2bb9b6db8c:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: vLLM surfaces malformed DeepSeek V3.1 JSON arguments as a raw string while Dynamo treats the whole wrapper as malformed.
+          calls:
+          - name: get_weather
+            arguments: '{"location":"NYC'
+          normal_text: ''
+  359b6bcfbfc69e798cc260853695682417b5867ec827c966953bc7dcb25d9b6f:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜><｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: vLLM recovers a call with an empty function name when the arguments are valid; Dynamo treats the missing name as malformed.
+          calls:
+          - name: ''
+            arguments:
+              location: NYC
+          normal_text: ''
+  6d1fc565813fff68b3a86f8e6485b3058eda2b0e38e47a8f5fb2dd049916dcdd:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  ebd43912c8537e3f3002b2ec3e1928ee58b29f7e0d861dffadfcef1a101c9095:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  668d42db25bd7ac198bdc066170471527d86245f9588700b621be116086d47ce:
+    request:
+      model_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: vLLM/SGLang deepseek_v3_1 handling leaves the <｜tool▁call…｜> envelope and <｜tool▁sep｜> in normal_text on this orphan end-marker case.
+          calls: []
+          normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  eee6fbb5f57e441c62e5233eebdac7053be4288acc42d90588af0069d590d333:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  f65cd047e8f535fabe39ce3cc014f6b66471c189ae94c6d2a57f132f64e09d0c:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York"}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  139fff5b2d54cf8e12b09a41eea3558f29a1abbb594b7d1f9541e66e98ca67dc:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  12202571e3f1ce7213a07720a942eed5bb1dd636ad8db99af7b8c26617da1eb9:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  61de18f05e2af2e2d3a0feb12564ddbc5ba9b7f07cddf81eba547331a8035248:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{ }<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  5797de20d7ed209f01a79751ef284c351ffd781122a6d601f441a13ce5ae559a:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  d9f38bcd6728d25d055470a3e69e177aae3edeb37a3a8c3931c8cb7856097e46:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>book_flight<｜tool▁sep｜>{"destination":"Paris","passengers":2,"first_class":true}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+  a380b4d982dfbf96879d95a7170f1114d61092649484d4156f1f2f818ff30ebe:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"Tōkyō \"central\""}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+  416e0f64b073eb9b4f15c646b39ab99ba252ce89fbcc9ad5b4bdbeaeb24d1339:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_temperature<｜tool▁sep｜>{"celsius":"20"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+  cc64232c30340bf54b01981bf92dfc80d8bf52d6385cf8b572b3f695a5ebbd20:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"items":[1,2,3],"config":{"nested":true}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+  f36aae079065810f425b31fcee8307bb7579c6ce2e08b11b0ffb7a02e0659fb6:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>process_data<｜tool▁sep｜>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+  93621ab651a31db5de5747ab71effe26cc833ec7c481058c3e101e1a9f2dd611:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>set_limit<｜tool▁sep｜>{"count":9007199254740993}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  5032e59a4b63fe2f5b44c8c7c72470d78d6f8e789b2502ce6835bcfea1245e6d:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  01552e4d518e197dd302806683b87a553345414aafb7e597e041b0147e1e7dc4:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  d189c77827826af9b1b2a5b8224118e23ecbb0ffabdb2173d0970382cf2b5b99:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  8e09b94de2a45533b256a328b3f08ea914abcee9495ea0219303b5181e8e2822:
+    request:
+      model_text: I will check the weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  50f1261c2e9cfb81fac21928cf99fbddcdc8601f772945b8542d358a0d3c7472:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  baeaee87218fdeba758101567f144c9978e4d6b89700b16a3620f80eac7ecf73:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"LA"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  7e3c08d8fe7f5a92c3163ae7b4c0a32e5470dc67e950a9db8e5f2b986e1652fb:
+    request:
+      model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>unknown_tool<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  66a1cade0bbe1b5f23c4e46e107626214184492bb9085edb7809fd0b89fb5680:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  1bc9fcdab600e0ba96b6082e63c4719b5e25aaecb671d203cbc99a533c575fb0:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  bea1c4e2937762f1d0c41fdd9ca39f68f92edf9521e8192b32915de19e3e0a40:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '   '
+  f707da67607e4ab8194e8c19d948cd6a7915104b1174e40dd04c3a2d6c377d81:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  de052f54ff5bb674b09bd196acfbba36eb66e8711bed60e46f3e1b9a6d0c17e3:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜>
+      - delta_text: <｜tool▁call▁begin｜>
+      - delta_text: get_weather
+      - delta_text: <｜tool▁sep｜>
+      - delta_text: '{"location":"NYC"}'
+      - delta_text: <｜tool▁call▁end｜>
+      - delta_text: <｜tool▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  0184ad7601abb22cdb3f115cdde6d7b1ab739170a7221f24df0c8e3ea748acbe:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁ca
+      - delta_text: lls▁beg
+      - delta_text: in｜><｜tool▁ca
+      - delta_text: ll▁be
+      - delta_text: gin｜>get_weather<
+      - delta_text: ｜to
+      - delta_text: ol▁sep｜>{
+      - delta_text: '"locati'
+      - delta_text: on":"NYC"}<｜t
+      - delta_text: ool▁c
+      - delta_text: all▁end｜><｜tool▁c
+      - delta_text: all
+      - delta_text: ▁begin｜>g
+      - delta_text: et_time
+      - delta_text: <｜tool▁sep｜>{
+      - delta_text: '"time'
+      - delta_text: zone":"EST"}<｜too
+      - delta_text: l▁c
+      - delta_text: all▁end｜>
+      - delta_text: <｜tool▁
+      - delta_text: calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  20fa75429ab26ceb2a78a23ce4c752e68b41588a0e02747ba10d0c447834b322:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: ls▁begin｜><
+      - delta_text: ｜tool▁call▁begin｜>g
+      - delta_text: et
+      - delta_text: _we
+      - delta_text: ather
+      - delta_text: <｜tool▁sep｜
+      - delta_text: '>{"location":"NYC"}'
+      - delta_text: <｜
+      - delta_text: too
+      - delta_text: l▁cal
+      - delta_text: l▁end｜><｜to
+      - delta_text: ol▁calls▁end｜>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+  c43ddd386b992016f99f4cb81054cec8d93504926cb9dff33524ddf1e69fe42b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜>
+  91eb3816e4f86feecfeb8bd8c945e23ce932f1622181cea37df6e336dbcc69ab:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁b
+      - delta_text: egin｜>get_weather<｜tool▁sep｜>{"loc
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"loc
+  a3ffe121c245698f2523d65dd0e7b3f69b29e5ec31b4a719428f06d390a23c8c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_1
+      mode: stream
+      chunks:
+      - delta_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁end｜><｜tool▁call▁end｜>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁end｜><｜tool▁call▁end｜>
+          explanation: vllm preserves malformed bare-wrapper parser syntax in normal_text for this recovery case; Dynamo recovers the call and suppresses parser-owned markers so they do not leak into message.content.
+producers:
+  8521bfe2db94552ea495d0b87d3234a20eec13d8753e77f662b3f9b6390d1221:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: deepseek_v3_1
+      mode: batch
+    provenance: null
+  59cbe339ff75b06ad2f973706708233eee4084163479c7aec83f2323d497ad3f:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: deepseek_v3_1
+      mode: stream
+    provenance: null
+  f475158e1b07481d306c9b37381ae96d07dd823fdcb5b5b567799ecd2b95e4c7:
+    capture: dynamo_v1-5.0.1
+    document:
+      family: deepseek_v3_1
+      mode: batch
+    provenance: null
+  1a1181120d57c637be354b4ff4e0472b20fdae64095a4a56a8b80818138e9162:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: deepseek_v3_1
+      mode: batch
+    provenance: null
+  09c6cba91b685f09fc9ffe092537532d0b1064af68a5dd18afbe0cb935426c8a:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: deepseek_v3_1
+      mode: stream
+    provenance: null
+  b77a5e14609e62eb50cf1f79121193e9c37d6049405ae10f0ae7deb7c7e2bb43:
+    capture: vllm_python-0.23.0
+    document:
+      family: deepseek_v3_1
+      mode: batch
+    provenance: null
+  524ed75bc3345647d50f4370512b938233fc93a95d2f846a2d60cec3ba390e35:
+    capture: vllm_python-0.23.0
+    document:
+      family: deepseek_v3_1
+      mode: stream
+    provenance: null

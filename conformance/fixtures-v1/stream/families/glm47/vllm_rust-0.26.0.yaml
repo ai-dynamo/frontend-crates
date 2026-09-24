@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: glm47
 capture: vllm_rust-0.26.0
@@ -7,10 +8,17 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.26.0
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: glm47
     mode: streamv1
     captured_with:
       vllm_rust: 0.26.0
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: qwen3_coder
 capture: dynamo_v1-5.0.1
@@ -5,49 +6,42 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: qwen3_coder
     mode: batch
-    cases: {}
   TOOLCALLING.stream.1.yaml:
     family: qwen3_coder
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: qwen3_coder
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: qwen3_coder
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: qwen3_coder
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: c436e30064db0816b3f309c0a3dbef72a915511683864f65723f1ead18843c41
+        producer: 0aca5a739257b304cb301cbd735ce9025b759a1d9bdf22a314d40c297187a841
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}

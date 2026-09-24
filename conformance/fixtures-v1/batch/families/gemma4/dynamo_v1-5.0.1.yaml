@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: gemma4
 capture: dynamo_v1-5.0.1
@@ -5,49 +6,42 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: gemma4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: gemma4
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: gemma4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: gemma4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: gemma4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: gemma4
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 360c570a29ac949a6e22550d32b3660fe7e53b25245e0985834949e25c4c2a0a
+        producer: 22b43f9f467fae23f5db05e4848ab8b6009ebcb0868d0bf5a82c267360c37fc4
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

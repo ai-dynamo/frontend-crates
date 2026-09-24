@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.1.23
 provenance:
   status: legacy
   captured_with:
@@ -6,188 +8,31 @@ document:
   mode: unified
 changes:
   retired__4_c:
-    case_key: UNIFIED.4.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: a37a919f391273b8d0c745738bc38932ebf95caf1c4ecaab70e6c80206b3c4a6
+    producer: dynamo_v2-0.3.2
   retired__4_d:
-    case_key: UNIFIED.4.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'for example, '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'for example, '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: a559deeab63b4b063fe14bf517cf5f39a48994ecd048065d66449d8b221bd3fc
+    producer: dynamo_v2-0.3.2
   retired__4_e:
-    case_key: UNIFIED.4.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'I will call: you tomorrow'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: NYC
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I will call: you tomorrow'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"NYC"}'
+    observation: 72041dfb530e167eb688c9a130c02f39f9a88a5187fe11c4cacafc9ad1df18f4
+    producer: dynamo_v2-0.3.2
   retired__4_f:
-    case_key: UNIFIED.4.f
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: NYC
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"NYC"}'
+    observation: d20785869234d552c091a07c7dbd0ee996c0deee0c7daf5fcccf4d61a7c70781
+    producer: dynamo_v2-0.3.2
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: output
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: output
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"Paris"}'
-        - expected: []
+    observation: 011c6530650217d9eb228814e19c0622111b37a90a9d7efc6d611d7e9271fec9
+    producer: dynamo_v2-0.3.2
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected: []
+    observation: 35f2da79196fa64a26e541f71afae6c48140e8cefe83e021c781682b4a05b4d9
+    producer: dynamo_v2-0.3.2
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
-        - expected: []
+    observation: d26a83dab087e9ce95ea73998f90d1325a1f32f8cf6dbac74faf896894da757b
+    producer: dynamo_v2-0.3.2
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Working on it... '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Working on it... '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: f29ea3573c5416f44b7efc04cd46f8b335e9369ce4f9da12cc12446767e74ea5
+    producer: dynamo_v2-0.3.2
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        - expected: []
+    observation: 7081f5094c674c98bb338d3116fd6b7beb6d18c455149c9f762901e210159214
+    producer: dynamo_v2-0.3.2
 metadata_changes: {}
 document_overrides: {}

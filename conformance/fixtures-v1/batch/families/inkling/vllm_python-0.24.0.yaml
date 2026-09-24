@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: inkling
 capture: vllm_python-0.24.0
@@ -7,156 +8,160 @@ documents:
     mode: batch
     captured_with:
       vllm_python: 0.24.0
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.2.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.2.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.2.d:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.3:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.4.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.4.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.4.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.4.d:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.4.e:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.5.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.5.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.5.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.5.d:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.5.e:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.6.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.6.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.6.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.d:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.e:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.7.f:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.8.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.8.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.8.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.8.d:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.9.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.9.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.10:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.11.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.11.b:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.11.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.13:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.13.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.30.c:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
-      TOOLCALLING.batch.31.a:
-        expected:
-          vllm_python:
-            unavailable: vLLM unified Inkling batch parser is not supported by the current legacy capture harness; live unified-parser capture is pending.
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: 1cb89dce2a6730b508fae8056fc8d5bc9a9b01e511c7aad3af091ecc868bbe95
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: be7a0ec53a0d60c013f0db9547e1693adbf86e2cbc9f4e43d9157eee2a0ec4c6
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.a"]':
+        observation: 5ab392fb8779d7543520ac685ec7ff95d97db5dca05a4c5c685d25e91455b10a
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.b"]':
+        observation: 3810f0ae4ea0f4823a74d60e982c41edf8b9ef1b9998afb93771c18786b00345
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.c"]':
+        observation: 6e8c3499523828999e5f94420795c343800b4ed39cfbd2cebf00c32374e22b15
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 4b8fc49bbde87b3da94a2a36e2e6c3aa465531feec84fbc4bbbe81607fc87c2f
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]':
+        observation: e07204a04e6993613a3d8999f7096b0b5708a1302654c6c09ccf30735993efd4
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.b"]':
+        observation: df3bb1724bb0500de084504d801538a5515b905c42e0f829875cbed978992072
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.c"]':
+        observation: f34c695c4883c278bc2e9080e793b8be140d2b63de840a8ff356f356f202cc3b
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.d"]':
+        observation: be7a0ec53a0d60c013f0db9547e1693adbf86e2cbc9f4e43d9157eee2a0ec4c6
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 02dd0b468c8b4a2576e1c9309fb5880da9be2fd5cb585a7d8960cb6fd6f0737c
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.30.c"]':
+        observation: 5e406f3282e17d6d858dedfdc45cb825eb39dc30167b2759a0488557ec9eb2ae
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.31.a"]':
+        observation: 5b3ca054448f6553144fbe7977e4abddc538b713fdd9dc5f8d250ad31f153b9c
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.a"]':
+        observation: dad12c6b5cad65948e69fab752c92fb32a4b840df18142239856f5002b07a589
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.b"]':
+        observation: ead9ed57beb35ab87da539490427fb11a6bd93d11a908f8e09dcee68f217c038
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.c"]':
+        observation: 4d33df8a844891e5b7a1fd60831b0703d04ae31d79217fa80c35f1657cbff366
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 81bf96b76d536569d46bb4e10ea902f4f41b410d513d488d0ecf0066acf3f2e4
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.e"]':
+        observation: 9a73c52e25007fcb0736f2841e1390569c58ce8dd9b1e62f2a16a64fc36e2402
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.a"]':
+        observation: 2650c0067e297416b82c449710448c4b9fc4f984f221710ac250365a6f59ff31
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.b"]':
+        observation: 57c66ff46b8ac4c5847529c7f0c03688f4f3b13bae30d6ef831ac25b39b67994
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]':
+        observation: b05718d1c220ed4707abac9d24aebc535c372e74d4fc0d01fb227b821019c949
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.d"]':
+        observation: ea259a284cb660000ee96d695bf1c054df70d3ab6fba770839ce06a59761dbe0
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 78b9a727758e9d1a708ceec4cc966840e94280aa1255fc310a98be2740094112
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 42a0a8f2be124c3f4c6661cba6345709a5262cf6d16c9abf1b093705078a471e
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.b"]':
+        observation: ec9f58261114013569bcb802e5e0d36b25b37bf1115bbd83aee02b3b560678b1
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.c"]':
+        observation: bff683b0d65005fde38a508b9427dd5977875fa18863d341ffc431b9dbd15942
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 24cc12c8d2a70b5ecef2ad8bbb108966ba5af26df240cfe425a4ae1623ead0ee
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.b"]':
+        observation: f0ec821fa2b90bd12ff130488b37643a3a5fae4280a210d93364730e057af99d
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.c"]':
+        observation: 624f48c4856b2e29245c59458ffc308e76b040d9b9f63ce6a5733b2c8356d15b
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.d"]':
+        observation: 6c58c2c1916a8d28494af173695432054afeb38e04c55652e595a40d238b9ba9
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.e"]':
+        observation: 41d410d14bec39b68b6e74c04f10f05e64e44b62d7182fdf110d214da5ff7e89
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 34b5d5db66f1b34f6673e72ebe35696c7df7c11d0d0fe4bdda067fb14788d92d
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.a"]':
+        observation: 6662829885aadee441771bb734df2c8d684f0ce8796eecf2350421ce11a9ba74
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 5051009457a7e3f2b1d43de4b05e095ef7f0582d2ed31200095f13cc519ff927
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.c"]':
+        observation: 1f58caa7c3e848da646e6aba666738639618ed52e8f5b93dba726aefa9223d65
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 2fa2949882d4d12f9535d33fc60435619885b0fc568668a3e9134cbec9ba7a9c
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 39e72c98d99e3bebc16773b015ae493fe6da414c441f92bef5126395a922fc73
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 34a8dbc01d639a497a87b56a45ab92ef724473360d6c0730b045f7d9ccd34806
+        producer: 74926800a9df7838d1c4106b07eaf99694eea9b42906a0e984cd36a6e9db5f84
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.30.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.31.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.4.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.11.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.7.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.8.c"]': {}

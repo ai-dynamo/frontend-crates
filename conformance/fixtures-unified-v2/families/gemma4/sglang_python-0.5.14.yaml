@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: null
 provenance:
   status: legacy
   captured_with:
@@ -6,1013 +8,103 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: run
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"cmd": "git log }<tool_call|> --oneline"}'
-        - expected: []
+    observation: 9a45c79db7a04e5617487f2bd8a7745abae28cebda336e3e7964c5079cd38272
+    producer: sglang_python-0.5.14
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "São Paulo 東京"}'
-        - expected: []
+    observation: 6c610acca0c48d81955243a7c1ac4add4732550246a90a9f0c4464bd47ed426d
+    producer: sglang_python-0.5.14
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Hello there. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me recall
-        - expected: []
-        - expected:
-          - kind: text
-            text: The capital is Paris.
+    observation: 444492d6ba3bddc87f672fb45c867ffb29a8681657f44d7450b7f13e36248860
+    producer: sglang_python-0.5.14
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure, one sec. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking the forecast
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: 6c1ed12ca3a209f2e87147ae58661995c0d934abe3d9c1d338e2082a8974a4ed
+    producer: sglang_python-0.5.14
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-        - expected: []
+    observation: 31675061d307425fddbccba825376ff76605a75e0e70fd904894bd0296c5a8bf
+    producer: sglang_python-0.5.14
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: a
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here you go: '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: 23c0ae825be4c53e9982405e6fae0f482f8062c62fd18ba205fa591980c61103
+    producer: sglang_python-0.5.14
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then I''ll run '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: 1d93e80d918f47849ad963e5803174ec425911c25e7a871604f5931649086f8e
+    producer: sglang_python-0.5.14
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I will check that. '
-        - expected:
-          - kind: text
-            text: <tool_call|>
+    observation: 819bd1911b0bd86fc32c1329a76440efffa61c69f1e0453f5590284dbf034fb1
+    producer: sglang_python-0.5.14
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Look it up.
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              Now answer.'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected:
-          - kind: text
-            text: It's 18C.
+    observation: 79c718dbbab093cc4ae9594b865f7c35e7b66ad2b0a4fb541b9215e4c5e0811a
+    producer: sglang_python-0.5.14
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: mid
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: ecd629e85480d456e24639cef83720a7e593b3a5942c0eff3f795d7ffedb0b68
+    producer: sglang_python-0.5.14
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              B'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: f61d5f2402bb87f72926abdb8c91f198a011ab4c8e6c47b87f024a81dd18c33a
+    producer: sglang_python-0.5.14
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: reconsider
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"note": ""}'
-        - expected: []
+    observation: 772c5230fc64d667c0ffbff3659d57c2dd1e3a132e763ff5e435ec6191dcb453
+    producer: sglang_python-0.5.14
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Logging now: '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: reconsider
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"note": ""}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' done.'
+    observation: 9c847ed111dc8c44678ac7166618fbce2b4304428fcb37d9465e284bc22a529a
+    producer: sglang_python-0.5.14
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: just thinking, no answer
-        - expected: []
+    observation: e38c188eac6af6eabe5ae14020ba4972f578e2ca30d90e21e7730736e19f9083
+    producer: sglang_python-0.5.14
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me think
-        - expected: []
-        - expected:
-          - kind: text
-            text: The answer is 42.
+    observation: 37d319bdeb9eba1f9c0fb60682bc1cace31aa9823fabe3ce97f5a2143d87d46d
+    producer: sglang_python-0.5.14
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Check weather.
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: fd24f6800465583b78921a9439c700dd77ce29ff946b3826802804bf4d2313d3
+    producer: sglang_python-0.5.14
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              B'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              C'
-        - expected:
-          - kind: text
-            text: <channel|>
+    observation: 49eb3402d234dd2093397691ab5af48b96f3e01e3b4cc576da7289683b8f03b6
+    producer: sglang_python-0.5.14
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: working on it
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              B'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: de75aae5c421c547c5d59b9083cd90415fba36b9c72bb1675328aa029f5d341d
+    producer: sglang_python-0.5.14
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking but stream ends
+    observation: 66350d6e9c2c49697197c2b85a9888a498ffef7cc84337223e00be5da79804b3
+    producer: sglang_python-0.5.14
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'On it: '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: 03f90adf2f11acc5078954464a83dcbb3fb1bc7ae0c6b13ccd26fb8c5583eead
+    producer: sglang_python-0.5.14
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: 128ae630ca35be128abab84368127ab09e9af5e7692020100e82fb294879e59f
+    producer: sglang_python-0.5.14
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: The answer is 42, no tools needed.
+    observation: d4d11d480c35090ab6df389a266343350b2de41a822ea5fc86b261087e0b7fab
+    producer: sglang_python-0.5.14
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: check A
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              check B'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: 88cde99fbf7bb57f20c44da71fc1ed177eba810a5860573c8ab63886d4726b33
+    producer: sglang_python-0.5.14
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Before. '
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' After.'
+    observation: 08fe6231436b9fa356bd1bc767abe81dd545aa7a41cf4a472a56105cf1618956
+    producer: sglang_python-0.5.14
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected:
-          - kind: reasoning
-            text: <|tool_call>
-        - expected:
-          - kind: reasoning
-            text: 'call:get_weather{city:'
-        - expected:
-          - kind: reasoning
-            text: <|"|>
-        - expected:
-          - kind: reasoning
-            text: Paris
-        - expected:
-          - kind: reasoning
-            text: <|"|>
-        - expected:
-          - kind: reasoning
-            text: '}'
-        - expected:
-          - kind: reasoning
-            text: <tool_call|>
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
+    observation: 062c7421cb56ad1e08afc8f8c289ca7dc7c25bca17ed3f35d4cd00f9ac529d31
+    producer: sglang_python-0.5.14
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected:
-          - kind: reasoning
-            text: <|tool_call>
-        - expected:
-          - kind: reasoning
-            text: 'call:get_weather{city:'
-        - expected:
-          - kind: reasoning
-            text: <|"|>
-        - expected:
-          - kind: reasoning
-            text: Paris
-        - expected:
-          - kind: reasoning
-            text: <|"|>
-        - expected:
-          - kind: reasoning
-            text: '}'
-        - expected:
-          - kind: reasoning
-            text: <tool_call|>
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' Here you go.'
+    observation: c936c67e9efbbc4af2f145a9235f8c47b87f7849243ddb40a6d910bcb5ba482d
+    producer: sglang_python-0.5.14
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: 520fbd40813323aac0382fd749d1cf2907727fc55e6ef8c2b5558946695d81ca
+    producer: sglang_python-0.5.14
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
+    observation: 00eaacf8a6fda9d8f8aba3850489fe5ae4d53288c24c034945a5adde4716d4fc
+    producer: sglang_python-0.5.14
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: The forecast shows clear skies for the rest of the week.
+    observation: e2af2c09df298c9017cd19480183e48ec971e5e446aab4a191f2526300fd98dc
+    producer: sglang_python-0.5.14
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ok
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
+    observation: 0b1198dfc463979c404ac77911f51afa85f5e5e683ae6347cd3257419630a597
+    producer: sglang_python-0.5.14
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"x": "1"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"y": "2"}'
-        - expected: []
+    observation: e1aef236f2e25634829c4fe4cab3a583e8b360374befeb1d3d43f8a819391c85
+    producer: sglang_python-0.5.14
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Paris"}'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "Tokyo"}'
-        - expected: []
+    observation: caa92ea75c2ab06044f5b08c3f2c6ae5600a61e3247e7354e4100093b753690a
+    producer: sglang_python-0.5.14
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'interlude '
-        - expected: []
-        - expected:
-          - kind: text
-            text: '<|channel>thought
-
-              second thought'
-        - expected:
-          - kind: text
-            text: <channel|>
-        - expected:
-          - kind: text
-            text: done
+    observation: 9e71cef2940fceedc6cc34779965e025c2dea166e63a33013e86008c33d2a208
+    producer: sglang_python-0.5.14
 metadata_changes: {}
 document_overrides: {}

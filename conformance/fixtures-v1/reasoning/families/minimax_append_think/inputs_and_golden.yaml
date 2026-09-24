@@ -17,21 +17,29 @@ documents:
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>plain answer
-          vllm_python: *id001
-          sglang_python: *id001
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>plain answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>plain answer
       REASONING.batch.2.a:
         description: MiniMax appends a synthetic think opener and leaves content inline
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: thinking
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>thinking
-          vllm_python: *id002
-          sglang_python: *id002
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>thinking
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>thinking
       REASONING.batch.3.a:
         description: Reasoning-shaped text followed by downstream MiniMax tool-call text
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -45,7 +53,7 @@ documents:
 
           </minimax:tool_call>'
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: ''
             normal_text: '<think>reasoning</think><minimax:tool_call>
 
@@ -56,48 +64,84 @@ documents:
               </invoke>
 
               </minimax:tool_call>'
-          vllm_python: *id003
-          sglang_python: *id003
+          vllm_python:
+            reasoning_text: ''
+            normal_text: '<think>reasoning</think><minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
+          sglang_python:
+            reasoning_text: ''
+            normal_text: '<think>reasoning</think><minimax:tool_call>
+
+              <invoke name="get_weather">
+
+              <parameter name="location">NYC</parameter>
+
+              </invoke>
+
+              </minimax:tool_call>'
       REASONING.batch.2.c:
         description: Reasoning-shaped text followed by normal answer text
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: compute</think>answer
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>compute</think>answer
-          vllm_python: *id004
-          sglang_python: *id004
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>compute</think>answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>compute</think>answer
       REASONING.batch.4:
         description: Dangling end marker is left inline
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: normal</think>answer
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>normal</think>answer
-          vllm_python: *id005
-          sglang_python: *id005
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>normal</think>answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>normal</think>answer
       REASONING.batch.5:
         description: Missing end marker is left inline
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: partial reasoning
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>partial reasoning
-          vllm_python: *id006
-          sglang_python: *id006
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>partial reasoning
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>partial reasoning
       REASONING.batch.2.e:
         description: Empty input still emits the synthetic think opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>
-          vllm_python: *id007
-          sglang_python: *id007
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>
       REASONING.batch.2.f:
         description: Complex content remains inline after the synthetic opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -107,45 +151,69 @@ documents:
 
           JSON-ish: {"x": [1, true]}'
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: ''
             normal_text: '<think>Line 1
 
               Unicode: café
 
               JSON-ish: {"x": [1, true]}'
-          vllm_python: *id008
-          sglang_python: *id008
+          vllm_python:
+            reasoning_text: ''
+            normal_text: '<think>Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+          sglang_python:
+            reasoning_text: ''
+            normal_text: '<think>Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
       REASONING.batch.1.a:
         description: Empty input variant
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>
-          vllm_python: *id009
-          sglang_python: *id009
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>
       REASONING.batch.6.a:
         description: Multiple think-looking spans remain inline
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: first</think> middle <think>second</think> done
         expected:
-          dynamo_v1: &id010
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>first</think> middle <think>second</think> done
-          vllm_python: *id010
-          sglang_python: *id010
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>first</think> middle <think>second</think> done
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>first</think> middle <think>second</think> done
       REASONING.batch.2.d:
         description: Normal text around think-looking markup remains inline after the synthetic opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: before <think>thinking</think> after
         expected:
-          dynamo_v1: &id011
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>before <think>thinking</think> after
-          vllm_python: *id011
-          sglang_python: *id011
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>before <think>thinking</think> after
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>before <think>thinking</think> after
       REASONING.batch.3.b:
         description: Open reasoning interrupted by downstream tool-call text is not configured for MiniMax append-think
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -194,11 +262,15 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id012
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>
-          vllm_python: *id012
-          sglang_python: *id012
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>
       REASONING.stream.2.a:
         description: First streamed chunk gets the synthetic think opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -207,11 +279,15 @@ documents:
         - content
         - </think>answer
         expected:
-          dynamo_v1: &id013
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>reasoning content</think>answer
-          vllm_python: *id013
-          sglang_python: *id013
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>reasoning content</think>answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>reasoning content</think>answer
       REASONING.stream.2.b:
         description: Multiple append-think-looking spans remain normal text
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -220,22 +296,30 @@ documents:
         - ' middle '
         - second</think> done
         expected:
-          dynamo_v1: &id014
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>first</think> middle second</think> done
-          vllm_python: *id014
-          sglang_python: *id014
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>first</think> middle second</think> done
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>first</think> middle second</think> done
       REASONING.stream.3.a:
         description: Single chunk without a model-emitted think opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         chunks:
         - thinking
         expected:
-          dynamo_v1: &id015
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>thinking
-          vllm_python: *id015
-          sglang_python: *id015
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>thinking
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>thinking
       REASONING.stream.3.b:
         description: End marker split across chunks is still normal text
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -243,11 +327,15 @@ documents:
         - thinking</th
         - ink>answer
         expected:
-          dynamo_v1: &id016
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>thinking</think>answer
-          vllm_python: *id016
-          sglang_python: *id016
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>thinking</think>answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>thinking</think>answer
       REASONING.stream.3.c:
         description: Partial marker-looking prefix remains normal text
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -255,11 +343,15 @@ documents:
         - plain <th
         - esis answer
         expected:
-          dynamo_v1: &id017
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>plain <thesis answer
-          vllm_python: *id017
-          sglang_python: *id017
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>plain <thesis answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>plain <thesis answer
       REASONING.stream.1.b:
         description: Plain text is passed through after the synthetic opener
         ref: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -267,11 +359,15 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id018
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <think>plain answer
-          vllm_python: *id018
-          sglang_python: *id018
+          vllm_python:
+            reasoning_text: ''
+            normal_text: <think>plain answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <think>plain answer
       REASONING.stream.2.c:
         description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag; passthrough — chunks reassemble without leading <think>)
         ref: dynamo

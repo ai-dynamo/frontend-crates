@@ -11,14 +11,14 @@ documents:
         description: Canonical XTML single tool call with typed arguments
         ref: dynamo Kimi K3 XTML grammar
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: &id003
+        tools:
         - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        unavailable: &id001
+        unavailable:
           dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
           vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
           vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
@@ -27,7 +27,7 @@ documents:
         description: Two calls in one XTML tools channel
         ref: derived from TOOLCALLING.batch.1
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: &id002
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -40,60 +40,166 @@ documents:
             properties:
               timezone:
                 type: string
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.2.b:
         description: Two back-to-back XTML tools channels
         ref: derived from TOOLCALLING.batch.2.a
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id002
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.2.c:
         description: Multiple calls with visible XTML response text around them
         ref: derived from TOOLCALLING.batch.2.a
         model_text: <|open|>response<|sep|>Checking both. <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|> Done.<|close|>response<|sep|>
-        tools: *id002
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.2.d:
         description: Same tool name twice with distinct native indices
         ref: derived from TOOLCALLING.batch.2.a
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.3:
         description: Plain text without XTML tool syntax
         model_text: Hello, how can I help you today?
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.a:
         description: Garbage inside an XTML tools channel
         ref: dynamo
         model_text: <|open|>tools<|sep|>nonsense<|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.b:
         description: Invalid raw JSON arguments
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>json type="object"<|sep|>{"location":"NYC"<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.c:
         description: XTML call missing its tool attribute
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.d:
         description: Typed argument missing its structural close
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.e:
         description: Malformed XTML call followed by a valid complete call
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|>not-an-argument<|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.4.f:
         description: XML tool-name tag form is not part of Kimi K3 XTML
         explanation: Kimi K3 identifies the tool in the call tag's tool attribute; it has no adjacent XML function-tag spelling.
@@ -101,32 +207,82 @@ documents:
         description: Complete call at EOF without the outer tools close
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.5.b:
         description: Orphan tools close marker without a matching open
         ref: dynamo
         model_text: I will check that. <|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.5.c:
         description: EOF inside a typed string argument
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Par
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.5.d:
         description: First call complete and second call delimiter-terminated at EOF
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York<|close|>argument<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.5.e:
         description: First call complete and second call truncated inside an argument
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.5.f:
         description: Bare call before a wrapped call is not a Kimi K3 XTML form
         explanation: Kimi K3 calls are carried in an XTML tools channel; a bare call outside that channel is not a supported wire form.
@@ -137,24 +293,44 @@ documents:
         description: Canonical empty raw JSON argument object
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|><|open|>json type="object"<|sep|>{}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: &id004
+        tools:
         - name: get_time
           parameters:
             type: object
             properties: {}
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.6.b:
         description: Spaced XTML spelling with whitespace inside an empty raw JSON object
         ref: dynamo Kimi K3 checkpoint spelling
         model_text: <|open|> tools <|sep|><|open|> call tool="get_time" index="1" <|sep|><|open|> json type="object" <|sep|>{ }<|close|> json <|sep|><|close|> call <|sep|><|close|> tools <|sep|>
-        tools: *id004
-        unavailable: *id001
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.6.c:
         description: Parameterless XTML call with no argument channel
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id004
-        unavailable: *id001
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.a:
         description: Typed XTML string, number, and boolean arguments
         ref: dynamo Kimi K3 XTML grammar
@@ -170,21 +346,29 @@ documents:
                 type: integer
               first_class:
                 type: boolean
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.b:
         description: Typed string preserves Unicode, quotes, and a newline
         ref: dynamo
         model_text: '<|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>Tokyo "central"
 
           next line<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
-        tools: &id006
+        tools:
         - name: echo
           parameters:
             type: object
             properties:
               value:
                 type: string
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.c:
         description: Typed string value where the tool schema declares an integer
         ref: dynamo
@@ -196,12 +380,16 @@ documents:
             properties:
               celsius:
                 type: integer
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.d:
         description: Raw JSON arguments preserve nested object and array values
         ref: dynamo Kimi K3 XTML grammar
         model_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>{"items":[1,2,3],"config":{"nested":true}}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: &id005
+        tools:
         - name: process_data
           parameters:
             type: object
@@ -210,13 +398,29 @@ documents:
                 type: array
               config:
                 type: object
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.e:
         description: Large raw JSON argument object with nested null and empty values
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id005
-        unavailable: *id001
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.7.f:
         description: Typed number preserves an integer literal above f64 exact precision
         ref: dynamo
@@ -228,59 +432,153 @@ documents:
             properties:
               count:
                 type: number
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.8.a:
         description: Visible response text before a tool call
         ref: dynamo
         model_text: <|open|>response<|sep|>I will check the weather. <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.8.b:
         description: Visible response text after a tool call
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|> Let me know if you need more.<|close|>response<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.8.c:
         description: Visible response text both before and after a tool call
         ref: dynamo
         model_text: <|open|>response<|sep|>I will check. <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|> Done.<|close|>response<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.8.d:
         description: Visible response text between two tool calls
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|> Now LA. <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.9.b:
         description: Blank model text
         model_text: '   '
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.10:
         description: Duplicate identical calls with distinct native indices
         ref: derived from TOOLCALLING.batch.2.d
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.13.c:
         description: Known and unknown tool names in the same XTML tools channel
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="unknown_tool" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.13.a:
         description: Unknown-only XTML tool call
         ref: derived from TOOLCALLING.batch.13.c
         model_text: <|open|>tools<|sep|><|open|>call tool="unknown_tool" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.13.b:
         description: Forward-unknown-tools mode is unavailable
         explanation: The Kimi K3 parser does not expose a request mode that changes unknown-tool forwarding.
@@ -306,8 +604,18 @@ documents:
         description: Kimi K3 markers inside a raw JSON string remain argument data
         ref: dynamo
         model_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>{"value":"literal <|close|>call<|sep|> and <|open|>tools<|sep|> stay data"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-        tools: *id006
-        unavailable: *id001
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.31.a:
         description: Marker-looking string data in the first of multiple calls
         ref: derived from TOOLCALLING.batch.30.c
@@ -323,7 +631,11 @@ documents:
           parameters:
             type: object
             properties: {}
-        unavailable: *id001
+        unavailable:
+          dynamo_v1: Kimi K3 has no Dynamo v1 batch parser; use the Dynamo v2 stream-on-batch capture.
+          vllm_python: No released vLLM Python Kimi K3 tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 tool parser is registered.
       TOOLCALLING.batch.31.b:
         description: Structural delimiters before a later call are covered by raw JSON
         explanation: Kimi K3's JSON channel owns nested braces and brackets until its close; TOOLCALLING.batch.31.a covers the stronger marker-looking string followed by a later call.

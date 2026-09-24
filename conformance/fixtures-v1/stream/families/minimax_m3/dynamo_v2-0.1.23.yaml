@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: minimax_m3
 capture: dynamo_v2-0.1.23
@@ -7,52 +8,50 @@ documents:
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.3.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.5.h:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check that. '
-        - expected: []
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"NYC"}'
-        - expected: []
   TOOLCALLING.streamv1.7.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
+views:
+  python:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 800ce9584adf4cb72902f6cf376a42adce741f010db617fbe12680a7a65a5ee3
+        producer: 16a694af664942d6c3a4ca26cde81d7e6f31d4a74586eda5b0515af0c3a1dcb0
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+  rust:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: 800ce9584adf4cb72902f6cf376a42adce741f010db617fbe12680a7a65a5ee3
+        producer: 16a694af664942d6c3a4ca26cde81d7e6f31d4a74586eda5b0515af0c3a1dcb0
+    annotations:
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: deepseek_v4
 capture: sglang_python-0.5.12.post1
@@ -5,188 +6,182 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.2.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.2.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.4.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.4.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.4.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.5.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.f:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.5.g:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.6.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.6.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.7.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.7.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.7.f:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.8.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.8.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.stream.1.yaml:
     family: deepseek_v4
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.stream.1.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.stream.2.yaml:
     family: deepseek_v4
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.stream.3.yaml:
     family: deepseek_v4
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.stream.4.yaml:
     family: deepseek_v4
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.stream.4.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
-      TOOLCALLING.stream.4.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='deepseek_v4'
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: 435060951343ea0c02603b760f09d74a9f77def956e78df1cab40984f718eeae
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]':
+        observation: 7e99f31d5627090d1a5eac48471b69e8ac149fd5f29af0dfc1406ad0aa38eb95
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: 46505575a1d70db6e7f5020d97c5273db44a30747dce85d4086338f2b39ad1f5
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: 9f7c170b785ebe2e98dbb518a7e68314e738a5760004927e29d762ac6561da28
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 613e4c74167f64d080993c34713d774f9aec39428c4062ed25e88da20bc95ab0
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: 61ee77e4d10db101a8e5417f177a5bca70133054354ee04d742f5ce30eda79fb
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 117ee0517092bc90d74dd91eb783305d6b546541039660afff60813446e5e37e
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: 7c3f9016e5fa55366abdb4d2dba1274c5031f927f77addb796b5fdbe62559fd5
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: 5fdc29c0effacbbee4e7c93554f8f14fe4cfd17fe6cfcaa1150825321453ddb6
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: 758533dd4d16893a463587e9119b53b5e8f4cb239b894f899341ac4ee6f0cc99
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 998f88f8ddb285a1401020ddecf1d3324f536da447710e5c10f7b5a6b9cf197b
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 9d26e4eb883063022afee95368d2ea50bce2806c5c2539effc90b2a16365cdb7
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]':
+        observation: f747f3958a236bef8dd78c72d94d2b3ca0a3b13b9b5a755f522262524e4f9d4d
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]':
+        observation: abf83dacaec181915587fd257af8b926f1396d9d7ca402dade744937cb9f1b82
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: a29b29f4d73190c42b2a9c466f3d29d1462b763738573c58e382e9e36d887fb6
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 46ce31598900f88ba4f8bb851b25accc6759fd3b1a1d99a19738ad1426943484
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 790b14e92a07b6b8ffd6f0a32fc8048d33ce249a603374d11f2de88d2091a6d3
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 35aba791b06f4a8cdc328b8e49314e7353afb1c91e7843073c744418dc08407d
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: 37e0b5a5c51fe88c344b5446aea5054b2c4f3721a3bc95173f0409716bb1d6f3
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: a2547ad5f12c352a40e90c8673102aef987409c113abbe1d440c148d8cd7f9a3
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 1ca46502ea811f24b04244fd4742fc6b05ce0cbc22e5b290e413e67d6ddd9a58
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: cc8b35df88ce805f241de79556deddb49b7fb1c24465573b11c147ea327fa3cd
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: b4993598340d65fe19115ff7270f9b6aaf38ec10cd3d5be5ae7b863106ad75ff
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: 2f85e52c8fd7e9f885a2e975d32dafb712de838fad3e08d0bf37b3812e91f965
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: cbfb468738a789c5390c75d0c7de495bea2e48c6ae5cc97f0d493fdb42fb7ebe
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 1b24e09cb2846d537bfd1eefe44aa88e2adb6fa31235f446ba1a5f7f9e5dde2c
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: 4dbf10e89e2aacb2b15382bfb66214ff411a91828af709992377462f511e0189
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 10152b40025c32f448307e9e3aa0ff04ce06869e1111b999ab7578aa4c74fe0b
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: c50dcb046d5c3153c94a5625faf236b3529a475713f22f7a023d71c578720037
+        producer: 7c61a897fdc6c8712e3a803de3e5f7904fc2a86d123fcd06191afa6984f0fb1a
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: 0045e20a5239a3b9ea207959ce060e3698dae251418c4e5ef4da6e9f74ffb9e7
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 65ee41b20ced7332338cdc82ad969d8a4cc3abd18fddc5b0c385d6e9b1a41fc8
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 6c827412607ad262e0471446b93787c24d95099a34591a16a06317a6780fc860
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: 88ed31c29e2b9df1e1e61eceb3341d648f9e07f9a32cf20ed21e3ce2c6b6771b
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: 2a2271c7d9e7efe2d2db1080aa40f11ec8b8645f0a0bded3ec1e8a865b5a8688
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 6c280b3db7a6d5fd69a3584a283c1cb768bafcc870aca39c72f20cbbd039ac58
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 43678e5f6b19ffa61512e21324cf730300297802f253ce45b4548ef19d2e6a43
+        producer: cca987e35bc8b2751a94d68ed7bff900b43193a49e45e1211d6323d79b14df28
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.g"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: qwen3_coder
 capture: vllm_rust-0.25.1
@@ -7,16 +8,29 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "\nnonsense\n</tool_call>": )'
-      TOOLCALLING.streamv1.4.d:
-        exception: 'ToolParserError::ParsingFailed (near "\n<function=get_weather>\n<parameter=location>\nNYC\n</function>\n</tool_call>": )'
-      TOOLCALLING.streamv1.4.f:
-        exception: 'ToolParserError::ParsingFailed (near "\n<terminal>\necho hello\n</function>\n</tool_call>": )'
   TOOLCALLING.streamv1.5.yaml:
     family: qwen3_coder
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 871c6996ecc947d3dae08158dd85ebb21e27478f7f75df3f75992e488ce220e9
+        producer: ba18f19847e23ff27219eefef88e71794e3b66b80ff508fc9f3ac64a6e3c698f
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 82c3b2cd34929b3442b965d8404b2a0549081563473b12fd4581de7c5e923c5a
+        producer: ba18f19847e23ff27219eefef88e71794e3b66b80ff508fc9f3ac64a6e3c698f
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.f"]':
+        observation: 45e531ebe0d91b416cccc1948a5e296048b9cf9f43ff4e022e32a5b9834b4793
+        producer: ba18f19847e23ff27219eefef88e71794e3b66b80ff508fc9f3ac64a6e3c698f
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.f"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

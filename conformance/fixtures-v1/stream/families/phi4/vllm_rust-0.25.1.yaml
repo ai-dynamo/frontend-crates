@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: phi4
 capture: vllm_rust-0.25.1
@@ -7,94 +8,93 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.3.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.30.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.31.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "non": invalid Phi4Mini)'
-      TOOLCALLING.streamv1.4.b:
-        exception: 'ToolParserError::ParsingFailed (near "{\"location\": \"NYC\"]": invalid JSON object argument
-
-          expected balanced array brackets)'
-      TOOLCALLING.streamv1.4.c:
-        exception: 'ToolParserError::ParsingFailed (near "{\"arguments\": {\"location\":": invalid Phi4Mini
-
-          expected `name`)'
   TOOLCALLING.streamv1.5.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.50.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.6.c:
-        exception: 'ToolParserError::ParsingFailed (near "{\"name\": \"get_time\"}]": invalid Phi4Mini)'
   TOOLCALLING.streamv1.7.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: phi4
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: da948dcd8bad1d8293379176804a6f96112caab4c48a2700ac9a6f782863c36e
+        producer: 41620bdfceabe5eef67cadc3615dbcd87cc27a7b90c3aab8ff960bb3d49c8425
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]':
+        observation: 53fd9f029567dedcf3997e380caa06a72b329b97332463e3ca19bf5e086acf2b
+        producer: 41620bdfceabe5eef67cadc3615dbcd87cc27a7b90c3aab8ff960bb3d49c8425
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 8269332ad68f529da541253023d6217d5c3f6c78fcd61a8cc47d92386f3a4699
+        producer: 41620bdfceabe5eef67cadc3615dbcd87cc27a7b90c3aab8ff960bb3d49c8425
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]':
+        observation: 23d2a7db8356cb1f48fce0f10eaa84723c7d2979652b433d23747a55b355c23a
+        producer: 41620bdfceabe5eef67cadc3615dbcd87cc27a7b90c3aab8ff960bb3d49c8425
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.b"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

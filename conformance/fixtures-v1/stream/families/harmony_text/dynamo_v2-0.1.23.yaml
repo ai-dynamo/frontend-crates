@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: harmony_text
 capture: dynamo_v2-0.1.23
@@ -7,126 +8,83 @@ documents:
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - index: 0
-            id: true
-            name: get_weather
-          - index: 0
-            arguments: '{"location":"NYC"}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - index: 1
-            id: true
-            name: get_time
-          - index: 1
-            arguments: '{"timezone":"EST"}'
-        - expected: []
-        - expected: []
-          normal_text: 'Both:  Done.'
   TOOLCALLING.streamv1.3.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - index: 0
-            id: true
-            name: get_weather
-          - index: 0
-            arguments: nonsense
-        - expected: []
   TOOLCALLING.streamv1.5.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.50.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: harmony_text
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
+views:
+  python:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: b8019fceb50fb992b1a77ab02927c25c5d43f60acaf30af5cb72131cfc4524d2
+        producer: 6705a53a6680d24978a8e74ff0bdb9692d95762014b5905b72b4f5d35b96c90e
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 52a9adcfe0cc7fa776407ef207edf6767d6df40212e2929c65df2beb85649a30
+        producer: 6705a53a6680d24978a8e74ff0bdb9692d95762014b5905b72b4f5d35b96c90e
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+  rust:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: b8019fceb50fb992b1a77ab02927c25c5d43f60acaf30af5cb72131cfc4524d2
+        producer: 6705a53a6680d24978a8e74ff0bdb9692d95762014b5905b72b4f5d35b96c90e
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 52a9adcfe0cc7fa776407ef207edf6767d6df40212e2929c65df2beb85649a30
+        producer: 6705a53a6680d24978a8e74ff0bdb9692d95762014b5905b72b4f5d35b96c90e
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}

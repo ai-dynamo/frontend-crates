@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch_on_stream
 family: jamba
 capture: dynamo_v2-unversioned
@@ -7,22 +8,20 @@ provenance:
 documents:
   TOOLCALLING.batch.2.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: jamba
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: jamba
-    cases: {}
+views:
+  python:
+    base: null
+    changes: {}
+    annotations: {}

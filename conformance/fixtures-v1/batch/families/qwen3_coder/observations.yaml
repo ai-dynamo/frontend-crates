@@ -1,0 +1,6252 @@
+schema: bound-observations-v1
+observations:
+  a8e4bd8291053f00487d0302a39ed8812bf9a4127f39314980ecebab270adfd6:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  efebc8b72bb3d55145c26a35c62db3631a2df67cec9c8425bcd02f6d09d2fd82:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  c31595f267a38b85dd238ea292f67562a5f1f08ec4af78b8a87a689be321fbe5:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  b773b420883d478fb8ff92200f842832ba22fcc1db517a8a0988e6f263b0344e:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  317e364068b5eeeb9504f34e01a542791fa7fc7bf98f8f89c594daecf8338d94:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  86941af1a83f6aaf3fd678adb22d49604dc2c5b5a511cc44c4ad1c3bd218daab:
+    request:
+      model_text: '<tool_call>
+
+        <terminal>
+
+        echo hello
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: Terminal
+        parameters:
+          type: object
+          properties:
+            command:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  43301e583ce161d81f165a163ad17de339af4100f5b012c0bfa67525579ef719:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  bede725e5856c98ecc2924b2d1ab0cfb09721488ac38a8bf96c7665a03bf084d:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  89448df2e043ae2ac6a762245f3fec0106e4e6caf8a156373c977edaad08d934:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  c5833f33ecf7bbb87de9da0cbcc36067e7b872269eef4c5cf39ad480b4fa71c7:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+  8b67e45a92d752ba3cb89c5a383a768173a64fcdbc8439d699a1723f319bc43f:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+  930ac5be7f2ce76f353dce37a7260d8e03150a1ae2ed2a00d121afdc4d433375:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ''
+  cdf3ac3dadf384b303fcc612f1732d7b1d21f8596ec9e347749527ede6067908:
+    request:
+      model_text: 'I will check that. <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+  fe380dc6fb42e30433e7a30a3ccda6dcb0f5ce30f75e61b2496a39e8d9c21d87:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  d075cebc450b7b06a1f0ad59d8737f3c4df1ce2286d6f13cf3609709e7386070:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  c52b7457bf4e2e0785751d459c845d6cead9fa39fd0b5724b0ff817c0af5ba66:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              first_class: true
+              passengers: 2
+          normal_text: ''
+  269920d20bc515c8e8fbc52a8e985591e7598844ac79dba1cfcc2b980f7d55be:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  3c073ebf1c80724421d6d18f6bc9fd9e5af0dec28a9a7fb02213beec2f1ef5fa:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>9007199254740993</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  fe568fc0a82fd063141cecd0ebdf1b04c6ae2423c5b8469c168774ac99344987:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  d69fed4f9de1fc762174e04a2e24768e5710d69b14ded46d1a6a6904cb1ce713:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  4f3f6ec5ad8e392e93727030e2d4e9806b31d97c745108f9f6d1741678c51f2d:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  16af4f455af52f538688ea3600777ace5bdb149a5c1b45d3e90fcd7143e63ad0:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  30a9fd0633adfd1e9706a90042f9f4f0bb65db478122b935ae5c415be2686b47:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  d6619f43d55403bbb5094adf15dd83fab669e01743815a54913edb2884e19848:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  7c0a3f5b55a6a19b446033ccc864fdefbdb3d3b2b9a5f2e9bdad14d8f4504be4:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  56d7865a9a9807f3d2b81dd391a307b8050e1f5a9f7f227fb504747d6c8b7f9b:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  db434f50658c831c7a2ca48bb7e23a4d71a038cebcda7a1a7297765e22522247:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  00be8811469385e330fb4e720ae3df0776143046d590230f7067f146bed85f67:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: '   '
+  01c944d05554fe91dc6ccc446606c543aae3ac9e2a9434b26c56c3d24c6eb76e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  574103ba9f25ec7730eebb9cc33726a12ec37366e6b7257876b4ab383a403188:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          '
+      - delta_text: '<function=get_weather>
+
+          '
+      - delta_text: '<parameter=location>
+
+          '
+      - delta_text: 'NYC
+
+          '
+      - delta_text: '</parameter>
+
+          '
+      - delta_text: '</function>
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  77f86856b21268146d7459ae3bde273641da49d8d9592dddc51c24ce6ddac09c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: 'l>
+
+          <fun'
+      - delta_text: ction=get_wea
+      - delta_text: ther>
+      - delta_text: '
+
+          <parameter=locat'
+      - delta_text: ion
+      - delta_text: '>
+
+          NYC
+
+          </p'
+      - delta_text: aramete
+      - delta_text: 'r>
+
+          </function'
+      - delta_text: '>
+
+          </t'
+      - delta_text: 'ool_call>
+
+          <tool_c'
+      - delta_text: all
+      - delta_text: '>
+
+          <functi'
+      - delta_text: on=get_
+      - delta_text: 'time>
+
+          <parame'
+      - delta_text: ter=t
+      - delta_text: 'imezone>
+
+          EST
+
+          </pa'
+      - delta_text: ram
+      - delta_text: 'eter>
+
+          </f'
+      - delta_text: unction
+      - delta_text: '>
+
+          </tool_call'
+      - delta_text: '>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: '
+
+            '
+  258815e141309441ac989c2d41fc852d08f82a97c3febbde0275c8924ae1a21b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>
+
+          <function'
+      - delta_text: '=get_weather>
+
+          <para'
+      - delta_text: me
+      - delta_text: ter
+      - delta_text: =loca
+      - delta_text: 'tion>
+
+          NYC
+
+          <'
+      - delta_text: '/parameter>
+
+          </funct'
+      - delta_text: io
+      - delta_text: 'n>
+
+          '
+      - delta_text: </too
+      - delta_text: l_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  0286cdb3da0876fea25eaaa285988181c32f7e826d6bf7fc3a34dd1eae2cb929:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  cfa6892808b2fec34289617929ecf548a27c914196e38893503ee8ad99b2f277:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_wea'
+      - delta_text: 'ther>
+
+          <parameter=location>
+
+          NY'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NY
+          normal_text: ''
+  2c48ef2b75b54226ebef2fc1a6238a604a03615c79b556c352ec511f5d14e0fa:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </function>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  c436e30064db0816b3f309c0a3dbef72a915511683864f65723f1ead18843c41:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_wea'
+      - delta_text: 'ther>
+
+          <parameter=location>
+
+          NY'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  b37ec97744d38570078250475549e105fd1aaeed6e5403ebf3424d5663005475:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  b85a152dad2655e8d3e552f71305e0db1bd4b178fbd77d558552395f84f8ec25:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  3d834748570369039c7fd1ef092129a5c6990ab53668f1be3373888dab9f2053:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  556cb07077b4690a8c32ce9e6ab3d9029d5cea6b30c7cda92260e705f6b95dba:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  8056e80ee3878023af5c75e53e454bba64c0c90f87c1b68f71df2ea15ff8c720:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  9b501d0d4cd145fa52a198a01cf78834d1622842156906c342e7cad93022adc0:
+    request:
+      model_text: '<tool_call>
+
+        <terminal>
+
+        echo hello
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: Terminal
+        parameters:
+          type: object
+          properties:
+            command:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  1bb719153da268376d1a1212150abd374fc64cc35939ae7bd0575b4a41751a4d:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  b595611304723afd36dbfc56ae1942ead486fd43c0fdde2d39ef28218b2cd5aa:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          explanation: 'SGLang''s qwen3_coder detector gates parsing on the opening
+
+            <tool_call> sentinel (`if tool_call_start_token not in text: return
+
+            normal_text=text`); a bare </tool_call> close with a valid <function>
+
+            body short-circuits to zero calls and the full text as normal_text.
+
+            Dynamo/vLLM tolerate the missing open and extract the <function> body
+
+            per impl-defined recovery contract (see TOOLCALLING_CASES.md).'
+  e784dd4285d0e647e23dac0165030db64c2889bfda6475413e2ff413a3a0ed3d:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NY
+          normal_text: ''
+  dfcda7443b79f1ae5a55e2aa3ba63850a97e1c4f7fbed6dc1df59ee33d95e30e:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+          explanation: 'SGLang''s non-streaming path uses `re.compile(r"<tool_call>(.*?)</tool_call>")`
+
+            which requires a matching </tool_call> close; an unterminated trailing
+
+            <tool_call> (even with a complete <function> body) is silently dropped.
+
+            Dynamo/vLLM recover the trailing call and emit it.'
+  7aa3896e5e49dfade0aad1a9c5d9fa7b1c776dbc4d7cfb75464b14430ee16889:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+  9f23471b2c5a7ec4c881592730375fd747228aec49ca9cdf4ce33634f73d9e39:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          explanation: SGLang preserves the bare Qwen function before the first <tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
+  ea46aea3b240691b6ccf08071b991ace841081a97d3c353926fe9b16be0fc24a:
+    request:
+      model_text: 'I will check that. <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: 'I will check that. <function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          explanation: 'SGLang''s qwen3_coder detector gates parsing on the opening <tool_call>
+
+            sentinel; a bare </tool_call> close after prefix prose short-circuits to
+
+            zero calls and the full text as normal_text. Dynamo preserves the prose,
+
+            recovers the <function> body, and strips the orphan close marker.'
+  1dc9f0cee782e1710655c44622fac00ead80f8a5ca7544d26e945bb6c8a5129b:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  64dae97ce7e86323678750daa437dabf18f97c68240e630caaa185108863f0c5:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  acfc414788934afaf35067be5788417424581d00078d3c421f7ac584bcb2e6af:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              first_class: true
+              passengers: 2
+          normal_text: ''
+  2a94c74bd0666c3a417ff55dd95ee294d79854c7f2e4ff45f323827ef71dad1e:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  7ab548aa05c364b0e028239c209038d5ad3a543609358717174d23f21c6fa45c:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>9007199254740993</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740992
+          normal_text: null
+  b573c9b0e9f50011dcb332a0f3f6a3f3c29bf5226e493e7e49d9e37d01b122f7:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  305ea48f26c069c948418c64ebdbd107956c4b6531f41227ff749e0721330595:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  7ffb8fae6dc18278d2b1900b98702e542e26e9057d92d7d851eb6e525ab5dca5:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  416a7478d5fe7b481e15dab5c12c08883f0840fa3525991e475376cef7fc5f94:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  15d4ae0d3f68df519f9f781a2b15e8ca94136befaa0a5c41bb944abc40b7a882:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  f57cca6d1cfe3295a8ff28475173dabf26d8f160ea5e92341c1cdc5b3de926ca:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  e1d6ab9ac213ccfbdf722573976e650e37e1ed325abc8b007ec9279a7687413b:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  31cbe805b642b76aa19dacede9549f6bbd8a3e5888f6d08eb614408b5382d292:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  4ab2a5d5f06790724e39cccc68c31d134c8e319e3e2b599ee3f43fa65477902f:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  0c98624da065bdedeafecc47f1a9459fa80ae6fc1f8648999168df46f5ca115b:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: '   '
+  769eda01eba9803f21c6de7ba8bb0275d8f0e0364b5f6e4552296e5792262bde:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  9b068dcba8129a3c5faa178ec403b60f1d6ffd0b84f05dba9b465ef7dc95c6d6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          '
+      - delta_text: '<function=get_weather>
+
+          '
+      - delta_text: '<parameter=location>
+
+          '
+      - delta_text: 'NYC
+
+          '
+      - delta_text: '</parameter>
+
+          '
+      - delta_text: '</function>
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  d468cf1a278e6d00a1438cb6aa1b295e6b21f69966fdedd81244985a24a53779:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: 'l>
+
+          <fun'
+      - delta_text: ction=get_wea
+      - delta_text: ther>
+      - delta_text: '
+
+          <parameter=locat'
+      - delta_text: ion
+      - delta_text: '>
+
+          NYC
+
+          </p'
+      - delta_text: aramete
+      - delta_text: 'r>
+
+          </function'
+      - delta_text: '>
+
+          </t'
+      - delta_text: 'ool_call>
+
+          <tool_c'
+      - delta_text: all
+      - delta_text: '>
+
+          <functi'
+      - delta_text: on=get_
+      - delta_text: 'time>
+
+          <parame'
+      - delta_text: ter=t
+      - delta_text: 'imezone>
+
+          EST
+
+          </pa'
+      - delta_text: ram
+      - delta_text: 'eter>
+
+          </f'
+      - delta_text: unction
+      - delta_text: '>
+
+          </tool_call'
+      - delta_text: '>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: '
+
+            '
+  60bbba8c3c7b544155db1a197c7c79acb473e2c70eed3f9cfc24f1461d5a9626:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>
+
+          <function'
+      - delta_text: '=get_weather>
+
+          <para'
+      - delta_text: me
+      - delta_text: ter
+      - delta_text: =loca
+      - delta_text: 'tion>
+
+          NYC
+
+          <'
+      - delta_text: '/parameter>
+
+          </funct'
+      - delta_text: io
+      - delta_text: 'n>
+
+          '
+      - delta_text: </too
+      - delta_text: l_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  71e3182fe9d96ca2ab75e7535a2737dc1fe03066bbaa41e806aa53684e820116:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  819df2a261969653b344387388e60aba1795b79b7da0495d901956ff8dfc8fdc:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_wea'
+      - delta_text: 'ther>
+
+          <parameter=location>
+
+          NY'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+          explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). The stream ends mid-argument with `NY` but no `</parameter>`; SGLang requires the parameter close-token before emitting the value, so it ships the header with empty `arguments` and drops the partial payload. Dynamo emits the partial value (`location: "NY"`).'
+  ea3abc07a771e1b61654efed50b3b8d8a42a76959356b6685eb6197d9f1e4885:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </function>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - arguments: '{"location": "NYC"}}}'
+            name: get_weather
+          explanation: SGLang recovers the bare <function=...> body, but the repeated </function> close markers are folded into the emitted argument string as extra closing braces. Dynamo consumes the repeated close markers as parser syntax and emits arguments {"location":"NYC"} with empty normal_text.
+          normal_text: '
+
+
+
+
+            '
+  082b1d0384c40313ed15f84c6ced0519d54e849fb1e8ecb55bfac831b2474a28:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  a2a9bf553d3bb2a28f985c493c1bf666ac90c385994b2a140c05dfbf2df95387:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  6e8ec104e61b418b1869ec6323e28f0ffe1cff1a3e55c5644092fca18f540477:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  e44d5fe7293421e3ae380c53da1b11a0c3950b7c08bc4aa787f039035bc3e22d:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '<tool_call>
+
+            nonsense
+
+            </tool_call>'
+          explanation: vLLM preserves a <tool_call> wrapper with no <function=...> body as content; Dynamo/SGLang strip the invalid wrapper.
+  89a410f1189cd0050ea65852200e16a8baf4a79b2e82772559462115c9c2a661:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  bd0b91eaca0fd2ca66da56f8831da120fcc2eeb5e0fb510b2e7c1b208c886685:
+    request:
+      model_text: '<tool_call>
+
+        <terminal>
+
+        echo hello
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: Terminal
+        parameters:
+          type: object
+          properties:
+            command:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '<tool_call>
+
+            <terminal>
+
+            echo hello
+
+            </function>
+
+            </tool_call>'
+          explanation: <terminal> is not valid Qwen3-Coder grammar; vLLM preserves the invalid wrapper as content, while Dynamo/SGLang strip it.
+  d7defb48882bdb6cccfba165cf9cfd36629155cc46e754e55fe2c0fba3956509:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  a941dadd875b0d0010f1a6372026902e5823086bcadbb01da353df1d0e9308d6:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - arguments:
+              location: NYC
+            name: get_weather
+          normal_text: ''
+          explanation: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  a9f10e3e4f2b7e2db93ed445232309747bbf51f1a0d7ad84c2617aa3939ded8e:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NY
+          normal_text: ''
+  e2b6f21e9d8fcffc2931af15ea835886a64494c3387a36cfc1f2289a03348349:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+  c068bd07baf60be593430ccf2ca2b07610892c0eefc41018759c63f514bed471:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+          explanation: 'vLLM recovers the partial value (location=''New York'') from the call
+
+            truncated mid-arg-value before its closing sentinel. Dynamo (the
+
+            truncation guard) and SGLang require the value to be terminated, so
+
+            they drop the truncated call.'
+  de20e4a4247f7bccbfc70a64b6dedb9acf03cc2d07c4449c38bf5f6e95fa4703:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          explanation: vLLM preserves the bare Qwen function before the first <tool_call> as content, including the trailing newline; Dynamo recovers it as the first structured call before parsing the wrapped call.
+  c1d95897a611a65b326dbcac156639aba96d93c5eeca2504981374ba8e4ed757:
+    request:
+      model_text: 'I will check that. <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+  07c63ebfc63fcb50e7f1167cfd64e72ccb8dbca923bd3803841b6f301a35ff0f:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  d833ea6641dc12b1b5d2eef4af4f9b18eaee93022243336ee10f2879ad7f138e:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_time>
+
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  3d4631fecb06bdf609d18b19410ff62dbb16e4be9a0d85cef69fea33e55c26b0:
+    request:
+      model_text: '<tool_call>
+
+        <function=book_flight>
+
+        <parameter=destination>
+
+        Paris
+
+        </parameter>
+
+        <parameter=passengers>
+
+        2
+
+        </parameter>
+
+        <parameter=first_class>
+
+        true
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              first_class: true
+              passengers: 2
+          normal_text: ''
+  3ac7e11f2f87f6f790f3199708db4e46e8a8da398339859bdf7ab3802b8071ec:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Tōkyō central
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  538b5db119ecf35a57799b2afa9b8952cb8b6ae547d5fd6a10211156bcaafcf4:
+    request:
+      model_text: '<tool_call>
+
+        <function=set_limit>
+
+        <parameter=count>9007199254740993</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: Dynamo preserves integer-like number literals before the f64 path; vLLM/SGLang round through f64 and lose precision above 2^53.
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740992
+          normal_text: null
+  92e07599ecddc737aed35dcf77064043faf2c4c1ea9b48bd3918d61560baeaa4:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  3c6cb8373e6c6e3625f5049757e9614ea044a8d83b0f4d305a94592532d2b6c8:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  1966926cdc9943b054267579a8f38e5cb0d521463b32f18e679255bd1a36046e:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  486a579527f50766ba55422a45f038d7f4ca626bad412cc876a3cbcb760ae6e9:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  4fa6482cf9a049debc98062fc4b962fb58c7765d5ea1b9e9d09b98574fff3785:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  59a072588916f0860a19dbafc66fe97345f940e1618dd2268733b13ad25cadfd:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  11d12f7904d4961443aab0454fd489bb9da40fdee7c6030c0c4f06474a2e284b:
+    request:
+      model_text: '<tool_call>
+
+        <function=unknown_tool>
+
+        <parameter=location>NYC</parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+  4a93724384f7ba3231e1093dbce9e6fb624f1be76151f7c3359626bf4a81aef0:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  ba25b7e3b151cf91246ae5cbac1856f799244dc2e199de662a9c4ea4fc630631:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  12d9200a4d8fc626153e5f5125b5b8b8e3945bf1f581ac3928393064faa44848:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '   '
+  8a6e4f7498e2599edc70e90e7dbb7f15f501f8ff37106ada57abba3a30952baa:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+          explanation: vLLM streaming parser exits at qwen3coder_tool_parser.py:412 after detecting `<tool_call>` in delta_text and never re-processes the remainder of the same chunk; the trailing `finish_reason=tool_calls` chunk has no `delta_token_ids`, so the EOS-flush branch (qwen3coder_tool_parser.py:348-370) is skipped and no tool call is emitted. Dynamo handles the single-chunk burst correctly.
+  06913d43e171a25d8586b8b98129695dce80572c2c0c362862f6d2c13bd4bdca:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          '
+      - delta_text: '<function=get_weather>
+
+          '
+      - delta_text: '<parameter=location>
+
+          '
+      - delta_text: 'NYC
+
+          '
+      - delta_text: '</parameter>
+
+          '
+      - delta_text: '</function>
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  353ef4435fae08955c5ff739818dc5f8bd95585f2a51c99da0fd81952a0b6115:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: 'l>
+
+          <fun'
+      - delta_text: ction=get_wea
+      - delta_text: ther>
+      - delta_text: '
+
+          <parameter=locat'
+      - delta_text: ion
+      - delta_text: '>
+
+          NYC
+
+          </p'
+      - delta_text: aramete
+      - delta_text: 'r>
+
+          </function'
+      - delta_text: '>
+
+          </t'
+      - delta_text: 'ool_call>
+
+          <tool_c'
+      - delta_text: all
+      - delta_text: '>
+
+          <functi'
+      - delta_text: on=get_
+      - delta_text: 'time>
+
+          <parame'
+      - delta_text: ter=t
+      - delta_text: 'imezone>
+
+          EST
+
+          </pa'
+      - delta_text: ram
+      - delta_text: 'eter>
+
+          </f'
+      - delta_text: unction
+      - delta_text: '>
+
+          </tool_call'
+      - delta_text: '>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '<tool_call>
+
+            <function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            <tool_call>
+
+            <function=get_time>
+
+            <parameter=timezone>
+
+            EST
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          explanation: 'vLLM streaming parser checks for `<tool_call>` only in `delta_text` (qwen3coder_tool_parser.py:402), not the accumulated `current_text`. When the start token is split across chunk boundaries (`<tool_cal` + `l>\n<fun`), the condition never fires and every chunk falls through to the no-tool-call branch at qwen3coder_tool_parser.py:422, which emits `delta_text` as content. Result: the entire wire payload leaks into `normal_text` and no tool calls are produced.'
+  ae90bdba249e99986217a55e1b199cd24700602738754de6f3a5a42486603760:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>
+
+          <function'
+      - delta_text: '=get_weather>
+
+          <para'
+      - delta_text: me
+      - delta_text: ter
+      - delta_text: =loca
+      - delta_text: 'tion>
+
+          NYC
+
+          <'
+      - delta_text: '/parameter>
+
+          </funct'
+      - delta_text: io
+      - delta_text: 'n>
+
+          '
+      - delta_text: </too
+      - delta_text: l_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '<tool_call>
+
+            <function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          explanation: 'Same root cause as TOOLCALLING.stream.2: vLLM checks for `<tool_call>` in `delta_text` only (qwen3coder_tool_parser.py:402). With the start token split across chunks (`<t` + `ool` + `_call` + `>\n…`), the guard never matches and every chunk is emitted as plain content via qwen3coder_tool_parser.py:422, leaking the entire payload into `normal_text`.'
+  27070897dcfe37d8c90e7388c768774adc7506ef1875d624b6504660efd9bcf5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+          explanation: 'Same root cause as TOOLCALLING.stream.1.a: the full body arrives in a single delta, vLLM detects `<tool_call>` and returns at qwen3coder_tool_parser.py:412 without reprocessing the rest of the chunk. The final `finish_reason=stop` chunk has no `delta_token_ids`, so the EOS-flush branch at qwen3coder_tool_parser.py:348-370 is skipped. No header or arguments are ever emitted.'
+  9168dc2a6ed43804b969cce96aa129ee16b528ca4c5093fb245cc28c25372387:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_wea'
+      - delta_text: 'ther>
+
+          <parameter=location>
+
+          NY'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+          explanation: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM's per-parameter extraction loop (qwen3coder_tool_parser.py:540-579) requires either `</parameter>`, the next `<parameter=`, or `</function>` to delimit the value; when the stream ends mid-payload none of those are present, the loop breaks before emitting a json fragment, and the header ships with empty `arguments`. Matches SGLang.
+  f3556f927c404906aadc939ffa3d718359dae08ff16139b1fb5309ab2f53b9d5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </function>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </function>
+
+            </function>'
+          explanation: vLLM's streaming qwen3_coder parser does not enter tool-call mode for this bare <function=...> body because the outer <tool_call> marker is missing, so it preserves the raw function markup in normal_text. Dynamo intentionally uses Qwen3-Coder's no-wrapper backoff and emits the structured call without leaking parser tags.
+  4a5ce3ffc53f6dbb6900c4a6a0ce20f03b43882fe5f640cb741de03bdb130cf6:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both queries:'
+  820673164f42c482c84867d55cd6e5fd54cf808d17c2c5db907bb2ebfb86faed:
+    request:
+      model_text: '<tool_call>
+
+        nonsense
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  f9cf23b982fdae6d3e912bc1a5441b3492dde16958c6eabfca33b3dd96bae4f4:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  23feb08e533b4c3fb1accf6d5f1e265bf64aa756e41923af98d910e36e9e4558:
+    request:
+      model_text: '<tool_call>
+
+        <terminal>
+
+        echo hello
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: Terminal
+        parameters:
+          type: object
+          properties:
+            command:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  e4110ad2f9419025618ca86bc41f0007bc4e7b18cf3842f9f9491c35d6d4ed42:
+    request:
+      model_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  543586f94ee2a2f0bdf29039f3543a0f0e79fa91efa8848e5f24aaf1cc066d06:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York
+
+        </parameter>
+
+        </function>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  b67b067e9c4734a52098b9befdb798843f03324ef7487498d1f187e70abfa5c7:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: {}
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  3e1bc5f38901ce9a1c0be53f187c99575137aa9ee7a40373fe92284390833185:
+    request:
+      model_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        Boston
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ''
+  bbf26d14f68815af0f0e08bf531cfa86cde807391cea66a6de7e1cba6af7e072:
+    request:
+      model_text: 'I will check that. <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check that.
+  f0cc3e44f2575b928f6c9fce8f6e5add047aa346ed82b76a50023fdcf83bf65e:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  b906a7fda5506c5a0ec8f504538f433a9e084b85231a4aeec71cf51c3a3eca43:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  c8010d71c0a2ea26b8ec7ca06b244121714b16229da48673a29bfa344b5d136f:
+    request:
+      model_text: 'I will check the weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Then check LA weather. <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        LA
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: I will check the weather.
+  b16b624ec939039abcf8612516538657785d58624f042a5ea713515abe11559f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  9cec8980a981261b96afa408f860c4f6f0cd779156e7f56aec8fa59644d6415f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: 'l>
+
+          <fun'
+      - delta_text: ction=get_wea
+      - delta_text: ther>
+      - delta_text: '
+
+          <parameter=locat'
+      - delta_text: ion
+      - delta_text: '>
+
+          NYC
+
+          </p'
+      - delta_text: aramete
+      - delta_text: 'r>
+
+          </function'
+      - delta_text: '>
+
+          </t'
+      - delta_text: 'ool_call>
+
+          <tool_c'
+      - delta_text: all
+      - delta_text: '>
+
+          <functi'
+      - delta_text: on=get_
+      - delta_text: 'time>
+
+          <parame'
+      - delta_text: ter=t
+      - delta_text: 'imezone>
+
+          EST
+
+          </pa'
+      - delta_text: ram
+      - delta_text: 'eter>
+
+          </f'
+      - delta_text: unction
+      - delta_text: '>
+
+          </tool_call'
+      - delta_text: '>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  032ae3a11c47480e0ab05a6a1a9a5d1bd06f3489362b8a71b4ffd49e17b6dfc8:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>
+
+          <function'
+      - delta_text: '=get_weather>
+
+          <para'
+      - delta_text: me
+      - delta_text: ter
+      - delta_text: =loca
+      - delta_text: 'tion>
+
+          NYC
+
+          <'
+      - delta_text: '/parameter>
+
+          </funct'
+      - delta_text: io
+      - delta_text: 'n>
+
+          '
+      - delta_text: </too
+      - delta_text: l_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  64c8585c3912c704e1b8e58f1437748cce1fbd813e6a958b7759f0fa47ace8e1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  e7c4d62575b9168241f876ed4fcd6d4b0a0f9b240c172f322443f3cd270d2971:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<tool_call>
+
+          <function=get_wea'
+      - delta_text: 'ther>
+
+          <parameter=location>
+
+          NY'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NY'
+          normal_text: ''
+  790dea7f9be1f01cdcf635be7a6cd6840b57887b516cfcaef93f907eff459d60:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: stream
+      chunks:
+      - delta_text: '<function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </function>
+
+          </function>'
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  c8e52d8553993f356a37d140cac3644966eb406843a12df204d879c5d2888dbc:
+    request:
+      model_text: 'Both: <tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        <tool_call>
+
+        <function=get_time>
+
+        <parameter=timezone>
+
+        EST
+
+        </parameter>
+
+        </function>
+
+        </tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3_coder
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:'
+producers:
+  1de8949effde797f157f7f020267cfed11d8b0d1be3756748404343fb1419b7b:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: qwen3_coder
+      mode: batch
+    provenance: null
+  75c7c5f0661921cccdcfdbc7db8c23bd6ea189069939f7b919080d0b8675e2a5:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: qwen3_coder
+      mode: stream
+    provenance: null
+  0aca5a739257b304cb301cbd735ce9025b759a1d9bdf22a314d40c297187a841:
+    capture: dynamo_v1-5.0.1
+    document:
+      family: qwen3_coder
+      mode: stream
+    provenance: null
+  f4b7d1aa431d05e2e6bca9a23e07862fdc9cdd7db0b3943c640c52ad77a1faf0:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: qwen3_coder
+      mode: batch
+    provenance: null
+  79e4707d802bd741c3fb561503aba7bcc568872738f46fddc10c614de6315ef3:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: qwen3_coder
+      mode: stream
+    provenance: null
+  2c7c7fe55ba986f4dbe364cfbcfdfc00a71eb2cbaba03c6f079f3da555342aad:
+    capture: vllm_python-0.23.0
+    document:
+      family: qwen3_coder
+      mode: batch
+    provenance: null
+  6a32567aacee33b6428eb31e33f786a7194c492743557970ea80e6443ccb7ee4:
+    capture: vllm_python-0.23.0
+    document:
+      family: qwen3_coder
+      mode: stream
+    provenance: null
+  70267e3681c7e87ebc1af59bddf91c574e5c35118c2c74f502643f3c41d5c59a:
+    capture: vllm_python-0.24.0
+    document:
+      family: qwen3_coder
+      mode: batch
+      captured_with:
+        vllm_python: 0.24.0
+    provenance: null
+  49030859bac4684ca6d2b6c893989f2c3de325ce2f199ac367ce37201b1e49c9:
+    capture: vllm_python-0.24.0
+    document:
+      family: qwen3_coder
+      mode: stream
+      captured_with:
+        vllm_python: 0.24.0
+    provenance: null
+  6d91a102ce4e46c429e2acdc7712ed7b22aa722122450556b81b5da6cd351295:
+    capture: vllm_python-0.25.1
+    document:
+      family: qwen3_coder
+      mode: batch
+      captured_with:
+        vllm_python: 0.25.1
+    provenance: null

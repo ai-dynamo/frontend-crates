@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: reasoning
 family: gemma4
 capture: vllm_python-0.24.0
@@ -5,57 +6,91 @@ documents:
   REASONING.batch.yaml:
     family: gemma4
     mode: batch
-    cases:
-      REASONING.batch.2.d:
-        expected:
-          vllm_python:
-            reasoning_text: thinking
-            normal_text: before  after
-      REASONING.batch.6.a:
-        expected:
-          vllm_python:
-            reasoning_text: 'firstthought
-
-              second'
-            normal_text: ' middle  done'
-      REASONING.batch.6.b:
-        expected:
-          vllm_python:
-            reasoning_text: preamble
-            normal_text: bodyanswer
   REASONING.stream.yaml:
     family: gemma4
     mode: stream
-    cases:
-      REASONING.stream.2.a:
-        expected:
-          vllm_python:
-            reasoning_text: step two<channel|>
-            normal_text: '<|channel>thought
-
-              step one
-
-              The answer is 42.'
-      REASONING.stream.2.b:
-        expected:
-          vllm_python:
-            reasoning_text: ''
-            normal_text: '<|channel>thought
-
-              first<channel|> middle <|channel>thought
-
-              second<channel|> done'
-      REASONING.stream.3.b:
-        expected:
-          vllm_python:
-            reasoning_text: nel|>answer
-            normal_text: '<|channel>thought
-
-              thinking<chan'
-      REASONING.stream.2.c:
-        expected:
-          vllm_python:
-            reasoning_text: ''
-            normal_text: '<|channel>thought
-
-              preamble<channel|>body<channel|>answer'
+views:
+  python:
+    base: null
+    changes:
+      '["REASONING.batch.yaml","REASONING.batch.1.a"]':
+        observation: e687d443f7ea438e25999fa725c6566034b0fad6bbd192cc263cae427996b47f
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.1.b"]':
+        observation: 8211f4271e6505104fb1cd2afea15b32592327bfd484c8aa6931a72acba16cbf
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.2.a"]':
+        observation: 914590a643d60aa8b4128d0c520d1afaa7b5f011ebe487f008098a5ed662cd3e
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.2.c"]':
+        observation: 34f07603f8b79bc6c28008f74b7b1ed50ba44aaa3bd9d78e4c7f6c93401274e0
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.2.d"]':
+        observation: 460c1f12275d6851ea024eafc99f418959cc0dcc3a341409df036dab2718a7bc
+        producer: 6efa32318ed0e4dd265256953e94dda85ab31dcdb7da320c3b5dab0645fd435e
+      '["REASONING.batch.yaml","REASONING.batch.2.e"]':
+        observation: 2b0ce875c84b9d01b2b9a589f1910aa4f1322bc6b8fd176c375dd4bff9351aca
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.2.f"]':
+        observation: 174881c0a7d6067f710219484016e75d551e8bb9014db133093d5d46091e3c0c
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.3.a"]':
+        observation: 6e17579811156dcbef284882e090e16bc1a3bac74e1b429e329ed0295b7dae42
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.4"]':
+        observation: ddb4e423a818009e12423bfb0c541e27cc8e0f825bd6a16d3b54d0e542916569
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.5"]':
+        observation: 0b9f633869992586aa951d37a6d587bd0b1ed34a77f0298a71340d2262de68a0
+        producer: e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428
+      '["REASONING.batch.yaml","REASONING.batch.6.a"]':
+        observation: b03e0367c9c11f26abcc084425f0e778ad45dfa00e6da8fc3882e59da5e9832d
+        producer: 6efa32318ed0e4dd265256953e94dda85ab31dcdb7da320c3b5dab0645fd435e
+      '["REASONING.batch.yaml","REASONING.batch.6.b"]':
+        observation: bc73f7dcd223eba13935a9b7b43b6363f7795b69d1f4b0d0e208155aa2813e12
+        producer: 6efa32318ed0e4dd265256953e94dda85ab31dcdb7da320c3b5dab0645fd435e
+      '["REASONING.stream.yaml","REASONING.stream.1.a"]':
+        observation: 5f818ad679993d4b65c86c23f7e3055c813911539e85a238397b134acc216bca
+        producer: 3616eac5dc095a586fb0c5f2267c348b59417be4e361e3e51b46ba170e730ffb
+      '["REASONING.stream.yaml","REASONING.stream.1.b"]':
+        observation: c4281d8903d1a04cb4e21eadd2f4fd943da1998aebb25536ad8b18704da64eda
+        producer: 3616eac5dc095a586fb0c5f2267c348b59417be4e361e3e51b46ba170e730ffb
+      '["REASONING.stream.yaml","REASONING.stream.2.a"]':
+        observation: 56616f1a6ea25ebbbf8b5071dfded9f5d0b89bba887db4df1d8cfcc49cacd350
+        producer: b192d3b1ea35b413c2d33623ee401371ee49ed77c035b46e6498c317d89832e4
+      '["REASONING.stream.yaml","REASONING.stream.2.b"]':
+        observation: 7da481aae526327a1ed35246c77285ffc62681cec4dbacc33d99e812b7707845
+        producer: b192d3b1ea35b413c2d33623ee401371ee49ed77c035b46e6498c317d89832e4
+      '["REASONING.stream.yaml","REASONING.stream.2.c"]':
+        observation: 382b0a8480fb1fd22a5720f411166f89497d394aa9d2c63d941d3b73244a5d50
+        producer: b192d3b1ea35b413c2d33623ee401371ee49ed77c035b46e6498c317d89832e4
+      '["REASONING.stream.yaml","REASONING.stream.3.a"]':
+        observation: b533ad442f49196ff37ddd32fb01ed048a05e6d3c710defb2b7c6b6698a6b797
+        producer: 3616eac5dc095a586fb0c5f2267c348b59417be4e361e3e51b46ba170e730ffb
+      '["REASONING.stream.yaml","REASONING.stream.3.b"]':
+        observation: 6331b69939d4c96374d5df4036f879c204f6fc78a91378287ab52f6fefcacdde
+        producer: b192d3b1ea35b413c2d33623ee401371ee49ed77c035b46e6498c317d89832e4
+      '["REASONING.stream.yaml","REASONING.stream.3.c"]':
+        observation: ad2f6c8ac43e159818778c0c300e2f50051fc398f61c2d34da7bdf95a1dcd4b7
+        producer: 3616eac5dc095a586fb0c5f2267c348b59417be4e361e3e51b46ba170e730ffb
+    annotations:
+      '["REASONING.stream.yaml","REASONING.stream.3.c"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.3.a"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.5"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.1.a"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.1.b"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.1.b"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.2.a"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.6.b"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.2.e"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.2.c"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.1.a"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.2.d"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.2.a"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.2.c"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.3.a"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.2.b"]': {}
+      '["REASONING.stream.yaml","REASONING.stream.3.b"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.6.a"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.4"]': {}
+      '["REASONING.batch.yaml","REASONING.batch.2.f"]': {}

@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.3.4
 provenance:
   status: legacy
   captured_with:
@@ -6,202 +8,22 @@ document:
   mode: unified
 changes:
   retired__31_40:
-    case_key: UNIFIED.31-40
-    stimulus:
-      inline:
-        input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <think>
-        - delta_text: 'before '
-        - delta_text: <|tool_call_begin|>
-        - delta_text: functions.f:0
-        - delta_text: <|tool_call_argument_begin|>
-        - delta_text: '{"x": "'
-        - delta_text: <think>
-        - delta_text: quoted
-        - delta_text: </think>
-        - delta_text: '"}'
-        - delta_text: <|tool_call_end|>
-        - delta_text: ' after'
-        - delta_text: </think>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "quoted'
-        - kind: text
-          text: '"} after'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'before '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: '<|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "'
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: quoted
-        - expected: []
-        - expected:
-          - kind: text
-            text: '"}'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' after'
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+    observation: 7eac62ef6f9e37263e4d203b1ad369d9e05be1a1c47d46a4b95aec516c50dc11
+    producer: dynamo_v2-0.4.0
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: output
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: output
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"Paris"}'
-        - expected: []
+    observation: 3026e77c3e81353f79e8382f6126f49c02bbfa9ee05013532c8c1ba209c64bea
+    producer: dynamo_v2-0.4.0
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: c717b093d853a4905ae8fba2e0bf17b9111d97484f6c95d7d9e131891667b062
+    producer: dynamo_v2-0.4.0
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+    observation: 2447c9f45a86e10b5829791aca8dad7bd6bb8ef27f12009ec1395e2c967466d3
+    producer: dynamo_v2-0.4.0
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Working on it... '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Working on it... '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: f29ea3573c5416f44b7efc04cd46f8b335e9369ce4f9da12cc12446767e74ea5
+    producer: dynamo_v2-0.4.0
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+    observation: c487e425668b099671a5f474efed8adf1ba661df383255c51c9f4965e8cf86aa
+    producer: dynamo_v2-0.4.0
 metadata_changes: {}
 document_overrides: {}

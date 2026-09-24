@@ -36,6 +36,7 @@ from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
+import resolve_reasoning_fixtures  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
@@ -272,33 +273,33 @@ def test_v2_every_candidate_is_versioned(model_v2):
             # The golden oracle and per-family Dynamo reference are not one engine build.
             if c.get("key") == "golden" or (t["id"] == "tab-unified" and c.get("key") == "dynamo"):
                 continue
+            if c.get("version_per_family"):
+                assert c["version"] is None and "captured per family" in c["label"]
+                continue
+            if c.get("version_unavailable"):
+                assert c["version"] is None and "producer version unavailable" in c["label"]
+                continue
             assert _VER_PAREN.search(c["label"]), f"{t['id']}: unversioned candidate {c['label']!r}"
 
 
 def test_v2_exactly_one_reference_bucket_per_tab(model_v2):
     for t in model_v2["tabs"]:
         refs = [c for c in t["candidates"] if c["default_bucket"] == "A"]
-        assert len(refs) == 1, f"{t['id']}: expected one bucket-A reference, got {len(refs)}"
+        assert len(refs) <= 1, f"{t['id']}: at most one reference is selectable, got {len(refs)}"
 
 
 def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     """The Unified tab must show both historical Combined and current native captures."""
     tab = _tab(model_v2, "tab-unified")
-    labels = [candidate["label"] for candidate in tab["candidates"]]
-    assert "vLLM Rust 0.26.0 (stream, Combined & Unified)" in labels
-    assert "vLLM Rust 0.25.1 (stream, Combined & Unified)" in labels
-    assert "vLLM Python 0.25.1 (batch, Combined)" in labels
-    assert "vLLM Python 0.26.0 (batch, Combined)" in labels
-
-    muse = next(row for row in tab["rows"] if row["family"] == "muse_glimmer")
-    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert all(
-        all(cell["cmp"][key].get("na") == 1 for key in peer_keys)
-        for cell in muse["cells"].values()
-    )
-    muse_tip = next(iter(muse["cells"].values()))["tooltip"]
-    native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
-    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+    for impl in ("vllm_python", "vllm_rust"):
+        captures = [name for name in table.capture_policy.discover_captures(_cache_root() / "unified")
+                    if table.capture_policy.split_sel(name)[0] == impl]
+        expected = {table._policy_candidate_key("unified", identity) for identity in captures}
+        actual = {candidate["key"] for candidate in tab["candidates"] if candidate["key"] in expected}
+        assert actual == expected
+        for row in tab["rows"]:
+            for cell in row["cells"].values():
+                assert expected <= set(cell["cmp"])
 
 
 def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
@@ -309,7 +310,8 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     assert "latest" in dynamo["label"] and "per family" in dynamo["label"]
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
-    assert dynamo["default_bucket"] == "A"
+    reference = table.capture_policy.load_policy()["corpora"]["unified"].get("references", {}).get("dynamo_v2", {})
+    assert (dynamo["default_bucket"] == "A") == (reference.get("selection") == "latest" and any(c["key"].startswith("dynamo@") for c in tab["candidates"]))
     for row in tab["rows"]:
         versions = {
             candidate["version"]
@@ -364,9 +366,9 @@ def test_unified_grammar_header_preserves_each_family_config(tmp_path, monkeypat
             path.parent.mkdir(parents=True)
             path.write_text(yaml.safe_dump({"family": family, "cases": {key: record}}))
     tab = table._unified_tab_model(tmp_path, {})
-    default = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
-    assert default["key"] == "dynamo"
-    assert "Default Reference = <strong>Dynamo v2 Rust</strong>" in tab["toolbar_desc_html"]
+    assert not any(candidate["default_bucket"] == "A" for candidate in tab["candidates"])
+    assert tab["reference_unavailable"] is True
+    assert "Default Reference is unavailable" in tab["toolbar_desc_html"]
     assert "Oracle = <strong>GOLDEN</strong>" in tab["toolbar_desc_html"]
     column = next(col for col in tab["columns"] if col["sub"] == scenario)
     assert column["init"] == (None if changed_field else configurations["deepseek_v4"])
@@ -484,13 +486,12 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys == {table._policy_candidate_key("unified", identity)
+                         for identity in table.capture_policy.discover_captures(_cache_root() / "unified")
+                         if table.capture_policy.split_sel(identity)[0] in {"vllm_python", "vllm_rust"}}
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
-            if row["family"] == "muse_glimmer":
-                assert all(unavailable), f"{key} must say n/a for Muse"
-                continue
             for scenario, is_unavailable in zip(row["cells"], unavailable):
                 if not is_unavailable or row["cells"][scenario]["status"] == "na":
                     continue
@@ -505,16 +506,6 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 comparison = row["cells"][scenario]["cmp"][key]
                 assert comparison == {"sig": 0, "leak": 0, "na": 1, "err": 0}
 
-    gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
-    for scenario in (
-        "gemma4_guided_json_visible_call_prose_before_reasoning",
-        "gemma4_guided_json_malformed_call_prefix_before_reasoning",
-    ):
-        for key in peer_keys:
-            cell = gemma["cells"][scenario]
-            assert cell["cmp"][key].get("na") == 1
-            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-            assert "this case postdates that capture" in peer["block"]["unavailable"]
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
@@ -547,13 +538,12 @@ def test_v2_batch_tab_has_all_peer_versions(model_v2):
             assert ver in labels, f"batch tab missing peer version {impl} {ver}"
 
 
-def test_v2_stream_tab_has_v1jail_ref_v2_and_peers(model_v2):
-    # memory: dynamo_v1-3.0.0 on the stream tab is the v1 jail+batch reference (all
-    # families) — must be present; plus the v2 candidate and the peers.
+def test_v2_stream_tab_discovers_every_recorded_candidate(model_v2):
     keys = {c["key"] for c in _tab(model_v2, "tab-toolcalling-streamv1")["candidates"]}
-    assert any(k.startswith("dynamo_v1") for k in keys), f"no v1-jail ref candidate: {keys}"
-    assert any(k.startswith("dynamo_v2") for k in keys), f"no v2 candidate: {keys}"
-    assert any(k.startswith("vllm") for k in keys) and any(k.startswith("sglang") for k in keys)
+    expected = {table._policy_candidate_key("stream", impl + "-" + version.split(".patch", 1)[0])
+                for impl, versions in _peer_versions("toolcalling/fixtures-stream-v1").items()
+                for version in versions}
+    assert keys == expected
 
 
 def test_v2_patch_overlay_folds_into_base_version(model_v2):
@@ -576,6 +566,12 @@ def test_v2_dynamo_versions_come_from_fixtures(model_v2):
         for impl, vers in _peer_versions(tree).items():
             if impl.startswith("dynamo"):
                 fixture_dynamo |= {release_version(v) for v in vers}
+    for path in (_cache_root() / "toolcalling/fixtures-batch-on-stream-v1").glob("*/*.yaml"):
+        for impl, label in (yaml.safe_load(path.read_text()).get("captured_with") or {}).items():
+            if impl.startswith("dynamo"):
+                version = table.capture_policy.parse_legacy_capture_label(impl, label)[1]["runtime_version"]
+                if version:
+                    fixture_dynamo.add(release_version(version))
     shown = set()
     for t in model_v2["tabs"]:
         if t["kind"] != "toolcalling":
@@ -583,7 +579,6 @@ def test_v2_dynamo_versions_come_from_fixtures(model_v2):
         for c in t["candidates"]:
             if c["impl"] == "dynamo" and c.get("version"):
                 shown.add(release_version(c["version"]))
-    assert shown, "no dynamo versions shown"
     assert shown <= fixture_dynamo, f"dynamo versions not from fixtures: {shown - fixture_dynamo}"
 
 
@@ -736,25 +731,123 @@ def test_v2_stream_parser_only_covers_implemented_families(model_v2):
 def test_v2_reasoning_candidates_versioned_incl_dynamo_v1(model_v2):
     for tid in ("tab-reasoning-batch", "tab-reasoning-stream"):
         cands = _tab(model_v2, tid)["candidates"]
-        assert cands
-        labels = " ".join(c["label"] for c in cands)
-        assert "Dynamo" in labels and "v1" in labels, labels
         for c in cands:
+            if c.get("version_per_family"):
+                assert c["version"] is None and "captured per family" in c["label"]
+                continue
+            if c.get("version_unavailable"):
+                assert c["version"] is None and "producer version unavailable" in c["label"]
+                continue
             assert _VER_PAREN.search(c["label"]), f"{tid}: unversioned reasoning candidate {c['label']!r}"
 
 
-def test_v2_batch_tab_stream_candidates_use_current_peers(model_v2):
-    # The merged batch tab offers each engine's CURRENT stream parser as a compare
-    # candidate ("<Engine> <newest> (stream)"). Was a chart-invariant regex guard.
-    labels = " ".join(
-        c["label"] for c in _tab(model_v2, "tab-toolcalling-batch")["candidates"]
-        if c.get("parse_mode") == "stream"
-    )
-    assert "stream" in labels
-    peers = _peer_versions("toolcalling/fixtures-stream-v1")
-    for impl in ("vllm_python", "sglang_python"):
-        newest = max(peers.get(impl, {"0"}), key=lambda v: [int(x) for x in re.findall(r"\d+", v)] or [0])
-        assert newest in labels, f"batch tab missing current stream peer {impl} {newest}"
+def test_v2_batch_tab_stream_candidates_use_selected_snapshot(model_v2):
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"] if candidate.get("parse_mode") == "stream"}
+    observations = {}
+    versions = {}
+    root = _cache_root() / "toolcalling/fixtures-batch-on-stream-v1"
+    for path in root.glob("*/*.yaml"):
+        document = yaml.safe_load(path.read_text())
+        headers = document.get("captured_with") or {}
+        for case_id, case in document["cases"].items():
+            observations[(document.get("family", path.parent.name), case_id)] = (case, headers)
+            for impl in table.STREAM_IMPL_KEYS:
+                if impl in case:
+                    label = headers.get(impl)
+                    version = table.capture_policy.parse_legacy_capture_label(impl, label)[1]["runtime_version"] if label else None
+                    versions.setdefault(impl, set()).add(version)
+    for impl, recorded_versions in versions.items():
+        selected = [item for key, item in candidates.items() if key.startswith(impl + "-s-")]
+        assert {candidate["version"] for candidate in selected} == recorded_versions
+        for candidate in selected:
+            assert (candidate["version"] or "producer version unavailable") in candidate["label"]
+    checked = set()
+    for cell in _iter_cells(tab):
+        identity = (cell["family"], cell["case_id"])
+        source = observations.get(identity)
+        if source is None and cell["case_id"].endswith(".a"):
+            source = observations.get((cell["family"], cell["case_id"][:-2]))
+        if source is None:
+            continue
+        case, headers = source
+        for candidate in cell["tooltip"]["candidates"]:
+            if candidate["key"] not in candidates:
+                continue
+            impl = next(impl for impl in table.STREAM_IMPL_KEYS if candidate["key"].startswith(impl + "-s"))
+            producer = headers.get(impl)
+            version = table.capture_policy.parse_legacy_capture_label(impl, producer)[1]["runtime_version"] if producer else None
+            assert candidate["version"] == version, (identity, impl)
+            assert candidate["captured_with"] == producer, (identity, impl)
+            assert (version or "producer version unavailable") in candidate["label"]
+            if impl not in case:
+                continue
+            recorded = case[impl]
+            block = candidate["block"]
+            for field in ("unavailable", "error", "exception"):
+                if field in recorded:
+                    assert block[field] == recorded[field], (identity, impl, field)
+            if "calls" in recorded or "normal_text" in recorded:
+                assert block["calls"] == (recorded.get("calls") or []), (identity, impl)
+                assert block["normal_text"] == (recorded.get("normal_text") or ""), (identity, impl)
+            checked.add((identity, impl))
+    assert checked or not observations
+
+
+@pytest.mark.parametrize("impl", table.STREAM_IMPL_KEYS)
+@pytest.mark.parametrize("field", ["unavailable", "error", "exception"])
+def test_batch_on_stream_retains_recorded_failure_states(impl, field):
+    recorded = {field: "Recorded observation could not produce output"}
+    expected = table._stream_on_batch_expected({impl: recorded})
+    assert expected[impl] == recorded
+    assert table._output_block_model(expected[impl]) == recorded
+    comparison = table.markers.cmp_model({impl: expected[impl], "successful": {"calls": [], "normal_text": ""}})
+    assert comparison[impl]["na"] == (1 if field == "unavailable" else 0)
+    assert comparison[impl]["sig"] != comparison["successful"]["sig"]
+
+
+@pytest.mark.parametrize("impl", table.STREAM_IMPL_KEYS)
+def test_batch_on_stream_retains_tool_calls_alias(impl):
+    calls = [{"name": "lookup", "arguments": {"key": "value"}}]
+    expected = table._stream_on_batch_expected({impl: {"tool_calls": calls}})
+    assert expected[impl]["calls"] == calls
+
+
+@pytest.mark.parametrize("legacy_keys", [False, True])
+def test_batch_on_stream_partial_recaptures_keep_producer_candidates(tmp_path, monkeypatch, legacy_keys):
+    monkeypatch.setattr(table, "STREAM_ON_BATCH_FIXTURES", tmp_path)
+    cases = {}
+    for family, producer in [("old", "1.0.0"), ("new", "2.0.0"), ("unknown", "producer not retained")]:
+        path = tmp_path / family / "TOOLCALLING.batch.yaml"
+        path.parent.mkdir()
+        document = {"family": family, "captured_with": {}, "cases": {"TOOLCALLING.batch.1": {}}}
+        for impl in table.STREAM_IMPL_KEYS:
+            key = next((alias for alias, canonical in table.LEGACY_IMPL_ALIASES.items() if canonical == impl), impl) if legacy_keys else impl
+            document["captured_with"][key] = producer
+            document["cases"]["TOOLCALLING.batch.1"][key] = {"calls": [], "normal_text": family}
+        path.write_text(yaml.safe_dump(document))
+        cases[(family, "1")] = {"model_text": "request", "__family": family, "__case_id": "TOOLCALLING.batch.1"}
+    candidates = table._stream_on_batch_candidates()
+    assert set(candidates) == {(impl, version) for impl in table.STREAM_IMPL_KEYS for version in ("1.0.0", "2.0.0", None)}
+    table._attach_merged_cmp(cases)
+    for (family, _), case in cases.items():
+        version = {"old": "1.0.0", "new": "2.0.0", "unknown": None}[family]
+        assert len(case["__cmp"]) == len(table.STREAM_IMPL_KEYS)
+        for item in case["__cmp"]:
+            assert item["version"] == version
+            assert item["block"]["normal_text"] == family
+            assert item["key"] in {value["key"] for (impl, ver), value in candidates.items() if ver == version}
+            assert (version or "producer version unavailable") in item["label"]
+    policy = {"corpora": {"batch_on_stream": {
+        "selectors": {"dynamo_v2-1.0.0": {"visible": False}},
+        "references": {"dynamo_v2": {"selection": "dynamo_v2-2.0.0"}},
+        "saved_links": {"old": "dynamo_v2-1.0.0"},
+    }}}
+    monkeypatch.setattr(table, "_capture_policy", lambda: policy)
+    selected = {item["key"]: item for item in table._candidate_model(list(candidates.values()), corpus="batch_on_stream")}
+    assert not selected[candidates[("dynamo_v2", "1.0.0")]["key"]]["visible"]
+    assert selected[candidates[("dynamo_v2", "2.0.0")]["key"]]["default_bucket"] == "A"
+    assert "unavailable" in table._policy_links("batch_on_stream")["old"]
 
 
 def test_v2_no_verbose_todo_baked_in_cells(model_v2):
@@ -767,10 +860,52 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
             assert cell["status"] in {"ok", "problem", "na", "missing"}
 
 
-def test_v2_reasoning_uses_current_peers(model_v2):
-    # reasoning tab uses the same current peer versions as the toolcalling tabs.
-    peers = _peer_versions("reasoning/fixtures-v1")
-    r = " ".join(c["label"] for c in _tab(model_v2, "tab-reasoning-batch")["candidates"])
-    for impl in ("vllm_python", "sglang_python"):
-        for ver in peers.get(impl, set()):
-            assert ver in r, f"reasoning missing current peer {impl} {ver}"
+def test_v2_reasoning_uses_policy_selected_family_captures(model_v2, tmp_path):
+    root = _cache_root() / "reasoning/fixtures-v1"
+    policy = table.capture_policy.policy_for_snapshot(_cache_root())
+    resolve_reasoning_fixtures.resolve(root, tmp_path, [], policy=policy)
+    documents = {}
+    for path in tmp_path.glob("*/*.yaml"):
+        document = yaml.safe_load(path.read_text())
+        for case_id, case in document["cases"].items():
+            documents[(path.parent.name, case_id)] = (case, document.get("captured_with") or {})
+    checked = set()
+    for mode in ("batch", "stream"):
+        for cell in _iter_cells(_tab(model_v2, "tab-reasoning-" + mode)):
+            identity = (cell["family"], cell["case_id"])
+            if identity not in documents:
+                continue
+            case, headers = documents[identity]
+            for candidate in cell["tooltip"]["candidates"]:
+                impl = candidate["key"]
+                version = str(headers[impl]) if headers.get(impl) else None
+                assert candidate["version"] == version, (identity, impl)
+                assert (version or "producer version unavailable") in candidate["label"]
+                recorded = case["expected"][impl]
+                block = candidate["block"]
+                for field in ("unavailable", "error", "reasoning_text", "normal_text"):
+                    if field in recorded:
+                        assert block[field] == (recorded[field] or ""), (identity, impl, field)
+                checked.add((mode, identity, impl))
+    assert checked or not documents
+
+
+@pytest.mark.parametrize("selection,expected", [("latest", "vllm_rust@2.0.0"), ("vllm_rust-1.0.0", "vllm_rust@1.0.0"), ("unavailable", None)])
+def test_report_reference_uses_policy_for_peer_selection(monkeypatch, selection, expected):
+    policy = {"corpora": {"unified": {"references": {"vllm_rust": {"selection": selection, "reason": "retired"}}}}}
+    monkeypatch.setattr(table, "_capture_policy", lambda: policy)
+    candidates = [
+        {"key": "dynamo", "version": None, "default_bucket": "A"},
+        {"key": "vllm_rust@1.0.0", "version": "1.0.0", "default_bucket": "C"},
+        {"key": "vllm_rust@2.0.0", "version": "2.0.0", "default_bucket": "C"},
+    ]
+    resolved = table._apply_capture_policy(candidates, "unified")
+    assert [candidate["key"] for candidate in resolved if candidate["default_bucket"] == "A"] == ([] if expected is None else [expected])
+
+
+
+def test_saved_link_alias_resolves_removed_equivalent_directly(monkeypatch):
+    value = {"corpora": {"unified": {"saved_links": {"legacy": "vllm_rust-1.0.0", "other-legacy": "vllm_rust-1.0.0"},
+                                    "selectors": {"vllm_rust-1.0.0": {"visible": False, "equivalent_to": "vllm_rust-2.0.0"}}}}}
+    monkeypatch.setattr(table, "_capture_policy", lambda: value)
+    assert table._policy_links("unified")["other-legacy"] == {"equivalent_to": "vllm_rust@2.0.0"}

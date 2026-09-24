@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: deepseek_v3_2
 capture: vllm_rust-0.25.1
@@ -7,16 +8,29 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.4.a:
-        exception: 'ToolParserError::ParsingFailed (near "\nn": )'
-      TOOLCALLING.streamv1.4.c:
-        exception: 'ToolParserError::ParsingFailed (near "\n<｜DSML｜invoke>": )'
-      TOOLCALLING.streamv1.4.d:
-        exception: 'ToolParserError::ParsingFailed (near "\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true": )'
   TOOLCALLING.streamv1.5.yaml:
     family: deepseek_v3_2
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: bc7d85e39c9230bc5d3940baf52ade47501fdbe7bb8ff7912b47e3bcc5640a80
+        producer: 4b05fbbe44c1e9350e633c49866d8e95e07300bf9b52c42e8810542891f29aa2
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: ee512f3b2f53f853a34d4f70984db8613c3c021964f2d21dc1576892bafc28dd
+        producer: 4b05fbbe44c1e9350e633c49866d8e95e07300bf9b52c42e8810542891f29aa2
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: d352e5f45ed1dc7d4f4229dc420641d023a29773cd8066f5a2e8c0285f21d406
+        producer: 4b05fbbe44c1e9350e633c49866d8e95e07300bf9b52c42e8810542891f29aa2
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

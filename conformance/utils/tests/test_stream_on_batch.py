@@ -635,13 +635,15 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
             "__fixture_path": "toolcalling/fixtures/fam/TOOLCALLING.batch.3.yaml",
         },
     }
-    overlay = {("fam", "TOOLCALLING.batch.1"): {V: {"calls": []}, S: {"calls": []}}}
+    overlay = {("fam", "TOOLCALLING.batch.1"): {
+        V: {"calls": []}, S: {"calls": []}, "__captured_with": {V: "1.0.0", S: "2.0.0"}}}
     monkeypatch.setattr(g, "_load_stream_on_batch_overlay", lambda: overlay)
 
     cases = g._build_stream_on_batch_cases(batch_cases)
     assert ("fam", "1") in cases and ("fam", "3") not in cases
     built = cases[("fam", "1")]
     assert built["model_text"] == "x"
+    assert built["__captured_with"] == {V: "1.0.0", S: "2.0.0"}
     assert g._is_todo_unavailable(built["expected"][D])  # dynamo absent -> todo
     assert built["batch_expected"][V] == _calls("f")  # batch reference carried
     # COLOR: vllm stream calls=[] vs batch calls=[f] -> diverge -> problem (red)

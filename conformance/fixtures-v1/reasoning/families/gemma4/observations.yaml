@@ -1,0 +1,1114 @@
+schema: bound-observations-v1
+observations:
+  6439bc519e8c1865525f8d5a0f56e4447defe582764c4c909a14faf51ad711ef:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  cf26d9326ded65b39f1141b93bee60221c4ee4bfd77e8338532c20b5096d8298:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  41afcb7ab8981eafbecc85aad17b54a044683a7cd4dad2e78544617ff48de58b:
+    request:
+      model_text: '<|channel>thought
+
+        thinking<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  77316517f166b4fb892a304c8fd8b942e58b21c324ec620eb63ffa1ff43a5f6e:
+    request:
+      model_text: '<|channel>thought
+
+        compute<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: compute
+          normal_text: answer
+  0714ad1b84f4b8fbe11b2fbb4e99660e43b728af47eb7b399f2b8af2922784f7:
+    request:
+      model_text: 'before <|channel>thought
+
+        thinking<channel|> after'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: 'before <|channel>thought
+
+            thinking'
+          normal_text: ' after'
+  c460772ecbdc19260ed5998db394e3d30c42446cfed462cc3a525c6fc43d1fab:
+    request:
+      model_text: '<|channel>thought
+
+        <channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: answer
+  a80b18552a7f59190110d734e76bd2871ff18c6ebf24e6de5867312ad981fee3:
+    request:
+      model_text: '<|channel>thought
+
+        Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}<channel|>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  4314dcd82b2b22dfe2a7e650507e1bbc96d36e905ef84b19355ae1043c4c3592:
+    request:
+      model_text: '<|channel>thought
+
+        choose tool<channel|><|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: choose tool
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  221df257290166bfa3ee30f2d7d0cd2c6e94ddd9c0caf2ed78b0aa94c698cf71:
+    request:
+      model_text: normal<channel|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: normal<channel|>answer
+          explanation: Dynamo treats the text before an unpaired end marker as reasoning (implicit-opener recovery, matching vLLM); SGLang enters reasoning only on an explicit start marker, so the dangling end marker and surrounding text stay in normal_text.
+  452dc2b6ebd934d7fcb9a82cbe2ab4fa3ad4ee230614659cf275bff7c79dbd90:
+    request:
+      model_text: '<|channel>thought
+
+        partial reasoning'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  87e94cd766829b265d539f90db3255fef2269310b5cec5e381a63e4716b7e114:
+    request:
+      model_text: '<|channel>thought
+
+        first<channel|> middle <|channel>thought
+
+        second<channel|> done'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle <|channel>thought
+
+            second<channel|> done'
+          explanation: Dynamo extracts every complete reasoning span and concatenates them; SGLang exits reasoning at the first end marker and leaves the later span, with its literal markers, in normal_text.
+  cad210b2af8197e76155c6033902cfee4c7d2dd6b4dab5204055bd008bb3e233:
+    request:
+      model_text: '<|channel>thought
+
+        preamble<channel|>body<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body<channel|>answer
+  036268a88ca1ec22fa02922d852544dc71669c611124c79a718a2ac9a72302b1:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  fc8caf549015e8ae8d6af5a9272e12049214791654189007951d91f66848248e:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  09f7c1539a5c5b0c23ec903b459891322a583570b69b17267393ea4f39137079:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        step one
+
+        '
+      - step two<channel|>
+      - The answer is 42.
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: 'step one
+
+            step two'
+          normal_text: The answer is 42.
+  20421973d5336b41531d031d0642bcf6853a50789f632405619b476f683e85b1:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        first<channel|>'
+      - ' middle '
+      - '<|channel>thought
+
+        second<channel|> done'
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle <|channel>thought
+
+            second<channel|> done'
+          explanation: Dynamo re-enters reasoning on each open marker across chunks and concatenates all spans; SGLang exits at the first end marker and does not re-enter, leaving the later span in normal_text.
+  bf3f1530c38c1b24c8cc9317c4ff1911de0ade3c8bc7debba74288b90c6362fa:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        preamble<channel|>'
+      - body<channel|>
+      - answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body<channel|>answer
+  dd485073c2c7b88280eaf5b0e6049e7525f9305819778fd5f9bf86d4a1df9065:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - <|chan
+      - 'nel>thought
+
+        thinking<channel|>answer'
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  365a31281b3823c5f5cb6ea0d6586a6e90c33e2ba7f6f6cf927b7fc8c160e12c:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        thinking<chan'
+      - nel|>answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking<channel|>answer
+          normal_text: ''
+          explanation: Dynamo buffers an end marker split across chunk boundaries and resumes normal_text after it; SGLang streams the partial delimiter as reasoning (it only holds back a partial marker when the whole pending buffer is a marker prefix), so the split marker is never reassembled and the answer stays in reasoning_text.
+  d3a160b8d64049dcd754c5ddbdefe37911f5dfd423318ecbc981d767b0f888fe:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - plain <|chan
+      - ce answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain <|chance answer
+  e687d443f7ea438e25999fa725c6566034b0fad6bbd192cc263cae427996b47f:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  8211f4271e6505104fb1cd2afea15b32592327bfd484c8aa6931a72acba16cbf:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  914590a643d60aa8b4128d0c520d1afaa7b5f011ebe487f008098a5ed662cd3e:
+    request:
+      model_text: '<|channel>thought
+
+        thinking<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  34f07603f8b79bc6c28008f74b7b1ed50ba44aaa3bd9d78e4c7f6c93401274e0:
+    request:
+      model_text: '<|channel>thought
+
+        compute<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: compute
+          normal_text: answer
+  460c1f12275d6851ea024eafc99f418959cc0dcc3a341409df036dab2718a7bc:
+    request:
+      model_text: 'before <|channel>thought
+
+        thinking<channel|> after'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: before  after
+  2b0ce875c84b9d01b2b9a589f1910aa4f1322bc6b8fd176c375dd4bff9351aca:
+    request:
+      model_text: '<|channel>thought
+
+        <channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  174881c0a7d6067f710219484016e75d551e8bb9014db133093d5d46091e3c0c:
+    request:
+      model_text: '<|channel>thought
+
+        Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}<channel|>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  6e17579811156dcbef284882e090e16bc1a3bac74e1b429e329ed0295b7dae42:
+    request:
+      model_text: '<|channel>thought
+
+        choose tool<channel|><|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: choose tool
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  ddb4e423a818009e12423bfb0c541e27cc8e0f825bd6a16d3b54d0e542916569:
+    request:
+      model_text: normal<channel|>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: normal
+          normal_text: answer
+  0b9f633869992586aa951d37a6d587bd0b1ed34a77f0298a71340d2262de68a0:
+    request:
+      model_text: '<|channel>thought
+
+        partial reasoning'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  b03e0367c9c11f26abcc084425f0e778ad45dfa00e6da8fc3882e59da5e9832d:
+    request:
+      model_text: '<|channel>thought
+
+        first<channel|> middle <|channel>thought
+
+        second<channel|> done'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'firstthought
+
+            second'
+          normal_text: ' middle  done'
+  bc73f7dcd223eba13935a9b7b43b6363f7795b69d1f4b0d0e208155aa2813e12:
+    request:
+      model_text: '<|channel>thought
+
+        preamble<channel|>body<channel|>answer'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: preamble
+          normal_text: bodyanswer
+  5f818ad679993d4b65c86c23f7e3055c813911539e85a238397b134acc216bca:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  c4281d8903d1a04cb4e21eadd2f4fd943da1998aebb25536ad8b18704da64eda:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  56616f1a6ea25ebbbf8b5071dfded9f5d0b89bba887db4df1d8cfcc49cacd350:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        step one
+
+        '
+      - step two<channel|>
+      - The answer is 42.
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: step two<channel|>
+          normal_text: '<|channel>thought
+
+            step one
+
+            The answer is 42.'
+  7da481aae526327a1ed35246c77285ffc62681cec4dbacc33d99e812b7707845:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        first<channel|>'
+      - ' middle '
+      - '<|channel>thought
+
+        second<channel|> done'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: '<|channel>thought
+
+            first<channel|> middle <|channel>thought
+
+            second<channel|> done'
+  382b0a8480fb1fd22a5720f411166f89497d394aa9d2c63d941d3b73244a5d50:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        preamble<channel|>'
+      - body<channel|>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: '<|channel>thought
+
+            preamble<channel|>body<channel|>answer'
+  b533ad442f49196ff37ddd32fb01ed048a05e6d3c710defb2b7c6b6698a6b797:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - <|chan
+      - 'nel>thought
+
+        thinking<channel|>answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: '<|channel>thought
+
+            thinking<channel|>answer'
+          explanation: Dynamo buffers a split Gemma start delimiter and extracts the channel; vLLM leaves the full channel in normal_text.
+  6331b69939d4c96374d5df4036f879c204f6fc78a91378287ab52f6fefcacdde:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - '<|channel>thought
+
+        thinking<chan'
+      - nel|>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: nel|>answer
+          normal_text: '<|channel>thought
+
+            thinking<chan'
+  ad2f6c8ac43e159818778c0c300e2f50051fc398f61c2d34da7bdf95a1dcd4b7:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: stream
+      chunks:
+      - plain <|chan
+      - ce answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: plain <|chance answer
+producers:
+  e3659172141483c14f8084934036e519eaffead19b1c9e243e49576c348ba428:
+    capture: inputs
+    document:
+      family: gemma4
+      model_label: Gemma 4
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Gemma4 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gemma4_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  19e66b4de39f7afef27d7b35c77e230860d283287c820824b1035b9ac7cc59f5:
+    capture: sglang_python-0.5.14
+    document:
+      family: gemma4
+      mode: batch
+    provenance: null
+  3616eac5dc095a586fb0c5f2267c348b59417be4e361e3e51b46ba170e730ffb:
+    capture: inputs
+    document:
+      family: gemma4
+      model_label: Gemma 4
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Gemma4 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gemma4_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  6efa32318ed0e4dd265256953e94dda85ab31dcdb7da320c3b5dab0645fd435e:
+    capture: vllm_python-0.24.0
+    document:
+      family: gemma4
+      mode: batch
+    provenance: null
+  b192d3b1ea35b413c2d33623ee401371ee49ed77c035b46e6498c317d89832e4:
+    capture: vllm_python-0.24.0
+    document:
+      family: gemma4
+      mode: stream
+    provenance: null

@@ -11,15 +11,13 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L207
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,15 +28,35 @@ documents:
         ref: dynamo
         model_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice
         ref: dynamo
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.2.b:
         description: Two back-to-back fence pairs — not applicable to this family
         explanation: gemma4's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
@@ -51,8 +69,7 @@ documents:
         ref: dynamo
         model_text: <|tool_call>nonsense<tool_call|>
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -63,19 +80,34 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L572
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: No call:name prefix
         ref: dynamo
         model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.d:
         description: Mismatched sentinels
         ref: dynamo
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed-prefix recovery — n/a for this family's syntax
         explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
@@ -91,8 +123,7 @@ documents:
         ref: dynamo
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -103,37 +134,67 @@ documents:
         ref: dynamo
         model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.c:
         description: Truncation mid-argument value
         ref: dynamo
         model_text: <|tool_call>call:get_weather{location:<|"|>N
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.f:
         description: Bare valid call before a complete wrapped call
         ref: dynamo
         model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.g:
         description: Closing <tool_call|> without matching <|tool_call> open after prefix prose
         ref: dynamo
         model_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.6.yaml:
     family: gemma4
     mode: batch
@@ -143,8 +204,7 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L560
         model_text: <|tool_call>call:get_time{}<tool_call|>
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -153,13 +213,19 @@ documents:
         ref: dynamo
         model_text: <|tool_call>call:get_time{ }<tool_call|>
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No body (just call:name)
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L280
         model_text: <|tool_call>call:get_time<tool_call|>
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: gemma4
     mode: batch
@@ -245,8 +311,7 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L194
         model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -257,19 +322,34 @@ documents:
         ref: dynamo
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: dynamo
         model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: gemma4
     model_label: Gemma 4
@@ -279,8 +359,7 @@ documents:
         description: Single tool call (happy path)
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -290,7 +369,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -316,7 +400,12 @@ documents:
         description: Duplicate calls (same name twice)
         model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30.a:
         description: Call/body delimiters `,`, `:`, and `{}` inside one argument string value
         ref: dynamo
@@ -418,7 +507,7 @@ documents:
         - delta_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -439,7 +528,13 @@ documents:
         - delta_text: <tool_call|>
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: gemma4
     model_label: Gemma 4

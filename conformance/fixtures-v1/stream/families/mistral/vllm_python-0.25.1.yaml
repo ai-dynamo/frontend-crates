@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: mistral
 capture: vllm_python-0.25.1
@@ -7,73 +8,33 @@ documents:
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-          normal_text: 'Both: '
-        - expected: []
-        - expected:
-          - index: 0
-            id: true
-            name: get_weather
-            arguments: '{"location":'
-        - expected:
-          - index: 0
-            arguments: ' "NYC"}'
-        - expected:
-          - index: 1
-            id: true
-            name: get_time
-        - expected:
-          - index: 1
-            arguments: '{"timezone":'
-        - expected: []
-        - expected: []
   TOOLCALLING.streamv1.31.yaml:
     family: mistral
     mode: streamv1
     captured_with:
       vllm_python: 0.25.1
-    cases:
-      TOOLCALLING.streamv1.31.b:
-        chunks:
-        - expected: []
-        - expected:
-          - index: 0
-            id: true
-            name: run_query
-        - expected:
-          - index: 0
-            arguments: '{"sql": "SELECT'
-        - expected:
-          - index: 0
-            arguments: ' value WHERE'
-        - expected:
-          - index: 0
-            arguments: ' note'
-        - expected:
-          - index: 0
-            arguments: ' has brace'
-        - expected:
-          - index: 0
-            arguments: ' } and bracket'
-        - expected:
-          - index: 0
-            arguments: ' ]'
-        - expected:
-          - index: 0
-            arguments: '"}'
-        - expected:
-          - index: 1
-            id: true
-            name: get_time
-        - expected:
-          - index: 1
-            arguments: '{"timezone":'
-        - expected:
-          - index: 1
-            arguments: ' "EST"}'
-        - expected: []
-          normal_text: '[/TOOL_CALLS]'
-        - expected: []
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d08631105e2735ba2d995fa72ebfffa22e0969dc001d3767905ed1fe3df94844
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: d8964e851a1f682401ff30ae03e61fa653f5697893a124fd179999b9e5fff57e
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}
+  rust:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d08631105e2735ba2d995fa72ebfffa22e0969dc001d3767905ed1fe3df94844
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: d8964e851a1f682401ff30ae03e61fa653f5697893a124fd179999b9e5fff57e
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}

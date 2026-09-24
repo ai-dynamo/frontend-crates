@@ -10,14 +10,14 @@ documents:
       TOOLCALLING.streamv1.1:
         description: Canonical XTML single tool call split across semantic boundaries
         ref: derived from TOOLCALLING.batch.1
-        tools: &id003
+        tools:
         - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        unavailable: &id001
+        unavailable:
           vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
           vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
           sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
@@ -30,7 +30,7 @@ documents:
       TOOLCALLING.streamv1.2.a:
         description: Two calls in one XTML tools channel
         ref: derived from TOOLCALLING.batch.2.a
-        tools: &id002
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -43,7 +43,10 @@ documents:
             properties:
               timezone:
                 type: string
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
         - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
@@ -53,8 +56,23 @@ documents:
       TOOLCALLING.streamv1.2.b:
         description: Two back-to-back XTML tools channels
         ref: derived from TOOLCALLING.batch.2.b
-        tools: *id002
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -63,8 +81,23 @@ documents:
       TOOLCALLING.streamv1.2.c:
         description: Multiple calls with visible response text around them
         ref: derived from TOOLCALLING.batch.2.c
-        tools: *id002
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>response<|sep|>Checking both. <|close|>response<|sep|><|open|>tools<|sep|>
         - delta_text: <|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
@@ -75,8 +108,17 @@ documents:
       TOOLCALLING.streamv1.2.d:
         description: Same tool name twice with distinct native indices
         ref: derived from TOOLCALLING.batch.2.d
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
         - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -85,8 +127,17 @@ documents:
       TOOLCALLING.streamv1.3:
         description: Plain text without XTML tool syntax
         ref: derived from TOOLCALLING.batch.3
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: 'Hello, how '
         - delta_text: can I help you today?
@@ -95,8 +146,17 @@ documents:
       TOOLCALLING.streamv1.4.a:
         description: Garbage inside an XTML tools channel
         ref: derived from TOOLCALLING.batch.4.a
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|>nonsense
         - delta_text: <|close|>tools<|sep|>
@@ -105,8 +165,17 @@ documents:
       TOOLCALLING.streamv1.4.b:
         description: Invalid raw JSON arguments
         ref: derived from TOOLCALLING.batch.4.b
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"location":"NYC"'
@@ -116,8 +185,17 @@ documents:
       TOOLCALLING.streamv1.4.c:
         description: XTML call missing its tool attribute
         ref: derived from TOOLCALLING.batch.4.c
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call index="1"<|sep|>
         - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -126,8 +204,17 @@ documents:
       TOOLCALLING.streamv1.4.d:
         description: Typed argument missing its structural close
         ref: derived from TOOLCALLING.batch.4.d
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC
         - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
@@ -136,8 +223,17 @@ documents:
       TOOLCALLING.streamv1.4.e:
         description: Malformed XTML call followed by a valid complete call
         ref: derived from TOOLCALLING.batch.4.e
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|>not-an-argument
         - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -149,8 +245,17 @@ documents:
       TOOLCALLING.streamv1.5.a:
         description: Complete call at EOF without the outer tools close
         ref: derived from TOOLCALLING.batch.5.a
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
         - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
@@ -159,8 +264,17 @@ documents:
       TOOLCALLING.streamv1.5.b:
         description: Orphan tools close marker without a matching open
         ref: derived from TOOLCALLING.batch.5.b
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: 'I will check that. '
         - delta_text: <|close|>tools<|sep|>
@@ -169,8 +283,17 @@ documents:
       TOOLCALLING.streamv1.5.c:
         description: EOF inside a typed string argument
         ref: derived from TOOLCALLING.batch.5.c
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
         - delta_text: <|open|>argument key="location" type="string"<|sep|>Par
@@ -179,8 +302,17 @@ documents:
       TOOLCALLING.streamv1.5.d:
         description: First call complete and second call delimiter-terminated at EOF
         ref: derived from TOOLCALLING.batch.5.d
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
         - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York<|close|>argument<|sep|>
@@ -189,8 +321,17 @@ documents:
       TOOLCALLING.streamv1.5.e:
         description: First call complete and second call truncated inside an argument
         ref: derived from TOOLCALLING.batch.5.e
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
         - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York
@@ -208,12 +349,15 @@ documents:
       TOOLCALLING.streamv1.6.a:
         description: Canonical empty raw JSON argument object
         ref: derived from TOOLCALLING.batch.6.a
-        tools: &id004
+        tools:
         - name: get_time
           parameters:
             type: object
             properties: {}
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
@@ -222,8 +366,15 @@ documents:
       TOOLCALLING.streamv1.6.b:
         description: Spaced XTML spelling with whitespace inside an empty raw JSON object
         ref: derived from TOOLCALLING.batch.6.b
-        tools: *id004
-        unavailable: *id001
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|> tools <|sep|><|open|> call tool="get_time" index="1" <|sep|>
         - delta_text: <|open|> json type="object" <|sep|>{ }<|close|> json <|sep|>
@@ -233,8 +384,15 @@ documents:
       TOOLCALLING.streamv1.6.c:
         description: Parameterless XTML call with no argument channel
         ref: derived from TOOLCALLING.batch.6.c
-        tools: *id004
-        unavailable: *id001
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|>
         - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
@@ -254,7 +412,10 @@ documents:
                 type: integer
               first_class:
                 type: boolean
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="book_flight" index="1"<|sep|>
         - delta_text: <|open|>argument key="destination" type="string"<|sep|>Paris<|close|>argument<|sep|>
@@ -274,7 +435,10 @@ documents:
                 type: array
               note:
                 type: string
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"items":[1,2,3],"note":"literal <|close|>call<|sep|> stays data"}'
@@ -291,7 +455,10 @@ documents:
             properties:
               celsius:
                 type: integer
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="set_temperature" index="1"<|sep|>
         - delta_text: <|open|>argument key="celsius" type="string"<|sep|>20<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -309,7 +476,10 @@ documents:
                 type: array
               config:
                 type: object
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"items":[1,2,3],"config":{"nested":true}}'
@@ -326,7 +496,10 @@ documents:
             properties:
               payload:
                 type: object
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
@@ -343,7 +516,10 @@ documents:
             properties:
               count:
                 type: number
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="set_limit" index="1"<|sep|>
         - delta_text: <|open|>argument key="count" type="number"<|sep|>9007199254740993<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -352,8 +528,17 @@ documents:
       TOOLCALLING.streamv1.8.a:
         description: Visible response text before a tool call
         ref: derived from TOOLCALLING.batch.8.a
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>response<|sep|>I will check the weather. <|close|>response<|sep|>
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -362,8 +547,17 @@ documents:
       TOOLCALLING.streamv1.8.b:
         description: Visible response text after a tool call
         ref: derived from TOOLCALLING.batch.8.b
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
         - delta_text: <|open|>response<|sep|> Let me know if you need more.<|close|>response<|sep|>
@@ -372,8 +566,17 @@ documents:
       TOOLCALLING.streamv1.8.c:
         description: Visible response text both before and after a tool call
         ref: derived from TOOLCALLING.batch.8.c
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>response<|sep|>I will check. <|close|>response<|sep|>
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -383,8 +586,17 @@ documents:
       TOOLCALLING.streamv1.8.d:
         description: Visible response text between two tool calls
         ref: derived from TOOLCALLING.batch.8.d
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
         - delta_text: <|open|>response<|sep|> Now LA. <|close|>response<|sep|>
@@ -394,8 +606,17 @@ documents:
       TOOLCALLING.streamv1.9.a:
         description: Empty model text
         ref: derived from TOOLCALLING.batch.9.a
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: ''
         - delta_text: ''
@@ -403,8 +624,17 @@ documents:
       TOOLCALLING.streamv1.9.b:
         description: Blank model text
         ref: derived from TOOLCALLING.batch.9.b
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: '   '
         - delta_text: ''
@@ -412,8 +642,17 @@ documents:
       TOOLCALLING.streamv1.10:
         description: Duplicate identical calls with distinct native indices
         ref: derived from TOOLCALLING.batch.10
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
         - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -422,8 +661,17 @@ documents:
       TOOLCALLING.streamv1.13.c:
         description: Known and unknown tool names in the same XTML tools channel
         ref: derived from TOOLCALLING.batch.13.c
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
         - delta_text: <|open|>call tool="unknown_tool" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -432,8 +680,17 @@ documents:
       TOOLCALLING.streamv1.13.a:
         description: Unknown-only XTML tool call
         ref: derived from TOOLCALLING.batch.13.a
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="unknown_tool" index="1"<|sep|>
         - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -464,7 +721,10 @@ documents:
             properties:
               value:
                 type: string
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"value":"literal <|close|>call<|sep|> and <|open|>tools<|sep|> stay data"}'
@@ -485,7 +745,10 @@ documents:
           parameters:
             type: object
             properties: {}
-        unavailable: *id001
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
         - delta_text: '{"value":"literal <|close|>call<|sep|> stays data"}<|close|>json<|sep|><|close|>call<|sep|>'
@@ -498,8 +761,17 @@ documents:
       TOOLCALLING.streamv1.50:
         description: Canonical XTML markers split at partial-token boundaries
         ref: derived from TOOLCALLING.batch.1
-        tools: *id003
-        unavailable: *id001
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        unavailable:
+          vllm_python: No released vLLM Python Kimi K3 streaming tool parser is registered.
+          vllm_rust: No released vLLM Rust Kimi K3 streaming tool parser is registered.
+          sglang_python: No released SGLang Kimi K3 streaming tool parser is registered.
         chunks:
         - delta_text: <|op
         - delta_text: en|>tools<|se

@@ -14,45 +14,53 @@ documents:
         ref: dynamo
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id001
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
       REASONING.batch.2.a:
         description: Single reasoning block with Kimi delimiters
         ref: dynamo
         model_text: ◁think▷thinking◁/think▷answer
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id002
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.batch.3.a:
         description: Reasoning followed by downstream tool-call text
         ref: dynamo
         model_text: ◁think▷choose tool◁/think▷<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: choose tool
             normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id003
+          sglang_python:
+            reasoning_text: choose tool
+            normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
       REASONING.batch.2.c:
         description: Reasoning followed by normal answer text
         ref: dynamo
         model_text: ◁think▷compute◁/think▷answer
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: compute
             normal_text: answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id004
+          sglang_python:
+            reasoning_text: compute
+            normal_text: answer
       REASONING.batch.4:
         description: Dangling end marker without an opening think tag
         ref: dynamo
@@ -73,23 +81,27 @@ documents:
         ref: dynamo
         model_text: ◁think▷partial reasoning
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: partial reasoning
             normal_text: ''
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id005
+          sglang_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
       REASONING.batch.2.e:
         description: Empty reasoning block
         ref: dynamo
         model_text: ◁think▷◁/think▷answer
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id006
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.2.f:
         description: Complex reasoning content with Unicode and newlines
         ref: dynamo
@@ -99,7 +111,7 @@ documents:
 
           JSON-ish: {"x": [1, true]}◁/think▷Done.'
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: 'Line 1
 
               Unicode: café
@@ -108,18 +120,26 @@ documents:
             normal_text: Done.
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id007
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
       REASONING.batch.1.a:
         description: Empty input
         ref: dynamo
         model_text: ''
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id008
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.6.a:
         description: Multiple reasoning spans are concatenated
         ref: dynamo
@@ -190,12 +210,14 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id009
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.b:
         description: Multiple reasoning spans across chunks
         ref: dynamo
@@ -220,12 +242,14 @@ documents:
         - king◁/think▷
         - answer
         expected:
-          dynamo_v1: &id010
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id010
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.a:
         description: Start marker split across chunks
         ref: dynamo
@@ -233,12 +257,14 @@ documents:
         - ◁thi
         - nk▷thinking◁/think▷answer
         expected:
-          dynamo_v1: &id011
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id011
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.b:
         description: End marker split across chunks
         ref: dynamo
@@ -261,12 +287,14 @@ documents:
         - plain ◁th
         - esis answer
         expected:
-          dynamo_v1: &id012
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain ◁thesis answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id012
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain ◁thesis answer
       REASONING.stream.1.b:
         description: Plain text without reasoning markers
         ref: dynamo
@@ -274,12 +302,14 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id013
+          dynamo_v1:
             reasoning_text: ''
             normal_text: plain answer
           vllm_python:
             unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-          sglang_python: *id013
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
       REASONING.stream.2.c:
         description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag)
         ref: dynamo

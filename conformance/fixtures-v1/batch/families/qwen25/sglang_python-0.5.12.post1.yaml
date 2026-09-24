@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: qwen25
 capture: sglang_python-0.5.12.post1
@@ -5,352 +6,190 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: 'Both:'
-      TOOLCALLING.batch.2.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
   TOOLCALLING.batch.4.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          sglang_python:
-            explanation: 'Malformed body in a complete <tool_call> wrapper: Dynamo discards the unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and returns the raw text. Non-parity by design.'
-            calls: []
-            normal_text: <tool_call>nonsense</tool_call>
-      TOOLCALLING.batch.4.b:
-        expected:
-          sglang_python:
-            explanation: 'Malformed JSON in a complete <tool_call> wrapper: Dynamo discards the unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and returns the raw text. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
-      TOOLCALLING.batch.4.c:
-        expected:
-          sglang_python:
-            explanation: 'Missing name key in a complete <tool_call> wrapper: Dynamo discards the unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and returns the raw text. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
-      TOOLCALLING.batch.4.d:
-        expected:
-          sglang_python:
-            explanation: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
   TOOLCALLING.batch.5.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          sglang_python:
-            explanation: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
-      TOOLCALLING.batch.5.b:
-        expected:
-          sglang_python:
-            explanation: 'Orphan </tool_call> with no opener: Dynamo strips the stray end marker from normal_text (no leak); SGLang''s Qwen25Detector leaves it in the raw text. Non-parity by design.'
-            calls: []
-            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            explanation: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Boston
-            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
   TOOLCALLING.batch.6.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
-      TOOLCALLING.batch.6.b:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_time
-              arguments: {}
-            normal_text: ''
-      TOOLCALLING.batch.6.c:
-        expected:
-          sglang_python:
-            explanation: 'Name-only call (no arguments key): Dynamo recovers it as get_time({}) (matching vLLM/SGLang Hermes detectors); SGLang''s Qwen25Detector keys on a "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and returns the raw text. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_time"}</tool_call>'
   TOOLCALLING.batch.7.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: book_flight
-              arguments:
-                destination: Paris
-                passengers: 2
-                first_class: true
-            normal_text: ''
-      TOOLCALLING.batch.7.b:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: Tōkyō "central"
-            normal_text: ''
-      TOOLCALLING.batch.7.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: set_temperature
-              arguments:
-                celsius: '20'
-            normal_text: ''
-      TOOLCALLING.batch.7.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: process_data
-              arguments:
-                items:
-                - 1
-                - 2
-                - 3
-                config:
-                  nested: true
-            normal_text: ''
-      TOOLCALLING.batch.7.e:
-        expected:
-          sglang_python:
-            calls:
-            - name: process_data
-              arguments:
-                payload:
-                  regions:
-                  - name: west
-                    scores:
-                    - 1
-                    - 2
-                    - 3
-                  - name: east
-                    scores:
-                    - 4
-                    - 5
-                    - 6
-                  flags:
-                    enabled: true
-                    retry: null
-                  empty: {}
-            normal_text: ''
-      TOOLCALLING.batch.7.f:
-        expected:
-          sglang_python:
-            calls:
-            - name: set_limit
-              arguments:
-                count: 9007199254740993
-            normal_text: ''
   TOOLCALLING.batch.8.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: I will check the weather.
-      TOOLCALLING.batch.8.b:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: I will check the weather.
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: I will check the weather.
   TOOLCALLING.batch.yaml:
     family: qwen25
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: Hello, how can I help you today?
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: ''
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: '   '
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_weather
-              arguments:
-                location: LA
-            normal_text: ''
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            explanation: SGLang drops tool calls whose name is absent from the supplied tools; Dynamo forwards the call regardless.
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: qwen25
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
-      TOOLCALLING.stream.1.b:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.2.yaml:
     family: qwen25
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            - name: get_time
-              arguments:
-                timezone: EST
-            normal_text: ''
   TOOLCALLING.stream.3.yaml:
     family: qwen25
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          sglang_python:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: ''
   TOOLCALLING.stream.4.yaml:
     family: qwen25
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          sglang_python:
-            explanation: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
-      TOOLCALLING.stream.4.b:
-        expected:
-          sglang_python:
-            explanation: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
-            calls: []
-            normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
-      TOOLCALLING.stream.4.c:
-        expected:
-          sglang_python:
-            calls: []
-            normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: af6f712e3b7717f96e9d2122dafc102ca4d6389f81110b73bd9943bb9d958aa4
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: d8890876f8e92a13985239ae7600f2a3b73a6c93b7b0eb1e294a4cd1cb70851e
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: f5717e05a94d125527209eee7e1461a8111fcedc487e1800ebe66cbaf8db79c1
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 26671bd52ecc3b4b765db374570f10796513fd2a0cf6af9907be4caad0742277
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]':
+        observation: 55da8c15d6d42e22bb253b2c799d37e814a5aad8d8d0a1d8972529de1b71495a
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: fd2056a08e4adc3cdd7991d590dd007c3582da522d2a19835ec6d59e5a6d9045
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: e7d1f69ff187b811d56040590d1b525b7611209bfdb097b7824b8ca81adcd184
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: e7d1f69ff187b811d56040590d1b525b7611209bfdb097b7824b8ca81adcd184
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: 4bb178fbde403bcd325698fca89a53998886920557d570a36c1c5267c354aab0
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: 30a22e69f5aac41a801b44efcade63f81de86ca28f8657388fd2db7150d345e5
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: 4e1241e4cf30b753b9313edcbb083294fa40ccc7282c1e0aada0c70b72aec899
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 7f087fe32ce3cd6383bfb25f979298b6d9564dd2006944e1a8bc76846704286e
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 0d7e48a7ba9c8c5cfefb6d13dfbbafc374c1810952fd5b2e7340efb97e5eec64
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 7ac07a96230b6aec32bd018795fd9f71daff2dc5c5b4c4014996d3fffe6f11ca
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]':
+        observation: 4043e7d68e7eb3c221aa83e2d403b228810908c99ab6b4276854c08ec1ce64a5
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 0e793f372bf85603efc1864072e69900cb495d76d3bdc4211b6edfeb4a318d6e
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 7437d8ca4733753da83506be94e87b29ff0f4ebf0c50aa25a2da3dc4e444c726
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]':
+        observation: 388301d2050b3795df5e66b89559189afc242af4727cff1429ca9a0e69446048
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]':
+        observation: a506f33e0030a91a65ba697f16055e36aee724d794ea4dd7c585897b71e74653
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]':
+        observation: 91a6128690d719b68a03ec3fd31232c1a614ee58f63beef53b184396fdf9dcd4
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]':
+        observation: f0c743a1162044613f918984876c71c3ef3defe9bb1557b31a9155f94bcafb4d
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: 63c863ee0c1cfecdf597f2c75bc69a8084cb43ea70723fd4357d43b6afd0a725
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 701609be1b317b2efca66b66d451a64a7044d55dd8a217164e2208e70b0af566
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: b5f5d2fe87c5e5c7b43ac8f79b7ba13f14e9c29b454e9d73ce752c46c5e18f7e
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 929409c1623a8dda54e0b94466d0e3926e7f0de3822b13a8a9b3519e08fbb562
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: 643ddf14554f00533c7fd6bc988e351138c206b5d2477de3d33aaef98d3d07a9
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: 8625dd32d1cfa23045b3cf930721e29684674d84c25629938f9ac0d08e73c4b3
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: a59a1c81e5cbac054d6536b985f85e28fe11623918adb05ba574482d618d653f
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: d3a1b1916eb086cda9b90cc1912c17ceddc08545e1a2276b10fc20ce218a80fe
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 4265db952f0a7b514dd009cea9f4b9cab6ed54aed6ec37ee649972417cd8232f
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 4235a2b0c0da0677d6fe999a6819cd476fa76d992c975b09b11dab86f9884734
+        producer: 09876d5d8f546cc3190aad2844f97cc2dbea773fc90a67a0b809632edcc00eda
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: b3ab32c32e1c57f0ed0c45c3139c958d912201ea2236596c0a570def957c513a
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: a2b810d0231af93e506af88e5894be0b5ac30bb2eda341e8bd2f156a68ceec87
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: c0a63a3fd1a88150b791992100e8eebf0c2dab08bbcae06a918223ac989bfaf2
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: edc2fa09a77e91a4cc2e52205642fa420ea8d8aadb6f55b32c0ad2a9080bafca
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: d369b371eee11e8f5770705210c1e7a6d5c0087ca34abe5e684aeb002021c0d3
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 61b0a469ddbcda7d6b33ead305d1ee070a55e9e3a5cc537afbe247793cf067be
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: 5cda13a9f533a1fdd371d18f656167ca4da05325dcbfe0d4e73851e3f1ff76fd
+        producer: 642441b65ec0c5d8afbb6a7e9eec8eb5764dbe98db64f168395af598ac0ec167
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.f"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

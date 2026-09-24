@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: mistral
 capture: dynamo_v1-5.0.1
@@ -5,49 +6,42 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: mistral
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: mistral
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: mistral
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: mistral
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: mistral
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: mistral
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 5517aee4b2af0efaf98b39bd9341ed694da3e971a7c8f7c82eb848c5c1f79998
+        producer: 065fceb3269b489f10d3935db0b1a40516c30aba626edf09897deb0e038436bf
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

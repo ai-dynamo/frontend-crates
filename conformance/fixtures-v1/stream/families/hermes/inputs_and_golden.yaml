@@ -150,14 +150,18 @@ documents:
         description: Same-name twice
         ref: derived from TOOLCALLING.batch.2.d
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<tool_call>{"name":'
         - delta_text: ' "get_weather",'

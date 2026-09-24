@@ -17,7 +17,7 @@ import tempfile
 import warnings
 from collections.abc import Callable
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -273,6 +273,7 @@ class History:
     captures: dict
     directory: Path
     capture_paths: dict[str, Path]
+    producers: dict[str, dict] = field(default_factory=dict)
     @property
     def path(self) -> Path:
         """Compatibility diagnostic path for callers that name the history owner."""
@@ -289,52 +290,60 @@ class History:
             ),
         )
 
-    def resolve(self, capture_id: str) -> dict:
+    def _state(self, capture_id: str, visiting: set[str] | None = None) -> dict:
         if capture_id not in self.captures:
             raise ValueError(f"unknown capture in {self.directory}: {capture_id}")
-        state = {}
-        for current in self.ordered_capture_ids():
-            capture = self.captures[current]
-            for case_id, change in capture["changes"].items():
-                if change == {"absent": True}:
-                    state.pop(case_id, None)
-                    continue
-                inherited_metadata = state.get(case_id, {}).get("_record_metadata")
-                inherited_overrides = state.get(case_id, {}).get("_document_overrides")
-                state[case_id] = copy.deepcopy(change)
-                state[case_id]["_origin_capture_id"] = current
-                if inherited_metadata is not None:
-                    state[case_id]["_record_metadata"] = inherited_metadata
-                if inherited_overrides is not None:
-                    state[case_id]["_document_overrides"] = inherited_overrides
-            for case_id, metadata in capture["metadata_changes"].items():
-                if case_id not in state:
-                    raise ValueError(
-                        f"metadata change has no observation in {self.capture_path(current)}: "
-                        f"{case_id}"
-                    )
-                if metadata:
-                    state[case_id]["_record_metadata"] = copy.deepcopy(metadata)
-                else:
-                    state[case_id].pop("_record_metadata", None)
-            for case_id, override in capture["document_overrides"].items():
-                if case_id not in state:
-                    raise ValueError(
-                        f"document override has no observation in {self.capture_path(current)}: "
-                        f"{case_id}"
-                    )
-                state[case_id]["_document_overrides"] = copy.deepcopy(override)
-            if current == capture_id:
-                break
-        else:
-            raise ValueError(f"capture order does not include {capture_id}: {self.directory}")
+        visiting = set() if visiting is None else visiting
+        if capture_id in visiting:
+            raise ValueError(f"capture inheritance cycle: {capture_id}")
+        visiting.add(capture_id)
+        ids = self.ordered_capture_ids()
+        capture = self.captures[capture_id]
+        index = ids.index(capture_id)
+        base = capture.get("_base", ids[index - 1] if index else None)
+        state = {} if base is None else self._state(base, visiting)
+        current = capture_id
+        for case_id, change in capture["changes"].items():
+            if change == {"absent": True}:
+                state.pop(case_id, None)
+                continue
+            inherited_metadata = state.get(case_id, {}).get("_record_metadata")
+            inherited_overrides = state.get(case_id, {}).get("_document_overrides")
+            state[case_id] = copy.deepcopy(change)
+            state[case_id]["_origin_capture_id"] = state[case_id].pop("_producer", current)
+            if inherited_metadata is not None:
+                state[case_id]["_record_metadata"] = inherited_metadata
+            if inherited_overrides is not None:
+                state[case_id]["_document_overrides"] = inherited_overrides
+        for case_id, metadata in capture["metadata_changes"].items():
+            if case_id not in state:
+                raise ValueError(
+                    f"metadata change has no observation in {self.capture_path(current)}: "
+                    f"{case_id}"
+                )
+            if metadata:
+                state[case_id]["_record_metadata"] = copy.deepcopy(metadata)
+            else:
+                state[case_id].pop("_record_metadata", None)
+        for case_id, override in capture["document_overrides"].items():
+            if case_id not in state:
+                raise ValueError(
+                    f"document override has no observation in {self.capture_path(current)}: "
+                    f"{case_id}"
+                )
+            state[case_id]["_document_overrides"] = copy.deepcopy(override)
+        visiting.remove(capture_id)
+        return state
+
+    def resolve(self, capture_id: str) -> dict:
+        state = self._state(capture_id)
         materialized = {}
         for case_id, change in state.items():
             record = copy.deepcopy(change)
             record_metadata = record.pop("_record_metadata", None)
             overrides = record.pop("_document_overrides", {})
             origin_capture_id = record.pop("_origin_capture_id")
-            origin_capture = self.captures[origin_capture_id]
+            origin_capture = self.producers.get(origin_capture_id) or self.captures[origin_capture_id]
             case_document = {
                 **_capture_document_metadata(origin_capture, self.implementation),
                 **overrides,
@@ -353,6 +362,7 @@ class Store:
     root: Path
     families: dict[str, Family]
     histories: dict[tuple[str, str], History]
+    compact: bool = False
 
 
 class PublicationCommitIndeterminate(OSError):
@@ -542,11 +552,12 @@ def _validate_history(
     implementation: str,
     captures: dict,
     capture_paths: dict[str, Path],
+    producers: dict[str, dict] | None = None,
 ) -> History:
     where = family.path.parent
     if not captures:
         raise ValueError(f"history has no captures: {where}/{implementation}")
-    history = History(family, implementation, captures, where, capture_paths)
+    history = History(family, implementation, captures, where, capture_paths, producers or {})
     for capture_id, capture in captures.items():
         state = history.resolve(capture_id)
         missing = sorted(set(capture["document_overrides"]) - set(state))
@@ -595,18 +606,36 @@ def _load_store_unlocked(root: Path) -> Store:
     grouped: dict[tuple[str, str], dict[str, dict]] = {}
     grouped_paths: dict[tuple[str, str], dict[str, Path]] = {}
     family_capture_owners: dict[str, tuple[str, str]] = {}
+    ledgers = {}
     for family_name, family in sorted(families.items()):
+        ledger_path = family.path.parent / "observations.yaml"
+        ledger = load_yaml(ledger_path) if ledger_path.exists() else None
+        if ledger is not None:
+            _validate_ledger(ledger, ledger_path)
+            for producer_id, producer in ledger["producers"].items():
+                producer = _mapping(producer, str(ledger_path))
+                identity = CAPTURE_DIRECTORY_RE.fullmatch(producer_id)
+                _require_keys(producer, {"runtime_version", "provenance", "document"}, {"runtime_version", "provenance", "document"}, str(ledger_path))
+                if identity is None or producer["runtime_version"] != identity["runtime_version"]:
+                    raise ValueError(f"producer identity mismatch: {ledger_path}/{producer_id}")
+                _validate_capture_provenance(producer["provenance"], ledger_path, identity["implementation"], identity["runtime_version"])
+                _mapping(producer["document"], str(ledger_path))
+            ledgers[family_name] = ledger
         entries = sorted(family.path.parent.iterdir())
         for path in entries:
-            if path == family.path:
+            if path == family.path or path.name == "observations.yaml":
                 continue
             if path.is_dir() or path.suffix != ".yaml" or path.name == "index.yaml":
                 raise ValueError(f"unknown Unified family file: {path}")
+            raw = load_yaml(path)
+            expanded, extras = _expand_checkpoint(raw, ledger, family, path)
             capture_family, implementation, capture_id, capture = _validate_capture_file(
-                path,
-                load_yaml(path),
-                families,
+                path, expanded, families,
             )
+            capture.update(extras)
+            for case_id, producer in extras.pop("_change_producers", {}).items():
+                capture["changes"][case_id]["_producer"] = producer
+            capture.pop("_change_producers", None)
             if capture_family != family_name:
                 raise ValueError(f"capture family differs from directory: {path}")
             owner = family_capture_owners.setdefault(capture_id, (implementation, family_name))
@@ -628,10 +657,9 @@ def _load_store_unlocked(root: Path) -> Store:
             implementation,
             captures,
             grouped_paths[key],
+            ledgers.get(family_name, {}).get("producers", {}),
         )
-    if not histories:
-        raise ValueError(f"Unified history has no history files: {root}")
-    return Store(root, families, histories)
+    return Store(root, families, histories, bool(ledgers))
 
 
 def load_store(root: Path) -> Store:
@@ -680,6 +708,8 @@ def _capture_document(history: History, capture_id: str) -> dict:
 
 
 def _store_documents(store: Store) -> dict[Path, dict]:
+    if store.compact:
+        return _compact_store_documents(store)
     documents = {family.path: family.document for family in store.families.values()}
     for history in store.histories.values():
         for capture_id in history.captures:
@@ -1181,9 +1211,22 @@ def materialize_store(
 
     for (_family_name, _implementation), history in sorted(store.histories.items()):
         for capture_id, capture in history.captures.items():
+            (destination / capture_id / history.family.name).mkdir(parents=True, exist_ok=True)
             add_capture_state(capture_id, history, history.resolve(capture_id))
 
     _write_materialized_documents(documents)
+    checkpoints = {}
+    for (family_name, _implementation), history in sorted(store.histories.items()):
+        for capture_id, capture in history.captures.items():
+            checkpoints.setdefault(capture_id, {})[family_name] = copy.deepcopy(capture["provenance"])
+    for capture_id, families in checkpoints.items():
+        capture_root = destination / capture_id
+        records = {path.relative_to(capture_root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                   for path in sorted(documents) if path.is_relative_to(capture_root)}
+        checkpoint = {"schema_version": 1, "families": families, "records": records}
+        (capture_root / "capture-checkpoint.json").write_text(
+            json.dumps(checkpoint, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8",
+        )
 
 def _internal_case_id(case_key: str, scenario: str | None, used: set[str]) -> str:
     stem = scenario or "retired__" + case_key.removeprefix("UNIFIED.")
@@ -1384,7 +1427,11 @@ def _update_from_loose(
             key = (family_name, implementation)
             history = store.histories.get(key)
             if history is None:
-                raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
+                if family_name not in store.families:
+                    raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
+                family = store.families[family_name]
+                history = History(family, implementation, {}, family.path.parent, {})
+                store.histories[key] = history
             case_by_external = {}
             for case_id, case in history.family.cases.items():
                 for external_id in [case["display_id"], *case["historical_ids"]]:
@@ -1487,15 +1534,16 @@ def _update_from_loose(
                     f"capture {capture_dir.name} is already recorded; add a new semantic "
                     "version after back-capturing any new case across prior versions"
                 )
-            prior_id = history.ordered_capture_ids()[-1]
-            if _capture_release_sort_key(runtime_version) <= _capture_release_sort_key(
+            prior_ids = history.ordered_capture_ids()
+            prior_id = prior_ids[-1] if prior_ids else None
+            if prior_id is not None and _capture_release_sort_key(runtime_version) <= _capture_release_sort_key(
                 history.captures[prior_id]["runtime_version"]
             ):
                 raise ValueError(
                     f"capture {capture_dir.name} must use a new semantic version after "
                     f"{prior_id}"
                 )
-            prior = history.resolve(prior_id)
+            prior = {} if prior_id is None else history.resolve(prior_id)
             changes = {}
             metadata_changes = {}
             for case_id in sorted(set(prior) | set(records)):
@@ -1827,6 +1875,156 @@ def update_store_from_loose(
         return updated
 
     return _mutate_store(store_root, documents)
+
+
+def _validate_ledger(ledger: dict, path: Path) -> None:
+    _require_keys(ledger, {"schema", "observations", "producers"}, {"schema", "observations", "producers"}, str(path))
+    if ledger["schema"] != "bound-observations-v1":
+        raise ValueError(f"unknown observation ledger schema: {path}")
+    for identity, payload in _mapping(ledger["observations"], str(path)).items():
+        if identity != _request_digest(payload):
+            raise ValueError(f"observation fingerprint mismatch: {path}/{identity}")
+    _mapping(ledger["producers"], str(path))
+
+
+def _expand_checkpoint(raw: dict, ledger: dict | None, family: Family, path: Path) -> tuple[dict, dict]:
+    if "schema" not in raw:
+        return raw, {}
+    _require_keys(raw, CAPTURE_DOCUMENT_KEYS | {"schema", "base"}, CAPTURE_DOCUMENT_KEYS | {"schema", "base"}, str(path))
+    if raw["schema"] != "checkpoint-v1" or ledger is None:
+        raise ValueError(f"checkpoint has no valid observation ledger: {path}")
+    document = {key: copy.deepcopy(raw[key]) for key in CAPTURE_DOCUMENT_KEYS}
+    origins = {}
+    for case_id, change in raw["changes"].items():
+        if change == {"absent": True}:
+            continue
+        _require_keys(change, {"observation", "producer"}, {"observation", "producer"}, str(path))
+        ref, producer = change["observation"], change["producer"]
+        if ref not in ledger["observations"] or producer not in ledger["producers"]:
+            raise ValueError(f"dangling observation or producer reference: {path}/{case_id}")
+        identity = CAPTURE_DIRECTORY_RE.fullmatch(path.stem)
+        producer_identity = CAPTURE_DIRECTORY_RE.fullmatch(producer)
+        if identity is None or producer_identity is None or identity["implementation"] != producer_identity["implementation"]:
+            raise ValueError(f"foreign observation producer: {path}/{case_id}")
+        document["changes"][case_id] = copy.deepcopy(ledger["observations"][ref])
+        origins[case_id] = producer
+    base = raw["base"]
+    if base is not None and (not isinstance(base, str) or not (path.parent / f"{base}.yaml").is_file()):
+        raise ValueError(f"missing capture base: {path}/{base}")
+    return document, {"_base": base, "_change_producers": origins}
+
+
+def _bound_change(change: dict, family: Family, case_id: str) -> dict:
+    payload = {key: copy.deepcopy(change[key]) for key in CHANGE_KEYS}
+    stimulus = payload["stimulus"]
+    if "ref" in stimulus:
+        payload["stimulus"] = {"inline": copy.deepcopy(family.cases[case_id]["request"])}
+    return payload
+
+
+def _compact_store_documents(store: Store) -> dict[Path, dict]:
+    documents = {family.path: family.document for family in store.families.values()}
+    ledgers = {name: {"schema": "bound-observations-v1", "observations": {}, "producers": {}}
+               for name in store.families}
+    for (family_name, _implementation), history in sorted(store.histories.items()):
+        ledger = ledgers[family_name]
+        previous, previous_id = {}, None
+        for capture_id in history.ordered_capture_ids():
+            capture = history.captures[capture_id]
+            state = history._state(capture_id)
+            current = {}
+            for case_id, change in sorted(state.items()):
+                payload = _bound_change(change, history.family, case_id)
+                ref = _request_digest(payload)
+                producer = change["_origin_capture_id"]
+                ledger["observations"][ref] = payload
+                source = history.producers.get(producer) or history.captures[producer]
+                ledger["producers"][producer] = {key: copy.deepcopy(source[key])
+                                                for key in ("runtime_version", "provenance", "document")}
+                current[case_id] = {"observation": ref, "producer": producer}
+            changes = {case_id: current.get(case_id, {"absent": True})
+                       for case_id in sorted(previous.keys() | current.keys())
+                       if previous.get(case_id) != current.get(case_id)}
+            # Annotations have a separate change stream, independent of payload identity.
+            old_state = {} if previous_id is None else history._state(previous_id)
+            metadata, overrides = {}, {}
+            for case_id, change in state.items():
+                old = old_state.get(case_id, {})
+                for field_name, target in (("_record_metadata", metadata), ("_document_overrides", overrides)):
+                    if old.get(field_name, {}) != change.get(field_name, {}):
+                        target[case_id] = copy.deepcopy(change.get(field_name, {}))
+            documents[history.capture_path(capture_id)] = {
+                "schema": "checkpoint-v1", "base": previous_id,
+                "provenance": capture["provenance"], "document": capture["document"],
+                "changes": changes, "metadata_changes": metadata, "document_overrides": overrides,
+            }
+            previous, previous_id = current, capture_id
+    for name, ledger in ledgers.items():
+        documents[store.families[name].path.parent / "observations.yaml"] = ledger
+    return documents
+
+
+def resolved_inventory(root: Path) -> dict:
+    """Normalized bound evidence, including original per-observation producer headers."""
+    store = load_store(root)
+    inventory = {}
+    for (family, implementation), history in sorted(store.histories.items()):
+        for capture_id in history.ordered_capture_ids():
+            capture = history.captures[capture_id]
+            state = history.resolve(capture_id)
+            for case_id, change in state.items():
+                change["stimulus"] = _bound_change(change, history.family, case_id)["stimulus"]
+            inventory[f"{family}/{capture_id}"] = {
+                "provenance": capture["provenance"], "document": capture["document"],
+                "cases": state,
+                "absent": sorted(history.family.cases.keys() - state.keys()),
+            }
+    return inventory
+
+
+def migrate_store(root: Path) -> list[Path]:
+    before = resolved_inventory(root)
+    changed = _mutate_store(root, lambda store: setattr(store, "compact", True))
+    if resolved_inventory(root) != before:
+        raise ValueError("Unified migration changed resolved evidence")
+    return changed
+
+
+def remove_capture(root: Path, capture: str, family: str | None = None) -> list[Path]:
+    before = resolved_inventory(root)
+    removed = [key for key in before if key.endswith(f"/{capture}") and (family is None or key.split("/")[0] == family)]
+    if not removed:
+        raise ValueError(f"unknown Unified capture: {capture}")
+
+    def remove(store: Store) -> None:
+        store.compact = True
+        for (family_name, _implementation), history in list(store.histories.items()):
+            if capture not in history.captures or (family is not None and family != family_name):
+                continue
+            states = {identity: history._state(identity) for identity in history.captures if identity != capture}
+            history.producers.update({identity: value for identity, value in history.captures.items()})
+            del history.captures[capture]
+            del history.capture_paths[capture]
+            for identity, state in states.items():
+                checkpoint = history.captures[identity]
+                checkpoint["_base"] = None
+                checkpoint["changes"] = {}
+                checkpoint["metadata_changes"] = {}
+                checkpoint["document_overrides"] = {}
+                for case_id, change in state.items():
+                    checkpoint["changes"][case_id] = {
+                        **_bound_change(change, history.family, case_id),
+                        "_producer": change["_origin_capture_id"],
+                    }
+                    checkpoint["metadata_changes"][case_id] = change.get("_record_metadata", {})
+                    checkpoint["document_overrides"][case_id] = change.get("_document_overrides", {})
+            if not history.captures:
+                del store.histories[(family_name, _implementation)]
+    changed = _mutate_store(root, remove)
+    expected = {key: value for key, value in before.items() if key not in removed}
+    if resolved_inventory(root) != expected:
+        raise ValueError("Unified removal changed retained evidence")
+    return changed
 
 
 def main(argv: list[str] | None = None) -> None:

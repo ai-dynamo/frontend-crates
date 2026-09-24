@@ -183,15 +183,13 @@ documents:
         description: Two invokes inside one tool_calls wrapper
         ref: derived from TOOLCALLING.batch.2.a
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -227,8 +225,18 @@ documents:
         description: Two back-to-back tool_calls wrappers
         ref: derived from TOOLCALLING.batch.2.b
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -264,8 +272,18 @@ documents:
         description: Parallel with surrounding narration
         ref: derived from TOOLCALLING.batch.2.c
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
         chunks:
         - delta_text: 'Both: <｜DSML｜tool_calls>'
         - delta_text: '
@@ -297,8 +315,18 @@ documents:
         description: Same-name twice
         ref: derived from TOOLCALLING.batch.2.d
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -397,8 +425,7 @@ documents:
             properties:
               value:
                 type: string
-        - &id003
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -423,7 +450,10 @@ documents:
             properties:
               payload:
                 type: object
-        - *id003
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
         chunks:
         - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
         - delta_text: ' name="process_data">'
@@ -443,8 +473,7 @@ documents:
         description: Tool_calls wrapper with garbage
         ref: derived from TOOLCALLING.batch.4.a
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -463,7 +492,12 @@ documents:
         description: Invoke without name attribute
         ref: derived from TOOLCALLING.batch.4.c
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -483,7 +517,12 @@ documents:
         description: Missing </｜DSML｜parameter> end tag
         ref: derived from TOOLCALLING.batch.4.d
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -504,7 +543,12 @@ documents:
         description: Invalid JSON syntax in a non-string DSML parameter
         ref: derived from TOOLCALLING.batch.4.b
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -525,7 +569,12 @@ documents:
         description: Malformed DSML invoke prefix followed by a valid complete invoke
         ref: derived from TOOLCALLING.batch.4.e
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -581,8 +630,7 @@ documents:
         description: Missing </｜DSML｜tool_calls> end marker
         ref: derived from TOOLCALLING.batch.5.a
         tools:
-        - &id005
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -605,7 +653,12 @@ documents:
         description: Closing </｜DSML｜tool_calls> without matching open
         ref: derived from TOOLCALLING.batch.5.b
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: <｜DSML｜invoke name="get_weather">
         - delta_text: '
@@ -623,7 +676,12 @@ documents:
         description: Truncation mid-parameter value
         ref: derived from TOOLCALLING.batch.5.c
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -639,7 +697,12 @@ documents:
         description: Multi-call, last call missing only end marker (body complete)
         ref: derived from TOOLCALLING.batch.5.d
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: I'll start
         - delta_text: ' by'
@@ -678,7 +741,12 @@ documents:
         description: Multi-call, last call truncated mid-arg-value
         ref: derived from TOOLCALLING.batch.5.e
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: I'll start
         - delta_text: ' by'
@@ -715,7 +783,12 @@ documents:
         description: Bare valid invoke before a complete wrapped call
         ref: derived from TOOLCALLING.batch.5.f
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: <｜DSML｜invoke name="get_weather">
         - delta_text: '
@@ -748,7 +821,12 @@ documents:
         description: Closing </｜DSML｜tool_calls> without matching open after prefix prose
         ref: derived from TOOLCALLING.batch.5.g
         tools:
-        - *id005
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: I will
         - delta_text: ' check'
@@ -820,8 +898,7 @@ documents:
         description: Invoke with no <parameter>
         ref: derived from TOOLCALLING.batch.6.a
         tools:
-        - &id006
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -841,7 +918,10 @@ documents:
         description: Invoke with extra newline
         ref: derived from TOOLCALLING.batch.6.b
         tools:
-        - *id006
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -960,8 +1040,7 @@ documents:
         description: Nested object and array in a non-string DSML parameter
         ref: derived from TOOLCALLING.batch.7.d
         tools:
-        - &id007
-          name: process_data
+        - name: process_data
           parameters:
             type: object
             properties:
@@ -988,7 +1067,12 @@ documents:
         description: Large nested DSML parameter with null and empty values
         ref: derived from TOOLCALLING.batch.7.e
         tools:
-        - *id007
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -1042,8 +1126,7 @@ documents:
         description: Narration before tool call only
         ref: derived from TOOLCALLING.batch.8.a
         tools:
-        - &id008
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -1071,7 +1154,12 @@ documents:
         description: Narration after tool call only
         ref: derived from TOOLCALLING.batch.8.b
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: '<｜DSML｜tool_calls>
 
@@ -1096,7 +1184,12 @@ documents:
         description: Narration both before and after (sandwich)
         ref: derived from TOOLCALLING.batch.8.c
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: I will
         - delta_text: ' check'
@@ -1124,7 +1217,12 @@ documents:
         description: Narration between multiple tool calls
         ref: derived from TOOLCALLING.batch.8.d
         tools:
-        - *id008
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
         chunks:
         - delta_text: I will
         - delta_text: ' check'

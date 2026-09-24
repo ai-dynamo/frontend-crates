@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: deepseek_v4
 capture: dynamo_v1-5.0.1
@@ -5,49 +6,42 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: deepseek_v4
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: deepseek_v4
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: deepseek_v4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: deepseek_v4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: deepseek_v4
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: deepseek_v4
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 2220a51b3cabdc4dbff2482b91612947e74faa00bd4a4ebe0a6a1152d0402ee4
+        producer: 86cd32fcdf4210ef401434b81bf8b93a56482fb2734e2bd526698b42fe9a0f3f
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

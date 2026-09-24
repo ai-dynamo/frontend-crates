@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: minimax_m3
 capture: vllm_rust-0.25.1
@@ -7,40 +8,42 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.3.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
   TOOLCALLING.streamv1.9.yaml:
     family: minimax_m3
     mode: streamv1
     captured_with:
       vllm_rust: 0.25.1
-    cases: {}
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

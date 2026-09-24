@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: minimax_m3
 capture: dynamo_v1-5.0.1
@@ -5,48 +6,39 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: minimax_m3
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: minimax_m3
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.g:
-        expected:
-          dynamo_v1:
-            calls:
-            - name: get_weather
-              arguments:
-                location: NYC
-            normal_text: I will check that.
   TOOLCALLING.stream.1.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: minimax_m3
     mode: stream
-    cases: {}
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.g"]':
+        observation: 4e68a01795279600ced17db7bacef95b510f395cf242a71d126ca3cf298e8bf7
+        producer: cb33562e892f0195fe2d5c53c388e5d98c29c7edaead4db868cd144b97348371
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.5.g"]': {}

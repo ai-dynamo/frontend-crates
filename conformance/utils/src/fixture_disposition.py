@@ -16,6 +16,40 @@ DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
 LEGACY_HISTORY_PATH = "legacy-history"
 LEGACY_HISTORY_FORMAT = "legacy-history"
+CAPTURE_POLICY_PATH = "capture-policy.yaml"
+CAPTURE_POLICY_FORMAT = "capture-policy"
+LEGACY_CORPORA = {
+    "batch": "toolcalling/fixtures-batch-v1",
+    "stream": "toolcalling/fixtures-stream-v1",
+    "reasoning": "reasoning/fixtures-v1",
+    "batch_on_stream": "toolcalling/fixtures-batch-on-stream-v1",
+}
+LEGACY_CAPTURE_RE = re.compile(
+    r"^[A-Za-z0-9_]+-\d+(?:\.\d+){2,}"
+    r"(?:\.(?:post|patch)\d+|\+[A-Za-z0-9_.-]+|-[A-Za-z0-9.-]+)?$"
+)
+
+
+def parse_legacy_capture_label(implementation: str, label: str) -> tuple[str, dict]:
+    if not re.fullmatch(r"[A-Za-z0-9_]+", implementation):
+        raise ValueError(f"unsafe implementation: {implementation!r}")
+    if not isinstance(label, str) or not label:
+        raise ValueError("batch-on-stream capture label must be a nonempty string")
+    provenance = {"captured_with": label, "runtime_version": None}
+    match = re.fullmatch(r"v?(\d+\.\d+\.\d+) ([0-9a-f]{40})", label)
+    if match:
+        version, commit = match.groups()
+        provenance.update(runtime_version=version, git_commit=commit)
+    elif LEGACY_CAPTURE_RE.fullmatch(f"{implementation}-{label}"):
+        provenance["runtime_version"] = label
+    version = provenance["runtime_version"] or "unversioned"
+    return f"{implementation}-{version}", provenance
+
+
+def capture_policy_pin(path: Path) -> dict:
+    data = path.read_bytes()
+    return {"path": CAPTURE_POLICY_PATH, "format": CAPTURE_POLICY_FORMAT,
+            "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)}
 
 
 def version_sort_key(version: str) -> tuple:
@@ -176,6 +210,9 @@ def active_shards(manifest: dict) -> list[dict]:
         elif shard.get("format") == LEGACY_HISTORY_FORMAT:
             if shard.get("path") != LEGACY_HISTORY_PATH:
                 raise ValueError(f"invalid legacy history path: {shard.get('path')}")
+        elif shard.get("format") == CAPTURE_POLICY_FORMAT:
+            if shard.get("path") != CAPTURE_POLICY_PATH:
+                raise ValueError(f"invalid capture policy path: {shard.get('path')}")
         elif shard["path"] in inactive:
             raise ValueError(f"inactive shard is also active: {shard['path']}")
     return shards

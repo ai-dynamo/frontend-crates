@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: jamba
 capture: dynamo_v1-5.0.1
@@ -5,54 +6,46 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.4.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.5.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.6.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.7.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.8.yaml:
     family: jamba
     mode: batch
-    cases: {}
   TOOLCALLING.batch.yaml:
     family: jamba
     mode: batch
-    cases:
-      TOOLCALLING.batch.9.b:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: ''
   TOOLCALLING.stream.1.yaml:
     family: jamba
     mode: stream
-    cases: {}
   TOOLCALLING.stream.2.yaml:
     family: jamba
     mode: stream
-    cases: {}
   TOOLCALLING.stream.3.yaml:
     family: jamba
     mode: stream
-    cases: {}
   TOOLCALLING.stream.4.yaml:
     family: jamba
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.c:
-        expected:
-          dynamo_v1:
-            calls: []
-            normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls></tool_calls>'
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: a5d2500cc9e9644d9e6297e766b7f487e676509991559f611ec3b49253516d25
+        producer: aa4dc03921a8a6926bd36cc6c2285f1d5f25bab050764127dd6d70bd0de63e5c
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: bf128ebaa4a7588a8051e3c64a1fa979c8a1e6eb14ad80d6f46e570bc895329b
+        producer: 4feb602d223fa8251c463bc13659dcda470e56974170ca5a1d1c294abe02fe76
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

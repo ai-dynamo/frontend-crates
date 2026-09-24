@@ -31,7 +31,7 @@ import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 # Re-exported: test_render_invariants.py and the generator import version_key/load
 # from this module by name.
-from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
+from fixture_corpus import cleanup_checkpoint_observations, clear_checkpoint_observations, complete_family_snapshots, load, load_corpus, split_sel, version_key  # noqa: F401
 
 
 def _impl_version_dirs(root: Path) -> dict[str, list[tuple]]:
@@ -133,21 +133,31 @@ def resolve_docs(sv1_root, select, corpus=None):
     folded: set[tuple[str, str]] = set()
     for impl, target in targets.items():
         tk = version_key(target)
+        introduced_unavailable = set()
         for k, _v, vdir in dirs[impl]:
             if k > tk:
                 continue
+            folded.update(clear_checkpoint_observations(root, vdir, docs, impl, corpus=corpus, stream=True,
+                                                       introduced_unavailable=introduced_unavailable))
             for key, vdoc in corpus.items():
                 if key[0] != vdir.name:
                     continue
                 doc = docs.get(key[1:])
                 if doc is None:
                     continue
+                # Recorded unavailable states own their wrapper even after a later
+                # measurement clears it; only synthetic missing-state wrappers vanish.
+                for case_id, case in (vdoc.get("cases") or {}).items():
+                    if "unavailable" in case:
+                        introduced_unavailable.discard((*key[1:], case_id))
                 # deepcopy: _merge_impl grafts the overlay's own lists/dicts into the
                 # base doc by reference, and with a shared corpus that would alias the
                 # same objects into every resolved selection.
                 _merge_impl(doc, copy.deepcopy(vdoc), impl)
-                doc.setdefault("captured_with", {})[impl] = target
+                if impl in vdoc.get("captured_with", {}) or not complete_family_snapshots(root):
+                    doc.setdefault("captured_with", {})[impl] = target
                 folded.add(key[1:])
+            cleanup_checkpoint_observations(docs, introduced_unavailable)
     return docs, folded
 
 

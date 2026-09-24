@@ -11,15 +11,13 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
         tools:
-        - &id001
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
               location:
                 type: string
-        - &id002
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties:
@@ -30,15 +28,35 @@ documents:
         ref: dynamo
         model_text: 'Both: <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}} Done.'
         tools:
-        - *id001
-        - *id002
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
       TOOLCALLING.batch.2.d:
         description: Same-name twice (semicolon-separated)
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_weather", "arguments": {"location": "LA"}}'
         tools:
-        - *id001
-        - *id001
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.2.b:
         description: Two back-to-back fence pairs — not applicable to this family
         explanation: llama3_json's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
@@ -51,8 +69,7 @@ documents:
         ref: dynamo
         model_text: <|python_tag|>nonsense
         tools:
-        - &id003
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -63,13 +80,23 @@ documents:
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_llama3_json_tool_parser.py#L66
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.c:
         description: Missing name key
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_llama3_json_tool_parser.py#L234
         model_text: '<|python_tag|>{"arguments": {"location": "NYC"}}'
         tools:
-        - *id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.4.e:
         description: Malformed JSON prefix followed by a valid complete call
         ref: SGLang TestLlama32Detector.test_invalid_then_valid_json
@@ -94,8 +121,7 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}'
         tools:
-        - &id004
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -106,19 +132,34 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"loc'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.d:
         description: Multi-call, last call missing only end marker (body complete)
         ref: dynamo
         model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York"}'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.e:
         description: Multi-call, last call truncated mid-arg-value
         ref: dynamo
         model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York'
         tools:
-        - *id004
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.5.b:
         description: Orphan closing-marker — n/a for this family's syntax
         explanation: Orphan closing-marker test is n/a — llama3_json's output has no matching delimiter pair to leave unclosed.
@@ -131,8 +172,7 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_time", "arguments": {}}'
         tools:
-        - &id005
-          name: get_time
+        - name: get_time
           parameters:
             type: object
             properties: {}
@@ -141,13 +181,19 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_time", "arguments": { }}'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
       TOOLCALLING.batch.6.c:
         description: No arguments key
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_time"}'
         tools:
-        - *id005
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
   TOOLCALLING.batch.7.yaml:
     family: llama3_json
     mode: batch
@@ -233,8 +279,7 @@ documents:
         ref: dynamo
         model_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
         tools:
-        - &id006
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -245,19 +290,34 @@ documents:
         ref: dynamo
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.c:
         description: Narration both before and after (sandwich)
         ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_llama3_json_tool_parser.py#L128
         model_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.8.d:
         description: Narration between multiple tool calls
         ref: dynamo
         model_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Then check LA weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "LA"}}'
         tools:
-        - *id006
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.batch.yaml:
     family: llama3_json
     model_label: Llama 3 (JSON fmt)
@@ -267,8 +327,7 @@ documents:
         description: Single tool call (happy path)
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
         tools:
-        - &id007
-          name: get_weather
+        - name: get_weather
           parameters:
             type: object
             properties:
@@ -278,7 +337,12 @@ documents:
         description: No tool call (plain text)
         model_text: Hello, how can I help you today?
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.9.a:
         description: Empty model text
         model_text: ''
@@ -304,7 +368,12 @@ documents:
         description: Duplicate calls (same name twice, semicolon-separated)
         model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_weather", "arguments": {"location": "LA"}}'
         tools:
-        - *id007
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
       TOOLCALLING.batch.30.a:
         description: Llama JSON call separator `;` inside one argument string value
         ref: dynamo
@@ -406,7 +475,7 @@ documents:
         - delta_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: &id008
+        tools:
         - name: get_weather
           parameters:
             type: object
@@ -422,7 +491,13 @@ documents:
         - delta_text: '"arguments": {"location": "NYC"}}'
         - delta_text: ''
           finish_reason: tool_calls
-        tools: *id008
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
   TOOLCALLING.stream.2.yaml:
     family: llama3_json
     model_label: Llama 3 (JSON fmt)

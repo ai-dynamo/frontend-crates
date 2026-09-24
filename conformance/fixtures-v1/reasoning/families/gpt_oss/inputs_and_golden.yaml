@@ -17,23 +17,29 @@ documents:
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: plain answer
         expected:
-          dynamo_v1: &id001
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
           vllm_python:
             reasoning_text: ''
             normal_text: ''
-          sglang_python: *id001
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.2.a:
         description: Harmony analysis channel followed by final channel
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>analysis<|message|>thinking<|end|><|start|>assistant<|channel|>final<|message|>answer
         expected:
-          dynamo_v1: &id002
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id002
-          sglang_python: *id002
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.batch.3.a:
         description: Harmony analysis followed by commentary tool-call channel
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -55,12 +61,16 @@ documents:
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>commentary<|message|>I will check that.<|end|><|start|>assistant<|channel|>final<|message|>Done.
         expected:
-          dynamo_v1: &id003
+          dynamo_v1:
             reasoning_text: ''
             normal_text: 'I will check that.
 
               Done.'
-          vllm_python: *id003
+          vllm_python:
+            reasoning_text: ''
+            normal_text: 'I will check that.
+
+              Done.'
           sglang_python:
             reasoning_text: ''
             normal_text: I will check that.Done.
@@ -120,41 +130,57 @@ documents:
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>analysis<|message|>compute<|end|><|start|>assistant<|channel|>final<|message|>answer
         expected:
-          dynamo_v1: &id004
+          dynamo_v1:
             reasoning_text: compute
             normal_text: answer
-          vllm_python: *id004
-          sglang_python: *id004
+          vllm_python:
+            reasoning_text: compute
+            normal_text: answer
+          sglang_python:
+            reasoning_text: compute
+            normal_text: answer
       REASONING.batch.4:
         description: Final channel without prior analysis channel
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>final<|message|>answer
         expected:
-          dynamo_v1: &id005
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
-          vllm_python: *id005
-          sglang_python: *id005
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.5:
         description: Analysis channel without a final or commentary channel
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>analysis<|message|>partial reasoning<|end|>
         expected:
-          dynamo_v1: &id006
+          dynamo_v1:
             reasoning_text: partial reasoning
             normal_text: ''
-          vllm_python: *id006
-          sglang_python: *id006
+          vllm_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
+          sglang_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
       REASONING.batch.2.e:
         description: Empty analysis channel followed by final text
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>answer
         expected:
-          dynamo_v1: &id007
+          dynamo_v1:
             reasoning_text: ''
             normal_text: answer
-          vllm_python: *id007
-          sglang_python: *id007
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
       REASONING.batch.2.f:
         description: Complex Harmony analysis content with Unicode and newlines
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -164,36 +190,56 @@ documents:
 
           JSON-ish: {"x": [1, true]}<|end|><|start|>assistant<|channel|>final<|message|>Done.'
         expected:
-          dynamo_v1: &id008
+          dynamo_v1:
             reasoning_text: 'Line 1
 
               Unicode: café
 
               JSON-ish: {"x": [1, true]}'
             normal_text: Done.
-          vllm_python: *id008
-          sglang_python: *id008
+          vllm_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
       REASONING.batch.1.a:
         description: Empty input
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: ''
         expected:
-          dynamo_v1: &id009
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id009
-          sglang_python: *id009
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.batch.6.a:
         description: Multiple Harmony analysis spans
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
         model_text: <|channel|>analysis<|message|>first<|end|><|start|>assistant<|channel|>analysis<|message|>second<|end|><|start|>assistant<|channel|>final<|message|>done
         expected:
-          dynamo_v1: &id010
+          dynamo_v1:
             reasoning_text: 'first
 
               second'
             normal_text: done
-          vllm_python: *id010
+          vllm_python:
+            reasoning_text: 'first
+
+              second'
+            normal_text: done
           sglang_python:
             reasoning_text: firstsecond
             normal_text: done
@@ -233,11 +279,15 @@ documents:
         chunks:
         - ''
         expected:
-          dynamo_v1: &id011
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id011
-          sglang_python: *id011
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.a:
         description: Harmony analysis block across chunks
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -247,11 +297,15 @@ documents:
         - <|end|><|start|>assistant<|channel|>final<|message|>
         - answer
         expected:
-          dynamo_v1: &id012
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id012
-          sglang_python: *id012
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.2.b:
         description: Multiple Harmony analysis spans across chunks
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -260,12 +314,16 @@ documents:
         - <|channel|>analysis<|message|>second<|end|><|start|>assistant
         - <|channel|>final<|message|>done
         expected:
-          dynamo_v1: &id013
+          dynamo_v1:
             reasoning_text: 'first
 
               second'
             normal_text: done
-          vllm_python: *id013
+          vllm_python:
+            reasoning_text: 'first
+
+              second'
+            normal_text: done
           sglang_python:
             reasoning_text: firstsecond
             normal_text: done
@@ -277,11 +335,15 @@ documents:
         - <|chan
         - nel|>analysis<|message|>thinking<|end|><|start|>assistant<|channel|>final<|message|>answer
         expected:
-          dynamo_v1: &id014
+          dynamo_v1:
             reasoning_text: thinking
             normal_text: answer
-          vllm_python: *id014
-          sglang_python: *id014
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
       REASONING.stream.3.b:
         description: Harmony end marker split across chunks
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -305,13 +367,15 @@ documents:
         - plain <|chan
         - ce answer
         expected:
-          dynamo_v1: &id015
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
           vllm_python:
             reasoning_text: ''
             normal_text: ''
-          sglang_python: *id015
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.4.a:
         description: Recipientless Harmony commentary is visible normal text across chunks
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -319,12 +383,16 @@ documents:
         - <|channel|>commentary<|message|>I will check that.<|end|><|start|>assistant
         - <|channel|>final<|message|>Done.
         expected:
-          dynamo_v1: &id016
+          dynamo_v1:
             reasoning_text: ''
             normal_text: 'I will check that.
 
               Done.'
-          vllm_python: *id016
+          vllm_python:
+            reasoning_text: ''
+            normal_text: 'I will check that.
+
+              Done.'
           sglang_python:
             reasoning_text: ''
             normal_text: I will check that.Done.
@@ -336,7 +404,7 @@ documents:
         - <|channel|>commentary to=functions.get_
         - weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
         expected:
-          dynamo_v1: &id017
+          dynamo_v1:
             reasoning_text: ''
             normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
             explanation: Unlike vLLM streaming reasoning, Dynamo parses reasoning before tool calling. For GPT-OSS/Harmony, directed commentary is tool-call text, so Dynamo passes it in normal_text for the Harmony tool parser to emit structured tool_calls and remove the markup from final content.
@@ -344,7 +412,10 @@ documents:
             reasoning_text: ''
             normal_text: ''
             explanation: vLLM streaming reasoning suppresses directed Harmony commentary at the reasoning layer; Dynamo keeps it because normal_text is the handoff to the Harmony tool parser.
-          sglang_python: *id017
+          sglang_python:
+            reasoning_text: ''
+            normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"SF"}<|call|>
+            explanation: Unlike vLLM streaming reasoning, Dynamo parses reasoning before tool calling. For GPT-OSS/Harmony, directed commentary is tool-call text, so Dynamo passes it in normal_text for the Harmony tool parser to emit structured tool_calls and remove the markup from final content.
       REASONING.stream.4.c:
         description: Two directed Harmony commentary tool calls in one stream
         ref: 'inspired by vLLM GPT-OSS reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_gptoss_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
@@ -389,11 +460,15 @@ documents:
         - plain
         - ' answer'
         expected:
-          dynamo_v1: &id018
+          dynamo_v1:
             reasoning_text: ''
             normal_text: ''
-          vllm_python: *id018
-          sglang_python: *id018
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
       REASONING.stream.2.c:
         description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag)
         ref: dynamo

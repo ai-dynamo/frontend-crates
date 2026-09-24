@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: kimi_k2
 capture: dynamo_v2-0.1.23
@@ -7,138 +8,99 @@ documents:
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.10.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.13.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.2.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.2.c:
-        chunks:
-        - expected: []
-          normal_text: Bo
-        - expected: []
-          normal_text: th
-        - expected: []
-          normal_text: ': '
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"NYC"}'
-        - expected: []
-        - expected:
-          - index: 1
-            name: get_time
-            arguments: '{"timezone":"EST"}'
-        - expected: []
-          normal_text: ' Done.'
-        - expected: []
   TOOLCALLING.streamv1.3.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.4.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.5.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.5.h:
-        chunks:
-        - expected: []
-          normal_text: I will
-        - expected: []
-          normal_text: ' check that. '
-        - expected: []
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"NYC"}'
-        - expected: []
   TOOLCALLING.streamv1.50.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.6.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.7.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
   TOOLCALLING.streamv1.8.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases:
-      TOOLCALLING.streamv1.8.a:
-        chunks:
-        - expected: []
-          normal_text: I will check
-        - expected: []
-          normal_text: ' the'
-        - expected: []
-          normal_text: ' weather. '
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"Dallas"}'
-        - expected: []
-        - expected: []
-      TOOLCALLING.streamv1.8.c:
-        chunks:
-        - expected: []
-          normal_text: I will check
-        - expected: []
-          normal_text: ' the'
-        - expected: []
-          normal_text: ' weather. '
-        - expected:
-          - index: 0
-            name: get_weather
-            arguments: '{"location":"Dallas"}'
-        - expected: []
-        - expected: []
-          normal_text: ' Let me'
-        - expected: []
-          normal_text: ' know if you'
-        - expected: []
-          normal_text: ' need'
-        - expected: []
-          normal_text: ' more.'
-        - expected: []
   TOOLCALLING.streamv1.9.yaml:
     family: kimi_k2
     mode: streamv1
     captured_with:
       dynamo_v2: 0.1.23
-    cases: {}
+views:
+  python:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: 651423019d0661bdef468720e2d72240370e4fcadb3ad8fcdba61e49321b256f
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: b0b09faa836e9a681d95d5278155fdade98eed832f335093eae7b68179d765c8
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: e5b0f91f7a96d9ee501d236480e4dba666517f15c3d5e678fd8adc157cbb320a
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: 37b89f0618ad01287052532aa3e5093d9571ed1e4a2227959ec5536eae006205
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+  rust:
+    base: dynamo_v2-0.1.22
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: 651423019d0661bdef468720e2d72240370e4fcadb3ad8fcdba61e49321b256f
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]':
+        observation: b0b09faa836e9a681d95d5278155fdade98eed832f335093eae7b68179d765c8
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: e5b0f91f7a96d9ee501d236480e4dba666517f15c3d5e678fd8adc157cbb320a
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: 37b89f0618ad01287052532aa3e5093d9571ed1e4a2227959ec5536eae006205
+        producer: 1f2764d3863a4be4ee72c83aa14101b752bc803a4878b875d516676ce7d0042a
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.h"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}

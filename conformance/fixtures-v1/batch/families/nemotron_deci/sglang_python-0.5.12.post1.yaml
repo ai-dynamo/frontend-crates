@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: batch
 family: nemotron_deci
 capture: sglang_python-0.5.12.post1
@@ -5,196 +6,190 @@ documents:
   TOOLCALLING.batch.2.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.2.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.2.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.2.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.2.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.4.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.4.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.4.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.4.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.4.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.5.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.5.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.5.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.5.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.5.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.5.e:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.6.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.6.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.6.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.6.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.7.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.7.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.7.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.7.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.7.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.7.e:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.8.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.8.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.8.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.8.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.8.d:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.yaml:
     family: nemotron_deci
     mode: batch
-    cases:
-      TOOLCALLING.batch.1:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.3:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.9.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.9.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.10:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.batch.13:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.stream.1.yaml:
     family: nemotron_deci
     mode: stream
-    cases:
-      TOOLCALLING.stream.1.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.stream.1.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.stream.2.yaml:
     family: nemotron_deci
     mode: stream
-    cases:
-      TOOLCALLING.stream.2:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.stream.3.yaml:
     family: nemotron_deci
     mode: stream
-    cases:
-      TOOLCALLING.stream.3:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.stream.4.yaml:
     family: nemotron_deci
     mode: stream
-    cases:
-      TOOLCALLING.stream.4.a:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.stream.4.b:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
-      TOOLCALLING.stream.4.c:
-        expected:
-          sglang_python:
-            unavailable: SGLang has no detector for family='nemotron_deci'
+views:
+  python:
+    base: null
+    changes:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]':
+        observation: 8ce6c5ed8f2a7a5e8ea00ce96fb08b6f3602f90c6d5f3ce60d7a838cbc555365
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]':
+        observation: 618d7e297ed565a7fad68e7a6a78ee80c75bcd8717243df2f8e4d4d0b4db7b4a
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]':
+        observation: 3ec09acc375dc16dc6423066f751536aca21fe9e60f3211aa1fc1a292206c162
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]':
+        observation: 520d1ec6ecb3fb30b6402a68878b15798b81140bdecea146e615ffd0be388cca
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]':
+        observation: 4e33547c7213c2b1f305ea49fff0166a04afbc897a6e0ad2058ea77ed78bef0d
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]':
+        observation: 43aa1d126b68c30b5fd7c89d6ec6d92c7aa84b9c02d6e190483e76f9ec848edf
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]':
+        observation: 20e087b9d0e12bff771e3fa94458283b17d2f81070877056540f0cca5a02a741
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: a79e8c3163e94c98acc8e0aa9a03f1a3cabc1a90c668abf1fa48902150d96f05
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]':
+        observation: a697d417a7ae2f25e8aff58a6abbb39083744292c9ad26fffec0bec855cfca17
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]':
+        observation: bed201fcc9eaeb43ba1c316018951bdf8c648dc9d6b28a7892e9789740c6451a
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]':
+        observation: 8bcfab7e107263ec5832d0139db25f1a189591ca2579a4cf949af6a8bbdb4871
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]':
+        observation: c071011295567677622207c3af4b2e6d3c7b9bb993b3072250ba876d624acab8
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]':
+        observation: 8321326f3baf2a6ae8761197dff981bd960edc077321741c92b003efba4d42f5
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]':
+        observation: 3a70f83b3f47f29a850b7987f6b63840ae6bd0c3d8b144e9dd8140c268c8bc4a
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]':
+        observation: 6c386a9e4612fc10bb50e6911d55316114c3b1325a3df32dfed5b84f834413a8
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]':
+        observation: 3a1c5e937d4bb2047cdc58ef548c33c0ce14dbb5290d5b7516896546b70d1c43
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]':
+        observation: 29b3d5c467b9079433f3ed570ec6e1667fca3981faae5cb37a6bc0ce2330d6a2
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]':
+        observation: 25315d4604830d2d577a50fa2864074d4b704799196a8729f95bacd4195b6ce6
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]':
+        observation: 1a5510f0e9f11ebafc0501e1b7d707953f34d6456c6885b020d335fe6e5b616f
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]':
+        observation: 6bda8fb7b6e9e5abd531eb0d098396987670affbbf742a9f0b6b7d474d370330
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]':
+        observation: 47518d9890bbb454d1f08b9576cad3acb719584ff63264930524729843a245f7
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]':
+        observation: e62f39cdcfe145a207dd246268ca58c570d76be2ff415abca1a4825cd04009e4
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]':
+        observation: 81a8fb6b5ea430b2177b092ce6d67528bff428e31eaa95a15601b5bff4df6d84
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]':
+        observation: f59ade67497ad07a773b9711c6384f59848d3ea9f90fc1c0929c6f37bfe0c7e1
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]':
+        observation: 6a26ab6ac5232cbea144a5a6e76454887c3ce0a53cab8c04a51985277c08eec2
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]':
+        observation: be4078cc1159c0378f8d7604d1fa9de1706c0733e23d029bcf7a90ef32bce5f3
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]':
+        observation: e8488612db31990b7bd8a7a2c663d35ca92a6b431f2809ab36b5058df22960c4
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]':
+        observation: 4b6d2d918f1977ee9962ed6a29d6d7eb93538783b7878ddd46c45d62478d4e6e
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]':
+        observation: e7187d7620d6b0f1d25dbcb955561f94d0ee9140cdc0938575da3704edda798b
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]':
+        observation: 98c95c0aeeb19030f468d208e232749427c69e1667ab4a8c470ee0afa7c7cc8b
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: f1391b10dc806f2a8e51a46a409a76ee438c008d0c8507227ebba36e0288983a
+        producer: 9a0c40e35c4317f52e9ed1f8f4aa04e32ad75bbae8b5ee3a4b126a5ddd842175
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]':
+        observation: fa097f28c26dd7b0e26472dd048894aa800099b3090a04b234e09cb3e761bb01
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]':
+        observation: 344c230b9968179af9c2dbe64d70af67e824d32e592d06bdf1f014cd9181a168
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]':
+        observation: 44d24f213e188e89cb03c06391bd7d581eda0f025afffd6f75cda905059c82dc
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]':
+        observation: 273be81470d57cc4977b965f3bf226314e71eb3ea559c639c165f89dea162fdb
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]':
+        observation: 0216c49a618dc3e48a21ce6f4e9d8b2ee03d91c7cfb1e7c1eb2b3a69c97bafd8
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: fa03f76a7b59d060f67384face55f152ac1262ac83955de135c0668002ebaddc
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]':
+        observation: f5a77ff8b5627c803c48b307da2a70a8377b1e384e66e1f8bceb28e72c7989fc
+        producer: e4ee6a5b69f25aadb1e21c3a0e44f81f4de59ea22dba4206b888ccf4bfd1013b
+    annotations:
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.c"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.e"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.c"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.1"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.c"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.c"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.c"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.d"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.d"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.a"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.a"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.b"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.e"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.10"]': {}
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.a"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.stream.2.yaml","TOOLCALLING.stream.2"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.3"]': {}
+      '["TOOLCALLING.stream.3.yaml","TOOLCALLING.stream.3"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.13"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.a"]': {}
+      '["TOOLCALLING.batch.6.yaml","TOOLCALLING.batch.6.a"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.d"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.c"]': {}
+      '["TOOLCALLING.batch.8.yaml","TOOLCALLING.batch.8.a"]': {}
+      '["TOOLCALLING.batch.2.yaml","TOOLCALLING.batch.2.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.a"]': {}
+      '["TOOLCALLING.batch.5.yaml","TOOLCALLING.batch.5.a"]': {}
+      '["TOOLCALLING.stream.1.yaml","TOOLCALLING.stream.1.b"]': {}
+      '["TOOLCALLING.batch.7.yaml","TOOLCALLING.batch.7.d"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

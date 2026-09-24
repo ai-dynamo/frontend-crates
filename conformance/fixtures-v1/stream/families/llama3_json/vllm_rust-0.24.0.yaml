@@ -1,3 +1,4 @@
+schema: legacy-checkpoint-v1
 corpus: stream
 family: llama3_json
 capture: vllm_rust-0.24.0
@@ -7,8 +8,20 @@ documents:
     mode: streamv1
     captured_with:
       vllm_rust: 0.24.0
-    cases:
-      TOOLCALLING.streamv1.4.e:
-        exception: 'ToolParserError::ParsingFailed (invalid Llama JSON
-
-          expected `parameters`)'
+views:
+  python:
+    base: vllm_rust-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]':
+        observation: 7406a48c9a8a2dfe7575e465145ee2641baa04b10d30ae31c740746eee830113
+        producer: 8a53a428f15ef3296c637df16dc21b33877699ddd70eed8a7334482daf8d9d74
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]': {}
+  rust:
+    base: vllm_rust-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]':
+        observation: a9063015f2654598e8b9f88c0372001588deeaaa8e2988103c5f4c12347787d6
+        producer: 8a53a428f15ef3296c637df16dc21b33877699ddd70eed8a7334482daf8d9d74
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.e"]': {}
