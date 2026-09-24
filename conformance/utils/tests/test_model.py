@@ -318,6 +318,58 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     assert release["default_bucket"] == "C"
 
 
+@pytest.mark.parametrize("impl", table.fixtures.IMPL_KEYS)
+def test_stream_unrecorded_capture_is_distinct_from_recorded_empty_output(impl):
+    missing = table.fixtures._derive_stream_expected({"chunks": [{"delta_text": "null"}]})
+    assert "unavailable" in missing[impl]
+    recorded = table.fixtures._derive_stream_expected({"chunks": [{
+        "delta_text": "null", "expected": {impl: []},
+    }]})
+    assert recorded[impl]["calls"] == []
+    assert recorded[impl]["normal_text"] == ""
+    assert "unavailable" not in recorded[impl]
+
+
+@pytest.mark.parametrize("expected", [{}, {"dynamo_v1": {"calls": [], "normal_text": ""}}])
+def test_toolcalling_tooltip_omits_schema_without_a_baseline_result(expected):
+    tools = [{"name": "weather", "parameters": {"type": "object", "properties": {
+        "city": {"type": ["string", "null"]},
+    }}}]
+    case = {"__family": "qwen3_coder", "__case_id": "TOOLCALLING.batch.1",
+            "model_text": "null", "tools": tools, "expected": expected}
+    cell = table._toolcalling_cell_model(case, "batch", "qwen3_coder", "1", "batch", "cross_parser", lambda href: href)
+    assert "tools" not in cell["tooltip"]
+
+
+def test_null_case_descriptions_explain_schema_difference(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
+    scenarios = ("qwen_string_null", "qwen_nullable_string_null")
+    tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
+    assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
+    assert "`city` as `string` (non-nullable)" in tips[0]["description"]
+    assert "`city` as `string | null`" in tips[1]["description"]
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    rendered = json.loads(result.stdout)
+    assert all("Request tool schema" not in markup for markup in rendered)
+    assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
+
+
 @pytest.mark.parametrize("changed_field,value,missing_family", [
     (None, None, None), ("starting_state", "Reasoning", None),
     ("tool_output_mode", "GuidedJson", None), ("named_tool", "get_weather", None),

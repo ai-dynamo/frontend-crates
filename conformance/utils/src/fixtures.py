@@ -606,12 +606,14 @@ def _derive_stream_expected(case: dict) -> dict:
             for chunk in chunks
             if isinstance(chunk, dict)
         )
-        if impl == "vllm_rust" and not has_chunk_data:
-            derived[impl] = {"unavailable": VLLM_RUST_UNAVAILABLE}
+        if not has_chunk_data:
+            derived[impl] = {"unavailable": (
+                VLLM_RUST_UNAVAILABLE if impl == "vllm_rust"
+                else "No recorded capture for this case."
+            )}
             continue
-        # impl is not in `unavailable` → it was run for this case. Always emit a
-        # {calls, normal_text} block, even if empty (emitting zero calls is a real
-        # result that may diverge from another impl, not a "not applicable").
+        # An explicit empty chunk is a recorded zero-call result; an absent
+        # implementation is unrecorded and must not become a successful empty output.
         names: dict[int, str] = {}
         args: dict[int, str] = {}
         order: list[int] = []

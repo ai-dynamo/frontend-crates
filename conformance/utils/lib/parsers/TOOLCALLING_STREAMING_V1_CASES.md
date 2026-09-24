@@ -46,8 +46,8 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.d`** Nested object + array. Streaming form of `TOOLCALLING.batch.7.d`.
 - **`TOOLCALLING.streamv1.7.e`** Large / deep JSON-edge argument payload. Streaming form of `TOOLCALLING.batch.7.e`.
 - **`TOOLCALLING.streamv1.7.f`** Numeric precision edge preserves integer-like number literal. Streaming form of `TOOLCALLING.batch.7.f`.
-- **`TOOLCALLING.streamv1.7-1`** Qwen3 non-nullable string schema preserves parameter text `null` as the string `"null"`; the value is split inside `null`. Exercises `TOOLCALLING.xml.2` schema-aware coercion.
-- **`TOOLCALLING.streamv1.7-2`** Qwen3 nullable string schema converts parameter text `null` to JSON `null`; each character arrives in a separate chunk. Exercises `TOOLCALLING.xml.2` schema-aware coercion.
+- **`TOOLCALLING.streamv1.7-1`** A non-nullable string schema preserves bare parameter text `null` as the string `"null"` in Qwen3 Coder, GLM, MiniMax M2, and MiniMax M3; the value is split inside `null`. Exercises `TOOLCALLING.xml.2` schema-aware coercion.
+- **`TOOLCALLING.streamv1.7-2`** A nullable string schema converts bare parameter text `null` to JSON `null` in Qwen3 Coder, MiniMax M2, and MiniMax M3; each character arrives in a separate chunk. GLM prefers string in this union. Other grammars use quotes, string delimiters, or explicit type attributes instead of this schema-dependent ambiguity. Exercises `TOOLCALLING.xml.2` schema-aware coercion.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.

@@ -7747,7 +7747,7 @@ cases:
   qwen_string_null:
     lifecycle: active
     scenario: qwen_string_null
-    description: 'Qwen3 only: parameter text `null` under a non-nullable string schema is the string "null", not JSON null. This is also covered in TOOLCALLING.streamv1.7-1.'
+    description: The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` stays the string "null" in Qwen3 and GLM. This is also covered in TOOLCALLING.streamv1.7-1.
     policy:
     - I7
     display_id: UNIFIED.7-4
@@ -7784,11 +7784,12 @@ cases:
   qwen_nullable_string_null:
     lifecycle: active
     scenario: qwen_nullable_string_null
-    description: 'Qwen3 only: parameter text `null` under a nullable string schema is JSON null, not the string "null". This is also covered in TOOLCALLING.streamv1.7-2.'
+    description: The request schema declares `city` as `string | null`. With the same input text as 7-4, Qwen3 emits JSON null rather than the string "null". This is also covered in TOOLCALLING.streamv1.7-2.
     policy:
     - I7
-    display_id: UNIFIED.7-5
-    historical_ids: []
+    display_id: UNIFIED.qwen-1
+    historical_ids:
+    - UNIFIED.7-5
     request:
       input: <tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>
       init:

@@ -1289,10 +1289,8 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
         raw_counts = _raw_chunk_counts(impl, version)
         # Dynamo v1 and v2 are DIFFERENT parsers: v2 (dynamo_v2-0.1.11)
         # implements only a handful of families, while the v1 jail
-        # (dynamo_v1-3.0.0) covers all. The stream assembly defaults an absent
-        # impl to an empty-but-present block, which would paint the v2 parser green on
-        # families it doesn't implement. Gate on the version dir's actual family list
-        # so uncovered families read `na` (not implemented), not a clean empty output.
+        # (dynamo_v1-3.0.0) covers all. Gate on the version dir's actual family list
+        # to distinguish unsupported families from individual unrecorded cases.
         covered = _stream_version_families(impl, version) if impl in BASELINE_IMPLS else None
         for key, case in cases.items():
             block = _impl_get(case.get("expected") or {}, impl)

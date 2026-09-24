@@ -513,8 +513,9 @@ def test_scenario_families_matches_declared_scope():
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
-    assert G.scenario_families("qwen_string_null") == {"qwen3"}
+    assert G.scenario_families("qwen_string_null") == {"qwen3", "glm47"}
     assert G.scenario_families("qwen_nullable_string_null") == {"qwen3"}
+    assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == {"deepseek_v41"}
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
@@ -524,6 +525,32 @@ def test_only_families_rejects_an_empty_or_unknown_scope():
         OnlyFamilies({})
     with pytest.raises(ValueError, match="do not exist"):
         OnlyFamilies({"no_such_family": ("x",)})
+
+
+def test_schema_null_cases_keep_their_native_inputs_and_history():
+    qwen = build_cases("qwen3")
+    string = qwen["UNIFIED.qwen_string_null.qwen3"]
+    nullable = qwen["UNIFIED.qwen_nullable_string_null.qwen3"]
+    assert string["input"] == nullable["input"]
+    assert string["tools"][0]["parameters"]["properties"]["city"] == {"type": "string"}
+    assert nullable["tools"][0]["parameters"]["properties"]["city"] == {"type": ["string", "null"]}
+    glm = build_cases("glm47")["UNIFIED.qwen_string_null.glm47"]
+    assert "<arg_value>null</arg_value>" in glm["input"]
+    assert glm["tools"] == string["tools"]
+    assert glm["golden"] == string["golden"]
+    assert numbered_id("qwen_string_null") == "UNIFIED.7-4"
+    assert numbered_id("qwen_nullable_string_null") == "UNIFIED.qwen-1"
+    assert historical_unified_case_key("qwen3", "UNIFIED.7-5") == "UNIFIED.qwen-1"
+
+
+def test_deepseek_mixed_control_string_preserves_the_historical_id():
+    family = "deepseek_v41"
+    case = build_cases(family)["UNIFIED.deepseek_v41_mixed_control_text_in_string." + family]
+    value = case["golden"][0]["arguments"]["x"]
+    assert value == G._DS41_MIXED_STRING
+    assert "<think>quoted</think>" in value
+    assert '&amp; "x"' + "\\" + "\n" in value
+    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-3"
 
 
 # --- generated YAML must round-trip every authored byte -------------------------
@@ -583,23 +610,23 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 80,
-            "deepseek_v41": 80,
+            "deepseek_v41": 81,
             "gemma4": 82,
-            "glm47": 80,
+            "glm47": 81,
             "kimi_k2": 80,
             "kimi_k3": 88,
             "muse_glimmer": 81,
             "qwen3": 82,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 653
+    assert sum(per_family.values()) == 655
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-4", "5-5", "6-2", "7-3", "30-14", "32-6", "50-1", "50-2"} | {
+    deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 94
+    assert len(UNIFIED_TAX) == 95
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }

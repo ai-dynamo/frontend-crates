@@ -89,8 +89,11 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 ### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
 - **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
 - **`7-2`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
-- **`7-4`** (`qwen_string_null`) Qwen3 XML parameter text `null` under a non-nullable string schema stays the string `"null"`; this is also covered in `TOOLCALLING.streamv1.7-1` and `TOOLCALLING.xml.2`.
-- **`7-5`** (`qwen_nullable_string_null`) Qwen3 XML parameter text `null` under a nullable string schema becomes JSON `null`; this is also covered in `TOOLCALLING.streamv1.7-2` and `TOOLCALLING.xml.2`.
+- **`7-3`** (`deepseek_v41_mixed_control_text_in_string`) DeepSeek V4.1 DSML string arguments preserve embedded reasoning and tool delimiters, entity text, quotes, a backslash, and a newline. The exact input uses DeepSeek V4.1's DSML grammar; other families' marker-in-string coverage is `7-2`.
+- **`7-4`** (`qwen_string_null`) The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` remains the string `"null"` in Qwen3 and GLM. This is also covered in `TOOLCALLING.streamv1.7-1` and `TOOLCALLING.xml.2`.
+
+### Qwen3-specific schema case
+- **`qwen-1`** (`qwen_nullable_string_null`) This uses the same input text as `7-4`, with `city` declared as `string | null`; Qwen3 emits JSON `null`. This is also covered in `TOOLCALLING.streamv1.7-2` and `TOOLCALLING.xml.2`.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
 - **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
@@ -125,12 +128,12 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 80 of the 94 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 81 of the 95 taxonomy cases for this family.
 - Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 14 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `muse-1`, whose non-Muse variant duplicates `35-1`; and Qwen3-only null cases `7-4` and `7-5`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
+- The 14 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `muse-1`, whose non-Muse variant duplicates `35-1`; `7-4`, whose schema ambiguity is covered for Qwen3 and GLM; and the Qwen3-only nullable case `qwen-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
-<!-- TODO: Restore the 15 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 7-3, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
+<!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
 
 ## End-to-end test cases (`End-to-end:` tags)
 

@@ -1,0 +1,46 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.4
+    git_commit: a1a20a4ba57c3bef81eea8160507dbf206f214b2
+    source_sha256: b7f8c2e7c594ba473a74e19aae5af13f083399712a48f5940bb7d16974fb71ab
+document:
+  mode: unified
+changes:
+  retired__7_3:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: a65bfb3467013e75c26a53ab1ca362ab1cff6a85f8b05208d6c5cf9d6369e3ae
+    case_key: UNIFIED.7-3
+metadata_changes: {}
+document_overrides: {}

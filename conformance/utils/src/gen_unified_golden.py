@@ -617,6 +617,8 @@ CLEAN = [
 # --- EDGE scenarios: grammar-specific raw input per family --------------------
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
 
+_DS41_MIXED_STRING = ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"' + "\\" + "\n "
+
 EDGE = [
     ("glm47_parameterless_call_shape_inside_argument",
      "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
@@ -1318,8 +1320,22 @@ EDGE = [
                     k3_channel("think", "literal") + " then a call"),
      }),
 
+    (
+        "deepseek_v41_mixed_control_text_in_string",
+        "A DeepSeek V4.1 native DSML string parameter contains reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. All bytes are argument data; this combines marker classes and string preservation beyond 7-2's single closer.",
+        ["I7"],
+        [{"kind": "tool_call", "name": "f", "arguments": {"x": None}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        OnlyFamilies({
+            "deepseek_v41": (
+                r_tool("deepseek_v41", "f", "x", _DS41_MIXED_STRING, 0),
+                VLLM_UNCAPTURABLE["deepseek_v41"],
+                M,
+                _DS41_MIXED_STRING,
+            ),
+        }),
+    ),
 ]
-
 
 EDGE += [
     ("kimi_k3_typed_argument_values",
@@ -1853,7 +1869,7 @@ def _deepseek_v41_input(segments):
 EDGE += [
     (
         "qwen_string_null",
-        'Qwen3 only: parameter text `null` under a non-nullable string schema is the string "null", not JSON null. This is also covered in TOOLCALLING.streamv1.7-1.',
+        'The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` stays the string "null" in Qwen3 and GLM. This is also covered in TOOLCALLING.streamv1.7-1.',
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "null"}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -1864,6 +1880,11 @@ EDGE += [
                 M,
                 M,
             ),
+            "glm47": (
+                "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
+                M,
+                M,
+            ),
         }),
         [{"name": "get_weather", "parameters": {
             "type": "object", "properties": {"city": {"type": "string"}}
@@ -1871,7 +1892,7 @@ EDGE += [
     ),
     (
         "qwen_nullable_string_null",
-        'Qwen3 only: parameter text `null` under a nullable string schema is JSON null, not the string "null". This is also covered in TOOLCALLING.streamv1.7-2.',
+        'The request schema declares `city` as `string | null`. With the same input text as 7-4, Qwen3 emits JSON null rather than the string "null". This is also covered in TOOLCALLING.streamv1.7-2.',
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": None}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},

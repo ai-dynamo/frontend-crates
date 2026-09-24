@@ -1,0 +1,38 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.4
+    git_commit: a1a20a4ba57c3bef81eea8160507dbf206f214b2
+    source_sha256: b7f8c2e7c594ba473a74e19aae5af13f083399712a48f5940bb7d16974fb71ab
+document:
+  mode: unified
+changes:
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

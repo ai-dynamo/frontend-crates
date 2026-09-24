@@ -6276,3 +6276,87 @@ cases:
     - UNIFIED.muse-1
     request: null
     golden: null
+  deepseek_v41_mixed_control_text_in_string:
+    lifecycle: retired
+    scenario: deepseek_v41_mixed_control_text_in_string
+    description: A DeepSeek V4 or V4.1 native DSML string parameter contains reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. All bytes are argument data; this combines marker classes and string preservation beyond 7-2's single closer.
+    policy:
+    - I7
+    display_id: null
+    historical_ids:
+    - UNIFIED.7-3
+    request:
+      input: "<｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"true\"> <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="f">
+      - delta_text: <｜DSML｜parameter name="x" string="true">
+      - delta_text: ' '
+      - delta_text: <think>
+      - delta_text: quoted
+      - delta_text: </think>
+      - delta_text: ' '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' '
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ' '
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: " &amp; \"x\"\\\n "
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: " <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "

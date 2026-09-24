@@ -5781,13 +5781,13 @@ cases:
         arguments:
           cmd: git log </｜DSML｜ invoke> --oneline
   retired__7_3:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-3
+    lifecycle: active
+    scenario: deepseek_v41_mixed_control_text_in_string
+    description: A DeepSeek V4.1 native DSML string parameter contains reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. All bytes are argument data; this combines marker classes and string preservation beyond 7-2's single closer.
+    policy:
+    - I7
+    display_id: UNIFIED.7-3
+    historical_ids: []
     request:
       input: "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\"> <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
       init:
@@ -5857,7 +5857,12 @@ cases:
       - delta_text: </｜DSML｜ invoke>
       - delta_text: </｜DSML｜ calls>
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: " <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "
   text_before_tool:
     lifecycle: active
     scenario: text_before_tool
