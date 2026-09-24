@@ -9,6 +9,7 @@
 //! format so named and required tool choices can be constrained without
 //! changing what the K3 parser expects.
 
+use percent_encoding::percent_decode_str;
 use serde_json::{Map, Value};
 
 use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
@@ -67,6 +68,128 @@ fn bounded_string_regex(schema: &Map<String, Value>) -> Option<String> {
         .filter(|min| *min <= max_len)
         .unwrap_or(0);
     Some(format!("{STRING_ATOM}{{{min_len},{max_len}}}"))
+}
+
+// Resolve before extracting a property's JSON grammar: local pointers belong
+// to the complete tool schema, not to the extracted argument schema.
+fn resolve_argument_schema(root: &Value, schema: &Value, depth: usize) -> Option<Value> {
+    resolve_argument_schema_inner(root, schema, depth, &mut 4096)
+}
+
+fn resolve_argument_schema_inner(
+    root: &Value,
+    schema: &Value,
+    depth: usize,
+    remaining: &mut usize,
+) -> Option<Value> {
+    // Bound expansion as well as cycles: repeated references can form a DAG.
+    *remaining = remaining.checked_sub(1)?;
+    if depth >= 16 {
+        return None;
+    }
+    let Some(object) = schema.as_object() else {
+        return schema.is_boolean().then(|| schema.clone());
+    };
+    // A nested resource changes reference scope. Leave unsupported scopes and
+    // dynamic references on the existing permissive path.
+    if ["$id", "$dynamicRef", "$recursiveRef"]
+        .iter()
+        .any(|key| object.contains_key(*key))
+    {
+        return None;
+    }
+    if let Some(reference) = object.get("$ref") {
+        if object.keys().any(|key| {
+            !matches!(
+                key.as_str(),
+                "$ref"
+                    | "description"
+                    | "title"
+                    | "$comment"
+                    | "default"
+                    | "examples"
+                    | "deprecated"
+                    | "readOnly"
+                    | "writeOnly"
+            )
+        }) {
+            return None; // Do not discard sibling validation constraints.
+        }
+        let pointer = reference.as_str()?.strip_prefix('#')?;
+        let pointer = percent_decode_str(pointer).decode_utf8().ok()?;
+        return resolve_argument_schema_inner(root, root.pointer(&pointer)?, depth + 1, remaining);
+    }
+    let mut resolved = object.clone();
+    // Active references are inlined below; unused definitions need no new scope.
+    resolved.remove("$defs");
+    resolved.remove("definitions");
+    // Visit schema positions only; a literal enum/const object containing a
+    // "$ref" key is data and must remain unchanged.
+    for key in ["properties", "patternProperties", "dependentSchemas"] {
+        if let Some(children) = object.get(key).and_then(Value::as_object) {
+            let children = children
+                .iter()
+                .map(|(name, child)| {
+                    Some((
+                        name.clone(),
+                        resolve_argument_schema_inner(root, child, depth, remaining)?,
+                    ))
+                })
+                .collect::<Option<Map<_, _>>>()?;
+            resolved.insert(key.into(), Value::Object(children));
+        }
+    }
+    if let Some(dependencies) = object.get("dependencies").and_then(Value::as_object) {
+        let dependencies = dependencies
+            .iter()
+            .map(|(name, dependency)| {
+                let dependency = if dependency.is_array() {
+                    dependency.clone()
+                } else {
+                    resolve_argument_schema_inner(root, dependency, depth, remaining)?
+                };
+                Some((name.clone(), dependency))
+            })
+            .collect::<Option<Map<_, _>>>()?;
+        resolved.insert("dependencies".into(), Value::Object(dependencies));
+    }
+    for key in ["allOf", "anyOf", "oneOf", "prefixItems"] {
+        if let Some(children) = object.get(key).and_then(Value::as_array) {
+            let children = children
+                .iter()
+                .map(|child| resolve_argument_schema_inner(root, child, depth, remaining))
+                .collect::<Option<Vec<_>>>()?;
+            resolved.insert(key.into(), Value::Array(children));
+        }
+    }
+    for key in [
+        "items",
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "propertyNames",
+        "not",
+        "if",
+        "then",
+        "else",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+    ] {
+        if let Some(child) = object.get(key) {
+            let child = if let Some(items) = child.as_array() {
+                Value::Array(
+                    items
+                        .iter()
+                        .map(|item| resolve_argument_schema_inner(root, item, depth, remaining))
+                        .collect::<Option<Vec<_>>>()?,
+                )
+            } else {
+                resolve_argument_schema_inner(root, child, depth, remaining)?
+            };
+            resolved.insert(key.into(), child);
+        }
+    }
+    Some(Value::Object(resolved))
 }
 
 fn argument_tag(
@@ -233,10 +356,14 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
                 .map(|value| (key.to_string(), Value::Object(value.clone())))
         })
         .collect();
+    let root_schema = Value::Object(parameters.clone());
     let tags = properties
         .iter()
         .map(|(key, schema)| {
-            argument_format(key, schema, Some(&root_defs))
+            resolve_argument_schema(&root_schema, schema, 0)
+                .and_then(|resolved| argument_format(key, &resolved, None))
+                // Unsupported reference scopes must not weaken a supported schema.
+                .or_else(|| argument_format(key, schema, Some(&root_defs)))
                 .unwrap_or_else(|| Format::Tag(permissive_argument_tag()))
         })
         .collect();
@@ -422,6 +549,124 @@ mod tests {
         .unwrap();
         let value = serde_json::to_value(format).unwrap();
         assert_eq!(value["elements"][0]["content"]["value"], "fixed");
+    }
+
+    #[test]
+    fn local_references_retain_object_and_deep_enum_constraints() {
+        let object_schema = json!({
+            "$defs": {"Schema": {
+                "properties": {"input": {"type": "string"}, "notes": {"type": "string"}},
+                "required": ["input", "notes"], "type": "object", "additionalProperties": false
+            }},
+            "properties": {"data": {"$ref": "#/$defs/Schema"}},
+            "required": ["data"], "type": "object", "additionalProperties": false
+        });
+        let resolved =
+            resolve_argument_schema(&object_schema, &object_schema["properties"]["data"], 0)
+                .unwrap();
+        let tag = serde_json::to_value(argument_tag("data", &resolved, None).unwrap()).unwrap();
+        assert_eq!(
+            tag["begin"],
+            format!("{OPEN}argument key=\"data\" type=\"object\"{SEP}")
+        );
+        assert_eq!(
+            tag["content"]["json_schema"],
+            object_schema["$defs"]["Schema"]
+        );
+
+        let deep_schema = json!({
+            "type": "object", "properties": {
+                "operations": {"type": "array", "items": {"anyOf": [
+                    {"type": "object", "properties": {"title": {"type": "string"}}, "required": ["title"]},
+                    {"type": "object", "properties": {"kind": {"type": "string", "enum": ["MP1580_DEEP_REF_INLINED"]}}, "required": ["kind"]}
+                ]}},
+                "marker": {"$ref": "#/properties/operations/items/anyOf/1/properties/kind"}
+            }, "required": ["operations", "marker"]
+        });
+        let resolved =
+            resolve_argument_schema(&deep_schema, &deep_schema["properties"]["marker"], 0).unwrap();
+        let tag = serde_json::to_value(argument_tag("marker", &resolved, None).unwrap()).unwrap();
+        assert_eq!(tag["content"]["value"], "MP1580_DEEP_REF_INLINED");
+    }
+
+    #[test]
+    fn embedded_reference_uses_original_root_and_preserves_literal_data() {
+        let schema = json!({
+            "$defs": {"Payload": {"type": "object", "properties": {
+                "value": {"$ref": "#/properties/count"},
+                "literal": {"const": {"$ref": "this is data"}}
+            }}},
+            "properties": {
+                "count": {"type": "integer"},
+                "data": {"$ref": "#/$defs/Payload"}
+            }
+        });
+        let resolved = resolve_argument_schema(&schema, &schema["properties"]["data"], 0).unwrap();
+        assert_eq!(resolved["properties"]["value"], json!({"type": "integer"}));
+        assert_eq!(
+            resolved["properties"]["literal"]["const"],
+            json!({"$ref": "this is data"})
+        );
+    }
+
+    #[test]
+    fn percent_encoded_reference_retains_argument_type() {
+        let root = json!({
+            "$defs": {"Foo Bar": {"type": "integer"}},
+            "properties": {"value": {"$ref": "#/$defs/Foo%20Bar"}}
+        });
+        let resolved = resolve_argument_schema(&root, &root["properties"]["value"], 0).unwrap();
+        assert_eq!(resolved, json!({"type": "integer"}));
+    }
+
+    #[test]
+    fn dependency_schemas_resolve_local_references_without_changing_property_dependencies() {
+        let root = json!({
+            "$defs": {"Value": {"type": "integer"}},
+            "properties": {"data": {
+                "type": "object",
+                "dependencies": {
+                    "mode": {"properties": {"value": {"$ref": "#/$defs/Value"}}},
+                    "name": ["mode"]
+                }
+            }}
+        });
+        let resolved = resolve_argument_schema(&root, &root["properties"]["data"], 0).unwrap();
+        assert_eq!(
+            resolved["dependencies"]["mode"]["properties"]["value"],
+            json!({"type": "integer"})
+        );
+        assert_eq!(resolved["dependencies"]["name"], json!(["mode"]));
+    }
+
+    #[test]
+    fn resolver_limits_preserve_preexisting_typed_argument_grammars() {
+        let large_properties: Map<String, Value> = (0..4097)
+            .map(|index| (format!("field{index}"), json!({"type": "integer"})))
+            .collect();
+        let field_schema = json!({"type": "object", "properties": large_properties});
+        let parameters = json!({"properties": {"value": field_schema.clone()}});
+        let value = serde_json::to_value(arguments_block(Some(&parameters))).unwrap();
+        assert_eq!(
+            value["content"]["begin"],
+            format!("{OPEN}argument key=\"value\" type=\"object\"{SEP}")
+        );
+        assert_eq!(value["content"]["content"]["json_schema"], field_schema);
+    }
+
+    #[test]
+    fn unsupported_reference_scopes_and_constraints_remain_permissive() {
+        let root =
+            json!({"$defs": {"Cycle": {"$ref": "#/$defs/Cycle"}, "Text": {"type": "string"}}});
+        for schema in [
+            json!({"$ref": "#/$defs/Cycle"}),
+            json!({"$ref": "#/$defs/Missing"}),
+            json!({"$ref": "https://example.test/schema"}),
+            json!({"$ref": "#/$defs/Text", "enum": ["fixed"]}),
+            json!({"$id": "nested", "type": "object"}),
+        ] {
+            assert!(resolve_argument_schema(&root, &schema, 0).is_none());
+        }
     }
 
     #[test]
