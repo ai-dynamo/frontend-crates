@@ -38,9 +38,10 @@ def _assert_value(value, schema):
 
 
 def _assert_golden_schemas(cases, tools):
-    schemas = {tool["name"]: tool["parameters"] for tool in tools}
-    assert len(schemas) == len(tools)
     for case in cases.values():
+        offered = case.get("tools", tools)
+        schemas = {tool["name"]: tool["parameters"] for tool in offered}
+        assert len(schemas) == len(offered)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
                 _assert_value(event["arguments"], schemas[event["name"]])
@@ -94,16 +95,20 @@ def test_peer_request_schema_projection_matches_shared_definition(script):
     assert actual == unified_tools()
 
 
-def test_rust_harnesses_consume_the_shared_schema_owner():
+def test_rust_harnesses_use_case_tools_with_shared_defaults():
     tests = SRC.parents[1] / "tests"
     common = (tests / "common/mod.rs").read_text()
     assert 'include_str!("../../utils/src/unified_tools.json")' in common
-    assert 'serde_json::from_value(unified_tool_schemas())' in common
-    assert '"tools": common::unified_tool_schemas()' in (tests / "unified_render.rs").read_text()
-    for name in ("unified_render.rs", "unified_parity.rs", "capture_cross_version.rs"):
-        source = (tests / name).read_text()
-        assert "unified_tools as tools" in source
-        assert "fn tools()" not in source
+    assert 'parse_unified_tools(&unified_tool_schemas())' in common
+    assert 'serde_json::from_value(schemas.clone())' in common
+    render = (tests / "unified_render.rs").read_text()
+    parity = (tests / "unified_parity.rs").read_text()
+    capture = (tests / "capture_cross_version.rs").read_text()
+    assert '"tools": case.tools' in render
+    assert 'common::parse_unified_tools(&case.tools)' in render
+    assert 'common::parse_unified_tools(&case.tools)' in parity
+    assert 'common::parse_unified_tools(&schemas)' in capture
+    assert '"tools":schemas' in capture
     peer = (SRC / "capture_vllm_rust_unified.py").read_text()
     assert 'serde_json::from_str(include_str!("unified_tools.json"))' in peer
     assert '(crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())' in peer
