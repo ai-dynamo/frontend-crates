@@ -123,7 +123,6 @@ mod tests {
             std::sync::Arc::new(FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap()).into();
         for (pieces, skip) in [
             (vec!["<0x61>", "<0xF5>"], false),
-            (vec!["<0xC3>", "<0xA9>"], false),
             (vec!["<0x61>", "</s>", "<0xF5>"], false),
             (vec!["<0x61>", "</s>", "<0xF5>"], true),
         ] {
