@@ -67,7 +67,7 @@ def execute(command, log, env=None, timeout=600):
     }
 
 
-def render(out):
+def render(out, comparisons=None):
     metadata = json.loads((out / "metadata.json").read_text())
     results = [
         json.loads(line)
@@ -89,16 +89,22 @@ def render(out):
         any(v[k] for k in ["fail", "error", "not_run"]) for v in group_status.values()
     )
     metadata["groups_with_results"] = sum(bool(v) for v in group_status.values())
+    comparison_data = json.loads(comparisons.read_text()) if comparisons else None
+    metadata["report_renderer_sha256"] = sha(Path(__file__))
+    if comparisons:
+        metadata["pr_comparison_sha256"] = sha(comparisons)
+        metadata["pr_comparison_generated_utc"] = utc()
     payload = json.dumps(
         {
             "metadata": metadata,
             "results": results,
             "catalogue": catalogue,
             "categories": CATEGORIES,
+            "comparisons": comparison_data,
         },
         ensure_ascii=False,
     ).replace("<", "\\u003c")
-    page = HTML.replace("__DATA__", payload)
+    page = HTML.replace("__PR_SCRIPT__", PR_SCRIPT).replace("__DATA__", payload)
     (out / "report.html").write_text(page)
     (out / "summary.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return metadata
@@ -109,6 +115,7 @@ HTML = r"""<!doctype html>
 <style>
 :root{color-scheme:light;--ink:#162126;--muted:#58676f;--border:#d8e0e3;--green:#236800;--red:#a82624;--bg:#f5f7f8}*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif;color:var(--ink);background:var(--bg)}header{background:#172327;color:white;padding:32px max(24px,calc((100% - 1440px)/2));border-top:5px solid #76b900}header p{color:#cdd8db;max-width:1000px}h1{font-size:29px;margin:8px 0}h2{font-size:19px;margin:26px 0 12px}main{max-width:1488px;margin:auto;padding:0 24px 48px}a{color:#176192}header a{color:#b5dff3}code{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:650;font-size:12px}.pass{background:#e5f2df;color:var(--green)}.fail,.error,.not_run{background:#fde8e7;color:var(--red)}.unavailable,.not_applicable{background:#edf0f2;color:#55616a}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0}.card{background:white;border:1px solid var(--border);padding:18px;text-align:left;border-radius:7px;color:inherit;cursor:pointer}.card strong{display:block;font-size:30px}.card small{color:var(--muted)}.note{border-left:4px solid #83ae50;background:white;padding:14px 18px;margin:16px 0}.scroll{overflow:auto;background:white;border:1px solid var(--border);border-radius:6px}table{border-collapse:collapse;width:100%;text-align:left}th{background:#edf1f2;font-size:12px;text-transform:uppercase;letter-spacing:.04em}th,td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:top}td.num{font-variant-numeric:tabular-nums}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #277db1;outline-offset:2px}.matrix-button{border:0;background:none;padding:0;text-align:left;color:inherit}.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:white;padding:14px;border:1px solid var(--border);border-radius:6px;position:sticky;top:0;z-index:1}label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}input,select{padding:8px;border:1px solid #adbcc3;border-radius:4px;background:white;max-width:260px}.details summary{cursor:pointer;color:#176192}.details pre{margin:6px 0 12px;background:#f5f7f8;border:1px solid #d8e0e3;border-radius:4px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;font-size:12px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}summary{font-weight:600}.subtle{color:var(--muted)}.pager{display:flex;gap:12px;align-items:center;padding:15px 0}.pager button,.reset{padding:7px 12px;background:white;border:1px solid #aebcc2;border-radius:4px}.count{font-size:12px;color:var(--muted)}.pill{padding:2px 6px;background:#eef1f3;border-radius:4px;font-size:11px}footer{margin-top:30px;color:var(--muted)}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}header{padding:24px}main{padding:0 14px 30px}.filters{position:static}}
 </style></head><body><header><div class="subtle" style="color:#a9c879">FRONTEND-CRATES · CPU CORRECTNESS BASELINE</div><h1>Schema and type coercion across parser generations</h1><p id="headline"></p><div id="revision"></div></header><main>
+<section id="pr-comparisons" hidden></section>
 <div class="cards" id="cards"></div>
 <div class="note"><strong>How to read these results.</strong> A row is one authored case on one parser surface. It can contain many chunking executions. Failure counts are not distinct bug counts. Unavailable implementations and non-applicable paths are excluded from the pass rate. Expectations are authored independently; current output is never used as the oracle. Production parser code is unchanged from the pinned commit. Corpus provenance: PRs <a href="https://github.com/ai-dynamo/frontend-crates/pull/215">#215</a>, #220, #223, #248, #251, #268–#271, #273–#275, #277, #280; the saved reproduction instructions contain the full group-to-PR mapping.</div>
 <h2>Family × parser surface</h2><p class="subtle">Cells show passed / failed case rows. Click a cell to inspect its evidence. Native Unified is a separate implementation surface from v2 tool parsing.</p><div class="scroll"><table id="matrix"></table></div>
@@ -122,6 +129,7 @@ HTML = r"""<!doctype html>
 <footer>This self-contained report uses no external scripts, fonts, or services. Raw observations: <a href="results.jsonl">results.jsonl</a> · <a href="cases.json">authored cases</a> · <a href="summary.json">summary</a> · <a href="metadata.json">run metadata</a> · <a href="suite-source/README.md">reproduction instructions</a>. Historical canonical conformance captures were not rewritten.</footer>
 </main><script>
 const DATA=__DATA__;const M=DATA.metadata,R=DATA.results,C=DATA.catalogue;const el=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const fmt=n=>(n||0).toLocaleString();const bad=r=>['fail','error','not_run'].includes(r.status);const badge=s=>`<span class="badge ${esc(s)}">${esc(s.replaceAll('_',' '))}</span>`;
+__PR_SCRIPT__
 el('headline').textContent=`${C.length} named contract groups · ${fmt(R.length)} case/surface observations · ${fmt(M.executions)} executions including chunk boundaries. Baseline completed ${M.finished_utc}.`;
 el('revision').innerHTML=`<a href="https://github.com/ai-dynamo/frontend-crates/commit/${esc(M.baseline_sha)}"><code>${esc(M.baseline_sha)}</code></a> · commit ${esc(M.commit_time)}<br><small>Main verified ${esc(M.main_checked_utc)} · test overlay SHA-256 ${esc(M.suite_sha256.slice(0,16))}</small>`;
 const fail=R.filter(bad).length, pass=R.filter(r=>r.status==='pass').length;
@@ -141,16 +149,61 @@ el('runs').innerHTML='<thead><tr><th>Command</th><th>Exit</th><th>Duration</th><
 </script></body></html>"""
 
 
+PR_SCRIPT = r"""
+if(DATA.comparisons){
+ const PC=DATA.comparisons, prs=PC.prs, host=el('pr-comparisons');host.hidden=false;
+ const link=sha=>`<a href="https://github.com/ai-dynamo/frontend-crates/commit/${esc(sha)}"><code>${esc(sha.slice(0,12))}</code></a>`;
+ const count=(p,k)=>p.change_counts[k]||0;
+ const numDelta=n=>n>0?'+'+n:String(n);
+ const kinds={fixed:'Fixed',regressed:'Regressed',partially_improved:'Partially improved',worsened:'Worsened',changed_failure:'Changed failure',availability_changed:'Availability changed',execution_changed:'Execution changed',check_count_changed:'Check count changed'};
+ const contractDescription=new Map(C.map(c=>[c.id,c.description]));
+ const groupCounts=m=>{const v=Object.values(m.group_tests);return `${v.filter(x=>x==='ok').length} / ${v.filter(x=>x==='FAILED').length}`};
+ const failedRows=m=>(m.counts.fail||0)+(m.counts.error||0)+(m.counts.not_run||0);
+ host.innerHTML=`<h2>Open PRs: fixes and regressions</h2><p><strong>${prs.length} PRs</strong> from michaelfeil and qimcis · discovered ${esc(PC.manifest.discovered_utc)} · completed ${esc(PC.campaign.finished_utc||'in progress')}.</p><div class="note"><strong>Comparison method:</strong> each PR's merge base versus its exact head, with the same frozen suite on both revisions. Shared bases are run once per SHA. These are independent PR comparisons, not a cumulative stack or simulations merged onto latest main. Fixed means fail → pass; regressed means pass → fail. Smaller or larger failure counts inside a still-failing row are shown separately. Overlapping PRs can fix the same case, so their gains must not be added as unique fixes. Failed-row totals include explicit harness errors, which are retained in the evidence and called out per PR. Only the new 110-group suite was run.</div><div class="scroll"><table id="pr-summary"><thead><tr><th>PR / author</th><th>Before → after<br>passed / failed rows</th><th>Fixed</th><th>Regressed</th><th>Other changed</th><th>Pass delta</th><th>Groups pass / fail<br>before → after</th></tr></thead><tbody>${prs.map(p=>`<tr><td><a href="${esc(p.url)}">#${p.number}</a> ${esc(p.title)}<br><span class="subtle">${esc(p.author.login)}</span></td><td>${p.comparable?`${fmt(p.before.counts.pass)} / ${fmt(failedRows(p.before))} → ${fmt(p.after.counts.pass)} / ${fmt(failedRows(p.after))}`:badge('not_run')}</td><td><button class="matrix-button" data-pr="${p.number}" data-kind="fixed"><span class="badge pass">${p.comparable?count(p,'fixed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="regressed"><span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${p.comparable?count(p,'regressed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="">${p.changes.length-count(p,'fixed')-count(p,'regressed')}</button></td><td>${p.comparable?numDelta(p.delta.pass):'incomplete'}</td><td>${groupCounts(p.before)} → ${groupCounts(p.after)}</td></tr>`).join('')}</tbody></table></div><p class="subtle">The table counts case/surface rows, not individual bugs. Expand a PR to inspect every changed assertion, expected values, before/after output, group result changes, and source revisions. The original main baseline remains below.</p><details class="details"><summary>PR campaign provenance and inventory</summary><pre>${esc(JSON.stringify({campaign:PC.campaign,inventory:PC.manifest},null,2))}</pre></details><div id="pr-details"></div>`;
+ for(const p of prs){
+  const section=document.createElement('details');section.id='pr-'+p.number;section.className='details';section.style='margin:12px 0;background:white;border:1px solid var(--border);padding:14px;border-radius:6px';
+  const summary=document.createElement('summary');summary.innerHTML=`#${p.number} ${esc(p.title)} — <span class="badge pass">${count(p,'fixed')} fixed</span> <span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${count(p,'regressed')} regressed</span>${p.comparable?'':' '+badge('not_run')}`;section.append(summary);
+  const body=document.createElement('div');section.append(body);el('pr-details').append(section);
+  let build;
+  section.addEventListener('toggle',()=>{if(section.open)build()});
+  build=()=>{
+   if(body.dataset.loaded)return;body.dataset.loaded='1';
+   body.innerHTML=`<p><strong>Before:</strong> ${link(p.merge_base)} · ${esc(p.before.started_utc)} · ${p.before.seconds}s<br><strong>After:</strong> ${link(p.headRefOid)} · ${esc(p.after.started_utc)} · ${p.after.seconds}s<br><strong>Observation delta:</strong> ${Object.entries(p.delta).map(([k,v])=>esc(k)+': '+numDelta(v)).join(' · ')}</p>${p.comparable?'':`<div class="note">This pair is incomplete. Before: ${esc(p.before.run_status)}; after: ${esc(p.after.run_status)}. Missing results are not passes. Inspect run logs before interpreting changes.</div>`}${p.baseline_limitations?.length?`<div class="note"><strong>Pre-existing limitations on both revisions:</strong><ul>${p.baseline_limitations.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}<p><strong>Named Rust tests that changed:</strong> ${p.group_changes.length?p.group_changes.map(g=>`<code>${g.group}</code> ${esc(g.before)} → ${esc(g.after)}`).join('; '):'None. Individual case fixes can leave their containing group failing.'}</p><p><a href="../pr-comparison/runs/${esc(p.merge_base)}/contracts.log">Before log</a> · <a href="../pr-comparison/runs/${esc(p.headRefOid)}/contracts.log">After log</a> · <a href="../pr-comparison/runs/${esc(p.merge_base)}/results.jsonl">Before raw rows</a> · <a href="../pr-comparison/runs/${esc(p.headRefOid)}/results.jsonl">After raw rows</a></p><details><summary>Changed PR files and exact run metadata</summary><pre>${esc(JSON.stringify({files:p.files,before:p.before,after:p.after},null,2))}</pre></details>`;
+   const controls=document.createElement('div');controls.style='display:flex;flex-wrap:wrap;gap:12px;margin:14px 0';
+   const label=document.createElement('label');label.textContent='Result change';const select=document.createElement('select');select.setAttribute('aria-label','Result change for PR '+p.number);
+   for(const [value,title] of [['','All changed results'],...Object.entries(kinds)]){const opt=document.createElement('option');opt.value=value;opt.textContent=title;select.append(opt)}label.append(select);controls.append(label);
+   const searchLabel=document.createElement('label');searchLabel.textContent='Filter cases';const search=document.createElement('input');search.type='search';search.placeholder='Group, family, or case';search.setAttribute('aria-label','Filter cases for PR '+p.number);searchLabel.append(search);controls.append(searchLabel);body.append(controls);
+   const info=document.createElement('p');info.className='subtle';info.setAttribute('aria-live','polite');body.append(info);
+   const wrap=document.createElement('div');wrap.className='scroll';const table=document.createElement('table');table.innerHTML='<thead><tr><th>Case / surface</th><th>Change</th><th>Before → after</th><th>Evidence</th></tr></thead><tbody></tbody>';wrap.append(table);body.append(wrap);
+   const drawPR=()=>{const q=search.value.toLowerCase();const rows=p.changes.filter(c=>(!select.value||c.kind===select.value)&&(!q||[c.id,c.group,c.family,c.surface].join(' ').toLowerCase().includes(q)));info.textContent=`${rows.length} matching changed rows; ${p.changes.length} total changed rows. ${p.changes.length?'':'No observed change in this suite does not establish that the PR is behaviorally inert.'}`;const tbody=table.querySelector('tbody');tbody.replaceChildren();
+    for(const c of rows){const tr=document.createElement('tr');tr.innerHTML=`<td><code>${esc(c.id)}</code><br>${esc(c.surface)} · ${esc(c.family)}</td><td><span class="badge ${c.kind==='fixed'?'pass':['regressed','worsened'].includes(c.kind)?'fail':'not_applicable'}">${esc(kinds[c.kind])}</span></td><td>${badge(c.before?.status||'not_run')} → ${badge(c.after?.status||'not_run')}<br><small>Failed checks ${c.before?.failed_checks||0} → ${c.after?.failed_checks||0}</small></td><td></td>`;
+     const evidence=document.createElement('details');const title=document.createElement('summary');title.textContent='Expected vs before / after';evidence.append(title);evidence.addEventListener('toggle',()=>{if(!evidence.open||evidence.dataset.loaded)return;evidence.dataset.loaded='1';for(const [name,value] of [['Contract',contractDescription.get(c.group)],['Authored case',(c.after||c.before).case||{tools:(c.after||c.before).tools,expected:(c.after||c.before).expected}],['Before',c.before],['After',c.after]]){const h=document.createElement('strong');h.textContent=name;const pre=document.createElement('pre');pre.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);evidence.append(h,pre)}});tr.lastElementChild.append(evidence);tbody.append(tr);
+    }
+   };
+   select.onchange=drawPR;search.oninput=drawPR;
+   select.value=count(p,'regressed')?'regressed':count(p,'fixed')?'fixed':'';drawPR();
+   section.filterKind=kind=>{select.value=kind;search.value='';drawPR()};
+  };
+  section.showKind=kind=>{section.open=true;build();section.filterKind(kind);section.scrollIntoView({block:'start'})};
+ }
+ host.querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>el('pr-'+b.dataset.pr).showKind(b.dataset.kind));
+}
+"""
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--xgrammar-python", default=sys.executable)
     ap.add_argument("--render-only", action="store_true")
+    ap.add_argument(
+        "--comparisons", type=Path, help="comparisons.json from compare_prs.py"
+    )
     args = ap.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     if args.render_only:
-        print(json.dumps(render(out), indent=2))
+        print(json.dumps(render(out, args.comparisons), indent=2))
         return
     subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
     baseline = git("rev-parse", "origin/main")
@@ -310,7 +363,7 @@ def main():
         for name in ["cases.json", "results.jsonl", "contracts.log"]
     }
     (out / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
-    summary = render(out)
+    summary = render(out, args.comparisons)
     print(
         json.dumps(
             {

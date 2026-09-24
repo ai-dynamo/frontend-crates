@@ -96,3 +96,40 @@ The suite implements the schema/coercion audit across these frontend-crates PRs:
 
 PR status is not inferred from test results. The report's immutable main SHA is the
 implementation under test; the test overlay is identified by its own SHA-256 digest.
+
+## Compare PR revisions
+
+`compare_prs.py` runs only this new suite on the exact merge base and head of each
+PR in a saved `manifest.json`. Shared merge bases run once per SHA. Every revision
+uses the six frozen test files from the manifest's `suite_commit`, independent of
+later report-renderer edits. It preserves logs, UTC timestamps, dependency-lock
+hashes, source hashes, and every case/surface result under `runs/<full-sha>/`.
+
+```bash
+python3 conformance/schema_suite/compare_prs.py run \
+  --output /absolute/path/pr-comparison \
+  --baseline /absolute/path/baseline \
+  --worktree /absolute/path/isolated-audit-worktree \
+  --target-dir /absolute/path/cargo-target \
+  --xgrammar-python "$SCHEMA_SUITE_XGRAMMAR_PYTHON"
+python3 conformance/schema_suite/report.py --render-only \
+  --output /absolute/path/baseline \
+  --comparisons /absolute/path/pr-comparison/comparisons.json
+```
+
+The manifest pins `main_sha`, `suite_commit`, discovery time, and a `prs` array
+containing each PR's number, URL, author, title, `merge_base`, `headRefOid`, and
+changed files. The referenced commits must already be fetched locally. Resuming
+reuses only completed runs with matching suite/result hashes. `compare` in place
+of `run` recomputes deltas from saved evidence without executing tests.
+
+Fixed means a failing case/surface becomes passing; regressed is the reverse.
+Still-failing cases with fewer/more failed partitions are partial improvements or
+worsenings. Changed failure witnesses are retained separately; generated call IDs
+and XGrammar diagnostic clock timestamps are excluded from change detection. Group-level Rust
+test changes are reported independently: fixing one case may leave a group red.
+Unchanged harness errors on older revisions are identified as pre-existing.
+An incomplete build/run is explicit and is not presented as a comparable clean
+result. This compares each PR with its own base, not a cumulative PR stack or a
+simulated merge onto current main; overlapping improvements cannot be summed as
+unique fixes.
