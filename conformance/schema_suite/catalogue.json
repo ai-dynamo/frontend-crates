@@ -1,0 +1,442 @@
+[
+  {
+    "id": "A01",
+    "description": "String `hello`, empty string, whitespace-only string \u2014 Exact string content; empty is distinct from missing and null. \u2014 R"
+  },
+  {
+    "id": "A02",
+    "description": "String content `null`, `true`, `false`, `42`, `1.25` \u2014 Strings stay strings under an explicit string representation/schema. \u2014 R"
+  },
+  {
+    "id": "A03",
+    "description": "String content `{}`, `{\"a\":1}`, `[]`, `[1,true]`, `\"quoted\"` \u2014 No JSON inference or double-unquoting of explicit strings. \u2014 R"
+  },
+  {
+    "id": "A04",
+    "description": "String with spaces, tabs, LF, CRLF, quotes, backslashes \u2014 Preserve payload according to the family encoder's escaping rules. DeepSeek/GLM strings are literal; do not impose a global XML decoder. \u2014 R"
+  },
+  {
+    "id": "A05",
+    "description": "`caf\u00e9`, CJK, combining characters, emoji \u2014 Preserve code points; valid Rust `&str` chunk boundaries only. \u2014 R"
+  },
+  {
+    "id": "A06",
+    "description": "Signed integer 0, -1, 42 \u2014 Actual JSON number with exact integer value, not string/bool. \u2014 R"
+  },
+  {
+    "id": "A07",
+    "description": "Fraction -1.25, exponent `1e2`, integral number `42.0` \u2014 Numeric value is correct; require original spelling only on paths promising lexical preservation. \u2014 R"
+  },
+  {
+    "id": "A08",
+    "description": "`9007199254740993`, i64 min/max, just above i64 max, u64 max \u2014 No f64 rounding, saturating cast, or replacement with null. Inspect emitted numeric lexeme when `Value` cannot preserve it. \u2014 T"
+  },
+  {
+    "id": "A09",
+    "description": "Very large valid JSON integer beyond u64 \u2014 Exact raw number on paths that support it; otherwise explicit documented fallback/error. Never assert through f64. \u2014 C"
+  },
+  {
+    "id": "A10",
+    "description": "`true` and `false` \u2014 Boolean types, never numeric 1/0 or strings. \u2014 R"
+  },
+  {
+    "id": "A11",
+    "description": "Bare null versus encoded string `null` \u2014 Distinct values when wire syntax can represent both. Schema-directed ambiguity follows B01\u2013B04. \u2014 R"
+  },
+  {
+    "id": "A12",
+    "description": "Empty and nested object, empty and heterogeneous array \u2014 Preserve shape, member types, and element order. \u2014 R"
+  },
+  {
+    "id": "A13",
+    "description": "Malformed numeric `1x`, `NaN`, `Infinity`, `1e9999` \u2014 Family's explicit fallback/error; never malformed JSON, saturation, silent zero, or fabricated success. \u2014 T"
+  },
+  {
+    "id": "A14",
+    "description": "Numeric/boolean compatibility spellings `+1`, `01`, `TRUE`, `1`, `yes`, `None` \u2014 Separate legacy acceptance rules from standard JSON. Pin known behavior per family; do not infer a universal coercion. \u2014 C"
+  },
+  {
+    "id": "A15",
+    "description": "Omitted optional property versus explicit null versus empty string \u2014 Three distinct outputs; no synthesized keys/defaults. \u2014 R"
+  },
+  {
+    "id": "A16",
+    "description": "JSON object containing string `\"42\"` and numeric `42` \u2014 Decode once; do not recursively coerce already typed JSON merely because a child schema differs. \u2014 R"
+  },
+  {
+    "id": "B01",
+    "description": "`{type:string}`, raw `null` \u2014 String `null`. \u2014 R"
+  },
+  {
+    "id": "B02",
+    "description": "`{type:[string,null]}`, raw `null` \u2014 JSON null under the proposed GLM/Qwen/M3 nullable preference. \u2014 R"
+  },
+  {
+    "id": "B03",
+    "description": "`anyOf` / `oneOf` of string and null, both branch orders \u2014 Same nullable preference; explicit wire string still stays string. \u2014 R"
+  },
+  {
+    "id": "B04",
+    "description": "`{type:string,nullable:true}`, raw `null` \u2014 Qwen compatibility extension permits null; other families require an explicit supported/unsupported result. \u2014 C"
+  },
+  {
+    "id": "B05",
+    "description": "Nullable integer / number / boolean via type array, anyOf, oneOf \u2014 Test both null and non-null member: 42, 1.25, false. Exact type. \u2014 R"
+  },
+  {
+    "id": "B06",
+    "description": "String-or-integer with raw `42` \u2014 GLM's declared verbatim-string preference; independently pin Qwen/MiniMax policy. Schema validity alone cannot resolve ambiguity. \u2014 C"
+  },
+  {
+    "id": "B07",
+    "description": "`{anyOf:[{type:integer,minimum:100},{enum:[\"30\"]}]}`, raw `30` \u2014 String `30`, the valid string candidate; catches #280 and current v2 gap. \u2014 R"
+  },
+  {
+    "id": "B08",
+    "description": "B07 with `const:\"30\"` \u2014 Same; const must contribute type information. \u2014 R"
+  },
+  {
+    "id": "B09",
+    "description": "Integer alternative plus unconstrained `{}`, raw `30` \u2014 GLM preserves its string fallback; absence of a string hint is not proof strings are excluded. \u2014 R"
+  },
+  {
+    "id": "B10",
+    "description": "`anyOf:[{const:\"auto\"},{type:integer}]`, raw `auto` / `42` \u2014 String `auto` / number 42; string-literal alternative does not allow every string. \u2014 R"
+  },
+  {
+    "id": "B11",
+    "description": "`allOf:[{type:[string,integer]},{type:integer}]`, raw `7` \u2014 Number 7; constraints intersect. \u2014 R"
+  },
+  {
+    "id": "B12",
+    "description": "Top-level `type:string` plus `anyOf:[string,null]`, raw `null` \u2014 String `null`; siblings narrow the union. \u2014 R"
+  },
+  {
+    "id": "B13",
+    "description": "`type:[string,null]` plus `oneOf:[string,integer]`, raw `null` \u2014 String `null`; the sibling excludes JSON null. \u2014 R"
+  },
+  {
+    "id": "B14",
+    "description": "`allOf:[{type:number},{type:integer}]`, raw `7` \u2014 Number 7; integer is included in number. \u2014 R"
+  },
+  {
+    "id": "B15",
+    "description": "`allOf` with annotation-only sibling and nested composition \u2014 An annotation is unconstrained, not false; nested type intersections remain effective. \u2014 R"
+  },
+  {
+    "id": "B16",
+    "description": "Enum/const without `type`, including `42.0`, null, string `null` \u2014 Infer only supported literal types; integral numeric literals remain numeric. \u2014 R"
+  },
+  {
+    "id": "B17",
+    "description": "String/null schema with enum permitting only string `null` \u2014 Do not select JSON null simply because the type list permits it. \u2014 T"
+  },
+  {
+    "id": "B18",
+    "description": "Reorder union branches; wrap in `allOf:[schema,{}]`; add title/description \u2014 Unambiguous result is invariant. Ambiguous selection must not accidentally depend on first branch. \u2014 T"
+  },
+  {
+    "id": "B19",
+    "description": "Contradictory types, false schema, impossible enum \u2014 Bounded conservative behavior; parser does not claim schema validation. Strict grammar rejects every invalid candidate. \u2014 C"
+  },
+  {
+    "id": "B20",
+    "description": "Overlapping oneOf branches, e.g. integer and number \u2014 Type inference is not exclusive-branch validation. Grammar/validator must reject a candidate matching both; parser must not falsely report schema compliance. \u2014 C"
+  },
+  {
+    "id": "C01",
+    "description": "Local `$ref` to string; JSON-looking raw body \u2014 Preserve string exactly. \u2014 R"
+  },
+  {
+    "id": "C02",
+    "description": "Local `$ref` to object; raw object JSON \u2014 Object, not double-encoded string. \u2014 R"
+  },
+  {
+    "id": "C03",
+    "description": "Reference to nullable scalar / array / object \u2014 Same supported result as equivalent inline schema. \u2014 T"
+  },
+  {
+    "id": "C04",
+    "description": "Two-hop reference chain \u2014 Same result as direct target. \u2014 R"
+  },
+  {
+    "id": "C05",
+    "description": "Pointer segments with `~0`, `~1`; Unicode names \u2014 Resolve the exact key, no accidental path splitting. \u2014 R"
+  },
+  {
+    "id": "C06",
+    "description": "Percent-encoded URI fragment: object reference resolves to the correct target. Target for schema-directed parsers; explicit grammar reference cases are in G08."
+  },
+  {
+    "id": "C07",
+    "description": "References into `#/properties/...`, legacy `definitions`, and root `#` \u2014 Correct original root; no rebasing to the extracted property. Recursive root separately bounded. \u2014 T"
+  },
+  {
+    "id": "C08",
+    "description": "$ref plus sibling type narrowing string/integer to integer: explicit sibling integer yields 42 on all schema-directed families."
+  },
+  {
+    "id": "C09",
+    "description": "Missing target and malformed pointer \u2014 No panic, partial mutation, external fetch, or traversal escape; family fallback is deterministic. \u2014 R"
+  },
+  {
+    "id": "C10",
+    "description": "Self-cycle, two-node cycle, branching cycle \u2014 Bounded traversal work, not just depth; no stack overflow or exponential search. Use deterministic counters where available. \u2014 R"
+  },
+  {
+    "id": "C11",
+    "description": "Acyclic chains of depth 4 and 64, plus unrelated numeric argument alongside a cyclic reference: bounded fallback without losing unrelated arguments. Internal budget-counter assertions remain in the existing parser unit suites."
+  },
+  {
+    "id": "C12",
+    "description": "`$ref`-looking objects inside enum, const, default, examples \u2014 Preserve literal data; never treat it as a schema node. \u2014 R"
+  },
+  {
+    "id": "C13",
+    "description": "`$id`, nested resource scope, external `$ref`, anchors \u2014 Either supported with correct scope or explicit conservative fallback; never resolve against the wrong document. \u2014 R/C"
+  },
+  {
+    "id": "C14",
+    "description": "Two tools reuse identical `$defs` names with different target types \u2014 Resolve in the selected tool's root; no cross-tool cache contamination. \u2014 T"
+  },
+  {
+    "id": "C15",
+    "description": "Root `parameters` itself is referenced \u2014 Required/properties survive extraction where supported; missing support is explicit. \u2014 T"
+  },
+  {
+    "id": "D01",
+    "description": "MiniMax M3 nested `{page:2,per_page:10}` under object/null union \u2014 Both children numeric, under anyOf and type-array forms. \u2014 R"
+  },
+  {
+    "id": "D02",
+    "description": "M3 union containing string, array, and exactly one object branch \u2014 Object branch's child schemas selected for nested tags. \u2014 R"
+  },
+  {
+    "id": "D03",
+    "description": "Two object alternatives with conflicting child types \u2014 Preserve documented ambiguous fallback; never arbitrarily choose the first object branch. \u2014 R"
+  },
+  {
+    "id": "D04",
+    "description": "Object plus unconstrained alternative \u2014 Unconstrained alternative counts as potentially object; no false uniqueness. \u2014 R"
+  },
+  {
+    "id": "D05",
+    "description": "Nested arrays of typed scalars and objects; nullable `items` \u2014 Correct child schema at each depth, no stringification of numeric grandchildren. \u2014 T"
+  },
+  {
+    "id": "D06",
+    "description": "Schema-valued additionalProperties \u2014 Undeclared nested key uses that schema where supported; false/absent variants are distinct. \u2014 T"
+  },
+  {
+    "id": "D07",
+    "description": "Zero-argument call \u2014 Exactly one call with `{}`; not absent arguments, null, or empty string. \u2014 R"
+  },
+  {
+    "id": "D08",
+    "description": "Arguments emitted `z,a,m` \u2014 Source order on paths whose output promises it; validate raw JSON separately from semantic equality. \u2014 R"
+  },
+  {
+    "id": "D09",
+    "description": "Duplicate z after a: last value wins at the first key position on XML/XTML paths; no concatenation of repeated values."
+  },
+  {
+    "id": "D10",
+    "description": "Two tools share parameter `x`, one string, one number, called in both orders \u2014 Each call uses its own schema; stable distinct call indices. \u2014 T"
+  },
+  {
+    "id": "D11",
+    "description": "Separate requests redefine the same tool name/schema \u2014 Fresh parser or supported reinitialization cannot retain prior request's schema/state. \u2014 T"
+  },
+  {
+    "id": "D12",
+    "description": "Unknown tool, unknown argument, absent tools, empty tools, absent parameters, `{}`/true/false schema \u2014 Explicit per-family fallback/acceptance, no panic and no silently substituted shared default tool. \u2014 C"
+  },
+  {
+    "id": "D13",
+    "description": "Input schema before and after parse, including failed parse \u2014 Identical JSON tree; parser/grammar normalization must not mutate caller-owned schema. \u2014 T"
+  },
+  {
+    "id": "E01",
+    "description": "Kimi K2 \u2014 JSON argument object with all scalar types, nested containers, escaped strings, call IDs containing indices; decode exactly once. Marker text inside JSON strings remains data."
+  },
+  {
+    "id": "E02",
+    "description": "Kimi K3 \u2014 `type=string` with `null`, JSON, spaces, marker-looking text; typed number/boolean/null/object/array; missing type defaults to string; malformed typed value follows explicit raw-string fallback. Do not confuse current parser syntax checking with validating that the tag's type matches every JSON body."
+  },
+  {
+    "id": "E03",
+    "description": "DeepSeek V3 / V3.1 \u2014 Native fenced/JSON envelopes, same argument corpus; strings that resemble scalars stay quoted strings. Exercise each registry entry independently."
+  },
+  {
+    "id": "E04",
+    "description": "DeepSeek V3.2 / V4 \u2014 `string=true` preserves `  caf\u00e9\\n`, whitespace-only, empty, and `null`; `string=false` decodes valid JSON. A conflicting tool schema cannot override the wire flag."
+  },
+  {
+    "id": "E05",
+    "description": "DeepSeek V4.1 \u2014 Spaced XML parameters and JSON-object invocation bodies; nested marker-like strings, escaped quotes, Unicode; mixed dialect calls through the V4 adapter. A raw JSON array at the invocation root is not an object call."
+  },
+  {
+    "id": "E06",
+    "description": "GLM \u2014 Literal `&lt;`, `&amp;`, `&quot;`, numeric entity spellings, and `{\"text\":\"&quot;\"}` inside an object; no global entity decoding. Existing #249 coverage is v2-specific: include v1."
+  },
+  {
+    "id": "E07",
+    "description": "MiniMax M2 \u2014 Shared XML coercion cases including string `null`, unions, argument order, duplicate replacement; M3 fixes do not automatically cover M2. Pin its actual entity-encoding contract."
+  },
+  {
+    "id": "E08",
+    "description": "MiniMax M3 \u2014 Namespace-prefixed nested tags, nullable pagination, referenced objects, text/array/object node selection and schema ownership. Include `_nom` alias smoke."
+  },
+  {
+    "id": "E09",
+    "description": "Qwen2.5 versus Qwen3-Coder \u2014 JSON and XML are separate dialects. Qwen XML streaming: non-nullable string can stream eagerly; nullable or otherwise ambiguous value must not commit a string prefix before selecting null/number."
+  },
+  {
+    "id": "E10",
+    "description": "Muse JSON-first decoding and exact raw fallback; schema cannot redefine explicit JSON types. Ordered to=self / tool / to=user events are covered by F07."
+  },
+  {
+    "id": "E11",
+    "description": "Gemma \u2014 `<|\"|>` string delimiters around `42`/`null`; unquoted numeric/bool/null values; nested arrays and objects; literal `call:` and `<tool_call|>` inside strings; malformed delimiters never manufacture a completed call."
+  },
+  {
+    "id": "E12",
+    "description": "GPT-OSS \u2014 Harmony directed tool messages with JSON arguments; text and actual token-ID input, including non-ASCII token splits; `analysis`/`final` must not become tools. Preserve quoted versus unquoted types; no native Unified claim."
+  },
+  {
+    "id": "F01",
+    "description": "Whole input, every valid two-part split, character chunks, and seeded multipart chunks produce the authored result. Include empty chunks. Compare each to the oracle, not merely to each other."
+  },
+  {
+    "id": "F02",
+    "description": "Split inside `null`, negative/exponent numbers, escaped quotes, backslashes, Unicode, and closing markers. No type change or invalid accumulated JSON."
+  },
+  {
+    "id": "F03",
+    "description": "For each emitted call, concatenate raw argument deltas by index and parse them independently of `assemble`; name emitted once, stable index, one completion transition, no argument updates after completion."
+  },
+  {
+    "id": "F04",
+    "description": "Inspect Qwen's output before parameter/function close: permitted string streaming begins early; ambiguous nullable/union values cannot emit a prefix that must later be retracted. Assert valid final JSON in both cases."
+  },
+  {
+    "id": "F05",
+    "description": "Truncate before value, mid-scalar, mid-string escape, before parameter close, after parameter close, after invoke close, and before outer close. Only a family's explicitly documented complete-inner-call recovery may complete. No fabricated `{}` or valid-prefix-only arguments."
+  },
+  {
+    "id": "F06",
+    "description": "One complete call followed by a truncated call: first retained exactly once; second cannot become a completed call. Check raw deltas as well as coalesced calls."
+  },
+  {
+    "id": "F07",
+    "description": "Reasoning \u2192 call \u2192 reasoning \u2192 text, with a schema-sensitive argument: Exact ordered Unified events, untouched argument body. Legacy tool projection preserves markers where its contract requires them (#253); do not require legacy aggregate ordering it cannot represent."
+  },
+  {
+    "id": "F08",
+    "description": "`None`, reasoning-prefilled, and response-prefilled initialization: Correct channel and same argument types for equivalent logical call. Run on each native Unified family; do not select init by sniffing input."
+  },
+  {
+    "id": "F09",
+    "description": "Guided JSON named and required tool output: Typed JSON preserved; named arguments get the selected tool; required arrays keep call order. Test Reject, RecoverAsText, StreamBestEffort semantics once at their shared owner plus one routing case per family."
+  },
+  {
+    "id": "F10",
+    "description": "Guided valid first call + invalid later call: Reject emits no committed call; RecoverAsText recovers atomically; StreamBestEffort follows its per-call promise. Null/array/string root arguments do not become an empty object call."
+  },
+  {
+    "id": "F11",
+    "description": "Finish with pending prefix; reset/reinitialize where supported: No old bytes, call indices, or channel state leak into next turn. Test repeated `finish()` only if the API promises it is legal; otherwise pin the documented error."
+  },
+  {
+    "id": "F12",
+    "description": "Two calls in one chunk, two in adjacent chunks, repeated tool name: No merging of distinct calls, duplicate dispatch, or schema borrowed from the preceding call."
+  },
+  {
+    "id": "G01",
+    "description": "Generate nullable string alternatives via type list and anyOf \u2014 String/null accepted; wrong numeric type and unknown argument key rejected."
+  },
+  {
+    "id": "G02",
+    "description": "Generate numeric union with `enum:[1,null]` / const \u2014 1/null accepted; 42 rejected. Type narrowing must not discard value constraints."
+  },
+  {
+    "id": "G03",
+    "description": "Direct and referenced string enum/const \u2014 Allowed literal accepted, other literal rejected, both direct and in string/null union."
+  },
+  {
+    "id": "G04",
+    "description": "Min/max string length and pattern \u2014 Boundary accepted/rejected strings, including empty string when schema allows it; UTF-8 character semantics as supported by pinned grammar engine."
+  },
+  {
+    "id": "G05",
+    "description": "Escaped regex dollar/anchor/backslash parity \u2014 `^price\\$` compiles and accepts `price$`; stripping anchors must not leave an invalid regex."
+  },
+  {
+    "id": "G06",
+    "description": "Integer/number bounds, enum, multipleOf; nested object/array constraints \u2014 Valid candidates accepted and targeted invalid candidates rejected on the strict supported path. No overclaim from a structural-tag JSON snapshot."
+  },
+  {
+    "id": "G07",
+    "description": "Required and optional fields, zero-field object, additionalProperties:false \u2014 Required omission and unknown fields rejected on a path claiming strict support; optional omission/empty object accepted when valid. #274 documents an existing required-omission limitation\u2014keep that separate from its nullable fix."
+  },
+  {
+    "id": "G08",
+    "description": "Referenced object and deep reference to marker enum \u2014 Correct XTML type and payload accepted; quoted object, wrong tag type, wrong marker value rejected."
+  },
+  {
+    "id": "G09",
+    "description": "Recursive object reference and extracted local root \u2014 Valid finite recursive object accepted and schema compiles; do not drop an optional property merely because it is recursive."
+  },
+  {
+    "id": "G10",
+    "description": "Const/enum/default/examples containing literal `{\"$ref\":\"literal\"}` \u2014 Literal data preserved; no traversal as a schema reference."
+  },
+  {
+    "id": "G11",
+    "description": "Strict absent / true / false \u00d7 Auto / forced strict \u2014 Shared builder policy matches the chosen implementation revision. #196 changes omitted strict to declared-schema enforcement; main and candidate expectations must be labeled separately."
+  },
+  {
+    "id": "G12",
+    "description": "Named / required / auto, parallel calls false/true \u2014 Correct declared name, no duplicate required keys, cardinality follows request; auto still permits plain response."
+  },
+  {
+    "id": "G13",
+    "description": "Unsupported composition/reference scope/work budget \u2014 Explicit existing fallback stays parser-compatible; report loss of strict enforcement, never call fallback a schema-validating path."
+  },
+  {
+    "id": "G14",
+    "description": "Accepted Kimi grammar payloads for each JSON type: real XGrammar complete-language acceptance, followed by exact arguments on v1 batch, v1 jail, v2 tool, and native Unified."
+  },
+  {
+    "id": "H01",
+    "description": "Same input with per-case tools: real Unified YAML emitter preserves distinct string and nullable schemas. Direct type behavior is covered by B01/B02; downstream stages are blocked if emission loses tools."
+  },
+  {
+    "id": "H02",
+    "description": "Schema override absent versus explicit empty tools list \u2014 Only absence uses default inventory; explicit `[]` stays empty."
+  },
+  {
+    "id": "H03",
+    "description": "YAML generator \u2192 Rust loader \u2192 live parser \u2014 Preserve full tool definitions, `$defs`, refs, required, strict false, and null values. One real cross-language test owns this composition risk."
+  },
+  {
+    "id": "H04",
+    "description": "Capture schema differs from recorded request schema \u2014 Validation fails; no fallback to a generic/shared schema."
+  },
+  {
+    "id": "H05",
+    "description": "Family/case missing from runner or implementation unavailable \u2014 Missing expected coverage fails the inventory gate; unavailable surface reported explicitly and separately from pass count."
+  },
+  {
+    "id": "H06",
+    "description": "New expected behavior versus historical capture \u2014 Current code must run against authored expectations; historical output is immutable evidence, not an automatically rewritten oracle."
+  },
+  {
+    "id": "H07",
+    "description": "Huge integers and argument key order \u2014 Assertion path retains numeric lexemes and source order where required; do not reduce everything to a lossy float/map comparison."
+  },
+  {
+    "id": "H08",
+    "description": "Invalid/incomplete raw call deltas filtered by `assemble` \u2014 Raw stream assertion still fails even if the final assembled event list looks clean."
+  }
+]
