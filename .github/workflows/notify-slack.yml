@@ -81,11 +81,13 @@ jobs:
             page=$((page + 1))
           done
 
-          failed="$(jq -r 'select(.conclusion == "failure") | ":failed: " + .name' "${jobs_acc}")"
+          # `:x:` is a standard emoji; a workspace-custom one such as `:failed:`
+          # renders as literal text in workspaces that don't define it.
+          failed="$(jq -r 'select(.conclusion == "failure") | ":x: " + .name' "${jobs_acc}")"
           if [ -z "${failed}" ]; then
             # A run can fail with no failed job at all (startup_failure, or a
             # run-level timeout). Say so rather than posting an empty list.
-            failed=":failed: (no job-level failure — run concluded '$(jq -r .conclusion "${run_json}")')"
+            failed=":x: (no job-level failure — run concluded '$(jq -r .conclusion "${run_json}")')"
           fi
 
           jq -n \
