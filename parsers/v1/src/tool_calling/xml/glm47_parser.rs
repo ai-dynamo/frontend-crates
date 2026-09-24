@@ -566,10 +566,36 @@ fn get_param_schema_type<'a>(
     if schema_has_type(schema, param, "string", 0) {
         return Some("string");
     }
-    param
+    if let Some(schema_type) = param
         .get("type")
         .and_then(Value::as_str)
         .or_else(|| resolve_schema_ref(schema, param, 0)?.get("type")?.as_str())
+    {
+        return Some(schema_type);
+    }
+    // Select a scalar hint from a union using the JSON value, not branch order.
+    let raw = raw.trim();
+    if !matches!(
+        raw.as_bytes().first(),
+        Some(b'n' | b't' | b'f' | b'-' | b'0'..=b'9')
+    ) {
+        return None;
+    }
+    // Preserve the integer coercer's arbitrary-length path before Value's numeric limit.
+    let candidates: &[&str] = if super::parsed_value::is_integer_literal(raw) {
+        &["integer", "number"]
+    } else {
+        match serde_json::from_str::<Value>(raw).ok()? {
+            Value::Null => &["null"],
+            Value::Bool(_) => &["boolean"],
+            Value::Number(_) => &["number"],
+            _ => &[],
+        }
+    };
+    candidates
+        .iter()
+        .copied()
+        .find(|candidate| schema_has_type(schema, param, candidate, 0))
 }
 
 fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> Option<&'a Value> {

@@ -910,7 +910,6 @@ NS|</tool_call>"#;
         }
     }
 
-
     #[test]
     fn local_ref_object_argument_accepts_json_text() {
         let parameters = serde_json::json!({
