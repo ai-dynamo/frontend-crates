@@ -527,7 +527,12 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
                 return Map::new();
             };
             if let Some(properties) = params.get("properties").and_then(Value::as_object) {
-                return properties.clone();
+                return properties
+                    .iter()
+                    .map(|(name, schema)| {
+                        (name.clone(), resolve_parameter_ref(schema, params).clone())
+                    })
+                    .collect();
             }
             if let Some(params_obj) = params.as_object() {
                 return params_obj.clone();
@@ -538,6 +543,35 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
 
     tracing::warn!("Tool '{}' is not defined in the tools list.", func_name);
     Map::new()
+}
+
+// Resolve local references on a parameter before selecting its XML value type.
+// Leave unknown references and cycles untouched; do not discard sibling constraints.
+fn resolve_parameter_ref<'a>(schema: &'a Value, root: &'a Value) -> &'a Value {
+    let mut current = schema;
+    let mut visited = Vec::new();
+    while let Some(reference) = current.get("$ref").and_then(Value::as_str) {
+        if current.as_object().is_some_and(|object| {
+            object.keys().any(|key| {
+                !matches!(
+                    key.as_str(),
+                    "$ref" | "title" | "description" | "default" | "examples" | "$comment"
+                )
+            })
+        }) || visited.contains(&reference)
+        {
+            return schema;
+        }
+        let Some(target) = reference
+            .strip_prefix('#')
+            .and_then(|pointer| root.pointer(pointer))
+        else {
+            return schema;
+        };
+        visited.push(reference);
+        current = target;
+    }
+    current
 }
 
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
@@ -873,6 +907,54 @@ NS|</tool_call>"#;
                     serde_json::json!({"value":"2"})
                 );
             }
+        }
+    }
+
+
+    #[test]
+    fn local_ref_object_argument_accepts_json_text() {
+        let parameters = serde_json::json!({
+            "$defs": {"Payload": {"type": "object"}},
+            "properties": {"data": {"$ref": "#/$defs/Payload"}}
+        });
+        let tools = vec![ToolDefinition {
+            name: "capture".into(),
+            parameters: Some(parameters),
+            strict: Some(true),
+        }];
+        let raw = "]<]minimax[>[<data>{\"input\":\"Alex\"}]<]minimax[>[</data>";
+        let actual = parse_parameters(
+            "capture",
+            raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            serde_json::json!({"data":{"input":"Alex"}})
+        );
+    }
+
+    #[test]
+    fn parameter_refs_handle_chains_escaped_names_and_unknown_targets() {
+        let root = serde_json::json!({"$defs":{
+            "alias":{"$ref":"#/$defs/a~1b~0c"},
+            "a/b~c":{"type":"object"},
+            "cycle":{"$ref":"#/$defs/cycle"}
+        }});
+        let chain = serde_json::json!({"$ref":"#/$defs/alias","description":"value"});
+        assert_eq!(
+            resolve_parameter_ref(&chain, &root),
+            &serde_json::json!({"type":"object"})
+        );
+        for schema in [
+            serde_json::json!({"$ref":"#/$defs/missing"}),
+            serde_json::json!({"$ref":"https://example.test/schema"}),
+            serde_json::json!({"$ref":"#/$defs/cycle"}),
+            serde_json::json!({"$ref":"#/$defs/alias","type":"string"}),
+        ] {
+            assert_eq!(resolve_parameter_ref(&schema, &root), &schema);
         }
     }
 }
