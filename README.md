@@ -8,8 +8,9 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 | [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization and prefix-caching for shared-prefix workloads. |
 | [`dynamo-parsers`](./parsers/v1/)    | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2/K3, Gemma 4, Llama, Hermes, ...). The stable batch parser — the *decode* side, and the crate to depend on. |
 | [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompts via HF `chat_template` (minijinja), plus native DeepSeek, Inkling, and Kimi K3 formatters. The *encode* side. |
+| [`dynamo-mm-preprocessor`](./mm-preprocessor/) | Model-family multimodal preprocessing with a golden-tested Qwen-VL image pipeline. The optional `fetch` API is signatures-only. |
 
-Each crate is independently published to crates.io and can be adopted on its own. Only `dynamo-renderer` has internal deps — it depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience; `dynamo-protocols`, `dynamo-tokenizers`, and `dynamo-parsers` are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
+Each library listed above is independently published to crates.io and can be adopted on its own. Only `dynamo-renderer` has internal deps — it depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience; the other listed libraries are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 
 The three parser crates live under `parsers/`: `parsers/v1` is the stable, published `dynamo-parsers`. `parsers/v2` (`dynamo-parsers-v2`) is the **work-in-progress** pure-streaming parser on a `0.x` line — use `dynamo-parsers` (v1) for anything real. **v1 is interim**: once v2 reaches parity, v1 (batch + jail) is removed outright — v2 is the ultimate implementation, and new parser work goes there. `parsers/v2-py` is a test-only PyO3 binding for the conformance harness and is **not published**. See [`docs/PARSERS-V2-MIGRATION-PLAN.md`](./docs/PARSERS-V2-MIGRATION-PLAN.md).
 
@@ -24,6 +25,7 @@ frontend-crates/
 │   ├── v2/                 # dynamo-parsers-v2     (WIP streaming parser, 0.x)
 │   └── v2-py/              # dynamo-parsers-v2-py  (test-only PyO3 binding, unpublished)
 ├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
+├── mm-preprocessor/        # dynamo-mm-preprocessor (Qwen-VL image pipeline)
 ├── examples/
 │   └── dynamo-demo-server/ # axum server wiring them together
 └── docs/                   # PARSERS-V2-MIGRATION-PLAN.md
@@ -49,6 +51,7 @@ cargo build -p dynamo-protocols
 cargo build -p dynamo-tokenizers
 cargo build -p dynamo-parsers
 cargo build -p dynamo-renderer
+cargo build -p dynamo-mm-preprocessor
 cargo build -p dynamo-demo-server --release
 ```
 
