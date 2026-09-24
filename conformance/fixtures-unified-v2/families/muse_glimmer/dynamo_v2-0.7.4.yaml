@@ -74,5 +74,38 @@ changes:
             text: </atem:function_calls>
         - expected: []
         - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 57debb41560aeb1cc4038801e858fc46a0b1a780a37bf4c438ffa2112f3c1e7f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

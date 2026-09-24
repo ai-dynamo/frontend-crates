@@ -6046,7 +6046,7 @@ cases:
   qwen_string_null:
     lifecycle: active
     scenario: qwen_string_null
-    description: The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` stays the string "null" in Qwen3 and GLM. This is also covered in TOOLCALLING.streamv1.7-1.
+    description: 'Qwen3 and GLM: the request schema declares `city` as `string` (non-nullable), so bare parameter text `null` stays the string "null". Other families: the request schema declares `city` as `string | null`, and native null syntax must produce JSON null. The schema and expected type intentionally differ between these variants. The Qwen3/GLM variant is also covered in TOOLCALLING.streamv1.7-1.'
     policy:
     - I7
     display_id: UNIFIED.7-4

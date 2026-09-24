@@ -149,29 +149,35 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 
 
 def r_tool(fam, name, key, val, idx):
+    assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
+    value = "null" if val is None else val
+    string_attr = "false" if val is None else "true"
     if fam == "deepseek_v41":
         return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'<｜DSML｜ parameter name="{key}" string="true">{val}'
+                f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
                 f'</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>')
     if fam == "deepseek_v4":
         return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
-                f"<｜DSML｜parameter name=\"{key}\" string=\"true\">{val}"
+                f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
                 f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
     if fam == "gemma4":
-        return f"<|tool_call>call:{name}{{{key}:<|\"|>{val}<|\"|>}}<tool_call|>"
+        argument = "null" if val is None else f'<|"|>{value}<|"|>'
+        return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
-                f"{val}\n</parameter>\n</function>\n</tool_call>")
+                f"{value}\n</parameter>\n</function>\n</tool_call>")
     if fam == "glm47":
         return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
-                f"<arg_value>{val}</arg_value></tool_call>")
+                f"<arg_value>{value}</arg_value></tool_call>")
     if fam == "muse_glimmer":
+        argument = "null" if val is None else _atem_value(val)
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
-                f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
+                f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        return k3_tools(k3_call(name, idx + 1, k3_argument(key, "string", val)))
+        argument_type = "null" if val is None else "string"
+        return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
@@ -1887,7 +1893,7 @@ def _deepseek_v41_input(segments):
 EDGE += [
     (
         "qwen_string_null",
-        'The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` stays the string "null" in Qwen3 and GLM. This is also covered in TOOLCALLING.streamv1.7-1.',
+        'Qwen3 and GLM: the request schema declares `city` as `string` (non-nullable), so bare parameter text `null` stays the string "null". Other families: the request schema declares `city` as `string | null`, and native null syntax must produce JSON null. The schema and expected type intentionally differ between these variants. The Qwen3/GLM variant is also covered in TOOLCALLING.streamv1.7-1.',
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "null"}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -1903,10 +1909,24 @@ EDGE += [
                 M,
                 M,
             ),
+            **{
+                family: (
+                    r_tool(family, "get_weather", "city", None, 0),
+                    VLLM_UNCAPTURABLE.get(family, M),
+                    M,
+                    [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": None}}],
+                )
+                for family in FAMILIES if family not in {"qwen3", "glm47"}
+            },
         }),
-        [{"name": "get_weather", "parameters": {
-            "type": "object", "properties": {"city": {"type": "string"}}
-        }}],
+        {
+            family: [{"name": "get_weather", "parameters": {
+                "type": "object", "properties": {"city": {
+                    "type": "string" if family in {"qwen3", "glm47"} else ["string", "null"],
+                }},
+            }}]
+            for family in FAMILIES
+        },
     ),
     (
         "qwen_nullable_string_null",
@@ -2049,7 +2069,7 @@ def _build_edge_cases(fam, specs):
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
         if case_tools is not None:
-            case["tools"] = case_tools
+            case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
         cases[cid] = case
     return cases
 

@@ -825,6 +825,41 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
             assert cell["status"] in {"ok", "problem", "na", "missing"}
 
 
+@pytest.mark.parametrize("family", [
+    "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3",
+])
+def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == family)
+    for scenario in ("deepseek_v41_mixed_control_text_in_string", "qwen_string_null"):
+        cell = row["cells"][scenario]
+        assert cell["status"] != "na"
+        block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
+                     if candidate["key"] == "dynamo")
+        assert "error" not in block and "unavailable" not in block
+        assert block["events"]
+        if scenario == "qwen_string_null":
+            expected_value = "null" if family in {"qwen3", "glm47"} else None
+            assert block["events"] == [{"kind": "tool_call", "name": "get_weather",
+                                        "arguments": {"city": expected_value}}]
+            assert block["verdict"] == "MATCH"
+            assert "schema" in cell["tooltip"]["description"]
+            assert "expected type" in cell["tooltip"]["description"]
+
+
+def test_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
+    cell = row["cells"]["deepseek_v41_mixed_control_text_in_string"]
+    block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
+                 if candidate["key"] == "dynamo")
+    assert block["verdict"] == "ARG_MISMATCH"
+    assert block["events"]
+    for cell in _iter_cells(tab):
+        for candidate in cell["tooltip"]["candidates"]:
+            assert "adopt a unified parser" not in (candidate["block"].get("todo") or "")
+
+
 def test_v2_reasoning_uses_current_peers(model_v2):
     # reasoning tab uses the same current peer versions as the toolcalling tabs.
     peers = _peer_versions("reasoning/fixtures-v1")

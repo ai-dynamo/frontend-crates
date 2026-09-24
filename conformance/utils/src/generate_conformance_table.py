@@ -2592,11 +2592,6 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         pc = _cand(spec["key"], spec["label"], "C", spec["version"])
         pc["impl"] = spec["impl"]
         candidates.append(pc)
-    _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
-             "per-family mixture — native unified where available, split elsewhere). "
-             "Today's split parses ALL reasoning first, so reasoning between/after tool "
-             "calls is merged up front and loses its position. One state machine per stream "
-             "(owning reasoning+content+tools) fixes this by construction.")
 
     rows = []
 
@@ -2787,7 +2782,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
-                                "todo": _TODO if dverd != "MATCH" else None,
+                                "todo": None,
                                 "explanation": (
                                     f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')}."
                                     if c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')

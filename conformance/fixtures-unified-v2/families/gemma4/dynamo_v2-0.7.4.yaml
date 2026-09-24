@@ -40,5 +40,26 @@ changes:
             arguments: '{"x":" <|channel>thought\nquoted<channel|> <|tool_call> <tool_call|> &amp; \"x\"\\\n "}'
             complete: true
         - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 4993eaab006cf48a7de172299dd1f037c45c1194b856c0e39a5fc9b320ef2fba
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

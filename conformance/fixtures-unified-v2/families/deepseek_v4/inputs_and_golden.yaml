@@ -6359,3 +6359,42 @@ cases:
         name: f
         arguments:
           x: " <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "
+  qwen_string_null:
+    lifecycle: active
+    scenario: qwen_string_null
+    description: 'Qwen3 and GLM: the request schema declares `city` as `string` (non-nullable), so bare parameter text `null` stays the string "null". Other families: the request schema declares `city` as `string | null`, and native null syntax must produce JSON null. The schema and expected type intentionally differ between these variants. The Qwen3/GLM variant is also covered in TOOLCALLING.streamv1.7-1.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4
+    historical_ids: []
+    request:
+      input: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type:
+              - string
+              - 'null'
+      chunks:
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
