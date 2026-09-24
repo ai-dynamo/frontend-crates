@@ -249,6 +249,37 @@ fn valid_header_fragment(after: &str) -> bool {
     rest.is_empty() || (rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest))
 }
 
+/// Whether `buffered` is a framed channel header that EOF cut before its
+/// `<|message|>` terminator arrived.
+///
+/// This must run before [`stripped`] removes `<|start|>`: the framing is the
+/// provenance that distinguishes parser-owned markup from an ordinary unframed
+/// response such as `assistant to=user`, which remains visible prose.
+fn is_incomplete_framed_header(buffered: &str) -> bool {
+    let Some(mut rest) = buffered.strip_prefix(START) else {
+        return false;
+    };
+    rest = rest.trim_start_matches(|c: char| c.is_whitespace());
+
+    if "assistant".starts_with(rest) {
+        return true;
+    }
+    if let Some(after_role) = rest.strip_prefix("assistant") {
+        rest = after_role.trim_start_matches(|c: char| c.is_whitespace());
+    }
+
+    if rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest) {
+        return true;
+    }
+    if "to=".starts_with(rest) {
+        return true;
+    }
+    let Some(after_to) = rest.strip_prefix("to=") else {
+        return false;
+    };
+    valid_header_fragment(after_to)
+}
+
 /// The markers the guided reader may strip ON THEIR OWN, without reading anything
 /// around them.
 ///
@@ -1093,6 +1124,12 @@ impl MuseChannelScanner {
             // into framing. Complete markers are stripped; a committed partial
             // special token (`<|sta`) is parser-owned markup and dropped; the
             // ambiguous `<` / `<|` and any `to=`-shaped prose stay visible.
+            State::Idle if is_incomplete_framed_header(&buffered) => {
+                tracing::debug!(
+                    buffered_bytes = buffered.len(),
+                    "dropping incomplete framed muse channel header at end of stream"
+                );
+            }
             State::Idle | State::InContent => {
                 let text = flush_open_text(&buffered);
                 self.emit_text(out, &text);

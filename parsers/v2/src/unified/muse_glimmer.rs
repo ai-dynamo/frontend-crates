@@ -448,8 +448,12 @@ mod tests {
 
     #[test]
     fn recipient_less_header_is_content() {
-        let out = events(&["<|start|>assistant<|message|>untagged content<|eot|>"]);
-        assert_eq!(out, vec![text("untagged content")]);
+        for input in [
+            "<|start|><|message|>untagged content<|eot|>",
+            "<|start|>assistant<|message|>untagged content<|eot|>",
+        ] {
+            assert_eq!(events(&[input]), vec![text("untagged content")]);
+        }
     }
 
     #[test]
@@ -549,6 +553,37 @@ mod tests {
     fn committed_partial_special_token_is_dropped_at_finish() {
         let out = events(&[" to=self<|message|>thought<|eo"]);
         assert_eq!(out, vec![reasoning("thought")]);
+    }
+
+    #[test]
+    fn every_truncated_framed_header_prefix_is_dropped_at_finish() {
+        for header in [
+            "<|start|><|message|>",
+            "<|start|>assistant<|message|>",
+            "<|start|>assistant to=self<|message|>",
+            "<|start|>assistant to=user<|message|>",
+            "<|start|>assistant to=get_weather<|message|>",
+        ] {
+            for at in "<|start|>".len()..header.len() {
+                assert!(header.is_char_boundary(at));
+                assert_eq!(
+                    events(&[&header[..at]]),
+                    Vec::<UnifiedEvent>::new(),
+                    "header {header:?} cut at byte {at}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn unframed_header_like_prose_is_kept_at_finish() {
+        for (input, expected) in [
+            ("to=user", "to=user"),
+            ("assistant to=user", "assistant to=user"),
+            ("<|start|>assistant says hello", "assistant says hello"),
+        ] {
+            assert_eq!(events(&[input]), vec![text(expected)], "input {input:?}");
+        }
     }
 
     #[test]
