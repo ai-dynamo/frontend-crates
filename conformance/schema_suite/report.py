@@ -67,7 +67,7 @@ def execute(command, log, env=None, timeout=600):
     }
 
 
-def render(out, comparisons=None):
+def render(out, comparisons=None, combined=None):
     metadata = json.loads((out / "metadata.json").read_text())
     results = [
         json.loads(line)
@@ -94,6 +94,13 @@ def render(out, comparisons=None):
     if comparisons:
         metadata["pr_comparison_sha256"] = sha(comparisons)
         metadata["pr_comparison_generated_utc"] = utc()
+    combined_data = json.loads(combined.read_text()) if combined else None
+    if combined:
+        metadata["combined_comparison_sha256"] = sha(combined)
+        interactions = combined.with_name("interactions.json")
+        if interactions.exists():
+            combined_data["interactions"] = json.loads(interactions.read_text())
+            metadata["combined_interactions_sha256"] = sha(interactions)
     payload = json.dumps(
         {
             "metadata": metadata,
@@ -101,6 +108,7 @@ def render(out, comparisons=None):
             "catalogue": catalogue,
             "categories": CATEGORIES,
             "comparisons": comparison_data,
+            "combined": combined_data,
         },
         ensure_ascii=False,
     ).replace("<", "\\u003c")
@@ -115,7 +123,9 @@ HTML = r"""<!doctype html>
 <style>
 :root{color-scheme:light;--ink:#162126;--muted:#58676f;--border:#d8e0e3;--green:#236800;--red:#a82624;--bg:#f5f7f8}*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif;color:var(--ink);background:var(--bg)}header{background:#172327;color:white;padding:32px max(24px,calc((100% - 1440px)/2));border-top:5px solid #76b900}header p{color:#cdd8db;max-width:1000px}h1{font-size:29px;margin:8px 0}h2{font-size:19px;margin:26px 0 12px}main{max-width:1488px;margin:auto;padding:0 24px 48px}a{color:#176192}header a{color:#b5dff3}code{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:650;font-size:12px}.pass{background:#e5f2df;color:var(--green)}.fail,.error,.not_run{background:#fde8e7;color:var(--red)}.unavailable,.not_applicable{background:#edf0f2;color:#55616a}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0}.card{background:white;border:1px solid var(--border);padding:18px;text-align:left;border-radius:7px;color:inherit;cursor:pointer}.card strong{display:block;font-size:30px}.card small{color:var(--muted)}.note{border-left:4px solid #83ae50;background:white;padding:14px 18px;margin:16px 0}.scroll{overflow:auto;background:white;border:1px solid var(--border);border-radius:6px}table{border-collapse:collapse;width:100%;text-align:left}th{background:#edf1f2;font-size:12px;text-transform:uppercase;letter-spacing:.04em}th,td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:top}td.num{font-variant-numeric:tabular-nums}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #277db1;outline-offset:2px}.matrix-button{border:0;background:none;padding:0;text-align:left;color:inherit}.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:white;padding:14px;border:1px solid var(--border);border-radius:6px;position:sticky;top:0;z-index:1}label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}input,select{padding:8px;border:1px solid #adbcc3;border-radius:4px;background:white;max-width:260px}.details summary{cursor:pointer;color:#176192}.details pre{margin:6px 0 12px;background:#f5f7f8;border:1px solid #d8e0e3;border-radius:4px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;font-size:12px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}summary{font-weight:600}.subtle{color:var(--muted)}.pager{display:flex;gap:12px;align-items:center;padding:15px 0}.pager button,.reset{padding:7px 12px;background:white;border:1px solid #aebcc2;border-radius:4px}.count{font-size:12px;color:var(--muted)}.pill{padding:2px 6px;background:#eef1f3;border-radius:4px;font-size:11px}footer{margin-top:30px;color:var(--muted)}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}header{padding:24px}main{padding:0 14px 30px}.filters{position:static}}
 </style></head><body><header><div class="subtle" style="color:#a9c879">FRONTEND-CRATES · CPU CORRECTNESS BASELINE</div><h1>Schema and type coercion across parser generations</h1><p id="headline"></p><div id="revision"></div></header><main>
+<section id="combined-comparison" hidden></section>
 <section id="pr-comparisons" hidden></section>
+<h2>Original main baseline</h2>
 <div class="cards" id="cards"></div>
 <div class="note"><strong>How to read these results.</strong> A row is one authored case on one parser surface. It can contain many chunking executions. Failure counts are not distinct bug counts. Unavailable implementations and non-applicable paths are excluded from the pass rate. Expectations are authored independently; current output is never used as the oracle. Production parser code is unchanged from the pinned commit. Corpus provenance: PRs <a href="https://github.com/ai-dynamo/frontend-crates/pull/215">#215</a>, #220, #223, #248, #251, #268–#271, #273–#275, #277, #280; the saved reproduction instructions contain the full group-to-PR mapping.</div>
 <h2>Family × parser surface</h2><p class="subtle">Cells show passed / failed case rows. Click a cell to inspect its evidence. Native Unified is a separate implementation surface from v2 tool parsing.</p><div class="scroll"><table id="matrix"></table></div>
@@ -150,8 +160,10 @@ el('runs').innerHTML='<thead><tr><th>Command</th><th>Exit</th><th>Duration</th><
 
 
 PR_SCRIPT = r"""
-if(DATA.comparisons){
- const PC=DATA.comparisons, prs=PC.prs, host=el('pr-comparisons');host.hidden=false;
+for(const PC of [DATA.combined, DATA.comparisons].filter(Boolean)){
+ const combined=PC.manifest.kind==='combined', prs=PC.prs, host=el(combined?'combined-comparison':'pr-comparisons');host.hidden=false;
+ const label=p=>combined?'Combined branch':'#'+p.number;
+ const evidenceRoot=combined?'combined':'pr-comparison';
  const link=sha=>`<a href="https://github.com/ai-dynamo/frontend-crates/commit/${esc(sha)}"><code>${esc(sha.slice(0,12))}</code></a>`;
  const count=(p,k)=>p.change_counts[k]||0;
  const numDelta=n=>n>0?'+'+n:String(n);
@@ -159,16 +171,21 @@ if(DATA.comparisons){
  const contractDescription=new Map(C.map(c=>[c.id,c.description]));
  const groupCounts=m=>{const v=Object.values(m.group_tests);return `${v.filter(x=>x==='ok').length} / ${v.filter(x=>x==='FAILED').length}`};
  const failedRows=m=>(m.counts.fail||0)+(m.counts.error||0)+(m.counts.not_run||0);
- host.innerHTML=`<h2>Open PRs: fixes and regressions</h2><p><strong>${prs.length} PRs</strong> from michaelfeil and qimcis · discovered ${esc(PC.manifest.discovered_utc)} · completed ${esc(PC.campaign.finished_utc||'in progress')}.</p><div class="note"><strong>Comparison method:</strong> each PR's merge base versus its exact head, with the same frozen suite on both revisions. Shared bases are run once per SHA. These are independent PR comparisons, not a cumulative stack or simulations merged onto latest main. Fixed means fail → pass; regressed means pass → fail. Smaller or larger failure counts inside a still-failing row are shown separately. Overlapping PRs can fix the same case, so their gains must not be added as unique fixes. Failed-row totals include explicit harness errors, which are retained in the evidence and called out per PR. Only the new 110-group suite was run.</div><div class="scroll"><table id="pr-summary"><thead><tr><th>PR / author</th><th>Before → after<br>passed / failed rows</th><th>Fixed</th><th>Regressed</th><th>Other changed</th><th>Pass delta</th><th>Groups pass / fail<br>before → after</th></tr></thead><tbody>${prs.map(p=>`<tr><td><a href="${esc(p.url)}">#${p.number}</a> ${esc(p.title)}<br><span class="subtle">${esc(p.author.login)}</span></td><td>${p.comparable?`${fmt(p.before.counts.pass)} / ${fmt(failedRows(p.before))} → ${fmt(p.after.counts.pass)} / ${fmt(failedRows(p.after))}`:badge('not_run')}</td><td><button class="matrix-button" data-pr="${p.number}" data-kind="fixed"><span class="badge pass">${p.comparable?count(p,'fixed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="regressed"><span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${p.comparable?count(p,'regressed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="">${p.changes.length-count(p,'fixed')-count(p,'regressed')}</button></td><td>${p.comparable?numDelta(p.delta.pass):'incomplete'}</td><td>${groupCounts(p.before)} → ${groupCounts(p.after)}</td></tr>`).join('')}</tbody></table></div><p class="subtle">The table counts case/surface rows, not individual bugs. Expand a PR to inspect every changed assertion, expected values, before/after output, group result changes, and source revisions. The original main baseline remains below.</p><details class="details"><summary>PR campaign provenance and inventory</summary><pre>${esc(JSON.stringify({campaign:PC.campaign,inventory:PC.manifest},null,2))}</pre></details><div id="pr-details"></div>`;
+ host.innerHTML=`<h2>${combined?'Combined branch versus current main':'Open PRs: fixes and regressions'}</h2><p><strong>${combined?PC.manifest.integrated_prs.length:prs.length} PRs</strong> from michaelfeil and qimcis · ${combined?'integration recorded':'discovered'} ${esc(PC.manifest.discovered_utc)} · completed ${esc(PC.campaign.finished_utc||'in progress')}.</p><div class="note"><strong>Comparison method:</strong> ${combined?'Fresh current main versus all 12 exact audited PR heads merged together. Overlapping changes were resolved as recorded in the integration manifest. Both revisions ran the identical frozen suite; no expectations were changed.':"Each PR’s merge base versus its exact head, with the same frozen suite on both revisions. Shared bases are run once per SHA. These are independent PR comparisons, not a cumulative stack or simulations merged onto latest main."} Fixed means fail → pass; regressed means pass → fail. Smaller or larger failure counts inside a still-failing row are shown separately. Overlapping PRs can fix the same case, so their gains must not be added as unique fixes. Failed-row totals include explicit harness errors, which are retained in the evidence and called out per PR. Only the new 110-group suite was run.</div><div class="scroll"><table id="${combined?'combined-summary':'pr-summary'}"><thead><tr><th>PR / author</th><th>Before → after<br>passed / failed rows</th><th>Fixed</th><th>Regressed</th><th>Other changed</th><th>Pass delta</th><th>Groups pass / fail<br>before → after</th></tr></thead><tbody>${prs.map(p=>`<tr><td><a href="${esc(p.url)}">${label(p)}</a> ${esc(p.title)}<br><span class="subtle">${esc(p.author.login)}</span></td><td>${p.comparable?`${fmt(p.before.counts.pass)} / ${fmt(failedRows(p.before))} → ${fmt(p.after.counts.pass)} / ${fmt(failedRows(p.after))}`:badge('not_run')}</td><td><button class="matrix-button" data-pr="${p.number}" data-kind="fixed"><span class="badge pass">${p.comparable?count(p,'fixed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="regressed"><span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${p.comparable?count(p,'regressed'):'—'}</span></button></td><td><button class="matrix-button" data-pr="${p.number}" data-kind="">${p.changes.length-count(p,'fixed')-count(p,'regressed')}</button></td><td>${p.comparable?numDelta(p.delta.pass):'incomplete'}</td><td>${groupCounts(p.before)} → ${groupCounts(p.after)}</td></tr>`).join('')}</tbody></table></div><p class="subtle">The table counts case/surface rows, not individual bugs. Expand a PR to inspect every changed assertion, expected values, before/after output, group result changes, and source revisions. The original main baseline remains below.</p><details class="details"><summary>Campaign provenance, integration resolutions and inventory</summary><pre>${esc(JSON.stringify({campaign:PC.campaign,inventory:PC.manifest},null,2))}</pre></details><div id="${combined?'combined-details':'pr-details'}"></div>`;
+ if(combined && PC.interactions){
+  const i=PC.interactions, note=document.createElement('div');note.className='note';
+  note.innerHTML=`<strong>Interactions versus the individual PR runs:</strong> ${i.prior_regressions_resolved.length} previously observed regression rows are resolved; ${i.prior_regressions_persist.length} persist; ${i.new_combined_regressions.length} new regression rows appear only in the combination. ${i.combined_fixes_not_seen_individually.length} additional rows are fixed only in combination. ${i.individual_fixes_still_failing.length} individual fixes remain failing. These compare observations from different branch bases; they describe measured outcomes, not isolated causal attribution.<details class="details"><summary>Exact interaction cases and surfaces</summary><pre>${esc(JSON.stringify(i,null,2))}</pre></details>`;
+  host.querySelector('.scroll').before(note);
+ }
  for(const p of prs){
   const section=document.createElement('details');section.id='pr-'+p.number;section.className='details';section.style='margin:12px 0;background:white;border:1px solid var(--border);padding:14px;border-radius:6px';
-  const summary=document.createElement('summary');summary.innerHTML=`#${p.number} ${esc(p.title)} — <span class="badge pass">${count(p,'fixed')} fixed</span> <span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${count(p,'regressed')} regressed</span>${p.comparable?'':' '+badge('not_run')}`;section.append(summary);
-  const body=document.createElement('div');section.append(body);el('pr-details').append(section);
+  const summary=document.createElement('summary');summary.innerHTML=`${label(p)} ${esc(p.title)} — <span class="badge pass">${count(p,'fixed')} fixed</span> <span class="badge ${count(p,'regressed')?'fail':'not_applicable'}">${count(p,'regressed')} regressed</span>${p.comparable?'':' '+badge('not_run')}`;section.append(summary);
+  const body=document.createElement('div');section.append(body);el(combined?'combined-details':'pr-details').append(section);
   let build;
   section.addEventListener('toggle',()=>{if(section.open)build()});
   build=()=>{
    if(body.dataset.loaded)return;body.dataset.loaded='1';
-   body.innerHTML=`<p><strong>Before:</strong> ${link(p.merge_base)} · ${esc(p.before.started_utc)} · ${p.before.seconds}s<br><strong>After:</strong> ${link(p.headRefOid)} · ${esc(p.after.started_utc)} · ${p.after.seconds}s<br><strong>Observation delta:</strong> ${Object.entries(p.delta).map(([k,v])=>esc(k)+': '+numDelta(v)).join(' · ')}</p>${p.comparable?'':`<div class="note">This pair is incomplete. Before: ${esc(p.before.run_status)}; after: ${esc(p.after.run_status)}. Missing results are not passes. Inspect run logs before interpreting changes.</div>`}${p.baseline_limitations?.length?`<div class="note"><strong>Pre-existing limitations on both revisions:</strong><ul>${p.baseline_limitations.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}<p><strong>Named Rust tests that changed:</strong> ${p.group_changes.length?p.group_changes.map(g=>`<code>${g.group}</code> ${esc(g.before)} → ${esc(g.after)}`).join('; '):'None. Individual case fixes can leave their containing group failing.'}</p><p><a href="../pr-comparison/runs/${esc(p.merge_base)}/contracts.log">Before log</a> · <a href="../pr-comparison/runs/${esc(p.headRefOid)}/contracts.log">After log</a> · <a href="../pr-comparison/runs/${esc(p.merge_base)}/results.jsonl">Before raw rows</a> · <a href="../pr-comparison/runs/${esc(p.headRefOid)}/results.jsonl">After raw rows</a></p><details><summary>Changed PR files and exact run metadata</summary><pre>${esc(JSON.stringify({files:p.files,before:p.before,after:p.after},null,2))}</pre></details>`;
+   body.innerHTML=`<p><strong>Before:</strong> ${link(p.merge_base)} · ${esc(p.before.started_utc)} · ${p.before.seconds}s<br><strong>After:</strong> ${link(p.headRefOid)} · ${esc(p.after.started_utc)} · ${p.after.seconds}s<br><strong>Observation delta:</strong> ${Object.entries(p.delta).map(([k,v])=>esc(k)+': '+numDelta(v)).join(' · ')}</p>${p.comparable?'':`<div class="note">This pair is incomplete. Before: ${esc(p.before.run_status)}; after: ${esc(p.after.run_status)}. Missing results are not passes. Inspect run logs before interpreting changes.</div>`}${p.baseline_limitations?.length?`<div class="note"><strong>Pre-existing limitations on both revisions:</strong><ul>${p.baseline_limitations.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}<p><strong>Named Rust tests that changed:</strong> ${p.group_changes.length?p.group_changes.map(g=>`<code>${g.group}</code> ${esc(g.before)} → ${esc(g.after)}`).join('; '):'None. Individual case fixes can leave their containing group failing.'}</p><p><a href="../${evidenceRoot}/runs/${esc(p.merge_base)}/contracts.log">Before log</a> · <a href="../${evidenceRoot}/runs/${esc(p.headRefOid)}/contracts.log">After log</a> · <a href="../${evidenceRoot}/runs/${esc(p.merge_base)}/results.jsonl">Before raw rows</a> · <a href="../${evidenceRoot}/runs/${esc(p.headRefOid)}/results.jsonl">After raw rows</a></p><details><summary>Changed files and exact run metadata</summary><pre>${esc(JSON.stringify({files:p.files,before:p.before,after:p.after},null,2))}</pre></details>`;
    const controls=document.createElement('div');controls.style='display:flex;flex-wrap:wrap;gap:12px;margin:14px 0';
    const label=document.createElement('label');label.textContent='Result change';const select=document.createElement('select');select.setAttribute('aria-label','Result change for PR '+p.number);
    for(const [value,title] of [['','All changed results'],...Object.entries(kinds)]){const opt=document.createElement('option');opt.value=value;opt.textContent=title;select.append(opt)}label.append(select);controls.append(label);
@@ -199,11 +216,12 @@ def main():
     ap.add_argument(
         "--comparisons", type=Path, help="comparisons.json from compare_prs.py"
     )
+    ap.add_argument("--combined", type=Path, help="Combined branch comparisons.json")
     args = ap.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     if args.render_only:
-        print(json.dumps(render(out, args.comparisons), indent=2))
+        print(json.dumps(render(out, args.comparisons, args.combined), indent=2))
         return
     subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
     baseline = git("rev-parse", "origin/main")
@@ -363,7 +381,7 @@ def main():
         for name in ["cases.json", "results.jsonl", "contracts.log"]
     }
     (out / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
-    summary = render(out, args.comparisons)
+    summary = render(out, args.comparisons, args.combined)
     print(
         json.dumps(
             {

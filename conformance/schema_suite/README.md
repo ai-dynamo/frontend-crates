@@ -133,3 +133,59 @@ An incomplete build/run is explicit and is not presented as a comparable clean
 result. This compares each PR with its own base, not a cumulative PR stack or a
 simulated merge onto current main; overlapping improvements cannot be summed as
 unique fixes.
+
+## Combined integration audit (2026-09-24)
+
+Branch `rmccormick/09-24-schema-combined` merges the exact audited heads of
+#251, #263, #268, #269, #270, #271, #273, #274, #275, #276, #277, and #280,
+in that order, onto main `17d5f76bafc0b06b7236afb282a00da3ec2b6aa6`.
+The tested production merge is `ac378f7d2b0d97b8fdc19e009550b201d117f96f`;
+subsequent commits add the frozen suite and report tooling only.
+
+Both revisions ran the same frozen suite, with all 5,944 observations recorded:
+
+| Measurement | Fresh main | Combined |
+|---|---:|---:|
+| Named Rust tests passed / failed | 49 / 61 | 67 / 43 |
+| Case/surface rows passed / failed | 4,108 / 541 | 4,277 / 372 |
+| Unavailable / not applicable | 1,230 / 65 | 1,230 / 65 |
+| Test runtime, excluding compilation | 44.33 s | 44.72 s |
+
+There are **179 fixed and 10 regressed rows** (+169 passing). The 18 newly
+passing named tests are B02, B03, B04, B10, B20, C01, C04, C11, D01, D02, D12,
+G01, G03, G08, G09, H01, H02, and H03; none becomes newly failing.
+Combined run: 2026-09-24T20:09:13Z–20:10:03Z (50.406 s including compilation).
+
+The remaining regressions are all GLM: B07 enum unions, B08 const unions, and
+B09 unconstrained alternatives on v1 batch/jail (six rows), plus B17 enum
+exclusion of null on all four surfaces (four rows). B09 is an explicit
+compatibility policy; the other three are regression contracts. B12/B13's
+four v1 regressions from #268 disappear when combined. C03 nullable references
+on v1 batch/jail and H03 schema emission/loading/Unified parsing pass only in
+the combination. Every individually observed fix passes on the combined branch.
+No regression appears solely in the combination.
+
+Conflict resolutions preserve both sides' tests. GLM nullable preference uses
+the reference-aware matcher; scalar-union selection follows direct/referenced
+type selection. Kimi resolves references before building nullable argument
+alternatives and retains the typed fallback. MiniMax conflicts only joined
+adjacent added tests. No expectations were relaxed and no new parser fixes
+were added beyond composing these PR changes.
+
+The evidence bundle has sibling `baseline/`, `pr-comparison/`, and `combined/`
+directories. `combined/manifest.json` pins every integrated head and the
+resolution notes; `comparisons.json` contains every changed observation;
+`interactions.json` lists differences from the individual PR audit. Render both
+comparison sections while preserving the original main baseline:
+
+```bash
+python3 conformance/schema_suite/report.py --render-only \
+  --output /absolute/path/baseline \
+  --comparisons /absolute/path/pr-comparison/comparisons.json \
+  --combined /absolute/path/combined/comparisons.json
+```
+
+To repeat the combined comparison, use `compare_prs.py run` with `--output`
+pointing to a copy of the combined manifest directory and an isolated audit
+worktree. Its manifest uses `kind: "combined"` and one comparison entry whose
+`merge_base` is current main and `headRefOid` is the production merge commit.

@@ -122,8 +122,9 @@ def run(args, manifest):
     revisions = {}
     # A shared merge base is executed once and reused by SHA, never by a similar result.
     for pr in manifest["prs"]:
-        revisions.setdefault(pr["merge_base"], []).append(f'PR #{pr["number"]} before')
-        revisions.setdefault(pr["headRefOid"], []).append(f'PR #{pr["number"]} after')
+        label = "Combined branch" if pr.get("kind") == "combined" else f'PR #{pr["number"]}'
+        revisions.setdefault(pr["merge_base"], []).append(f"{label} before")
+        revisions.setdefault(pr["headRefOid"], []).append(f"{label} after")
     campaign = {
         "started_utc": utc(),
         "suite_commit": manifest["suite_commit"],
@@ -135,7 +136,11 @@ def run(args, manifest):
         "xgrammar_python": args.xgrammar_python,
         "rustc": subprocess.check_output(["rustc", "--version"], text=True).strip(),
         "worktree": str(args.worktree),
-        "method": "exact merge-base -> exact PR head; identical test overlay; shared bases deduplicated by SHA",
+        "method": (
+            "current main -> combined audited PR heads; identical test overlay"
+            if manifest.get("kind") == "combined"
+            else "exact merge-base -> exact PR head; identical test overlay; shared bases deduplicated by SHA"
+        ),
         "revision_count": len(revisions),
     }
     (args.output / "campaign.json").write_text(json.dumps(campaign, indent=2) + "\n")
