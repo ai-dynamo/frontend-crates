@@ -6680,3 +6680,86 @@ cases:
     - UNIFIED.muse-1
     request: null
     golden: null
+  deepseek_v41_mixed_control_text_in_string:
+    lifecycle: active
+    scenario: deepseek_v41_mixed_control_text_in_string
+    description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
+    policy:
+    - I7
+    display_id: UNIFIED.7-3
+    historical_ids: []
+    request:
+      input: "<|tool_call>call:f{x:<|\"|> <|channel>thought\nquoted<channel|> <|tool_call> <tool_call|> &amp; \"x\"\\\n <|\"|>}<tool_call|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call>
+      - delta_text: 'call:f{x:'
+      - delta_text: <|"|>
+      - delta_text: ' '
+      - delta_text: <|channel>
+      - delta_text: 'thought
+
+          quoted'
+      - delta_text: <channel|>
+      - delta_text: ' '
+      - delta_text: <|tool_call>
+      - delta_text: ' '
+      - delta_text: <tool_call|>
+      - delta_text: " &amp; \"x\"\\\n "
+      - delta_text: <|"|>
+      - delta_text: '}'
+      - delta_text: <tool_call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: " <|channel>thought\nquoted<channel|> <|tool_call> <tool_call|> &amp; \"x\"\\\n "

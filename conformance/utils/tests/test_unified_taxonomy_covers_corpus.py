@@ -515,7 +515,7 @@ def test_scenario_families_matches_declared_scope():
         assert G.scenario_families(scenario) == families
     assert G.scenario_families("qwen_string_null") == {"qwen3", "glm47"}
     assert G.scenario_families("qwen_nullable_string_null") == {"qwen3"}
-    assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == {"deepseek_v41"}
+    assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == set(FAMILIES)
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
@@ -551,6 +551,17 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert "<think>quoted</think>" in value
     assert '&amp; "x"' + "\\" + "\n" in value
     assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-3"
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+def test_mixed_control_string_uses_native_markers_and_exact_string(family):
+    case = build_cases(family)["UNIFIED.deepseek_v41_mixed_control_text_in_string." + family]
+    value = case["golden"][0]["arguments"]["x"]
+    assert value == G._MIXED_CONTROL_STRINGS[family]
+    assert value.startswith(" ") and value.endswith("\n ")
+    assert G.r_reason(family, "quoted") in value
+    assert '&amp; "x"' + "\\" in value
+    assert case["input"] == G.r_tool(family, "f", "x", value, 0)
 
 
 # --- generated YAML must round-trip every authored byte -------------------------
@@ -609,17 +620,17 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 80,
+            "deepseek_v4": 81,
             "deepseek_v41": 81,
-            "gemma4": 82,
-            "glm47": 81,
-            "kimi_k2": 80,
-            "kimi_k3": 88,
-            "muse_glimmer": 81,
-            "qwen3": 82,
+            "gemma4": 83,
+            "glm47": 82,
+            "kimi_k2": 81,
+            "kimi_k3": 89,
+            "muse_glimmer": 82,
+            "qwen3": 83,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 655
+    assert sum(per_family.values()) == 662
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -842,6 +853,8 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 def _family_value(scenario, family):
     reason_open, reason_close, _, _ = control_tokens(family)
+    if scenario == "deepseek_v41_mixed_control_text_in_string":
+        return G._MIXED_CONTROL_STRINGS[family]
     if scenario == "arg_marker_in_string":
         close = {
             "deepseek_v4": "</｜DSML｜invoke>",
@@ -966,7 +979,9 @@ def _native_input_calls(family, raw):
             for key, is_string, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if is_string == "true" else json.loads(value)
         elif family == "qwen3":
-            arguments = {key: value.strip() for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
+            # The generator frames values with one newline; payload whitespace is data.
+            arguments = {key: value.removeprefix("\n").removesuffix("\n")
+                         for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
         elif family == "muse_glimmer":
             for key, value in re.findall(r'<atem:parameter name="([^"]+)">(.*?)</atem:parameter>', body, re.S):
                 try:

@@ -7821,3 +7821,98 @@ cases:
         name: get_weather
         arguments:
           city: null
+  deepseek_v41_mixed_control_text_in_string:
+    lifecycle: active
+    scenario: deepseek_v41_mixed_control_text_in_string
+    description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
+    policy:
+    - I7
+    display_id: UNIFIED.7-3
+    historical_ids: []
+    request:
+      input: "<tool_call>\n<function=f>\n<parameter=x>\n <think>quoted</think> <tool_call> </tool_call> </function> &amp; \"x\"\\\n \n</parameter>\n</function>\n</tool_call>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=f>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=x>
+      - delta_text: "\n "
+      - delta_text: <think>
+      - delta_text: quoted
+      - delta_text: </think>
+      - delta_text: ' '
+      - delta_text: <tool_call>
+      - delta_text: ' '
+      - delta_text: </tool_call>
+      - delta_text: ' '
+      - delta_text: </function>
+      - delta_text: " &amp; \"x\"\\\n \n"
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: " <think>quoted</think> <tool_call> </tool_call> </function> &amp; \"x\"\\\n "

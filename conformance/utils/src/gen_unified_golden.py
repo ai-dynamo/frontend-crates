@@ -619,6 +619,23 @@ CLEAN = [
 
 _DS41_MIXED_STRING = ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"' + "\\" + "\n "
 
+# Keep the original DS4.1 payload stable so its existing capture remains comparable.
+_MIXED_CONTROL_STRINGS = {
+    "deepseek_v41": _DS41_MIXED_STRING,
+    **{
+        family: " " + r_reason(family, "quoted") + " " + markers + ' &amp; "x"' + "\\" + "\n "
+        for family, markers in {
+            "deepseek_v4": "<｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke>",
+            "gemma4": "<|tool_call> <tool_call|>",
+            "glm47": "<tool_call> </tool_call>",
+            "qwen3": "<tool_call> </tool_call> </function>",
+            "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
+            "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
+            "muse_glimmer": "<atem:function_calls> </atem:function_calls> </atem:invoke>",
+        }.items()
+    },
+}
+
 EDGE = [
     ("glm47_parameterless_call_shape_inside_argument",
      "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
@@ -1322,18 +1339,19 @@ EDGE = [
 
     (
         "deepseek_v41_mixed_control_text_in_string",
-        "A DeepSeek V4.1 native DSML string parameter contains reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. All bytes are argument data; this combines marker classes and string preservation beyond 7-2's single closer.",
+        "A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.",
         ["I7"],
         [{"kind": "tool_call", "name": "f", "arguments": {"x": None}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-        OnlyFamilies({
-            "deepseek_v41": (
-                r_tool("deepseek_v41", "f", "x", _DS41_MIXED_STRING, 0),
-                VLLM_UNCAPTURABLE["deepseek_v41"],
+        {
+            family: (
+                r_tool(family, "f", "x", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M),
                 M,
-                _DS41_MIXED_STRING,
-            ),
-        }),
+                value,
+            )
+            for family, value in _MIXED_CONTROL_STRINGS.items()
+        },
     ),
 ]
 

@@ -89,7 +89,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 ### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
 - **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
 - **`7-2`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
-- **`7-3`** (`deepseek_v41_mixed_control_text_in_string`) DeepSeek V4.1 DSML string arguments preserve embedded reasoning and tool delimiters, entity text, quotes, a backslash, and a newline. The exact input uses DeepSeek V4.1's DSML grammar; other families' marker-in-string coverage is `7-2`.
+- **`7-3`** (`deepseek_v41_mixed_control_text_in_string`) All eight families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-2` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
 - **`7-4`** (`qwen_string_null`) The request schema declares `city` as `string` (non-nullable). Bare parameter text `null` remains the string `"null"` in Qwen3 and GLM. This is also covered in `TOOLCALLING.streamv1.7-1` and `TOOLCALLING.xml.2`.
 
 ### Qwen3-specific schema case

@@ -1,0 +1,44 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.4
+    git_commit: a1a20a4ba57c3bef81eea8160507dbf206f214b2
+    source_sha256: b7f8c2e7c594ba473a74e19aae5af13f083399712a48f5940bb7d16974fb71ab
+document:
+  mode: unified
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: ed5e273e9a72d6ea46f569a1e79193f5d8545d5fc83d960605c709600e9fa176
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <|channel>thought\nquoted<channel|> <|tool_call> <tool_call|> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" <|channel>thought\nquoted<channel|> <|tool_call> <tool_call|> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

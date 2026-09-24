@@ -1,0 +1,78 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.4
+    git_commit: a1a20a4ba57c3bef81eea8160507dbf206f214b2
+    source_sha256: b7f8c2e7c594ba473a74e19aae5af13f083399712a48f5940bb7d16974fb71ab
+document:
+  mode: unified
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+        - kind: text
+          text: " <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>"
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: <atem:function_calls>
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: </atem:function_calls>
+        - expected:
+          - kind: text
+            text: ' '
+        - expected: []
+        - expected:
+          - kind: text
+            text: " &amp; \"x\"\\\n "
+        - expected:
+          - kind: text
+            text: </atem:parameter>
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected:
+          - kind: text
+            text: </atem:function_calls>
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}
