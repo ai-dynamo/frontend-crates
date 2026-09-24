@@ -22,6 +22,13 @@
 //! entries are keyed by the blake3 digest of `input[0..boundary]` and weighed by their
 //! resident token-vector bytes, so the byte budget is enforced — and recency/frequency
 //! tracked — by moka rather than by hand.
+//!
+//! Segmented inputs ([`Encoder::encode_segments`]) share the same cache but cut at
+//! segment ends instead of special-token occurrences: the trait contract encodes each
+//! segment independently and concatenates, so every segment end is a safe split point.
+//! Their keys are derived under a separate blake3 context and frame each segment with
+//! its `allow_special` flag and byte length, so a segmented prefix can never alias a
+//! plain-text prefix, a different trust layout, or a different split of the same text.
 
 use std::{
     hash::BuildHasherDefault,
@@ -36,10 +43,15 @@ use aho_corasick::AhoCorasick;
 use moka::sync::Cache;
 use rustc_hash::FxHasher;
 
-use crate::{TokenIdType, traits::Encoder};
+use crate::{EncodeSegment, TokenIdType, traits::Encoder};
 
 /// Hash type for cache keys
 type Blake3Hash = [u8; 32];
+
+/// blake3 derive-key context for segmented-input keys. Plain-text keys are the unkeyed
+/// digest of `input[0..boundary]`; deriving segmented keys under this context keeps the two
+/// key spaces disjoint inside the shared [`PrefixCache`].
+const SEGMENT_KEY_CONTEXT: &str = "dynamo-tokenizers 2026-09-24 L1 segmented prefix key";
 
 /// Keys are blake3 digests (already uniformly distributed), so a fast non-DoS-resistant
 /// hasher suffices — no need for the default SipHash.
@@ -49,6 +61,9 @@ type PrefixHasher = BuildHasherDefault<FxHasher>;
 type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
 
 /// Request-local lookup result. The deepest digest can differ from the matched key.
+///
+/// Offsets are byte positions for plain-text lookups and counts of complete leading
+/// segments for segmented lookups; a match must only be consumed by the path that made it.
 pub(super) struct PrefixMatch {
     pub(super) tokens: Arc<[TokenIdType]>,
     pub(super) prefix_len: usize,
@@ -74,6 +89,42 @@ fn hash_prefixes<'a>(
         last_pos = boundary_pos;
         (boundary_pos, *hasher.finalize().as_bytes())
     })
+}
+
+/// Feed one segment into a segmented-key hasher. The trust flag and byte length frame the
+/// text, so segment lists that flatten to identical text but split differently or trust
+/// different pieces hash differently — their tokenizations differ, so they must not share
+/// entries.
+fn frame_segment(hasher: &mut blake3::Hasher, segment: &EncodeSegment<'_>) {
+    hasher.update(&[u8::from(segment.allow_special)]);
+    hasher.update(&(segment.text.len() as u64).to_le_bytes());
+    hasher.update(segment.text.as_bytes());
+}
+
+/// Hash sorted segment-count boundaries incrementally: the digest at boundary `k` covers
+/// `segments[..k]`, framed by [`frame_segment`] under [`SEGMENT_KEY_CONTEXT`].
+fn hash_segment_prefixes<'a, 'b: 'a>(
+    segments: &'a [EncodeSegment<'b>],
+    boundaries: &'a [usize],
+) -> impl Iterator<Item = (usize, Blake3Hash)> + 'a {
+    let mut hasher = blake3::Hasher::new_derive_key(SEGMENT_KEY_CONTEXT);
+    let mut last = 0;
+    boundaries.iter().map(move |&boundary| {
+        for segment in &segments[last..boundary] {
+            frame_segment(&mut hasher, segment);
+        }
+        last = boundary;
+        (boundary, *hasher.finalize().as_bytes())
+    })
+}
+
+/// Cut points for a segmented input: after every complete segment except the last, so —
+/// like [`boundaries_with`] omitting `input.len()` — the remainder handed to the inner
+/// tokenizer is never empty. Segment ends are safe split points because
+/// [`Encoder::encode_segments`] encodes each segment independently and concatenates:
+/// `encode_segments(a) ++ encode_segments(b) == encode_segments(a ++ b)`.
+fn segment_boundaries(segments: &[EncodeSegment<'_>]) -> Vec<usize> {
+    (1..segments.len()).collect()
 }
 
 /// Positions immediately after each special-token occurrence in `text`.
@@ -239,16 +290,29 @@ impl L1Cache {
         let boundaries = self.boundaries(input);
 
         if boundaries.is_empty() {
-            self.misses.fetch_add(1, Ordering::Relaxed);
-            if let Some(cb) = &self.on_miss {
-                cb();
-            }
-            return PrefixLookup::Miss(Vec::new());
+            return self.record_miss(Vec::new());
         }
 
-        let prefix_hashes: Vec<_> = hash_prefixes(input, &boundaries).collect();
+        self.resolve_prefix(hash_prefixes(input, &boundaries).collect())
+    }
 
-        for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
+    /// Segmented counterpart of [`Self::lookup_prefix`]: boundaries count complete leading
+    /// segments and keys are framed per segment (see [`hash_segment_prefixes`]). The
+    /// returned counts and digests must be used with this same segment list.
+    pub(super) fn lookup_prefix_segments(&self, segments: &[EncodeSegment<'_>]) -> PrefixLookup {
+        let boundaries = segment_boundaries(segments);
+
+        if boundaries.is_empty() {
+            return self.record_miss(Vec::new());
+        }
+
+        self.resolve_prefix(hash_segment_prefixes(segments, &boundaries).collect())
+    }
+
+    /// Probe boundary digests deepest-first; the first entry present is the longest cached
+    /// prefix. Shared by the plain-text and segmented lookups.
+    fn resolve_prefix(&self, prefix_hashes: Vec<(usize, Blake3Hash)>) -> PrefixLookup {
+        for &(boundary, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(tokens) = self.cache.get(&hash_bytes) {
                 self.hits.fetch_add(1, Ordering::Relaxed);
                 if let Some(cb) = &self.on_hit {
@@ -259,13 +323,17 @@ impl L1Cache {
                     prefix_hashes.last().expect("prefix hashes is non-empty");
                 return PrefixLookup::Hit(PrefixMatch {
                     tokens,
-                    prefix_len: boundary_pos,
+                    prefix_len: boundary,
                     deepest_boundary,
                     deepest_hash: Some(deepest_hash),
                 });
             }
         }
 
+        self.record_miss(prefix_hashes)
+    }
+
+    fn record_miss(&self, prefix_hashes: Vec<(usize, Blake3Hash)>) -> PrefixLookup {
         self.misses.fetch_add(1, Ordering::Relaxed);
         if let Some(cb) = &self.on_miss {
             cb();
@@ -446,6 +514,101 @@ impl L1Cache {
             hash_bytes,
             *blake3::hash(&input.as_bytes()[..deepest]).as_bytes()
         );
+
+        // Copy only the populated prefix, excluding capacity reserved for the tail.
+        let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
+        self.cache.insert(hash_bytes, tokens);
+
+        cumulative.extend_from_slice(seg_b.token_ids());
+        Ok(cumulative)
+    }
+
+    /// Segmented miss-path encode: run the inner [`Encoder::encode_segments`] over each run
+    /// of segments between adjacent boundaries, caching the cumulative prefix after every
+    /// boundary, and return the full token-id vector. One full encode in total, like
+    /// [`Self::populate_and_encode_with_hashes`]. `prefix_hashes` must come from
+    /// [`hash_segment_prefixes`] over this same segment list.
+    pub(super) fn populate_and_encode_segments_with_hashes<E: Encoder + ?Sized>(
+        &self,
+        segments: &[EncodeSegment<'_>],
+        prefix_hashes: impl Iterator<Item = (usize, Blake3Hash)>,
+        tokenizer: &E,
+    ) -> anyhow::Result<Vec<TokenIdType>> {
+        #[cfg(debug_assertions)]
+        let mut validation_hasher = blake3::Hasher::new_derive_key(SEGMENT_KEY_CONTEXT);
+        let mut running_tokens: Vec<TokenIdType> = Vec::new();
+        let mut last = 0;
+
+        for (boundary, hash_bytes) in prefix_hashes {
+            #[cfg(debug_assertions)]
+            {
+                for segment in &segments[last..boundary] {
+                    frame_segment(&mut validation_hasher, segment);
+                }
+                debug_assert_eq!(hash_bytes, *validation_hasher.finalize().as_bytes());
+            }
+
+            let chunk = tokenizer.encode_segments(&segments[last..boundary])?;
+            running_tokens.extend_from_slice(chunk.token_ids());
+
+            let prefix_tokens: Arc<[TokenIdType]> = running_tokens.as_slice().into();
+            self.cache.insert(hash_bytes, prefix_tokens);
+
+            last = boundary;
+        }
+
+        let tail = tokenizer.encode_segments(&segments[last..])?;
+        if last == 0 {
+            return Ok(tail.token_ids().to_vec());
+        }
+        running_tokens.extend_from_slice(tail.token_ids());
+        Ok(running_tokens)
+    }
+
+    /// Segmented counterpart of [`Self::extend_after_match_with_hash`]: `matched` counts
+    /// complete leading segments, the uncached remainder is encoded through the inner
+    /// [`Encoder::encode_segments`], and the new deepest entry is keyed like
+    /// [`hash_segment_prefixes`]. `matched` must come from
+    /// [`Self::lookup_prefix_segments`] over this same segment list.
+    pub(super) fn extend_after_match_segments_with_hash<E: Encoder + ?Sized>(
+        &self,
+        segments: &[EncodeSegment<'_>],
+        matched: PrefixMatch,
+        tokenizer: &E,
+    ) -> anyhow::Result<Vec<TokenIdType>> {
+        let PrefixMatch {
+            tokens: prefix_tokens,
+            prefix_len,
+            deepest_boundary,
+            deepest_hash,
+        } = matched;
+        // Boundaries exclude the final segment, so the trailing run is nonempty.
+        let deepest = (deepest_boundary > prefix_len).then_some(deepest_boundary);
+
+        let Some(deepest) = deepest else {
+            let suffix_enc = tokenizer.encode_segments(&segments[prefix_len..])?;
+            let mut merged = Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
+            merged.extend_from_slice(&prefix_tokens);
+            merged.extend_from_slice(suffix_enc.token_ids());
+            return Ok(merged);
+        };
+
+        let seg_a = tokenizer.encode_segments(&segments[prefix_len..deepest])?;
+        let seg_b = tokenizer.encode_segments(&segments[deepest..])?;
+        let mut cumulative = Vec::with_capacity(
+            prefix_tokens.len() + seg_a.token_ids().len() + seg_b.token_ids().len(),
+        );
+        cumulative.extend_from_slice(&prefix_tokens);
+        cumulative.extend_from_slice(seg_a.token_ids());
+
+        let deepest_digest = || {
+            hash_segment_prefixes(segments, &[deepest])
+                .next()
+                .map(|(_, digest)| digest)
+                .expect("one boundary yields one digest")
+        };
+        let hash_bytes = deepest_hash.unwrap_or_else(deepest_digest);
+        debug_assert_eq!(hash_bytes, deepest_digest());
 
         // Copy only the populated prefix, excluding capacity reserved for the tail.
         let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
@@ -1141,6 +1304,253 @@ mod tests {
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod segmented_tests {
+    use super::*;
+    use crate::{
+        Encoding, Result,
+        traits::{DecodeResult, Decoder, Tokenizer},
+    };
+
+    /// Emits `[allow_special, byte_len]` per segment, so any split or trust error changes the
+    /// ids rather than only the counters.
+    struct SegmentTokenizer;
+
+    impl Encoder for SegmentTokenizer {
+        fn encode(&self, input: &str) -> Result<Encoding> {
+            Ok(Encoding::Sp(vec![input.len() as u32]))
+        }
+
+        fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
+            inputs.iter().map(|input| self.encode(input)).collect()
+        }
+
+        fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+            Ok(Encoding::Sp(
+                segments
+                    .iter()
+                    .flat_map(|segment| {
+                        [u32::from(segment.allow_special), segment.text.len() as u32]
+                    })
+                    .collect(),
+            ))
+        }
+    }
+
+    impl Decoder for SegmentTokenizer {
+        fn decode(&self, _ids: &[TokenIdType], _skip_special: bool) -> Result<DecodeResult> {
+            Ok(DecodeResult::Complete(String::new()))
+        }
+    }
+
+    impl Tokenizer for SegmentTokenizer {
+        fn validate_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    fn segments() -> Vec<EncodeSegment<'static>> {
+        vec![
+            EncodeSegment::control("<ctl>"),
+            EncodeSegment::ordinary("user"),
+            EncodeSegment::control("<ctl>"),
+            EncodeSegment::ordinary("assistant"),
+            EncodeSegment::control("<ctl>"),
+        ]
+    }
+
+    #[test]
+    fn segment_boundaries_exclude_the_final_segment() {
+        assert!(segment_boundaries(&[]).is_empty());
+        assert!(segment_boundaries(&segments()[..1]).is_empty());
+        assert_eq!(segment_boundaries(&segments()), vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn segment_prefix_hashes_are_incremental_and_framed() {
+        let segments = segments();
+        let boundaries = segment_boundaries(&segments);
+        let incremental: Vec<_> = hash_segment_prefixes(&segments, &boundaries).collect();
+
+        // Each digest equals hashing that prefix from scratch under the same framing.
+        for &(boundary, digest) in &incremental {
+            let mut hasher = blake3::Hasher::new_derive_key(SEGMENT_KEY_CONTEXT);
+            for segment in &segments[..boundary] {
+                frame_segment(&mut hasher, segment);
+            }
+            assert_eq!(digest, *hasher.finalize().as_bytes(), "boundary {boundary}");
+        }
+
+        // The flattened text hashed the plain-text way must not collide with any of them.
+        let flattened: String = segments.iter().map(|segment| segment.text).collect();
+        let text_boundaries = find_special_token_boundaries(&flattened, &["<ctl>"]);
+        for (_, text_digest) in hash_prefixes(&flattened, &text_boundaries) {
+            assert!(incremental.iter().all(|(_, digest)| *digest != text_digest));
+        }
+
+        // Flipping one trust flag or moving one split changes the digest at that boundary.
+        let mut untrusted = segments.clone();
+        untrusted[0].allow_special = false;
+        let flipped: Vec<_> = hash_segment_prefixes(&untrusted, &boundaries).collect();
+        assert!(incremental.iter().zip(&flipped).all(|(a, b)| a.1 != b.1));
+        let resplit = [
+            EncodeSegment::control("<ctl>us"),
+            EncodeSegment::ordinary("er"),
+        ];
+        let resplit_digest = hash_segment_prefixes(&resplit, &[1]).next().unwrap().1;
+        assert_ne!(resplit_digest, incremental[0].1);
+    }
+
+    #[test]
+    fn segmented_populate_lookup_and_extend_round_trip() {
+        let cache = L1Cache::new(1 << 20, vec!["<ctl>".to_string()]);
+        let tokenizer = SegmentTokenizer;
+        let full = segments();
+        let short = &full[..3];
+
+        // Miss on the short list populates boundaries 1 and 2.
+        let PrefixLookup::Miss(hashes) = cache.lookup_prefix_segments(short) else {
+            panic!("cold cache must miss");
+        };
+        let ids = cache
+            .populate_and_encode_segments_with_hashes(short, hashes.into_iter(), &tokenizer)
+            .unwrap();
+        assert_eq!(ids, tokenizer.encode_segments(short).unwrap().token_ids());
+        assert_eq!(cache.len(), 2);
+
+        // The full list hits at boundary 2 (shares the first two segments).
+        let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&full) else {
+            panic!("shared segments must hit");
+        };
+        assert_eq!(matched.prefix_len, 2);
+        assert_eq!(matched.deepest_boundary, 4);
+        assert_eq!(matched.tokens.len(), 4);
+
+        // Extending caches exactly the deepest boundary (4) and returns the exact ids.
+        let ids = cache
+            .extend_after_match_segments_with_hash(&full, matched, &tokenizer)
+            .unwrap();
+        assert_eq!(ids, tokenizer.encode_segments(&full).unwrap().token_ids());
+        assert_eq!(cache.len(), 3);
+        let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&full) else {
+            panic!("deepest boundary must now be cached");
+        };
+        assert_eq!(matched.prefix_len, 4);
+        assert_eq!(matched.tokens.len(), 8);
+    }
+
+    #[test]
+    fn segmented_encode_failures_keep_earlier_entries() {
+        struct FailAfterTwo;
+        impl Encoder for FailAfterTwo {
+            fn encode(&self, input: &str) -> Result<Encoding> {
+                SegmentTokenizer.encode(input)
+            }
+            fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
+                SegmentTokenizer.encode_batch(inputs)
+            }
+            fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+                if segments.iter().any(|segment| segment.text == "assistant") {
+                    return Err(anyhow::anyhow!("intentional segment failure"));
+                }
+                SegmentTokenizer.encode_segments(segments)
+            }
+        }
+
+        let cache = L1Cache::new(1 << 20, vec!["<ctl>".to_string()]);
+        let full = segments();
+        let PrefixLookup::Miss(hashes) = cache.lookup_prefix_segments(&full) else {
+            panic!("cold cache must miss");
+        };
+        assert!(
+            cache
+                .populate_and_encode_segments_with_hashes(&full, hashes.into_iter(), &FailAfterTwo)
+                .is_err()
+        );
+        // Boundaries 1..=3 were encoded before the failing run; they stay usable: a later
+        // list sharing those segments hits at boundary 3 with exactly their ids.
+        assert_eq!(cache.len(), 3);
+        let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&full[..4]) else {
+            panic!("entries populated before the failure must remain hittable");
+        };
+        assert_eq!(matched.prefix_len, 3);
+        assert_eq!(
+            &*matched.tokens,
+            SegmentTokenizer
+                .encode_segments(&full[..3])
+                .unwrap()
+                .token_ids()
+        );
+    }
+
+    /// Fails the `fail_at`-th `encode_segments` call (0-based) and passes the others through.
+    struct FailAt {
+        fail_at: usize,
+        calls: std::sync::atomic::AtomicUsize,
+    }
+
+    impl Encoder for FailAt {
+        fn encode(&self, input: &str) -> Result<Encoding> {
+            SegmentTokenizer.encode(input)
+        }
+        fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
+            SegmentTokenizer.encode_batch(inputs)
+        }
+        fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+            let call = self.calls.fetch_add(1, Ordering::Relaxed);
+            if call == self.fail_at {
+                return Err(anyhow::anyhow!("intentional failure on call {call}"));
+            }
+            SegmentTokenizer.encode_segments(segments)
+        }
+    }
+
+    #[test]
+    fn segmented_extend_does_not_insert_when_either_run_fails() {
+        // The extend path encodes seg_a (matched..deepest) then seg_b (deepest..) before
+        // inserting. Whichever of the two fails, the error propagates and the cache is
+        // left exactly as it was.
+        for fail_at in 0..2 {
+            let cache = L1Cache::new(1 << 20, vec!["<ctl>".to_string()]);
+            let full = segments();
+            let PrefixLookup::Miss(hashes) = cache.lookup_prefix_segments(&full[..3]) else {
+                panic!("cold cache must miss");
+            };
+            cache
+                .populate_and_encode_segments_with_hashes(
+                    &full[..3],
+                    hashes.into_iter(),
+                    &SegmentTokenizer,
+                )
+                .unwrap();
+            let entries_before = cache.len();
+
+            let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&full) else {
+                panic!("shared segments must hit");
+            };
+            let failing = FailAt {
+                fail_at,
+                calls: std::sync::atomic::AtomicUsize::new(0),
+            };
+            assert!(
+                cache
+                    .extend_after_match_segments_with_hash(&full, matched, &failing)
+                    .is_err(),
+                "fail_at {fail_at}: the inner failure must propagate"
+            );
+            assert_eq!(
+                cache.len(),
+                entries_before,
+                "fail_at {fail_at}: a failed extend must not insert"
+            );
+            let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&full) else {
+                panic!("fail_at {fail_at}: earlier entries must survive the failure");
+            };
+            assert_eq!(matched.prefix_len, 2, "fail_at {fail_at}");
         }
     }
 }

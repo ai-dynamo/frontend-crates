@@ -113,6 +113,14 @@ pub mod traits {
         ///
         /// Backends must not implement this by flattening the segments first,
         /// because that discards the special-token trust boundary.
+        ///
+        /// Segments are encoded independently and their ids concatenated in input
+        /// order, so `encode_segments(a) ++ encode_segments(b) == encode_segments(a ++ b)`
+        /// for any split of the list. [`crate::CachedTokenizer`] relies on this to reuse
+        /// cached prefixes at segment boundaries; a backend whose post-processing would
+        /// add tokens around the joined ids must refuse caching through
+        /// [`Tokenizer::validate_prefix_cache`], as the HuggingFace and Baseten backends
+        /// do for `add_special_tokens = true`.
         fn encode_segments(&self, _segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
             Err(Error::msg(
                 "tokenizer backend does not support segmented encoding",
