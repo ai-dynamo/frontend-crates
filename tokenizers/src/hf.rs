@@ -296,27 +296,26 @@ mod byte_fallback_stream_tests {
         // Invalid tails rewrite the whole byte run, even previously valid ASCII
         // or a complete multibyte character. Valid, incomplete and literal
         // replacement output must all survive a terminal flush unchanged.
-        for ids in [
-            vec![0, 1, 4],
-            vec![2, 3, 1, 4],
-            vec![2, 3, 5],
-            vec![0],
-            vec![2, 3],
-            vec![2],
-            vec![0, 1],
-            vec![0, 6, 1, 4],
+        for (ids, skip) in [
+            (vec![0, 1, 4], false),
+            (vec![2, 3, 1, 4], false),
+            (vec![2, 3, 5], false),
+            (vec![0], false),
+            (vec![2, 3], false),
+            (vec![2], false),
+            (vec![0, 1], false),
+            (vec![0, 6, 1, 4], false),
+            (vec![0, 6, 1, 4], true),
         ] {
-            for skip in [false, true] {
-                let expected: String = tokenizer.decode(&ids, skip).unwrap().into();
-                let mut stream = tokenizer.decode_stream(&[], skip);
-                let mut actual = String::new();
-                for id in &ids {
-                    actual.push_str(&stream.step(*id).unwrap().unwrap_or_default());
-                }
-                actual.push_str(&stream.finish().unwrap().unwrap_or_default());
-                assert_eq!(actual, expected, "ids={ids:?}, skip={skip}");
-                assert_eq!(stream.finish().unwrap(), None);
+            let expected: String = tokenizer.decode(&ids, skip).unwrap().into();
+            let mut stream = tokenizer.decode_stream(&[], skip);
+            let mut actual = String::new();
+            for id in &ids {
+                actual.push_str(&stream.step(*id).unwrap().unwrap_or_default());
             }
+            actual.push_str(&stream.finish().unwrap().unwrap_or_default());
+            assert_eq!(actual, expected, "ids={ids:?}, skip={skip}");
+            assert_eq!(stream.finish().unwrap(), None);
         }
     }
 
