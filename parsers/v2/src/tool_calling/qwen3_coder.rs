@@ -184,9 +184,10 @@ impl InvokeEmitter for Qwen3Emitter {
                 .and_then(|tool| tool.parameters.as_ref())
                 .and_then(|schema| schema.get("properties"))
                 .and_then(|properties| properties.get(parameter))
-                .and_then(|schema| schema.get("type"))
-                .and_then(serde_json::Value::as_str)
-                == Some("string");
+                .is_some_and(|schema| {
+                    schema.get("type").and_then(serde_json::Value::as_str) == Some("string")
+                        && schema.get("nullable").and_then(serde_json::Value::as_bool) != Some(true)
+                });
             if !streamable {
                 let Some(_) = closed else {
                     break;
@@ -519,6 +520,126 @@ mod tests {
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
         // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
         assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    fn assert_argument_chunks(schema: serde_json::Value, raw: &str, expected: serde_json::Value) {
+        let mut tools = weather_tools();
+        tools[0].parameters["properties"]["location"] = schema.clone();
+        let input = format!(
+            "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+        );
+        for width in [1, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let output = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
+            assert!(output.calls[0].complete, "schema {schema}, width {width}");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
+                serde_json::json!({"location": expected}),
+                "schema {schema}, width {width}"
+            );
+        }
+    }
+
+    #[test]
+    fn null_text_completes_with_the_schema_selected_type() {
+        for (schema, expected) in [
+            (
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"type": "string"}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"], "oneOf": [
+                    {"type": "string"}, {"type": "integer"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"minLength": 1}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            assert_argument_chunks(schema, "null", expected);
+        }
+    }
+
+    #[test]
+    fn literal_union_branches_preserve_typed_arguments() {
+        for schema in [
+            serde_json::json!({"anyOf": [{"const": "auto"}, {"type": "integer"}]}),
+            serde_json::json!({"oneOf": [{"enum": ["auto"]}, {"type": "integer"}]}),
+        ] {
+            for (raw, expected) in [
+                ("42", serde_json::json!(42)),
+                ("auto", serde_json::json!("auto")),
+            ] {
+                assert_argument_chunks(schema.clone(), raw, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn numeric_literal_constraints_preserve_argument_types() {
+        for keyword in ["const", "enum"] {
+            for (literal, raw, types, expected) in [
+                (
+                    serde_json::json!(42.0),
+                    "42",
+                    serde_json::json!(["integer", "null"]),
+                    serde_json::json!(42),
+                ),
+                (
+                    serde_json::json!(42.5),
+                    "42.5",
+                    serde_json::json!(["number", "null"]),
+                    serde_json::json!(42.5),
+                ),
+            ] {
+                let mut schema = serde_json::json!({"type": types});
+                schema[keyword] = if keyword == "enum" {
+                    serde_json::json!([literal])
+                } else {
+                    literal
+                };
+                assert_argument_chunks(schema, raw, expected);
+            }
+        }
     }
 
     #[test]

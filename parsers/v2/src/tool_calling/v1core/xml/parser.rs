@@ -475,9 +475,6 @@ fn get_arguments_config(
 ///
 /// **Special cases:**
 /// ```text
-/// Input:  param_value="null", param_type=<any>
-/// Output: Value::Null  // Handled before type checking
-///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
 /// Output: Value::String("<tag>")  // HTML entities are unescaped
 ///
@@ -510,8 +507,13 @@ fn convert_param_value(
     // HTML unescape and trim
     let param_value = html_unescape(param_value.trim());
 
-    // Handle null
-    if param_value.to_lowercase() == "null" {
+    if param_value.eq_ignore_ascii_case("null") {
+        if param_config.get(param_name).is_some_and(|schema| {
+            let allowed = collect_allowed_types(schema);
+            allowed.contains(&SchemaType::String) && !allowed.contains(&SchemaType::Null)
+        }) {
+            return Value::String(param_value).into();
+        }
         return Value::Null.into();
     }
 
@@ -753,14 +755,14 @@ fn categorize_type(name: &str) -> Option<SchemaType> {
 }
 
 /// Collect the set of types a (possibly union) schema allows, walking
-/// `type` (string or array), `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
+/// `type`, `const`/`enum`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
 fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
-    let mut out = HashSet::new();
-    collect_allowed_types_into(schema, &mut out);
-    out
+    collect_type_constraints(schema).unwrap_or_default()
 }
 
-fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
+// None is an absent type constraint, not an empty intersection.
+fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
+    let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
             if let Some(cat) = categorize_type(name) {
@@ -774,25 +776,43 @@ fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
             }
         }
     }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(options) = schema.get(key).and_then(Value::as_array) {
-            for option in options {
-                collect_allowed_types_into(option, out);
-            }
-        }
+    if out.contains(&SchemaType::Number) {
+        out.insert(SchemaType::Integer);
     }
     if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
         out.insert(SchemaType::Null);
     }
+    let mut constraints = Vec::new();
+    if !out.is_empty() {
+        constraints.push(out);
+    }
+    if let Some(value) = schema.get("const") {
+        constraints.push(HashSet::from([value_category(value)]));
+    }
+    if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+        constraints.push(values.iter().map(value_category).collect());
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            let branches = options.iter().map(collect_type_constraints);
+            if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
+                constraints.push(alternatives.into_iter().flatten().collect());
+            }
+        }
+    }
+    constraints.into_iter().reduce(|mut left, right| {
+        left.retain(|ty| right.contains(ty));
+        left
+    })
 }
 
-/// The category a parsed JSON value belongs to (integers report as `Integer`).
+/// JSON Schema treats numbers with no fractional part as integers, including `42.0`.
 fn value_category(v: &Value) -> SchemaType {
     match v {
         Value::String(_) => SchemaType::String,
         Value::Bool(_) => SchemaType::Boolean,
         Value::Number(n) => {
-            if n.is_i64() || n.is_u64() {
+            if n.is_i64() || n.is_u64() || n.as_f64().is_some_and(|n| n.fract() == 0.0) {
                 SchemaType::Integer
             } else {
                 SchemaType::Number
@@ -1066,6 +1086,16 @@ mod coderabbit_fix_tests {
     // Finding 3: union schemas coerce only to an allowed alternative.
     #[test]
     fn union_schema_coerces_to_allowed_type_only() {
+        let cfg = one_param(
+            "x",
+            json!({"type": ["number", "null"], "anyOf": [{"type": "integer"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(
+            ser(&convert_param_value("1.25", "x", &cfg, "f")),
+            "\"1.25\""
+        );
+
         // anyOf [string, null] + "42": stays a string (was the JSON number 42).
         let cfg = one_param(
             "x",
