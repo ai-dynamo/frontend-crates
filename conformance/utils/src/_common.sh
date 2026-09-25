@@ -80,6 +80,8 @@ _build_stage_base() {
   \cp -f "$TOOLS/yaml_fast.py" "$STAGE/tests/parity/yaml_fast.py"
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  \cp -f "$TOOLS/null_cases.py" "$STAGE/tests/parity/null_cases.py"
+  \cp -f "$TOOLS/case_variants.py" "$STAGE/tests/parity/case_variants.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
   \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"

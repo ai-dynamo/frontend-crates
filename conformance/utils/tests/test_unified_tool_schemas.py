@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from conformance.utils.tests.schema_oracle import matches_schema
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
@@ -17,30 +18,14 @@ from unified_tools import unified_tools
 
 
 def _assert_value(value, schema):
-    # This corpus declares only these JSON Schema keywords; fail on additions so
-    # a new constraint cannot silently bypass this producer-side check.
-    assert schema.keys() <= {"type", "properties", "items"}, schema
-    kind = schema["type"]
-    if kind == "object":
-        assert isinstance(value, dict), value
-        for key, item in value.items():
-            if key in schema["properties"]:
-                _assert_value(item, schema["properties"][key])
-    elif kind == "array":
-        assert isinstance(value, list), value
-        for item in value:
-            _assert_value(item, schema["items"])
-    elif kind == "number":
-        assert type(value) in (int, float), value
-    else:
-        assert kind == "string", schema
-        assert isinstance(value, str), value
+    assert matches_schema(value, schema), (value, schema)
 
 
 def _assert_golden_schemas(cases, tools):
-    schemas = {tool["name"]: tool["parameters"] for tool in tools}
-    assert len(schemas) == len(tools)
     for case in cases.values():
+        offered_tools = case.get("tools", tools)
+        schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
+        assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
                 _assert_value(event["arguments"], schemas[event["name"]])
@@ -94,16 +79,23 @@ def test_peer_request_schema_projection_matches_shared_definition(script):
     assert actual == unified_tools()
 
 
-def test_rust_harnesses_consume_the_shared_schema_owner():
+def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     tests = SRC.parents[1] / "tests"
     common = (tests / "common/mod.rs").read_text()
     assert 'include_str!("../../utils/src/unified_tools.json")' in common
     assert 'serde_json::from_value(unified_tool_schemas())' in common
-    assert '"tools": common::unified_tool_schemas()' in (tests / "unified_render.rs").read_text()
+    assert "schemas.cloned().unwrap_or_else(unified_tool_schemas)" in common
     for name in ("unified_render.rs", "unified_parity.rs", "capture_cross_version.rs"):
         source = (tests / name).read_text()
         assert "unified_tools as tools" in source
         assert "fn tools()" not in source
+    render = (tests / "unified_render.rs").read_text()
+    parity = (tests / "unified_parity.rs").read_text()
+    cross_version = (tests / "capture_cross_version.rs").read_text()
+    assert "unified_tools_for_schemas(case.tools.as_ref())" in render
+    assert "unified_tools_for_schemas(case.tools.as_ref())" in parity
+    assert "unified_tool_schemas_for_case(case.tools.as_ref())" in render
+    assert "unified_tool_schemas_for_case(tool_schema_json.as_ref())" in cross_version
     peer = (SRC / "capture_vllm_rust_unified.py").read_text()
     assert 'serde_json::from_str(include_str!("unified_tools.json"))' in peer
     assert '(crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())' in peer

@@ -24,6 +24,8 @@ from pathlib import Path
 
 import yaml
 
+from case_variants import leaf_cells
+
 
 MODEL_RE = re.compile(
     r'<script type="application/json" id="conformance-model">(.*?)</script>', re.DOTALL
@@ -160,15 +162,18 @@ def validate_unified_inventory(model: dict, fixtures: Path) -> list[str]:
             raise ValueError(f"Unified missing recorded family: {family}")
         for case in document["cases"].values():
             scenario = case["scenario"]
-            if scenario not in columns:
+            visible = {"cells": {sub: cell for sub, cell in by_family[family]["cells"].items() if sub in columns}}
+            if scenario not in columns and scenario not in leaf_cells(visible):
                 raise ValueError(f"Unified missing recorded scenario: {family}/{scenario}")
 
     usable = dict.fromkeys(keys, 0)
     absent = dict.fromkeys(keys, 0)
     for row in rows:
         for scenario in columns:
+            if scenario not in row.get("cells", {}):
+                raise ValueError(f"Unified {row['family']}/{scenario}: missing cell")
+        for scenario, cell in leaf_cells(row).items():
             location = f"Unified {row['family']}/{scenario}"
-            cell = row.get("cells", {}).get(scenario)
             if not cell or cell.get("kind") != "cell":
                 raise ValueError(f"{location}: missing cell")
             comparisons = cell.get("cmp") or {}

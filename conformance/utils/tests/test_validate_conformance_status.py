@@ -233,7 +233,8 @@ def test_renderer_validates_before_publishing(inventory_report, tmp_path, failur
     (stage / "tests" / "parity").mkdir(parents=True)
     wrapper = sandbox / "render_table_v2.sh"
     wrapper.write_bytes((utils / "render_table_v2.sh").read_bytes())
-    (tools / "validate_conformance_status.py").write_bytes((utils / "src" / "validate_conformance_status.py").read_bytes())
+    for module in ("validate_conformance_status.py", "case_variants.py", "null_cases.py"):
+        (tools / module).write_bytes((utils / "src" / module).read_bytes())
     (tools / "_common.sh").write_text(
         "set -euo pipefail\n"
         + f"ROOT={shlex.quote(str(tmp_path))}\n"

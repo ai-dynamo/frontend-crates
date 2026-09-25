@@ -33,6 +33,8 @@ if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
+from case_variants import leaf_cells
+from validate_conformance_status import cell_state
 from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
@@ -318,6 +320,63 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     assert release["default_bucket"] == "C"
 
 
+@pytest.mark.parametrize("impl", table.fixtures.IMPL_KEYS)
+def test_stream_unrecorded_capture_is_distinct_from_recorded_empty_output(impl):
+    missing = table.fixtures._derive_stream_expected({"chunks": [{"delta_text": "null"}]})
+    assert "unavailable" in missing[impl]
+    recorded = table.fixtures._derive_stream_expected({"chunks": [{
+        "delta_text": "null", "expected": {impl: []},
+    }]})
+    assert recorded[impl]["calls"] == []
+    assert recorded[impl]["normal_text"] == ""
+    assert "unavailable" not in recorded[impl]
+
+
+@pytest.mark.parametrize("expected", [{}, {"dynamo_v1": {"calls": [], "normal_text": ""}}])
+def test_toolcalling_tooltip_omits_schema_without_a_baseline_result(expected):
+    tools = [{"name": "weather", "parameters": {"type": "object", "properties": {
+        "city": {"type": ["string", "null"]},
+    }}}]
+    case = {"__family": "qwen3_coder", "__case_id": "TOOLCALLING.batch.1",
+            "model_text": "null", "tools": tools, "expected": expected}
+    cell = table._toolcalling_cell_model(case, "batch", "qwen3_coder", "1", "batch", "cross_parser", lambda href: href)
+    assert "tools" not in cell["tooltip"]
+
+
+def test_null_case_descriptions_explain_schema_difference(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
+    scenarios = ("arg_string_null", "arg_json_null")
+    tips = [leaf_cells(row)[scenario]["tooltip"] for scenario in scenarios]
+    assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
+    assert "request tool schema requires a string" in tips[0]["description"]
+    assert "request tool schema permits JSON null" in tips[1]["description"]
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    rendered = json.loads(result.stdout)
+    assert all("request tool schema declares" in markup for markup in rendered)
+    assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
+
+    assert [markup.count('class="case-variant"') for markup in rendered] == [7, 5]
+    assert "nullable: true" in rendered[1]
+    assert "intersection" in rendered[0]
+
+
 @pytest.mark.parametrize("changed_field,value,missing_family", [
     (None, None, None), ("starting_state", "Reasoning", None),
     ("tool_output_mode", "GuidedJson", None), ("named_tool", "get_weather", None),
@@ -493,14 +552,14 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
     for row in tab["rows"]:
         for key in peer_keys:
-            unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
+            unavailable = [cell["cmp"][key].get("na") == 1 for cell in leaf_cells(row).values()]
             if row["family"] == "muse_glimmer":
                 assert all(unavailable), f"{key} must say n/a for Muse"
                 continue
-            for scenario, is_unavailable in zip(row["cells"], unavailable):
-                if not is_unavailable or row["cells"][scenario]["status"] == "na":
+            for scenario, is_unavailable in zip(leaf_cells(row), unavailable):
+                if not is_unavailable or leaf_cells(row)[scenario]["status"] == "na":
                     continue
-                peer = next(candidate for candidate in row["cells"][scenario]["tooltip"]["candidates"] if candidate["key"] == key)
+                peer = next(candidate for candidate in leaf_cells(row)[scenario]["tooltip"]["candidates"] if candidate["key"] == key)
                 reason = peer["block"]["unavailable"]
                 assert (
                     "not captured at" in reason
@@ -508,7 +567,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
                 assert "events" not in peer["block"]
-                comparison = row["cells"][scenario]["cmp"][key]
+                comparison = leaf_cells(row)[scenario]["cmp"][key]
                 assert comparison == {"sig": 0, "leak": 0, "na": 1, "err": 0}
 
     gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
@@ -773,6 +832,44 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
             assert cell["status"] in {"ok", "problem", "na", "missing"}
 
 
+@pytest.mark.parametrize("family", [
+    "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3",
+])
+def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == family)
+    for scenario in ("deepseek_v41_mixed_control_text_in_string", "arg_json_null", "arg_string_null"):
+        cell = leaf_cells(row)[scenario]
+        assert cell["status"] != "na"
+        block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
+                     if candidate["key"] == "dynamo")
+        assert "error" not in block and "unavailable" not in block
+        assert isinstance(block["events"], list)
+        if scenario in {"arg_json_null", "arg_string_null"}:
+            expected_value = "null" if scenario == "arg_string_null" else None
+            golden = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
+                          if candidate["key"] == "golden")
+            assert golden["events"] == [{"kind": "tool_call", "name": "get_weather",
+                                         "arguments": {"city": expected_value}}]
+            state, _ = cell_state(cell, {"key": "dynamo", "label": "Dynamo"})
+            assert state == ("green" if block["events"] == golden["events"] else "red")
+            assert "schema" in cell["tooltip"]["description"]
+            assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
+
+
+def test_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
+    cell = row["cells"]["deepseek_v41_mixed_control_text_in_string"]
+    block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
+                 if candidate["key"] == "dynamo")
+    assert block["verdict"] == "ARG_MISMATCH"
+    assert block["events"]
+    for cell in _iter_cells(tab):
+        for candidate in cell["tooltip"]["candidates"]:
+            assert "adopt a unified parser" not in (candidate["block"].get("todo") or "")
+
+
 def test_v2_reasoning_uses_current_peers(model_v2):
     # reasoning tab uses the same current peer versions as the toolcalling tabs.
     peers = _peer_versions("reasoning/fixtures-v1")
@@ -780,3 +877,116 @@ def test_v2_reasoning_uses_current_peers(model_v2):
     for impl in ("vllm_python", "sglang_python"):
         for ver in peers.get(impl, set()):
             assert ver in r, f"reasoning missing current peer {impl} {ver}"
+
+
+@pytest.mark.parametrize("old_id,new_id", [("7-1", "7-5"), ("7-2", "7-4")])
+def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeypatch):
+    monkeypatch.setattr(table.fixtures, "FIXTURES", Path(table.fixtures.__file__).parent / "fixtures")
+    monkeypatch.setattr(table.fixtures, "_CAPTURED_WITH_BY_MODE", {})
+    original = {"description": "null type", "chunks": [{"delta_text": "null", "expected": {"dynamo_v2": []}}]}
+    docs = {("qwen3_coder", f"TOOLCALLING.streamv1.{old_id}.yaml"): {
+        "family": "qwen3_coder", "mode": "streamv1", "cases": {f"TOOLCALLING.streamv1.{old_id}": original},
+    }}
+    cases, _ = table.fixtures.load_all_cases("streamv1", docs)
+    assert set(cases) == {("qwen3_coder", new_id)}
+    case = cases["qwen3_coder", new_id]
+    assert case["__case_id"] == f"TOOLCALLING.streamv1.{new_id}"
+    assert case["chunks"] == original["chunks"]
+    assert case["expected"]["dynamo_v2"] == {"calls": [], "normal_text": ""}
+
+
+def test_stream_null_columns_match_unified_numbers(model_v2):
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    row = next(row for row in tab["rows"] if row.get("family") == "qwen3_coder")
+    assert "7-1" not in row["cells"] and "7-2" not in row["cells"]
+    for label in ("7-4", "7-5"):
+        assert row["cells"][label]["case_id"] == "TOOLCALLING.streamv1." + label
+
+
+@pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5"])
+@pytest.mark.parametrize("mode", ["batch", "stream", "streamv1"])
+def test_case_description_readers_accept_numbered_suffixes(tmp_path, monkeypatch, suffix, mode):
+    doc = tmp_path / "descriptions.data"
+    doc.write_text(
+        f'- **`TOOLCALLING.{mode}.{suffix}`** Tool type description.\n'
+        f'- **`REASONING.{mode}.{suffix}`** Reasoning description.\n'
+    )
+    attr = "TOOLCALLING_STREAMING_V1_CASES_MD" if mode == "streamv1" else "TOOLCALLING_CASES_MD"
+    monkeypatch.setattr(table, attr, doc)
+    assert table._parse_subcase_descriptions(mode) == {suffix: "Tool type description"}
+    if mode != "streamv1":
+        monkeypatch.setattr(table.reasoning_table, "REASONING_CASES_MD", doc)
+        assert table.reasoning_table._parse_case_descriptions() == {
+            f"{mode}.{suffix}": "Reasoning description",
+        }
+
+
+def test_stream_null_column_popups_show_type_descriptions_above_chart(model_v2, monkeypatch):
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    monkeypatch.setattr(
+        table, "TOOLCALLING_STREAMING_V1_CASES_MD",
+        UTILS / "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md",
+    )
+    descriptions = table._parse_subcase_descriptions("streamv1")
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {columnGrammarModel, buildGrammarHtml};\n// --- Entry point'), context);
+const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
+const results = {};
+for (const sub of ['7-4', '7-5']) {
+  const column = tab.columns.find(col => col.sub === sub);
+  const model = context.window.audit.columnGrammarModel(tab, column);
+  results[sub] = context.window.audit.buildGrammarHtml(model);
+}
+process.stdout.write(JSON.stringify(results));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tab), text=True, capture_output=True, check=True,
+    )
+    rendered = json.loads(result.stdout)
+    for sub, explanation in (
+        ("7-4", "request tool schema permits JSON null"),
+        ("7-5", "request tool schema requires a string"),
+    ):
+        column = next(col for col in tab["columns"] if col["sub"] == sub)
+        assert descriptions[sub].startswith(column["desc"].rstrip("."))
+        assert explanation in column["desc"]
+        assert "<table" in rendered[sub]
+        header = rendered[sub].split("<table", 1)[0]
+        assert 'class="ttip-head-desc"' in header
+        assert "request tool schema" in header
+    assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
+    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
+
+
+@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
+def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2, tab_id):
+    tab = _tab(model_v2, tab_id)
+    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
+    families = set(table.gen_unified_golden.FAMILIES) if tab_id == "tab-unified" else {
+        "deepseek_v4", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer",
+        "qwen3_coder", "minimax_m2", "minimax_m3"}
+    for row in tab["rows"]:
+        if row.get("family") not in families:
+            continue
+        mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
+        groups = []
+        for label, count in (("7-4", 5), ("7-5", 7)):
+            sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
+            cell = row["cells"][sub]
+            assert len(cell["variants"]) == count + int(mixed)
+            assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
+            groups.append({leaf["sub"] for leaf in cell["variants"]})
+            if tab_id.endswith("streamv1"):
+                for leaf in cell["variants"]:
+                    for key in ("dynamo_v1-9-1-0", "dynamo_v2-0-7-4"):
+                        assert leaf["cmp"][key]["na"] == 0
+        assert len(groups[0] & groups[1]) == int(mixed)

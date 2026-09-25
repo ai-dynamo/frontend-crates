@@ -546,6 +546,9 @@
     } else if (m.description) {
       h += '<div class="ttip-casedesc"><span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span></div>';
     }
+    if (m.variants) {
+      return h + m.variants.map(variant => '<div class="case-variant">' + buildTooltipHtml(variant) + '</div>').join('');
+    }
     // Parser configuration for THIS case, one knob per line, directly under the
     // description it qualifies.
     h += buildConfigHtml(m.init);
@@ -720,7 +723,9 @@
       if (!row || row.section) { return; }              // section banners are not families
       var cell = (row.cells || {})[col.sub];
       if (cell && cell.case_id && !caseId) { caseId = cell.case_id; }
-      var tip = cell && cell.tooltip;
+      const parentTip = cell && cell.tooltip;
+      const variantTips = parentTip && parentTip.variants ? parentTip.variants : [parentTip];
+      variantTips.forEach(tip => {
       var text = caseInputText(tip);
       // An input that EXISTS but is empty is not the same as a missing one — case 9.a
       // ("Empty model text") is empty on purpose, and calling that "no input recorded"
@@ -750,13 +755,15 @@
       var inp = (tip && tip.input) || {};
       rows.push({
         family: row.family || '',
-        label: row.model_label || row.family || '',
+        label: (row.model_label || row.family || '') + (variantTips.length > 1 ? ' — ' + tip.head : ''),
         init: tip ? tip.init : null,
+        description: variantTips.length > 1 && tip ? tip.description : null,
         text: text ? text : null,
         chunks: (inp.chunks && inp.chunks.length) ? inp.chunks : null,
         blocks: blocks,
         reason: text ? null : (text === '' ? 'empty input — this case tests empty model text'
                                            : 'n/a — ' + naReason(cell, tip)),
+      });
       });
     });
     return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', init: col.init,
@@ -838,7 +845,7 @@
         ? '<span class="grfam">' + escapeHtml(r.family) + '</span>' : '';
       const config = m.init ? '' : buildConfigHtml(r.init);
       body += '<tr' + cls + '><td class="grf">' + escapeHtml(r.label || r.family)
-        + fam + config + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
+        + fam + config + (r.description ? '<div class="ttip-head-desc">' + codeSpans(escapeHtml(r.description)) + '</div>' : '') + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
     });
     // One output header per candidate; applyCtl shows golden + the active columns,
     // flags the Reference (★) and orders golden -> REF -> rest.
