@@ -11,6 +11,9 @@
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
+pub mod known_toolcalling_chunking;
+pub mod known_unified_divergences;
+
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};

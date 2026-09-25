@@ -61,11 +61,11 @@
 //! `BoundarySplit` re-chunks the input while the recorded capture describes the
 //! ORIGINAL chunking, so oracle 1 is only meaningful there while the parser's
 //! assembled output is chunking-invariant. `sweep_toolcalling_stream.rs` enforces
-//! exactly that against `conformance/toolcalling/known-chunking-divergences.yaml`
-//! (empty today). This lane consults the SAME allow-list and drops oracle 1 for
-//! an allow-listed case under `BoundarySplit`, so adding an entry there can never
-//! turn into a spurious isolation failure here. Oracle 2 still applies, because
-//! the solo golden is built from the same re-chunked subsequence.
+//! exactly that against `conformance/toolcalling/known-chunking-divergences.yaml`.
+//! For a known chunking divergence under `BoundarySplit`, this lane verifies the
+//! exact raw original-chunking and split outputs from the allow-list before dropping
+//! oracle 1. Oracle 2 still applies, so the interleaved choice must match its solo
+//! run, including raw argument formatting and emission timing.
 
 #[path = "../../parsers/v1/tests/common/interleave.rs"]
 mod interleave;
@@ -78,6 +78,7 @@ use std::time::Instant;
 
 use common::{
     STREAM_DYNAMO_V2_CURRENT_CAPTURE, collect_yaml, ensure_fixtures,
+    known_toolcalling_chunking::{self as chunking, KnownDivergences, RawAssembled},
     version_dirs_ascending_with_current,
 };
 use dynamo_parsers_v2::{
@@ -103,15 +104,9 @@ struct FamilyRow {
     preferred_input: String,
 }
 
-/// The chunking allow-list `sweep_toolcalling_stream.rs` enforces against.
-/// Loaded here so `BoundarySplit` can drop the recorded oracle for exactly the
-/// cases whose assembled output is known to depend on where the stream is split.
-fn load_chunking_allowlist() -> BTreeMap<String, BTreeMap<String, String>> {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("toolcalling/known-chunking-divergences.yaml");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("{}: read error: {e}", path.display()));
-    serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: parse error: {e}", path.display()))
+/// Exact chunking divergences shared with `sweep_toolcalling_stream.rs`.
+fn load_chunking_allowlist() -> KnownDivergences {
+    chunking::load()
 }
 
 fn load_registry() -> Registry {
@@ -585,7 +580,7 @@ fn check_pair<T: interleave::Splittable>(
     to_input: fn(&T) -> ToolParserInput<'_>,
     label: &str,
     recorded: [&EngineResult; 2],
-    chunking_divergent: [bool; 2],
+    chunking_divergent: [Option<&chunking::Divergence>; 2],
     chunking_skips: &mut Vec<String>,
     failures: &mut Vec<String>,
 ) -> anyhow::Result<()> {
@@ -667,33 +662,15 @@ fn check_pair<T: interleave::Splittable>(
         // the ORIGINAL chunking, so oracle 1 only means something there while this
         // case's assembled output is chunking-invariant.
         //
-        // The allow-list alone is NOT a sufficient guard for that. It is populated
-        // by `sweep_toolcalling_stream.rs`, whose invariance check is WEAKER than
-        // the comparison here: the sweep normalises arguments through
-        // `serde_json::from_str` and keys calls by name, while this lane compares
-        // the RAW argument string and orders calls by first appearance. A parser
-        // whose chunking sensitivity is confined to argument whitespace or key
-        // order, or to a call that never emits a name, would pass the sweep — so no
-        // allow-list entry would ever be added — and then fail HERE, reported as a
-        // per-choice isolation divergence it is not.
-        //
-        // So decide chunking-invariance BY THIS LANE'S OWN COMPARISON: run this
-        // choice solo at the original chunking and at the split chunking. If those
-        // disagree the case is chunking-sensitive by the standard actually being
-        // applied, and oracle 1 is skipped and NAMED rather than misattributed.
-        // The allow-list is still honoured as a cheap short-circuit.
+        // This lane compares raw argument strings, so a JSON-normalized
+        // allow-list is insufficient. Verify exact raw original-chunking and split
+        // outputs before allowing a known divergence to skip the recorded oracle.
         let mut recorded_applies = true;
         if matches!(schedule, Schedule::BoundarySplit { .. }) {
-            if chunking_divergent[index as usize] {
-                // NAME it: an allow-listed case dropped from oracle 1 silently would
-                // contradict the summary's claim that every skip is reported.
-                recorded_applies = false;
-                chunking_skips.push(format!(
-                    "{label} choice={index} schedule={}: allow-listed in \
-                     known-chunking-divergences.yaml; oracle 1 skipped",
-                    schedule.label()
-                ));
-            } else {
+            if let Some(divergence) = chunking_divergent[index as usize] {
+                let raw = divergence.raw.as_ref().unwrap_or_else(|| {
+                    panic!("{label} choice={index}: allow-list entry lacks raw expectations")
+                });
                 let split_items = demuxed.get(&index).cloned().unwrap_or_default();
                 let orig_items = sequences[index as usize].clone();
                 let at_split = solo(
@@ -708,18 +685,35 @@ fn check_pair<T: interleave::Splittable>(
                     &orig_items,
                     to_input,
                 )?;
-                // Totals only: profiles differ by construction when the input is
-                // re-chunked, which is not what is being decided here.
-                let totals = |r: &EngineResult| (r.calls.clone(), r.normal_text.clone());
-                if totals(&at_split) != totals(&at_orig) {
-                    recorded_applies = false;
-                    chunking_skips.push(format!(
-                        "{label} choice={index} schedule={}: output is chunking-dependent \
-                         (solo differs between original and split chunking); oracle 1 \
-                         skipped, this is NOT an isolation failure",
-                        schedule.label()
+                let raw_totals = |r: &EngineResult| RawAssembled {
+                    calls: r.calls.clone(),
+                    normal_text: r.normal_text.clone(),
+                };
+                let actual_split = raw_totals(&at_split);
+                let actual_orig = raw_totals(&at_orig);
+                if actual_split != raw.split {
+                    failures.push(format!(
+                        "{label} choice={index}: known split output changed\n expected: {:?}\n      got: {:?}",
+                        raw.split, actual_split
                     ));
                 }
+                if actual_orig != raw.original {
+                    failures.push(format!(
+                        "{label} choice={index}: known original-chunking output changed\n expected: {:?}\n      got: {:?}",
+                        raw.original, actual_orig
+                    ));
+                }
+                if raw_totals(recorded[index as usize]) != raw.original {
+                    failures.push(format!(
+                        "{label} choice={index}: recorded capture differs from known original-chunking output\n expected: {:?}\n      got: {:?}",
+                        raw.original, raw_totals(recorded[index as usize])
+                    ));
+                }
+                recorded_applies = false;
+                chunking_skips.push(format!(
+                    "{label} choice={index} schedule={}: exact known chunking divergence; oracle 1 skipped",
+                    schedule.label()
+                ));
             }
         }
 
@@ -933,12 +927,8 @@ fn toolcalling_stream_interleave_isolation() {
             let cb = &cases[&ids[j]];
             let label = format!("{family} {}x{}", ids[i], ids[j]);
             let divergent = [
-                allowlist
-                    .get(family.as_str())
-                    .is_some_and(|c| c.contains_key(&ids[i])),
-                allowlist
-                    .get(family.as_str())
-                    .is_some_and(|c| c.contains_key(&ids[j])),
+                allowlist.get(family.as_str()).and_then(|c| c.get(&ids[i])),
+                allowlist.get(family.as_str()).and_then(|c| c.get(&ids[j])),
             ];
             let exp_fwd = [
                 fam_recorded.unwrap()[&ids[i]].as_ref().unwrap(),

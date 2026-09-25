@@ -31,7 +31,11 @@ use serde_json::{Value, json};
 
 mod common;
 
-use common::{Init, unified_tools as tools};
+use common::{
+    Init,
+    known_unified_divergences::{self as divergences, Check, Expected},
+    unified_tools as tools,
+};
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -516,6 +520,9 @@ fn cell(
 #[test]
 fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
+    let known = divergences::load();
+    let mut observed_dynamo = std::collections::BTreeSet::new();
+    let mut parity_failures = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
@@ -589,6 +596,27 @@ fn render_unified_conformance_html() {
             let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
             let got = dynamo_events_with_tools(&file.family, &case.input, &case.init, &case_tools);
             let dclass = classify(&file.family, &case.golden, &got);
+            if dclass != "MATCH" {
+                let actual = got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ");
+                match divergences::expected(&known, &file.family, id, Check::Golden) {
+                    Some(Expected::Golden(expected)) if actual == expected.actual => {
+                        observed_dynamo.insert((file.family.clone(), id.clone()));
+                    }
+                    Some(Expected::Golden(expected)) => parity_failures.push(format!(
+                        "{id}: known golden divergence changed\n expected: {}\n      got: {}",
+                        expected.actual, actual
+                    )),
+                    _ => parity_failures.push(format!(
+                        "{id}: unexpected golden divergence\n   golden: {}\n   actual: {}",
+                        case.golden
+                            .iter()
+                            .map(Ev::render)
+                            .collect::<Vec<_>>()
+                            .join("  |  "),
+                        actual
+                    )),
+                }
+            }
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
@@ -751,14 +779,20 @@ fn render_unified_conformance_html() {
     // and asserted elsewhere via the rendered legend), so this only needs to
     // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    // Every family in the current golden corpus has a native UnifiedParser
-    // (see the module doc), so Dynamo must match GOLDEN on every case — the
-    // split's interleaving-order loss no longer applies to anything here. A
-    // regression back to >0 means either a native parser broke, or a new
-    // split-only family entered the corpus without a native parser of its own.
+    parity_failures.extend(divergences::reconcile(
+        &known,
+        Check::Golden,
+        &observed_dynamo,
+    ));
     assert_eq!(
-        dynamo_red, 0,
-        "expected every case to match golden now that every family is native (got {dynamo_red} red)"
+        dynamo_red,
+        observed_dynamo.len(),
+        "every red report cell must match one exact allowlisted golden divergence"
+    );
+    assert!(
+        parity_failures.is_empty(),
+        "unified report has unexpected or stale golden divergences:\n\n{}",
+        parity_failures.join("\n\n")
     );
 }
 
