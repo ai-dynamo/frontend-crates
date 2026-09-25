@@ -18,7 +18,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// Copy the schema file with historical harnesses: tool registration and argument
 /// typing are request inputs, not parser-version differences.
 pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {
-    serde_json::from_value(unified_tool_schemas()).expect("Unified corpus tool schemas")
+    parse_unified_tools(&unified_tool_schemas())
+}
+
+pub fn parse_unified_tools(schemas: &serde_json::Value) -> Vec<dynamo_parsers_v2::Tool> {
+    serde_json::from_value(schemas.clone()).expect("Unified case tool schemas")
 }
 
 pub fn unified_tool_schemas() -> serde_json::Value {

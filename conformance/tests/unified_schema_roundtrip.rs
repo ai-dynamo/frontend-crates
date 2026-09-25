@@ -41,6 +41,8 @@ struct GoldenCase {
     input: String,
     /// Spec-derived correct event list — the oracle.
     golden: Vec<UnifiedEvent>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tools: Option<serde_json::Value>,
     /// Provisional documentation of expected per-engine verdicts (not asserted in U0).
     expect: BTreeMap<String, ExpectEntry>,
 }

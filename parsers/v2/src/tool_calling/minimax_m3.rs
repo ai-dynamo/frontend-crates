@@ -404,4 +404,42 @@ mod tests {
                 < merged.calls[0].arguments.find("\"config\"").unwrap()
         );
     }
+
+    #[test]
+    fn nullable_nested_object_members_follow_union_schema() {
+        let tools = vec![Tool {
+            name: "list_notes".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "properties": {"pagination": {"anyOf": [
+                    {"type": "object", "properties": {
+                        "page": {"type": "integer"},
+                        "after": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                    }},
+                    {"type": "null"}
+                ]}}
+            }),
+            strict: Some(true),
+        }];
+        let out = parse_chunks(
+            &tools,
+            &[concat!(
+                "]<]minimax[>[<tool_call>",
+                "]<]minimax[>[<invoke name=\"list_notes\">",
+                "]<]minimax[>[<pagination>",
+                "]<]minimax[>[<page>2]<]minimax[>[</page>",
+                "]<]minimax[>[<after>null]<]minimax[>[</after>",
+                "]<]minimax[>[</pagination>",
+                "]<]minimax[>[</invoke>",
+                "]<]minimax[>[</tool_call>"
+            )],
+        );
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
+        assert_eq!(
+            args,
+            serde_json::json!({"pagination": {"page": 2, "after": null}})
+        );
+    }
 }
