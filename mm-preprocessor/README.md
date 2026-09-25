@@ -13,7 +13,7 @@ position math (M-RoPE), all **bit-exact** against the mirrored HF processor.
 | feature    | default | adds |
 | ---------- | ------- | ---- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
-| `fetch`    | off     | trusted-source data:/base64/file/http compatibility helper; API frontends should use their protected fetcher for untrusted URLs |
+| `fetch`    | off     | trusted-source data:/base64/file/http compatibility helper (**signatures only so far**); API frontends should use their protected fetcher for untrusted URLs |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
@@ -186,7 +186,7 @@ let layout: TokenLayout = family.layout(&input_ids, &items)?;
 let feature_token_counts: Vec<usize> =
     items.iter().map(|item| item.feature_token_count).collect();
 let expanded: ExpandedPrompt =
-    token_layout::apply_layout(&input_ids, &layout, &feature_token_counts)?;
+    token_layout::apply_layout(&input_ids, &layout, &feature_token_counts, max_tokens)?;
 let positions: PositionOutput =
     family.positions(expanded.input_ids.len(), &expanded.offsets, &items)?;
 ```
@@ -235,17 +235,17 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation |
 | `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
 | `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work |
-| `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels) |
+| `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
-| `fetch::fetch_bytes` | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
+| `fetch::fetch_bytes` *(signatures only so far)* | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
 | `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
 | `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
-| `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact; also rejects the degenerate 0-side case Python leaves to PIL |
+| `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
 
@@ -255,15 +255,19 @@ Three layers, all pinned to bitwise-equality:
 
 1. **Crate-local unit tests** — smart_resize against Python-derived reference
    values (including rounding ties), patchify layout, normalize-LUT
-   divergence, layout coverage validation, fetch budgets and `NO_PROXY`
-   matching, config-resolution gating, plus a thread-count guard proving
-   the crate owns no threads while the pool is unarmed (the default).
+   divergence, layout coverage validation, config-resolution gating, plus a
+   thread-count guard proving the crate owns no threads while the pool is
+   unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
-   committed fixtures (generated by SGLang tooling from the HF processor and
-   `get_rope_index`, cross-checked before writing) drive the §2.2 composition
-   (`build_processor` → `decode_rgb` → `process_item` → `layout` →
-   `apply_layout` → `positions`) and compare **every output field bitwise**:
-   both resamplers, both smart_resize branches, multi-image.
+   committed fixtures drive the §2.2 composition (`build_processor` →
+   `decode_rgb` → `process_item` → `layout` → `apply_layout` → `positions`)
+   and compare **every output field bitwise**, plus the resampler stage on
+   its own (`resized_<i>.u8`) so a failure names the stage: both resamplers,
+   both smart_resize branches, multi-image, and a tall image that crosses
+   Pillow's pass-order rule. `tests/fixtures/qwen_vl/generate.py`
+   regenerates them from the HF processor and `get_rope_index`, cross-checks
+   that the resized buffer reproduces `pixel_values`, and records the
+   transformers/torch/torchvision/Pillow versions in each `case.json`.
 3. **Consumer parity (SGLang CI)** — per-step and end-to-end pytest suites
    compare the Rust path against the live HF/Python processors field-by-field
    with `.tobytes()` equality, plus a GPU e2e test and an MMMU accuracy gate
@@ -272,17 +276,13 @@ Three layers, all pinned to bitwise-equality:
 
 ## 5. Roadmap
 
-This PR is the skeleton: module layout, public API signatures (`todo!()`
-bodies), and this document. A working, fully tested implementation exists
-and lands next in two steps:
+The pipeline is implemented and golden-tested end to end for
+`models::qwen_vl`. What remains:
 
-1. **primitives** — `image`, `token_layout`, `execution`, with unit tests;
-   wires the `parallel` feature dep.
-2. **registry + `models/qwen_vl`** — the family, golden fixtures + replay
-   test, the no-threads guard; flips the crate to publishable.
-
-**Family coverage** grows next — GLM and Kimi are the validated
-candidates after `models::qwen_vl`.
+1. **`fetch`** — the trusted-source compatibility helper is still a stub;
+   its implementation flips the crate to publishable.
+2. **Family coverage** — GLM and Kimi are the validated candidates after
+   `models::qwen_vl`.
 
 ### Video and audio: planned layout
 
