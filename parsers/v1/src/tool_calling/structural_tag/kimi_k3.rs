@@ -230,8 +230,7 @@ pub(crate) fn build_kimi_k3(
     }
 
     // Moonshot's named-tool contract returns the selected call with no
-    // assistant content. Keeping the response channel itself is required by
-    // K3's XTML wire format, but leaving its body as `any_text` lets the model
+    // assistant content. Leaving the response body as `any_text` lets the model
     // put a second, generic `<tool_call>...</tool_call>` representation there
     // before emitting the structurally constrained XTML call. Restrict only
     // named choice; auto/required may legitimately include response text.
@@ -240,17 +239,22 @@ pub(crate) fn build_kimi_k3(
             value: String::new(),
         })
     } else {
-        Format::AnyText(AnyTextFormat { excludes: vec![] })
+        // Reserve XTML controls for channel transitions so a direct tools
+        // channel cannot be swallowed as response text (which masks EOS).
+        Format::AnyText(AnyTextFormat {
+            excludes: vec![OPEN.to_string(), CLOSE.to_string()],
+        })
     };
+    // Native output may skip the response channel or go straight from its
+    // body to tools, so both response markers are optional.
     let response = vec![
         optional(Format::ConstString(ConstStringFormat {
             value: RESPONSE_OPEN.to_string(),
         })),
-        Format::Tag(TagFormat {
-            begin: String::new(),
-            content: Box::new(response_content),
-            end: RESPONSE_CLOSE.to_string(),
-        }),
+        response_content,
+        optional(Format::ConstString(ConstStringFormat {
+            value: RESPONSE_CLOSE.to_string(),
+        })),
     ];
     let calls = Format::TagsWithSeparator(TagsWithSeparatorFormat {
         tags: tools
@@ -339,7 +343,7 @@ mod tests {
 
         assert_eq!(value["type"], "structural_tag");
         assert_eq!(value["format"]["type"], "sequence");
-        let tools_tag = &value["format"]["elements"][2];
+        let tools_tag = &value["format"]["elements"][3];
         assert_eq!(tools_tag["begin"], TOOLS_OPEN);
         let calls = tools_tag["content"]["tags"].as_array().unwrap();
         assert_eq!(calls.len(), 1);
@@ -363,20 +367,20 @@ mod tests {
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
 
-        let response_body = &value["format"]["elements"][1]["content"];
+        let response_body = &value["format"]["elements"][1];
         assert_eq!(response_body["type"], "const_string");
         assert_eq!(response_body["value"], "");
     }
 
     #[test]
-    fn non_named_choices_keep_the_existing_response_body() {
+    fn response_text_cannot_swallow_xtml_channels() {
         let tools = tools();
 
         for choice in [ToolChoice::Auto, ToolChoice::Required] {
             let value =
                 serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                     .unwrap();
-            let response_body = &value["format"]["elements"][1]["content"];
+            let response_body = &value["format"]["elements"][1];
 
             assert_eq!(
                 response_body["type"], "any_text",
@@ -384,8 +388,8 @@ mod tests {
             );
             assert_eq!(
                 response_body["excludes"],
-                json!([]),
-                "{choice:?} must retain the existing unrestricted response body"
+                json!([OPEN, CLOSE]),
+                "{choice:?} must reserve control markers for channel transitions"
             );
         }
     }
@@ -397,12 +401,12 @@ mod tests {
         let named_value =
             serde_json::to_value(build_kimi_k3(&context(&named, &tools)).unwrap().unwrap())
                 .unwrap();
-        assert_eq!(named_value["format"]["elements"][2]["type"], "tag");
+        assert_eq!(named_value["format"]["elements"][3]["type"], "tag");
 
         let auto = ToolChoice::Auto;
         let auto_value =
             serde_json::to_value(build_kimi_k3(&context(&auto, &tools)).unwrap().unwrap()).unwrap();
-        assert_eq!(auto_value["format"]["elements"][2]["type"], "optional");
+        assert_eq!(auto_value["format"]["elements"][3]["type"], "optional");
     }
 
     #[test]
@@ -412,7 +416,7 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let call = &value["format"]["elements"][2]["content"]["tags"][0];
+        let call = &value["format"]["elements"][3]["content"]["tags"][0];
         let argument_alternatives = &call["content"]["elements"][2]["content"]["elements"];
         assert!(
             argument_alternatives
@@ -440,7 +444,7 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let call = &value["format"]["elements"][2]["content"]["tags"][0];
+        let call = &value["format"]["elements"][3]["content"]["tags"][0];
         let arguments = &call["content"]["elements"][2];
 
         assert_eq!(arguments["type"], "star");
@@ -465,7 +469,7 @@ mod tests {
         let value = serde_json::to_value(build_kimi_k3(&ctx).unwrap().unwrap()).unwrap();
 
         assert_eq!(
-            value["format"]["elements"][2]["content"]["stop_after_first"],
+            value["format"]["elements"][3]["content"]["stop_after_first"],
             true
         );
     }
