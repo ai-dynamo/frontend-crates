@@ -6297,7 +6297,7 @@ cases:
   qwen_string_null:
     lifecycle: active
     scenario: arg_json_null
-    description: 'Every family must emit JSON null: {"city": null}. The request schema declares `city` as `string | null`, except GLM uses `null` because its nullable-string schema prefers string. Qwen3 and GLM use the same bare parameter text as 7-5; other families use native null syntax. Also covered in TOOLCALLING.streamv1.7-4.'
+    description: The request tool schema declares `city` as `string | null`. GLM instead declares `city` as `null` because its parser prefers the string branch when given that union. All eight families must produce JSON `null`. Qwen3 and GLM use bare parameter text `null`; other families use native null syntax. This includes the former `qwen-1` case. Also covered in TOOLCALLING.streamv1.7-4.
     policy:
     - I7
     display_id: UNIFIED.7-4
@@ -6336,7 +6336,7 @@ cases:
   arg_string_null:
     lifecycle: active
     scenario: arg_string_null
-    description: 'Every family must preserve the string "null": {"city": "null"}. The request schema declares `city` as `string` (non-nullable). Qwen3 and GLM use the same bare parameter text as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.'
+    description: The request tool schema declares `city` as non-nullable `string`. All eight families must preserve JSON string `"null"`. Qwen3 and GLM use the same bare parameter text `null` as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.
     policy:
     - I7
     display_id: UNIFIED.7-5

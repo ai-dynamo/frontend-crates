@@ -347,8 +347,8 @@ def test_null_case_descriptions_explain_schema_difference(model_v2):
     scenarios = ("arg_string_null", "arg_json_null")
     tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
     assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
-    assert "`city` as `string` (non-nullable)" in tips[0]["description"]
-    assert "`city` as `string | null`" in tips[1]["description"]
+    assert "request tool schema declares `city` as non-nullable `string`" in tips[0]["description"]
+    assert "request tool schema declares `city` as `string | null`" in tips[1]["description"]
     script = r"""
 const fs = require('fs');
 const vm = require('vm');
@@ -366,7 +366,7 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
         input=json.dumps(tips), text=True, capture_output=True, check=True,
     )
     rendered = json.loads(result.stdout)
-    assert all("Request tool schema" not in markup for markup in rendered)
+    assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
 
@@ -942,8 +942,8 @@ process.stdout.write(JSON.stringify(results));
     )
     rendered = json.loads(result.stdout)
     for sub, explanation in (
-        ("7-4", "A nullable string schema"),
-        ("7-5", "A non-nullable string schema"),
+        ("7-4", "request tool schema declares `city` as `string | null`"),
+        ("7-5", "request tool schema declares `city` as non-nullable `string`"),
     ):
         column = next(col for col in tab["columns"] if col["sub"] == sub)
         assert column["desc"] == descriptions[sub]
@@ -951,6 +951,6 @@ process.stdout.write(JSON.stringify(results));
         assert "<table" in rendered[sub]
         header = rendered[sub].split("<table", 1)[0]
         assert 'class="ttip-head-desc"' in header
-        assert explanation in header
+        assert "request tool schema declares" in header
     assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
     assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
