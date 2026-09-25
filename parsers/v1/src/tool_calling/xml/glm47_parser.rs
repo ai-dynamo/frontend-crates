@@ -555,7 +555,14 @@ fn get_param_schema_type<'a>(
     let tool = tools?.iter().find(|t| t.name == function_name)?;
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
-    let param = props.get(param_name)?;
+    let mut param = props.get(param_name)?;
+    if let Some(pointer) = param
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|r| r.strip_prefix('#'))
+    {
+        param = schema.pointer(pointer)?;
+    }
     // Prefer string in unions because JSON-looking text is ambiguous.
     if schema_has_type(param, "string") {
         return Some("string");
