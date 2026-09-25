@@ -67,6 +67,11 @@ impl Encoder for FastTokenizer {
 }
 
 impl Decoder for FastTokenizer {
+    fn has_unstable_suffix(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> bool {
+        self.hf_decoder
+            .has_unstable_suffix(token_ids, skip_special_tokens)
+    }
+
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
         self.hf_decoder.decode(token_ids, skip_special_tokens)
     }
@@ -111,6 +116,30 @@ mod tests {
         env!("CARGO_MANIFEST_DIR"),
         "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
     );
+
+    #[test]
+    fn byte_fallback_stream_matches_full_decode() {
+        let tokenizer: crate::Tokenizer =
+            std::sync::Arc::new(FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap()).into();
+        for (pieces, skip) in [
+            (vec!["<0x61>", "<0xF5>"], false),
+            (vec!["<0x61>", "</s>", "<0xF5>"], false),
+            (vec!["<0x61>", "</s>", "<0xF5>"], true),
+        ] {
+            let ids: Vec<_> = pieces
+                .iter()
+                .map(|piece| tokenizer.token_to_id(piece).unwrap().unwrap())
+                .collect();
+            let expected: String = tokenizer.decode(&ids, skip).unwrap().into();
+            let mut stream = tokenizer.decode_stream(&[], skip);
+            let mut actual = String::new();
+            for id in ids {
+                actual.push_str(&stream.step(id).unwrap().unwrap_or_default());
+            }
+            actual.push_str(&stream.finish().unwrap().unwrap_or_default());
+            assert_eq!(actual, expected, "{pieces:?}, skip={skip}");
+        }
+    }
 
     #[test]
     fn test_fast_encode_decode_roundtrip() {

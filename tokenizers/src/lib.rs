@@ -175,6 +175,16 @@ pub mod traits {
     /// (HuggingFace). `DecodeStream::step()` relies on `DecodeResult::Partial` to detect
     /// incomplete sequences and buffer tokens until the full character arrives.
     pub trait Decoder: Send + Sync {
+        /// Whether appending tokens can still reinterpret the decoded suffix.
+        /// Callers must buffer an unstable suffix until a boundary or end of input.
+        fn has_unstable_suffix(
+            &self,
+            _token_ids: &[TokenIdType],
+            _skip_special_tokens: bool,
+        ) -> bool {
+            false
+        }
+
         fn decode(
             &self,
             token_ids: &[TokenIdType],
@@ -369,7 +379,9 @@ impl Tokenizer {
         )?))
     }
 
-    /// Create a stateful sequence object for decoding token_ids into text
+    /// Create a stateful sequence object for decoding token_ids into text.
+    /// Append the result of [`DecodeStream::finish`] when input ends; `step` may
+    /// retain a trailing byte-fallback run even when it currently forms valid UTF-8.
     pub fn decode_stream(
         &self,
         prompt_token_ids: &[TokenIdType],
@@ -517,6 +529,27 @@ impl DecodeStream {
     pub fn step(&mut self, id: u32) -> Result<Option<String>> {
         self.all_token_ids.push(id);
 
+        if self.tokenizer.has_unstable_suffix(
+            &self.all_token_ids[self.read_offset..],
+            self.skip_special_tokens,
+        ) {
+            return Ok(None);
+        }
+        self.decode_pending(false)
+    }
+
+    /// Decode the remaining suffix once no further tokens can reinterpret it.
+    /// Call this at end-of-input and append its output after all `step` chunks.
+    /// Dropping the stream without finishing discards any buffered text.
+    pub fn finish(&mut self) -> Result<Option<String>> {
+        self.decode_pending(true)
+    }
+
+    fn decode_pending(&mut self, finishing: bool) -> Result<Option<String>> {
+        if self.read_offset == self.all_token_ids.len() {
+            return Ok(None);
+        }
+
         let prefix_text: String = self
             .tokenizer
             .decode(
@@ -531,7 +564,7 @@ impl DecodeStream {
         )?;
 
         let new_text = new_result.as_str();
-        let is_partial = new_result.is_partial();
+        let is_partial = new_result.is_partial() && !finishing;
 
         // Once generated text has been returned, decoding must remain append-only.
         // A complete rewrite cannot be repaired after the caller has seen the old text.

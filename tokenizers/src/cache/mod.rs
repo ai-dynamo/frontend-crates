@@ -275,6 +275,11 @@ impl Encoder for CachedTokenizer {
 }
 
 impl Decoder for CachedTokenizer {
+    fn has_unstable_suffix(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> bool {
+        self.inner
+            .has_unstable_suffix(token_ids, skip_special_tokens)
+    }
+
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
         // Decode is not cached — passthrough to inner.
         self.inner.decode(token_ids, skip_special_tokens)
