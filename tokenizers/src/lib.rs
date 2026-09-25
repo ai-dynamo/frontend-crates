@@ -113,6 +113,12 @@ pub mod traits {
         ///
         /// Backends must not implement this by flattening the segments first,
         /// because that discards the special-token trust boundary.
+        ///
+        /// A backend whose segmented output composes across the list — that is,
+        /// `encode_segments(a) ++ encode_segments(b) == encode_segments(a ++ b)` for
+        /// any split — may opt into segmented prefix caching through
+        /// [`Tokenizer::validate_segmented_prefix_cache`]. Backends that post-process
+        /// the joined ids (for example by adding special tokens) must not.
         fn encode_segments(&self, _segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
             Err(Error::msg(
                 "tokenizer backend does not support segmented encoding",
@@ -189,6 +195,20 @@ pub mod traits {
         /// return an error explaining why the tokenizer is incompatible.
         fn validate_prefix_cache(&self) -> Result<()> {
             Err(Error::msg("tokenizer does not support prefix caching"))
+        }
+
+        /// Validate that segmented encodes may be served from the prefix cache.
+        ///
+        /// [`crate::CachedTokenizer`] splits a cached prefix from the remaining
+        /// segments at segment boundaries, which is exact only when
+        /// [`Encoder::encode_segments`] encodes each segment independently and
+        /// concatenates the ids. Implementations must opt in explicitly by returning
+        /// `Ok(())`; the default keeps `encode_segments` as an uncached passthrough
+        /// even when [`Self::validate_prefix_cache`] succeeds.
+        fn validate_segmented_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg(
+                "tokenizer has not declared composable segmented encoding; segmented encodes stay uncached",
+            ))
         }
 
         /// Apply construction-time [`TokenizerOptions`].

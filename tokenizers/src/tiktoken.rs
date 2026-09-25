@@ -157,6 +157,12 @@ impl Tokenizer for TikTokenTokenizer {
         Ok(())
     }
 
+    // `encode_segments` runs `CoreBPE` once per segment and concatenates, so any split
+    // of the segment list composes.
+    fn validate_segmented_prefix_cache(&self) -> Result<()> {
+        Ok(())
+    }
+
     // `tiktoken_rs::CoreBPE`'s `encoder` field is `pub(crate)`, so this
     // crate has no way to enumerate, size, or look up ids in the vocab.
     // `token_to_id` is left at the trait default (unsupported) for the

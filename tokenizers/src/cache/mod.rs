@@ -15,6 +15,8 @@
 //! tokenizations at every special-token boundary. On a hit, the cached prefix
 //! tokens are merged with a fresh encode of the trailing suffix only — turning
 //! O(N) tokenization work into O(suffix_len) when prompts share a system prefix.
+//! Both the plain-text `encode` path and the segmented `encode_segments` path
+//! (Kimi K3-style renderer output) are served from the same cache.
 //!
 //! # Correctness
 //!
@@ -27,6 +29,15 @@
 //! Atomicity alone is insufficient when registered special-token strings can overlap.
 //! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
 //! otherwise split inside the token selected by the underlying tokenizer.
+//!
+//! Segmented inputs cut at segment ends instead of scanning for special tokens. That is
+//! exact only when the inner [`Encoder::encode_segments`] encodes each segment
+//! independently and concatenates the ids, so the path is enabled only for tokenizers
+//! that opt in through [`Tokenizer::validate_segmented_prefix_cache`]; others keep the
+//! uncached passthrough. Keys for this path frame each segment with its `allow_special`
+//! flag and byte length under a separate blake3 derive-key context, so a segmented
+//! prefix never aliases a plain-text prefix, a different trust layout, or a different
+//! split of the same flattened text.
 //!
 //! # Storage normalization
 //!
@@ -45,9 +56,10 @@
 //!   An empty list disables L1: `encode`/`encode_batch` short-circuit straight
 //!   to the inner tokenizer with no lookup, no miss-counter bump, and no
 //!   insert attempt. A list whose members can overlap disables L1 identically.
-//! - `encode_segments` always passes through to the inner tokenizer without
-//!   caching. Flattening segments for L1 would discard their special-token
-//!   trust boundaries.
+//! - `encode_segments` is cached at segment boundaries with trust-aware keys (see
+//!   above) when the inner tokenizer opts in; it never flattens segments, so the
+//!   special-token trust boundaries reach the inner tokenizer unchanged. With L1
+//!   disabled, or for a tokenizer that has not opted in, it passes straight through.
 //! - `max_memory_bytes` — L1 byte budget; entries evicted via approximate LRU.
 //!
 //! # Provenance
@@ -92,6 +104,9 @@ pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
     l1_enabled: bool,
+    /// The inner tokenizer declared composable segmented encoding, so
+    /// `encode_segments` may split at segment boundaries.
+    segments_cacheable: bool,
     extend_on_hit: bool,
     /// Called once after every successful encode while L1 is active.
     token_observer: Option<CacheTokenUsageFn>,
@@ -143,10 +158,24 @@ impl CachedTokenizer {
         } else {
             Vec::new()
         };
+        let segments_cacheable = match inner.validate_segmented_prefix_cache() {
+            Ok(()) => true,
+            Err(reason) => {
+                if l1_enabled {
+                    tracing::info!(
+                        target: "tokenizer",
+                        %reason,
+                        "segmented encodes bypass the tokenizer prefix cache"
+                    );
+                }
+                false
+            }
+        };
         Ok(Self {
             inner,
             l1: L1Cache::new(max_memory_bytes, cache_tokens),
             l1_enabled,
+            segments_cacheable,
             extend_on_hit: false,
             token_observer: None,
         })
@@ -263,13 +292,49 @@ impl Encoder for CachedTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        // L1 indexes flattened string offsets and cannot preserve each
-        // segment's allow_special boundary. Keep the operation correct by
-        // delegating without populating or consulting the cache.
-        let encoding = self.inner.encode_segments(segments)?;
-        if self.l1_enabled {
-            self.observe_token_usage(0, encoding.token_ids().len());
+        if !self.l1_enabled {
+            return self.inner.encode_segments(segments);
         }
+        if !self.segments_cacheable {
+            let encoding = self.inner.encode_segments(segments)?;
+            self.observe_token_usage(0, encoding.token_ids().len());
+            return Ok(encoding);
+        }
+
+        // Segments are never flattened: cut points are segment ends and the uncached
+        // remainder reaches the inner tokenizer with its trust flags intact.
+        let matched = match self.l1.lookup_prefix_segments(segments) {
+            PrefixLookup::Hit(matched) => matched,
+            PrefixLookup::Miss(prefix_hashes) => {
+                let encoding = Encoding::Sp(self.l1.populate_and_encode_segments_with_hashes(
+                    segments,
+                    prefix_hashes.into_iter(),
+                    self.inner.as_ref(),
+                )?);
+                self.observe_token_usage(0, encoding.token_ids().len());
+                return Ok(encoding);
+            }
+        };
+
+        let cached_tokens = matched.tokens.len();
+        let encoding = if self.extend_on_hit {
+            Encoding::Sp(self.l1.extend_after_match_segments_with_hash(
+                segments,
+                matched,
+                self.inner.as_ref(),
+            )?)
+        } else {
+            // On this path `prefix_len` counts complete leading segments.
+            let suffix_enc = self
+                .inner
+                .encode_segments(&segments[matched.prefix_len..])?;
+            let mut merged: Vec<TokenIdType> =
+                Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
+            merged.extend_from_slice(&matched.tokens);
+            merged.extend_from_slice(suffix_enc.token_ids());
+            Encoding::Sp(merged)
+        };
+        self.observe_token_usage(cached_tokens, encoding.token_ids().len());
         Ok(encoding)
     }
 }
@@ -342,6 +407,43 @@ mod tests {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
         }
+
+        fn validate_segmented_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    /// Same output as `SegmentTokenizer`, but never opts into segmented prefix caching.
+    struct OpaqueSegmentTokenizer;
+
+    impl Encoder for OpaqueSegmentTokenizer {
+        fn encode(&self, input: &str) -> Result<Encoding> {
+            SegmentTokenizer.encode(input)
+        }
+
+        fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
+            SegmentTokenizer.encode_batch(inputs)
+        }
+
+        fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+            SegmentTokenizer.encode_segments(segments)
+        }
+    }
+
+    impl Decoder for OpaqueSegmentTokenizer {
+        fn decode(
+            &self,
+            token_ids: &[TokenIdType],
+            skip_special_tokens: bool,
+        ) -> Result<DecodeResult> {
+            SegmentTokenizer.decode(token_ids, skip_special_tokens)
+        }
+    }
+
+    impl Tokenizer for OpaqueSegmentTokenizer {
+        fn validate_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
     }
 
     impl Encoder for FailingTokenizer {
@@ -366,6 +468,10 @@ mod tests {
 
     impl Tokenizer for FailingTokenizer {
         fn validate_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
+
+        fn validate_segmented_prefix_cache(&self) -> Result<()> {
             Ok(())
         }
 
@@ -491,39 +597,278 @@ mod tests {
     }
 
     #[test]
-    fn segmented_encoding_passes_through_without_caching() {
+    fn segmented_encoding_without_specials_passes_through() {
         let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
         let segments = [
             EncodeSegment::new("<ctl>", true),
             EncodeSegment::new("user content", false),
         ];
         let expected = inner.encode_segments(&segments).unwrap();
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), Vec::new(), 4096)
+                .expect("test tokenizer supports prefix caching"),
+        );
 
-        for special_tokens in [Vec::new(), vec!["<ctl>".to_string()]] {
-            let l1_enabled = !special_tokens.is_empty();
-            let (cached, events) = collect_token_usage(
-                CachedTokenizer::new(inner.clone(), special_tokens, 4096)
-                    .expect("test tokenizer supports prefix caching"),
-            );
+        let actual = cached.encode_segments(&segments).unwrap();
+
+        assert_eq!(actual.token_ids(), expected.token_ids());
+        let stats = cached.cache_stats();
+        assert_eq!((stats.entries, stats.hits, stats.misses), (0, 0, 0));
+        assert!(
+            events.lock().unwrap().is_empty(),
+            "disabled L1 must not emit token usage"
+        );
+    }
+
+    #[test]
+    fn segmented_encoding_without_opt_in_passes_through_uncached() {
+        // The inner tokenizer supports segments and the text-path cache, but has not
+        // declared segment composability: ids come straight from it, nothing is cached,
+        // and the observer still sees the fully uncached encode.
+        let inner: Arc<dyn Tokenizer> = Arc::new(OpaqueSegmentTokenizer);
+        let segments = [
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("user content", false),
+            EncodeSegment::new("<ctl>", true),
+        ];
+        let expected = inner.encode_segments(&segments).unwrap();
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+                .expect("test tokenizer supports prefix caching"),
+        );
+
+        for _ in 0..2 {
             let actual = cached.encode_segments(&segments).unwrap();
-
             assert_eq!(actual.token_ids(), expected.token_ids());
+        }
+        let stats = cached.cache_stats();
+        assert_eq!((stats.entries, stats.hits, stats.misses), (0, 0, 0));
+        assert_eq!(
+            events.lock().unwrap().as_slice(),
+            &[
+                CacheTokenUsage {
+                    cached_tokens: 0,
+                    uncached_tokens: 6,
+                },
+                CacheTokenUsage {
+                    cached_tokens: 0,
+                    uncached_tokens: 6,
+                },
+            ]
+        );
+
+        // The text path of the same tokenizer is unaffected by the missing opt-in.
+        let _ = cached.encode("<ctl>user content<ctl>").unwrap();
+        assert!(cached.cache_stats().entries > 0);
+    }
+
+    #[test]
+    fn segmented_single_segment_has_no_boundary_and_passes_through_as_a_miss() {
+        // One segment has no cut point: the lookup records a miss, nothing is inserted, and
+        // the ids are the inner tokenizer's (mirrors a plain-text input with no specials).
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+                .expect("test tokenizer supports prefix caching"),
+        );
+        let only = [EncodeSegment::new("<ctl>lonely", true)];
+
+        let actual = cached.encode_segments(&only).unwrap();
+        assert_eq!(
+            actual.token_ids(),
+            inner.encode_segments(&only).unwrap().token_ids()
+        );
+        let stats = cached.cache_stats();
+        assert_eq!((stats.entries, stats.hits, stats.misses), (0, 0, 1));
+        assert_eq!(
+            events.lock().unwrap().as_slice(),
+            &[CacheTokenUsage {
+                cached_tokens: 0,
+                uncached_tokens: 2,
+            }]
+        );
+    }
+
+    #[test]
+    fn segmented_encoding_populates_then_hits_at_segment_boundaries() {
+        // SegmentTokenizer emits `[allow_special, len]` per segment, so a wrong split or
+        // a stale prefix shows up as a token-id mismatch, not just a bad counter.
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let turn1 = [
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("user content", false),
+            EncodeSegment::new("<ctl>", true),
+        ];
+        let mut turn2 = turn1.to_vec();
+        turn2.extend([
+            EncodeSegment::new("assistant reply", false),
+            EncodeSegment::new("<ctl>", true),
+        ]);
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+                .expect("test tokenizer supports prefix caching"),
+        );
+
+        // Miss: one entry after every complete leading segment except the last.
+        let first = cached.encode_segments(&turn1).unwrap();
+        assert_eq!(
+            first.token_ids(),
+            inner.encode_segments(&turn1).unwrap().token_ids()
+        );
+        let stats = cached.cache_stats();
+        assert_eq!(stats.entries, 2);
+        assert_eq!((stats.hits, stats.misses), (0, 1));
+
+        // Hit: the deepest cached boundary covers turn1's first two segments (4 ids);
+        // only the remaining three segments are freshly encoded.
+        let second = cached.encode_segments(&turn2).unwrap();
+        assert_eq!(
+            second.token_ids(),
+            inner.encode_segments(&turn2).unwrap().token_ids()
+        );
+        let stats = cached.cache_stats();
+        assert_eq!((stats.hits, stats.misses), (1, 1));
+        assert_eq!(stats.entries, 2, "extend is off, so a hit must not insert");
+        assert_eq!(
+            events.lock().unwrap().as_slice(),
+            &[
+                CacheTokenUsage {
+                    cached_tokens: 0,
+                    uncached_tokens: 6,
+                },
+                CacheTokenUsage {
+                    cached_tokens: 4,
+                    uncached_tokens: 6,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn segmented_keys_do_not_alias_across_trust_or_split_differences() {
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let cached = CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+            .expect("test tokenizer supports prefix caching");
+
+        let trusted = [
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("a", false),
+            EncodeSegment::new("b", false),
+        ];
+        // Same flattened text as `trusted`, but the marker is untrusted content here...
+        let untrusted = [
+            EncodeSegment::new("<ctl>", false),
+            EncodeSegment::new("a", false),
+            EncodeSegment::new("b", false),
+        ];
+        // ...and here the split falls elsewhere.
+        let resplit = [
+            EncodeSegment::new("<ctl>a", true),
+            EncodeSegment::new("b", false),
+        ];
+
+        let _ = cached.encode_segments(&trusted).unwrap();
+        for candidate in [&untrusted[..], &resplit[..]] {
+            let expected = inner.encode_segments(candidate).unwrap();
+            let actual = cached.encode_segments(candidate).unwrap();
+            assert_eq!(actual.token_ids(), expected.token_ids());
+        }
+        assert_eq!(
+            cached.cache_stats().hits,
+            0,
+            "identical flattened text with a different trust layout or split must not hit"
+        );
+    }
+
+    #[test]
+    fn segmented_and_plain_text_keys_are_domain_separated() {
+        // `encode` emits `[len]` per boundary run and `encode_segments` emits `[flag, len]`
+        // per segment, so a key shared across the two paths would return the wrong ids.
+        // The plain-text encode here only seeds plain-text keys for the same bytes; its
+        // own output is not the subject (this mock is not prefix-stable under `encode`).
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let cached = CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+            .expect("test tokenizer supports prefix caching");
+        let segments = [
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("user content", false),
+            EncodeSegment::new("<ctl>", true),
+        ];
+        let flattened: String = segments.iter().map(|segment| segment.text).collect();
+
+        let _ = cached.encode(&flattened).unwrap();
+        assert!(
+            cached.cache_stats().entries > 0,
+            "plain-text miss must populate"
+        );
+
+        let segmented = cached.encode_segments(&segments).unwrap();
+        assert_eq!(
+            segmented.token_ids(),
+            inner.encode_segments(&segments).unwrap().token_ids()
+        );
+        assert_eq!(
+            cached.cache_stats().hits,
+            0,
+            "segmented lookup must not hit plain-text entries for the same bytes"
+        );
+    }
+
+    #[test]
+    fn segmented_extend_on_hit_caches_only_the_deepest_boundary() {
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 64 * 1024)
+                .expect("test tokenizer supports prefix caching")
+                .with_extend(true),
+        );
+        let mut convo = vec![
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("system prompt", false),
+            EncodeSegment::new("<ctl>", true),
+        ];
+
+        let _ = cached.encode_segments(&convo).unwrap();
+        let mut entries = cached.cache_stats().entries;
+        assert_eq!(entries, 2);
+
+        for turn in 1..=4 {
+            convo.extend([
+                EncodeSegment::new("user text", false),
+                EncodeSegment::new("<ctl>", true),
+                EncodeSegment::new("assistant text", false),
+                EncodeSegment::new("<ctl>", true),
+            ]);
+            let actual = cached.encode_segments(&convo).unwrap();
+            assert_eq!(
+                actual.token_ids(),
+                inner.encode_segments(&convo).unwrap().token_ids(),
+                "turn {turn}"
+            );
             let stats = cached.cache_stats();
-            assert_eq!(stats.entries, 0);
-            assert_eq!(stats.hits, 0);
-            assert_eq!(stats.misses, 0);
-            let events = events.lock().unwrap();
-            if l1_enabled {
-                assert_eq!(
-                    events.as_slice(),
-                    &[CacheTokenUsage {
-                        cached_tokens: 0,
-                        uncached_tokens: expected.token_ids().len(),
-                    }]
-                );
-            } else {
-                assert!(events.is_empty());
+            assert_eq!(
+                stats.entries,
+                entries + 1,
+                "turn {turn}: a partial hit with extend on adds exactly one entry"
+            );
+            entries = stats.entries;
+        }
+
+        // Turn 0 is a full miss (3 segments, 6 ids). Every later turn reuses everything up
+        // to the previous turn's deepest boundary and encodes the four new segments plus
+        // the final one (10 ids), so the uncached work stays flat as the history grows.
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 5);
+        assert_eq!(
+            events[0],
+            CacheTokenUsage {
+                cached_tokens: 0,
+                uncached_tokens: 6,
             }
+        );
+        for (turn, usage) in events.iter().enumerate().skip(1) {
+            assert_eq!(usage.uncached_tokens, 10, "turn {turn}");
+            assert_eq!(usage.cached_tokens, 4 + 8 * (turn - 1), "turn {turn}");
         }
     }
 
@@ -585,6 +930,26 @@ mod tests {
 
         assert!(cached.encode("<s>this fails</s>").is_err());
         assert!(events.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn token_observer_does_not_report_failed_segmented_encodes() {
+        // FailingTokenizer keeps the trait default `encode_segments`, which errors, so the
+        // segmented miss path fails inside the inner encode: no event, no entry.
+        let tokenizer: Arc<dyn Tokenizer> = Arc::new(FailingTokenizer);
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tokenizer, specials(), 4096)
+                .expect("test tokenizer explicitly supports prefix caching"),
+        );
+        let segments = [
+            EncodeSegment::new("<s>", true),
+            EncodeSegment::new("this fails", false),
+            EncodeSegment::new("</s>", true),
+        ];
+
+        assert!(cached.encode_segments(&segments).is_err());
+        assert!(events.lock().unwrap().is_empty());
+        assert_eq!(cached.cache_stats().entries, 0);
     }
 
     #[test]

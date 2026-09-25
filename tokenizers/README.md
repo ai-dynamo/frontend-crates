@@ -42,6 +42,11 @@ let encoding = tokenizer.encode_segments(&segments)?;
 Segmented encoding preserves legacy tiktoken chunk boundaries for long-input
 token-ID parity, as required by Kimi K3.
 
+Wrapping the tokenizer in `CachedTokenizer` caches segmented encodes too: a
+multi-turn conversation whose renderer emits the same leading segments each
+turn re-encodes only the segments after the deepest cached boundary (see
+[Prefix caching](#prefix-caching-with-cachedtokenizer)).
+
 ## Quick start
 
 ```rust
@@ -91,6 +96,15 @@ Boundaries are taken **only** immediately after a registered special token —
 those are atomic in BPE, so the merge is exact:
 `encode(prefix) + encode(suffix) == encode(prefix + suffix)`. There is no
 whitespace/punctuation fallback; the cache prefers a miss over a corrupt split.
+
+Segmented inputs (`encode_segments`) are cached at segment boundaries instead,
+for backends that opt in through `Tokenizer::validate_segmented_prefix_cache`
+by guaranteeing that every segment is encoded independently and concatenated
+(the TikToken, fastokens, and Baseten backends do). Their cache keys frame each
+segment with its `allow_special` flag and length under a separate hash context,
+so the same flattened text with a different trust layout, a different split, or
+a plain-text encode never shares an entry. Backends without the opt-in keep the
+uncached passthrough.
 
 ```rust
 use dynamo_tokenizers::{CachedTokenizer, HuggingFaceTokenizer};
