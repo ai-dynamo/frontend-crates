@@ -30,9 +30,16 @@ if str(SRC) not in sys.path:
 
 from resolve_stream_fixtures import resolve, version_key  # noqa: E402
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
+import fixtures  # noqa: E402
 
 FIXTURES_ROOT = fixture_snapshot_root()
 STREAM_SRC = FIXTURES_ROOT / "toolcalling" / "fixtures-stream-v1"
+
+
+def test_stream_regression_cases_share_their_parent_case_bands():
+    assert fixtures._subcase_group_key("streamv1", "7.g") == "args"
+    assert fixtures._subcase_group_key("streamv1", "7.h") == "args"
+    assert fixtures._subcase_group_key("streamv1", "50.a") == "partial_token"
 
 pytestmark = pytest.mark.skipif(
     not STREAM_SRC.is_dir(), reason="conformance fixtures not downloaded"
