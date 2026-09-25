@@ -163,8 +163,11 @@ impl StructuralTagBuilder {
         ctx: &ToolCallFormatBuildContext<'_>,
         suffix: StructuralTag,
     ) -> anyhow::Result<StructuralTag> {
+        // K3's response body excludes XTML controls, so auto also needs to
+        // consume the think-close marker when the grammar owns reasoning.
         let should_wrap_with_reasoning_tag = ctx.starts_in_reasoning
-            && matches!(ctx.tool_choice, ToolChoice::Required | ToolChoice::Named(_));
+            && (matches!(ctx.tool_choice, ToolChoice::Required | ToolChoice::Named(_))
+                || matches!(self, Self::KimiK3));
         if !should_wrap_with_reasoning_tag {
             return Ok(suffix);
         }
