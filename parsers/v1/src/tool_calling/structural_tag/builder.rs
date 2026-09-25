@@ -12,6 +12,7 @@ use super::dsml::{self, DsmlToolCallsConfig};
 use super::format::{
     AnyTextFormat, AnyTokensFormat, Format, SequenceFormat, StructuralTag, TagFormat,
 };
+use super::glm47;
 use super::kimi_k2;
 use super::kimi_k3;
 use super::triggered_tags::{self, TriggeredTagsConfig};
@@ -129,6 +130,9 @@ pub enum StructuralTagBuilder {
 
     /// Kimi K3's native XTML response/tools channel format.
     KimiK3,
+
+    /// GLM-4.7 / GLM-5.x `<tool_call>name<arg_key>..</arg_key><arg_value>..</arg_value></tool_call>`.
+    Glm47,
 }
 
 impl StructuralTagBuilder {
@@ -149,6 +153,8 @@ impl StructuralTagBuilder {
             Self::DsmlToolCalls(config) => dsml::build_dsml_tool_calls(config, ctx)?,
             Self::KimiK2 => kimi_k2::build_kimi_k2(ctx)?,
             Self::KimiK3 => kimi_k3::build_kimi_k3(ctx)?,
+            // Built as JSON so the public format types stay unchanged.
+            Self::Glm47 => return glm47::build_glm47(ctx),
         };
 
         structural_tag
@@ -217,6 +223,7 @@ impl StructuralTagBuilder {
             Self::DsmlToolCalls(config) => &config.tool_call_ban_tokens,
             Self::KimiK2 => &[],
             Self::KimiK3 => &[],
+            Self::Glm47 => glm47::BAN_TOKENS.as_slice(),
         }
     }
 
@@ -228,6 +235,7 @@ impl StructuralTagBuilder {
             // generates the opening `<think>` itself and needs a separate path.
             Self::KimiK2 => Some("</think>"),
             Self::KimiK3 => Some("<|close|>think<|sep|>"),
+            Self::Glm47 => Some("</think>"),
         }
     }
 }

@@ -473,16 +473,6 @@ fn consume_glm47_close_markers(text: &str, mut cursor: usize, config: &Glm47Pars
     }
 }
 
-/// Decode XML character entities in a string.
-/// Handles the five predefined XML entities: &lt; &gt; &amp; &quot; &apos;
-fn decode_xml_entities(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&apos;", "'")
-}
-
 /// Coerce a raw string value using the tool's parameter schema.
 /// Falls back to string if no schema is available or the type is unrecognized.
 fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
@@ -647,12 +637,9 @@ fn parse_tool_call_block(
         let raw_value = cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
         if !key.is_empty() {
-            // Decode XML entities (e.g. &lt; → <, &amp; → &) before parsing
-            let decoded = decode_xml_entities(raw_value);
-
             // Look up the expected type from the tool's parameter schema
             let schema_type = get_param_schema_type(tools, &function_name, key);
-            let json_value = coerce_value(&decoded, schema_type);
+            let json_value = coerce_value(raw_value, schema_type);
 
             match argument_indices.get(key).copied() {
                 Some(index) => arguments[index].1 = json_value,
@@ -1015,7 +1002,7 @@ mod tests {
     }
 
     #[test] // helper
-    fn test_xml_entity_decoding() {
+    fn test_xml_entities_kept_verbatim() {
         let config = get_test_config();
         let message = r#"<tool_call>write_file<arg_key>content</arg_key><arg_value>x &lt; y &amp;&amp; y &gt; z</arg_value></tool_call>"#;
 
@@ -1026,7 +1013,7 @@ mod tests {
             serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(
             args.get("content").unwrap().as_str().unwrap(),
-            "x < y && y > z"
+            "x &lt; y &amp;&amp; y &gt; z"
         );
     }
 
