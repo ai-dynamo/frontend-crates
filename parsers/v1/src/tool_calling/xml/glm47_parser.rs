@@ -664,12 +664,15 @@ fn parse_tool_call_block(
         }
     }
 
-    // Validate function against tools if provided
-    if let Some(tools_list) = tools {
-        let tool_exists = tools_list.iter().any(|t| t.name == function_name);
-        if !tool_exists {
-            anyhow::bail!("Function '{}' not found in available tools", function_name);
-        }
+    // Preserve calls to unknown tools so the client can reject them.
+    if let Some(tools_list) = tools
+        && !tools_list.iter().any(|t| t.name == function_name)
+    {
+        warn!(
+            function = %function_name,
+            why = "tool_not_in_request_tool_list",
+            "GLM-4.7 tool call references a function not in the request's tools list; passing it through"
+        );
     }
 
     Ok(ToolCallResponse {
@@ -983,7 +986,7 @@ mod tests {
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.8.c, TOOLCALLING.batch.13 in tests/parity/toolcalling/fixtures/glm47/TOOLCALLING.batch.13.yaml, tests/parity/toolcalling/fixtures/glm47/TOOLCALLING.batch.8.yaml.
     #[test] // TOOLCALLING.batch.4, TOOLCALLING.batch.8
-    fn test_unparseable_block_dropped_no_tag_leak() {
+    fn test_unknown_function_block_returned_as_call_no_tag_leak() {
         let config = get_test_config();
         let tools = vec![ToolDefinition {
             name: "get_weather".to_string(),
@@ -991,26 +994,23 @@ mod tests {
             strict: None,
         }];
 
-        // Tool call block references a function not in the tools list — the
-        // whole block (including <tool_call>...<arg_key>...<arg_value>... wire
-        // markup) must be dropped, not leaked through normal_text.
         let message = "Here is the result: <tool_call>unknown_func<arg_key>x</arg_key><arg_value>1</arg_value></tool_call> done";
         let (calls, normal_text) =
             try_tool_call_parse_glm47(message, &config, Some(&tools)).unwrap();
 
-        assert_eq!(calls.len(), 0);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "unknown_func");
+        let args: HashMap<String, Value> =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert!(args.contains_key("x"));
         let text = normal_text.unwrap();
-        assert!(
-            !text.contains("unknown_func"),
-            "Unparseable block must be dropped to avoid tag leakage, got: {text}"
-        );
         assert!(
             !text.contains("<tool_call>") && !text.contains("<arg_key>"),
             "Wire-format tags must not leak into normal_text, got: {text}"
         );
         assert!(
-            text.contains("Here is the result:") && text.contains("done"),
-            "Surrounding prose must be preserved, got: {text}"
+            text.contains("Here is the result:"),
+            "Leading prose must survive, got: {text}"
         );
     }
 
