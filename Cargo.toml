@@ -41,7 +41,8 @@ dynamo-protocols = { path = "protocols", version = "6.1.0" }
 dynamo-renderer = { path = "renderer", version = "5.4.0" }
 dynamo-tokenizers = { path = "tokenizers", version = "1.9.1" }
 either = { version = "1.13", features = ["serde"] }
-fastokens = "0.3.1"
+# Tokenizers load local files; Hub downloads are handled by the caller.
+fastokens = { version = "0.3.1", default-features = false }
 futures = "0.3"
 gif = "0.14"
 hf-hub = { version = "1.0", default-features = false, features = ["rustls-tls"] }
