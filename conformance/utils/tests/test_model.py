@@ -891,3 +891,66 @@ def test_stream_null_columns_match_unified_numbers(model_v2):
     assert "7-1" not in row["cells"] and "7-2" not in row["cells"]
     for label in ("7-4", "7-5"):
         assert row["cells"][label]["case_id"] == "TOOLCALLING.streamv1." + label
+
+
+@pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5"])
+@pytest.mark.parametrize("mode", ["batch", "stream", "streamv1"])
+def test_case_description_readers_accept_numbered_suffixes(tmp_path, monkeypatch, suffix, mode):
+    doc = tmp_path / "descriptions.data"
+    doc.write_text(
+        f'- **`TOOLCALLING.{mode}.{suffix}`** Tool type description.\n'
+        f'- **`REASONING.{mode}.{suffix}`** Reasoning description.\n'
+    )
+    attr = "TOOLCALLING_STREAMING_V1_CASES_MD" if mode == "streamv1" else "TOOLCALLING_CASES_MD"
+    monkeypatch.setattr(table, attr, doc)
+    assert table._parse_subcase_descriptions(mode) == {suffix: "Tool type description"}
+    if mode != "streamv1":
+        monkeypatch.setattr(table.reasoning_table, "REASONING_CASES_MD", doc)
+        assert table.reasoning_table._parse_case_descriptions() == {
+            f"{mode}.{suffix}": "Reasoning description",
+        }
+
+
+def test_stream_null_column_popups_show_type_descriptions_above_chart(model_v2, monkeypatch):
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    monkeypatch.setattr(
+        table, "TOOLCALLING_STREAMING_V1_CASES_MD",
+        UTILS / "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md",
+    )
+    descriptions = table._parse_subcase_descriptions("streamv1")
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {columnGrammarModel, buildGrammarHtml};\n// --- Entry point'), context);
+const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
+const results = {};
+for (const sub of ['7-4', '7-5']) {
+  const column = tab.columns.find(col => col.sub === sub);
+  const model = context.window.audit.columnGrammarModel(tab, column);
+  results[sub] = context.window.audit.buildGrammarHtml(model);
+}
+process.stdout.write(JSON.stringify(results));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tab), text=True, capture_output=True, check=True,
+    )
+    rendered = json.loads(result.stdout)
+    for sub, explanation in (
+        ("7-4", "A nullable string schema"),
+        ("7-5", "A non-nullable string schema"),
+    ):
+        column = next(col for col in tab["columns"] if col["sub"] == sub)
+        assert column["desc"] == descriptions[sub]
+        assert explanation in column["desc"]
+        assert "<table" in rendered[sub]
+        header = rendered[sub].split("<table", 1)[0]
+        assert 'class="ttip-head-desc"' in header
+        assert explanation in header
+    assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
+    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
