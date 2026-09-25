@@ -41,7 +41,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
-use dynamo_parsers_v2::create_tool_parser_for_family;
+use dynamo_parsers_v2::{Tool, create_tool_parser_for_family};
 #[cfg(not(conformance_split_only))]
 use dynamo_parsers_v2::{
     UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family,
@@ -181,7 +181,7 @@ fn capture_producer_records_init_and_identity() {
             "tool_output_mode": "GuidedJson", "named_tool": "get_weather"
         }},
         "reasoning": {"input": "hidden<channel|>visible", "init": {"starting_state": "Reasoning"}},
-        "native": {"input": "plain response"}
+        "native": {"input": "plain response", "tools": []}
     }});
     std::fs::write(
         inputs.join("init.yaml"),
@@ -240,7 +240,10 @@ fn capture_producer_records_init_and_identity() {
         );
         assert_eq!(
             case["capture_input"]["tools"],
-            common::unified_tool_schemas()
+            fixture["cases"][key]
+                .get("tools")
+                .cloned()
+                .unwrap_or_else(common::unified_tool_schemas)
         );
         assert_eq!(
             case["capture_input"]["chunks"]
@@ -303,7 +306,7 @@ fn capture_failures_are_not_successful_empty_outputs() {
         assert!(record.get("assembled").is_none());
         assert!(record.get("chunks").is_none());
     }
-    let unavailable = split_path_capture_with_parsers("gemma4", "not_a_parser", "text")
+    let unavailable = split_path_capture_with_parsers("gemma4", "not_a_parser", "text", &tools())
         .map(|(rows, assembled)| (rows.into_iter().map(|_| Vec::new()).collect(), assembled));
     assert!(
         capture_record(unavailable, &init)["unavailable"]
@@ -483,9 +486,10 @@ fn split_path_chunks_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
     input: &str,
+    case_tools: &[Tool],
 ) -> Result<Vec<Vec<Value>>, CaptureFailure> {
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).map_err(|error| {
+    let mut tp = create_tool_parser_for_family(tool_family, case_tools).map_err(|error| {
         CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
     })?;
 
@@ -623,8 +627,9 @@ fn split_path_capture_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
     input: &str,
+    case_tools: &[Tool],
 ) -> Result<(Vec<Vec<Value>>, Vec<serde_yaml::Value>), CaptureFailure> {
-    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, input)?;
+    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, input, case_tools)?;
 
     // The split serving path assembles reasoning over the WHOLE input before it
     // streams the leftover through the tool parser. Its raw chunk evidence comes
@@ -639,7 +644,7 @@ fn split_path_capture_with_parsers(
             "text": split.reasoning_text,
         })]);
     }
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).map_err(|error| {
+    let mut tp = create_tool_parser_for_family(tool_family, case_tools).map_err(|error| {
         CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
     })?;
     for ch in split.normal_text.chars() {
@@ -691,9 +696,10 @@ fn capture_case(
     family: &str,
     input: &str,
     init: &common::Init,
+    case_tools: &[Tool],
 ) -> Result<Captured, CaptureFailure> {
     #[cfg(not(conformance_split_only))]
-    let native_error = match create_unified_parser_for_family(family, &tools()) {
+    let native_error = match create_unified_parser_for_family(family, case_tools) {
         Ok(mut parser) => {
             if unavailable_init(init, true) {
                 return Err(CaptureFailure::Unavailable(
@@ -714,7 +720,7 @@ fn capture_case(
             "split capture cannot apply the requested initialization".into(),
         ));
     }
-    let (rows, assembled) = split_path_capture_with_parsers(&reasoning, &tool, input)?;
+    let (rows, assembled) = split_path_capture_with_parsers(&reasoning, &tool, input, case_tools)?;
     let rows = rows
         .into_iter()
         .map(|row| {
@@ -730,7 +736,7 @@ fn capture_case(
 fn split_capture_assembles_reasoning_over_the_whole_input() {
     let input = "<|channel>thought\nLook it up.<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|><|channel>thought\nNow answer.<channel|>It's 18C.";
     let (_, assembled) =
-        split_path_capture_with_parsers("gemma4", "gemma4", input).expect("split path");
+        split_path_capture_with_parsers("gemma4", "gemma4", input, &tools()).expect("split path");
     let want = vec![
         serde_yaml::to_value(json!({"kind": "reasoning", "text": "Look it up.Now answer."}))
             .expect("reasoning"),
@@ -772,8 +778,8 @@ fn capture_rejects_missing_or_malformed_input_fields() {
         (4, "cases: {probe: {input: 123}}", "string input"),
         (
             5,
-            "cases: {probe: {input: text, tools: []}}",
-            "requested tools",
+            "cases: {probe: {input: text, tools: 123}}",
+            "Unified case tool schemas",
         ),
         (
             6,
@@ -867,7 +873,13 @@ fn capture_this_build_against_the_current_corpus() {
                             .expect("case requires a string finish_reason")
                     })
                     .unwrap_or("stop");
-                let mut record = capture_record(capture_case(&family, input, &init), &init);
+                let schemas = cdoc
+                    .get("tools")
+                    .map(|value| serde_json::to_value(value).expect("case tools"))
+                    .unwrap_or_else(common::unified_tool_schemas);
+                let case_tools = common::parse_unified_tools(&schemas);
+                let mut record =
+                    capture_record(capture_case(&family, input, &init, &case_tools), &init);
                 let chunks: Vec<_> = chunk_input(input)
                     .into_iter()
                     .chain(std::iter::once("‹finish›".to_string()))
@@ -880,19 +892,17 @@ fn capture_this_build_against_the_current_corpus() {
                         "tool_output_mode": if init.tool_output_mode.is_empty() { "Native" } else { &init.tool_output_mode },
                         "named_tool":init.named_tool,
                     },
-                    "finish_reason":finish_reason, "tools":common::unified_tool_schemas(), "chunks":chunks,
+                    "finish_reason":finish_reason, "tools":schemas, "chunks":chunks,
                 });
                 // This driver computes its delivery schedule. Refuse metadata that
-                // would claim it executed different tools or chunks. The completion
+                // would claim it executed different chunks. The completion
                 // reason is request metadata: this API's finish() takes no reason.
-                for field in ["tools", "chunks"] {
-                    if let Some(requested) = cdoc.get(field) {
-                        assert_eq!(
-                            serde_json::to_value(requested).unwrap(),
-                            stimulus[field],
-                            "capture driver cannot apply requested {field}"
-                        );
-                    }
+                if let Some(requested) = cdoc.get("chunks") {
+                    assert_eq!(
+                        serde_json::to_value(requested).unwrap(),
+                        stimulus["chunks"],
+                        "capture driver cannot apply requested chunks"
+                    );
                 }
                 record.as_mapping_mut().unwrap().insert(
                     "capture_input".into(),
