@@ -666,55 +666,55 @@ fn check_pair<T: interleave::Splittable>(
         // allow-list is insufficient. Verify exact raw original-chunking and split
         // outputs before allowing a known divergence to skip the recorded oracle.
         let mut recorded_applies = true;
-        if matches!(schedule, Schedule::BoundarySplit { .. }) {
-            if let Some(divergence) = chunking_divergent[index as usize] {
-                let raw = divergence.raw.as_ref().unwrap_or_else(|| {
-                    panic!("{label} choice={index}: allow-list entry lacks raw expectations")
-                });
-                let split_items = demuxed.get(&index).cloned().unwrap_or_default();
-                let orig_items = sequences[index as usize].clone();
-                let at_split = solo(
-                    parser_id,
-                    tools_by_index[index as usize],
-                    &split_items,
-                    to_input,
-                )?;
-                let at_orig = solo(
-                    parser_id,
-                    tools_by_index[index as usize],
-                    &orig_items,
-                    to_input,
-                )?;
-                let raw_totals = |r: &EngineResult| RawAssembled {
-                    calls: r.calls.clone(),
-                    normal_text: r.normal_text.clone(),
-                };
-                let actual_split = raw_totals(&at_split);
-                let actual_orig = raw_totals(&at_orig);
-                if actual_split != raw.split {
-                    failures.push(format!(
+        if matches!(schedule, Schedule::BoundarySplit { .. })
+            && let Some(divergence) = chunking_divergent[index as usize]
+        {
+            let raw = divergence.raw.as_ref().unwrap_or_else(|| {
+                panic!("{label} choice={index}: allow-list entry lacks raw expectations")
+            });
+            let split_items = demuxed.get(&index).cloned().unwrap_or_default();
+            let orig_items = sequences[index as usize].clone();
+            let at_split = solo(
+                parser_id,
+                tools_by_index[index as usize],
+                &split_items,
+                to_input,
+            )?;
+            let at_orig = solo(
+                parser_id,
+                tools_by_index[index as usize],
+                &orig_items,
+                to_input,
+            )?;
+            let raw_totals = |r: &EngineResult| RawAssembled {
+                calls: r.calls.clone(),
+                normal_text: r.normal_text.clone(),
+            };
+            let actual_split = raw_totals(&at_split);
+            let actual_orig = raw_totals(&at_orig);
+            if actual_split != raw.split {
+                failures.push(format!(
                         "{label} choice={index}: known split output changed\n expected: {:?}\n      got: {:?}",
                         raw.split, actual_split
                     ));
-                }
-                if actual_orig != raw.original {
-                    failures.push(format!(
+            }
+            if actual_orig != raw.original {
+                failures.push(format!(
                         "{label} choice={index}: known original-chunking output changed\n expected: {:?}\n      got: {:?}",
                         raw.original, actual_orig
                     ));
-                }
-                if raw_totals(recorded[index as usize]) != raw.original {
-                    failures.push(format!(
+            }
+            if raw_totals(recorded[index as usize]) != raw.original {
+                failures.push(format!(
                         "{label} choice={index}: recorded capture differs from known original-chunking output\n expected: {:?}\n      got: {:?}",
                         raw.original, raw_totals(recorded[index as usize])
                     ));
-                }
-                recorded_applies = false;
-                chunking_skips.push(format!(
+            }
+            recorded_applies = false;
+            chunking_skips.push(format!(
                     "{label} choice={index} schedule={}: exact known chunking divergence; oracle 1 skipped",
                     schedule.label()
                 ));
-            }
         }
 
         // PRIMARY (absolute) oracle: the recorded dynamo_v2 capture for this case.
