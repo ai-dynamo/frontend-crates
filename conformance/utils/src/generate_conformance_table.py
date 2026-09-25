@@ -118,6 +118,9 @@ from impls import (  # noqa: E402
 # Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
+from null_cases import null_group
+from case_variants import group_null_variants
+
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 import gen_unified_golden  # noqa: E402  (authored Unified scenario scope)
 from markers import (  # noqa: E402,F401
@@ -797,7 +800,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 
 def _subcase_group_label(mode: str, sub: str) -> str:
-    return _group_by_sub(mode).get(sub, "Other")
+    return _group_by_sub(mode).get(null_group(sub) or sub, "Other")
 
 
 def _subcase_runs(mode: str, sub_cases: list[str]) -> list[list[str]]:
@@ -1858,6 +1861,9 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
             meta.append({"key": impl, "impl": impl,
                          "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
                          "version": _v2_display_version(impl), "block_raw": _impl_get(expected, impl)})
+    if case.get("golden"):
+        meta.append({"key": "golden", "label": "GOLDEN (oracle)", "version": None,
+                     "block_raw": case["golden"]})
     meta = _sort_candidates(meta)
     cmp_blocks = {m["key"]: m["block_raw"] for m in meta}
     for m in meta:
@@ -1953,7 +1959,7 @@ def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
     dyn = _impl_get(case.get("expected") or {}, baseline)
     fp = case.get("__fixture_path", "")
     href = href_rewrite(common.fixture_href(fp)) if fp else None
-    if not isinstance(dyn, dict):
+    if not isinstance(dyn, dict) and not case.get("golden"):
         # n/a stub: case has only `explanation:` (no `expected:` block).
         tooltip = {"head": f"{case.get('__case_id','')} — {family}",
                    "description": case.get("description") or "",
@@ -1964,10 +1970,11 @@ def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
                                 sub=sub, col_group=col_group, band=band, fixture_href=href,
                                 status=status, cmp=cmp, facts=facts, tooltip=tooltip,
                                 known_divergence=bool(case.get("__known_divergence")))
-    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn)
+    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn or {})
     return _model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
                             sub=sub, col_group=col_group, band=band, fixture_href=href,
                             status=status, cmp=cmp, facts=facts, tooltip=tooltip,
+                            red_on_diff=bool(case.get("golden")),
                             known_divergence=bool(case.get("__known_divergence")))
 
 
@@ -3026,6 +3033,15 @@ def build_combined_model(output_path: Path | None = None,
         "generated_by": "generate_conformance_table.build_combined_model",
     }
     legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
+    for tab in tabs:
+        if tab["id"] == "tab-toolcalling-streamv1" and any(
+            "golden" in (cell.get("cmp") or {})
+            for row in tab["rows"] for cell in row["cells"].values()
+        ):
+            tab["candidates"].append({"key": "golden", "impl": "golden", "label": "GOLDEN (oracle)",
+                                      "label_html": "GOLDEN (oracle)", "default_bucket": "B",
+                                      "version": None, "parse_mode": "stream"})
+        group_null_variants(tab)
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
                              legend_html=legend_html)
 

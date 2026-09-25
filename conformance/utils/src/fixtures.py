@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+from null_cases import null_group
 from fixture_disposition import canonical_toolcalling_case_key
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
@@ -379,21 +380,21 @@ def _natural_sub_sort_key(sub: str) -> tuple[int, str]:
 
 def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
     """Sort known cases by semantic display group, future cases naturally last."""
-    display_order = _display_order(mode).get(sub)
+    display_order = _display_order(mode).get(null_group(sub) or sub)
     if display_order is not None:
         group_idx, sub_idx = display_order
-        return (0, group_idx, sub_idx, "")
+        return (0, group_idx, sub_idx, sub)
     num, suffix = _natural_sub_sort_key(sub)
     return (1, num, 0, suffix)
 
 
 def _subcase_band_class(mode: str, sub: str) -> str:
-    group_idx = _group_index_by_sub(mode).get(sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
+    group_idx = _group_index_by_sub(mode).get(null_group(sub) or sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
     return f"case-band-{group_idx % 2}"
 
 
 def _subcase_group_key(mode: str, sub: str) -> str:
-    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(sub, "other")
+    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(null_group(sub) or sub, "other")
 
 
 def _discover_sub_cases(mode: str, cases: dict) -> list[str]:

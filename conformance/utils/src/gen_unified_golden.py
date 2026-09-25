@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -1890,8 +1891,7 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
-# Both columns preserve one JSON type across families. Qwen/GLM use schema
-# typing for bare text; the other grammars encode the type in their native syntax.
+# Native grammars encode the oracle type; Qwen and GLM consult the request schema.
 _NULL_TEXT_INPUTS = {
     "qwen3": "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
     "glm47": "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
@@ -1900,7 +1900,7 @@ _NULL_TEXT_INPUTS = {
 EDGE += [
     (
         scenario,
-        description,
+        null_description(label, detail),
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -1909,28 +1909,33 @@ EDGE += [
             family: (
                 _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
                 else r_tool(family, "get_weather", "city", value, 0),
-                VLLM_UNCAPTURABLE.get(family, M),
-                M,
+                VLLM_UNCAPTURABLE.get(family, M), M,
             )
             for family in FAMILIES
         }),
-        {
-            family: [{"name": "get_weather", "parameters": {
-                "type": "object", "properties": {"city": {
-                    "type": ("string" if value is not None else
-                             "null" if family == "glm47" else ["string", "null"]),
-                }},
-            }}]
-            for family in FAMILIES
-        },
+        {family: [{"name": "get_weather", "parameters": {
+            "type": "object", "properties": {"city": json.loads(json.dumps(schema))},
+        }}] for family in FAMILIES},
     )
-    for scenario, value, description in (
-        ("arg_json_null", None,
-         'Every family must emit JSON null: {"city": null}. The request schema declares `city` as `string | null`, except GLM uses `null` because its nullable-string schema prefers string. Qwen3 and GLM use the same bare parameter text as 7-5; other families use native null syntax. Also covered in TOOLCALLING.streamv1.7-4.'),
-        ("arg_string_null", "null",
-         'Every family must preserve the string "null": {"city": "null"}. The request schema declares `city` as `string` (non-nullable). Qwen3 and GLM use the same bare parameter text as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.'),
-    )
+    for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
+
+EDGE.append((
+    "arg_null_mixed_labels",
+    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    ["I7"],
+    [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        "<tool_call>set_labels"
+        "<arg_key>label</arg_key><arg_value>null</arg_value>"
+        "<arg_key>note</arg_key><arg_value>null</arg_value>"
+        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
+    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+    {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
+     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+))
 
 
 def build_cases(fam):

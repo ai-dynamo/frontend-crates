@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from null_cases import NULL_VARIANTS
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -44,8 +45,8 @@ UNIFIED_TAX = {
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
-    "arg_json_null": (7, "4"),
-    "arg_string_null": (7, "5"),
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    "arg_null_mixed_labels": (7, "4.mixed_labels"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),

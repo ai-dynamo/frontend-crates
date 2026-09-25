@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from conformance.utils.tests.schema_oracle import matches_schema
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
@@ -17,29 +18,7 @@ from unified_tools import unified_tools
 
 
 def _assert_value(value, schema):
-    # This corpus declares only these JSON Schema keywords; fail on additions so
-    # a new constraint cannot silently bypass this producer-side check.
-    assert schema.keys() <= {"type", "properties", "items"}, schema
-    kind = schema["type"]
-    if isinstance(kind, list):
-        assert len(kind) == 2 and set(kind) == {"string", "null"}, schema
-        assert value is None or isinstance(value, str), value
-    elif kind == "object":
-        assert isinstance(value, dict), value
-        for key, item in value.items():
-            if key in schema["properties"]:
-                _assert_value(item, schema["properties"][key])
-    elif kind == "array":
-        assert isinstance(value, list), value
-        for item in value:
-            _assert_value(item, schema["items"])
-    elif kind == "null":
-        assert value is None, value
-    elif kind == "number":
-        assert type(value) in (int, float), value
-    else:
-        assert kind == "string", schema
-        assert isinstance(value, str), value
+    assert matches_schema(value, schema), (value, schema)
 
 
 def _assert_golden_schemas(cases, tools):

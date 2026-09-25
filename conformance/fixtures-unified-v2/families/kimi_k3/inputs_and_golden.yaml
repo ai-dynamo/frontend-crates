@@ -7871,7 +7871,7 @@ cases:
   qwen_string_null:
     lifecycle: active
     scenario: arg_json_null
-    description: The request tool schema declares `city` as `string | null`. GLM instead declares `city` as `null` because its parser prefers the string branch when given that union. All eight families must produce JSON `null`. Qwen3 and GLM use bare parameter text `null`; other families use native null syntax. This includes the former `qwen-1` case. Also covered in TOOLCALLING.streamv1.7-4.
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using a type array.'
     policy:
     - I7
     display_id: UNIFIED.7-4
@@ -7922,7 +7922,7 @@ cases:
   arg_string_null:
     lifecycle: active
     scenario: arg_string_null
-    description: The request tool schema declares `city` as non-nullable `string`. All eight families must preserve JSON string `"null"`. Qwen3 and GLM use the same bare parameter text `null` as 7-4; other families use native string syntax. Also covered in TOOLCALLING.streamv1.7-5.
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema declares `city` as non-nullable `string`.'
     policy:
     - I7
     display_id: UNIFIED.7-5
@@ -7941,6 +7941,521 @@ cases:
           properties:
             city:
               type: string
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_json_null_anyof:
+    lifecycle: active
+    scenario: arg_json_null_anyof
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.anyof
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="null"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_const:
+    lifecycle: active
+    scenario: arg_json_null_const
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema permits `city` to be null through an anyOf const-null branch.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.const
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - const: null
+              - type: string
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="null"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_nullable:
+    lifecycle: active
+    scenario: arg_json_null_nullable
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as string with nullable: true.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.nullable
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              nullable: true
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="null"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_oneof:
+    lifecycle: active
+    scenario: arg_json_null_oneof
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using oneOf.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.oneof
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              oneOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="null"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_const:
+    lifecycle: active
+    scenario: arg_string_null_const
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits the literal string "null" through const, or an integer.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.const
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - const: 'null'
+              - type: integer
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_enum:
+    lifecycle: active
+    scenario: arg_string_null_enum
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.enum
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              enum:
+              - 'null'
+              - null
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_anyof:
+    lifecycle: active
+    scenario: arg_string_null_sibling_anyof
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.sibling_anyof
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              anyOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_oneof:
+    lifecycle: active
+    scenario: arg_string_null_sibling_oneof
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.sibling_oneof
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type:
+              - string
+              - 'null'
+              oneOf:
+              - type: string
+              - type: integer
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_union:
+    lifecycle: active
+    scenario: arg_string_null_union
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits string or integer through anyOf, but excludes null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.union
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - type: string
+              - type: integer
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_untyped_branch:
+    lifecycle: active
+    scenario: arg_string_null_untyped_branch
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string; an anyOf branch without a type does not remove that requirement.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.untyped_branch
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              anyOf:
+              - minLength: 1
+              - type: 'null'
       chunks:
       - delta_text: <|open|>
       - delta_text: tools

@@ -2,12 +2,16 @@ provenance:
   status: captured
   origin:
     crate_version: 0.7.4
-    git_commit: a1a20a4ba57c3bef81eea8160507dbf206f214b2
-    source_sha256: b7f8c2e7c594ba473a74e19aae5af13f083399712a48f5940bb7d16974fb71ab
+    source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+    git_commit: e76882f2d26ac813055d147b3292364da342f40b
 document:
   mode: unified
 changes:
   retired__7_3:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: a65bfb3467013e75c26a53ab1ca362ab1cff6a85f8b05208d6c5cf9d6369e3ae
     observation:
       value:
         assembled:
@@ -38,10 +42,6 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: a65bfb3467013e75c26a53ab1ca362ab1cff6a85f8b05208d6c5cf9d6369e3ae
-    case_key: UNIFIED.7-3
   qwen_string_null:
     case_key: UNIFIED.7-4
     stimulus:
@@ -72,6 +72,256 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: b0111315a321565ea6f3d9ff89f66654eda4df62b736919afa5fefefce794f50
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-4.anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 350b36194fbc96a17607491eaec662b0451ff98678505efbe0234b3509c222e8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_const:
+    case_key: UNIFIED.7-4.const
+    stimulus:
+      ref: current
+      semantic_sha256: 898b188fa4953d4ef07262b729c19607a06c6be239260134eb2567c23e64c107
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-4.nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 97439846eea04d710b8116dd7c24fef75002800a1e50e79ffbba342386f888bc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-4.oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 6eb2e6f3eefa5f0d7059fc683a5f44462d8aa39afc912f5cd7771086767b6a28
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_const:
+    case_key: UNIFIED.7-5.const
+    stimulus:
+      ref: current
+      semantic_sha256: ceb880bb3fbd73b426e7d2809c65cf375db6b0c2d7cde3f07a5ef15c1e6bba37
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
+    stimulus:
+      ref: current
+      semantic_sha256: 8c3de860659452735e33de7e63f2e2317f37bef18ab7add459787d52286c1a46
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: a43d7c47af39892a0bd4bb481dd8a0dd32448fcfb76b5b8ab515db540c11a032
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 4dbef54a922b7266b898b06edb1ce17b78ddcd2ba7ab358461346455a65d070a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
+    stimulus:
+      ref: current
+      semantic_sha256: 6f058ed6a2c738df48c0c608a287dab439be6a5e27a2a6fd454833ac7f4b8bbc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-5.untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: e70d7c9532ef05e1e3cc16c23a58909bd2cfbf7bf116a87061ca68c0c3aa19e7
     observation:
       value:
         assembled:

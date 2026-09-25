@@ -26,6 +26,8 @@ SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from conformance.utils.tests.schema_oracle import matches_schema
+
 import pytest  # noqa: E402
 import yaml  # noqa: E402
 
@@ -376,6 +378,7 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
                         "input": case["input"],
                         "init": case["init"],
                         "golden": case["golden"],
+                        "tools": case.get("tools"),
                     },
                     sort_keys=True,
                 )
@@ -547,7 +550,7 @@ def test_schema_null_cases_keep_their_native_inputs_and_history():
 @pytest.mark.parametrize("scenario,value", [("arg_json_null", None), ("arg_string_null", "null")])
 def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
-    expected_type = "string" if value is not None else "null" if family == "glm47" else ["string", "null"]
+    expected_type = "string" if value is not None else ["string", "null"]
     assert case["tools"][0]["parameters"]["properties"]["city"] == {"type": expected_type}
     assert case["golden"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
     _assert_input_carries_events(family, scenario, case)
@@ -642,24 +645,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 83,
-            "deepseek_v41": 83,
-            "gemma4": 85,
-            "glm47": 83,
-            "kimi_k2": 83,
-            "kimi_k3": 91,
-            "muse_glimmer": 84,
-            "qwen3": 83,
+            "deepseek_v4": 93,
+            "deepseek_v41": 93,
+            "gemma4": 95,
+            "glm47": 94,
+            "kimi_k2": 93,
+            "kimi_k3": 101,
+            "muse_glimmer": 94,
+            "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 675
+    assert sum(per_family.values()) == 756
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 95
+    assert len(UNIFIED_TAX) == 106
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1058,8 +1061,7 @@ def _assert_input_carries_events(family, scenario, case):
                 properties = tool_schema.get("parameters", {}).get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    schema_type = schema.get("type")
-                    if value == "null" and (schema_type == "null" or isinstance(schema_type, list) and "null" in schema_type):
+                    if value == "null" and family in {"qwen3", "glm47"} and matches_schema(None, schema):
                         candidate["arguments"][key] = None
         else:
             candidates = []
@@ -1140,7 +1142,7 @@ def _assert_cross_family_contract(corpus):
             events = _logical_events(scenario, family, case["golden"])
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
-                expected_type = "string" if value is not None else "null" if family == "glm47" else ["string", "null"]
+                expected_type = "string" if value is not None else ["string", "null"]
                 assert case["tools"][0]["parameters"]["properties"]["city"]["type"] == expected_type
                 assert events == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
             if scenario == "tool_no_close":

@@ -210,6 +210,18 @@ suites:
           f: {desc: Numeric precision edge preserves integer-like literal, required: false}
           "4": {desc: Nullable string schema converts literal null text to JSON null, required: false}
           "5": {desc: Non-nullable string schema preserves literal null text as a string, required: false}
+          "4.anyof": {desc: "The request tool schema declares `city` as `string | null` using anyOf.", required: false}
+          "4.oneof": {desc: "The request tool schema declares `city` as `string | null` using oneOf.", required: false}
+          "4.nullable": {desc: "The request tool schema declares `city` as string with nullable: true.", required: false}
+          "4.const": {desc: "The request tool schema permits `city` to be null through an anyOf const-null branch.", required: false}
+          "5.union": {desc: "The request tool schema permits string or integer through anyOf, but excludes null.", required: false}
+          "5.sibling_anyof": {desc: "The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.", required: false}
+          "5.sibling_oneof": {desc: "The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.", required: false}
+          "5.untyped_branch": {desc: "The request tool schema requires string; an anyOf branch without a type does not remove that requirement.", required: false}
+          "5.const": {desc: "The request tool schema permits the literal string \"null\" through const, or an integer.", required: false}
+          "5.enum": {desc: "The request tool schema requires string alongside an enum containing string \"null\" and JSON null; the type excludes JSON null.", required: false}
+          "4.mixed_labels": {desc: Mixed nullable label and note with a literal string field, required: false}
+          "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
       "8":
         title: Narration around calls
         required: true
