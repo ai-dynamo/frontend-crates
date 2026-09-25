@@ -441,7 +441,7 @@ fn get_param_schema_type<'a>(
     let param = props.get(param_name)?;
     // Prefer JSON null for a bare null when the schema permits it. The wire
     // spelling can also represent a string; keep string preference for other values.
-    if raw.trim() == "null" && schema_has_type(param, "null") {
+    if raw.trim() == "null" && schema_has_type(schema, param, "null") {
         return Some("null");
     }
     // Prefer string in unions because JSON-looking text is ambiguous.

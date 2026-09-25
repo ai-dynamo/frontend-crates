@@ -398,6 +398,7 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
             if !matches!(case.init.tool_output_mode.as_str(), "" | "Native") {
                 continue;
             }
+            let case_tools = common::parse_unified_tools(&case.tools);
             *coverage.entry(file.family.clone()).or_default() += 1;
             let expected: Vec<_> = case
                 .golden
@@ -405,7 +406,7 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                 .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
                 .collect();
             for (label, chunks) in splittings(&case.input) {
-                let mut parser = create_tool_parser_for_family("deepseek_v4", &tools()).unwrap();
+                let mut parser = create_tool_parser_for_family("deepseek_v4", &case_tools).unwrap();
                 let mut result = ToolParseResult::default();
                 for chunk in chunks {
                     result.append(
