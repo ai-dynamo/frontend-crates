@@ -489,14 +489,18 @@ impl DecodeStream {
         prompt_token_ids: &[TokenIdType],
         skip_special_tokens: bool,
     ) -> Self {
+        // Earlier prompt tokens are never read by incremental decoding. Keep the
+        // same context suffix and rebase its offsets before copying it.
+        let context_start = prompt_token_ids
+            .len()
+            .saturating_sub(INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET);
+        let prompt_token_ids = prompt_token_ids[context_start..].to_vec();
         let num_input_tokens = prompt_token_ids.len();
-        let prompt_token_ids = prompt_token_ids.to_vec();
         Self {
             tokenizer,
             skip_special_tokens,
             all_token_ids: prompt_token_ids,
-            prefix_offset: num_input_tokens
-                .saturating_sub(INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET),
+            prefix_offset: 0,
             read_offset: num_input_tokens,
             has_emitted: false,
         }
@@ -604,6 +608,52 @@ mod decode_stream_unicode_tests {
     }
 
     impl super::traits::Tokenizer for RewritingTokenizer {}
+
+    #[test]
+    fn prompt_suffix_preserves_decode_inputs_and_output() {
+        let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(
+            super::HuggingFaceTokenizer::from_file(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/minimal-bpe/tokenizer.json"
+            ))
+            .unwrap(),
+        );
+        for prompt_len in [0usize, 1, 4, 5, 6, 775_168] {
+            let prompt: Vec<_> = (0..prompt_len)
+                .map(|index| 1 + (index % 22) as u32)
+                .collect();
+            for skip_special_tokens in [false, true] {
+                let mut stream = DecodeStream::new(tokenizer.clone(), &prompt, skip_special_tokens);
+                // Reconstruct the previous full-prompt state as a parity oracle.
+                let mut full = DecodeStream {
+                    tokenizer: tokenizer.clone(),
+                    skip_special_tokens,
+                    all_token_ids: prompt.clone(),
+                    prefix_offset: prompt_len
+                        .saturating_sub(super::INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET),
+                    read_offset: prompt_len,
+                    has_emitted: false,
+                };
+                assert!(stream.all_token_ids.capacity() <= 5);
+                for token in [5, 9, 12, 12, 13, 0, 1, 17, 13, 14, 12, 8, 2] {
+                    assert_eq!(
+                        &stream.all_token_ids[stream.prefix_offset..stream.read_offset],
+                        &full.all_token_ids[full.prefix_offset..full.read_offset],
+                    );
+                    assert_eq!(
+                        &stream.all_token_ids[stream.prefix_offset..],
+                        &full.all_token_ids[full.prefix_offset..],
+                    );
+                    let actual = stream.step(token).map_err(|error| error.to_string());
+                    let expected = full.step(token).map_err(|error| error.to_string());
+                    assert_eq!(actual, expected, "prompt length {prompt_len}");
+                    if actual.is_err() {
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     #[test]
     fn allows_boundary_recovery_before_generated_text_is_emitted() {
