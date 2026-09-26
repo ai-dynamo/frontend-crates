@@ -439,6 +439,11 @@ fn get_param_schema_type<'a>(
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
+    // Prefer JSON null for a bare null when the schema permits it. The wire
+    // spelling can also represent a string; keep string preference for other values.
+    if raw.trim() == "null" && schema_has_type(param, "null") {
+        return Some("null");
+    }
     // Prefer string in unions because JSON-looking text is ambiguous.
     if schema_has_type(param, "string") {
         return Some("string");
@@ -626,6 +631,36 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn nullable_string_union_preserves_json_null() {
+        let tools = vec![ToolDefinition {
+            name: "set_labels".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "label": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                    "note": {"type": ["string", "null"]},
+                    "literal": {"type": "string"}
+                }
+            })),
+        }];
+        let message = concat!(
+            "<tool_call>set_labels",
+            "<arg_key>label</arg_key><arg_value>null</arg_value>",
+            "<arg_key>note</arg_key><arg_value>null</arg_value>",
+            "<arg_key>literal</arg_key><arg_value>null</arg_value>",
+            "</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_glm47(message, &get_test_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 1);
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(
+            args,
+            serde_json::json!({"label": null, "note": null, "literal": "null"})
+        );
     }
 
     #[test]
