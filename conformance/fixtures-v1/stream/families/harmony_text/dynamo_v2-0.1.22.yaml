@@ -1,0 +1,114 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: harmony_text
+capture: dynamo_v2-0.1.22
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.10.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.13.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.2.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.3.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.4.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.5.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.50.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.6.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.7.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.8.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+  TOOLCALLING.streamv1.9.yaml:
+    family: harmony_text
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.1.22
+views:
+  python:
+    base: dynamo_v2-0.1.11.patch1
+    changes:
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: 9674a0e3762ddce05a1ab90a3069b9d1b00f97b1ec2a2abbcdeb2ab7877f2fb7
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 892a6be050a5cecaedc435785fef0391fb4b246f94bdd3d81ada4d1f63718eda
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 37fbb893e2a533cf25459cd01ad956027cb88b326b11665c4a1e2061e00b4d9d
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 5a2c03335812eff8620ef3a0e919d05a4d5a6f3195117053308e77464e3609a6
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 952b164d16dcc7d3409ed3056cf0557cbb99c8816ad65715a173629a76241dfc
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+    annotations:
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+  rust:
+    base: dynamo_v2-0.1.11
+    changes:
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]':
+        observation: 9674a0e3762ddce05a1ab90a3069b9d1b00f97b1ec2a2abbcdeb2ab7877f2fb7
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 892a6be050a5cecaedc435785fef0391fb4b246f94bdd3d81ada4d1f63718eda
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: 37fbb893e2a533cf25459cd01ad956027cb88b326b11665c4a1e2061e00b4d9d
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 5a2c03335812eff8620ef3a0e919d05a4d5a6f3195117053308e77464e3609a6
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: 952b164d16dcc7d3409ed3056cf0557cbb99c8816ad65715a173629a76241dfc
+        producer: 44d6ca03babbb9ea0ada885aae70347d36a9ffca21ca0bee94fc9c185f6ef227
+    annotations:
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.3.yaml","TOOLCALLING.streamv1.3"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}

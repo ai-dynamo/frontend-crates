@@ -1,0 +1,30 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: qwen3_coder
+capture: vllm_python-0.26.0
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.4.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.5.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.8.yaml:
+    family: qwen3_coder
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+views:
+  python:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}

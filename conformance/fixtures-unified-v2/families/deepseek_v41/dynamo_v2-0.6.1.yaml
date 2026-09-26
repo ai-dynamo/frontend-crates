@@ -1,0 +1,13 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.6.0
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.6.1
+    git_commit: 40154eee02c5cf41596b764192e17b1564eef92d
+    source_sha256: 65b6e028637ed1b7dbd47d4ff52b989be343ba94d44becca626d5292de62078d
+document:
+  mode: unified
+changes: {}
+metadata_changes: {}
+document_overrides: {}

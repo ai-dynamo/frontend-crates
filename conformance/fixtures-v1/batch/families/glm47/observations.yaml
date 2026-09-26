@@ -1,0 +1,4037 @@
+schema: bound-observations-v1
+observations:
+  649727ca150c054b8f59a2cc48f927e843b696d02d21278e4cd018f8356a0958:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  e1fdaab9330584f1c3884b635b0700d622194fcf4fda891096a5f2283d81a15c:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  507d29c4e1d31b027a5719611329a858072e75c22b4b9503b6bd2ed732ba1742:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  fea9aa01d50ac20422b8a65474ce4f0ea0f5aceb62cf685c041302419b765ce6:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  8823b71182af4f37873a06193b0d06c04d76c29fb089d82b13cb068bf7134b45:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  6d60f0332944392f3382d162a7743562b8c6c9e197f8692ff0061d152f72f6e0:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  ef2a8e4991d9df0dea8975d43ed1aa9f70ce7f238006aa1316276c848b9e184f:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  59a6f78c7aea87edeec3ec44b88addd30fc78b54ac8817535980227beb898c08:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  f68296cd31018f0c41765360bb680da59f90cba3388e40b746e4a4518cfa4cdd:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  ed140d03f72f47722d28d296dc923fcdf2392ff310ad7be3c400d8463bf7ac64:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  b6fb18ef35967dd96a1f35481aca0549adc1008a0668ef36ecc8158e6d62d1cc:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ''
+  b57da12442d9a79ddc6de25c2d8b33a5bf1b3b00b29c8a26f9222865d3d3e7a7:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+  4afd6041bdc1a4effb6a6b6a2abdc972a9150477d12b52f248e4db1e7c8c949b:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  5485b1dfbc63a49ccfcbbbac0aa8cd668e8e16ac6229370d68ae796d65a0f4f6:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  ec273663eba15f8acb43af04ccce93067cc2ae63b95bd4482b77ff5cf95c4df9:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: book_flight
+            arguments:
+              first_class: true
+              passengers: 2
+              destination: Paris
+          normal_text: ''
+  bb03ed594074164192ebee37c3361334c8b2e7d507692384bc335c79164a152d:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  db4c9b71bbf5effd12e8ce5b01a616983f6dec661ca062fce9a8ac6dcb66d4e6:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  96a77737cb98ea4ea884cc7cc34f41311eadbc9c34364301e5c338d43f2edb91:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  9014524ff257bda485aa205be6758c63190e7369d7c96df98c0f1dc37061324e:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  b004822c4e4675e1d2b472f023be972bd6476660d45ee335d11f8b35d6b35ba4:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  46071c0725a1e54e96f4ee3cc1a50574b7f4056b712f5a09abab7ed4ac7de532:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  d68bdbf9efbc3b45c79a5d7f5895372fe85277ec71fef5e9cfa63b7d98944ad9:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  bc85399e8e069521b9aeb79f697a8d5ebeba066633621301f8e26b16d9e10794:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  184478940f1b51ead899e4a5b8f499e7762352d75759c856e9c2116290e8c4f5:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  e5e1689b14fcb22cfbefe5976769e21699edce3f5df7629af88f79f7606f44cb:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  c8a4068ef77b9a2c824f12a1d7cd5d0eaa0c6d6844e202330e5695e908e826eb:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  31364dc4805685710960c8a6717b87c83b3b49efd82ba5a05febeb3c7759ad7e:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: '   '
+  f07d718e30b0e831dcf9a28d4aaac7f56fca5e2417b5a2984a05aa0ef19ca9df:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  c979e89f1879e3a77814e8bda2fcd2d34132e1c97f180af75434518c34e6533a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>location</arg_key>
+      - delta_text: <arg_value>
+      - delta_text: NYC
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  4d450797f8c14f6b028aaeee93aaa8c3c45d45695e7953cafbf0221419bdd513:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: l>get_w
+      - delta_text: eather<arg_ke
+      - delta_text: y>loc
+      - delta_text: ation</arg_key><a
+      - delta_text: rg_
+      - delta_text: value>NYC
+      - delta_text: </arg_v
+      - delta_text: alue></tool_c
+      - delta_text: all><
+      - delta_text: tool_call>get_tim
+      - delta_text: e<a
+      - delta_text: rg_key>ti
+      - delta_text: mezone<
+      - delta_text: /arg_key><arg
+      - delta_text: _valu
+      - delta_text: e>EST</arg_value>
+      - delta_text: </t
+      - delta_text: ool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  b0c44522d0b9267aa43a71bdb02bf72be174c7f5b47460647322b01a6dbf2ecc:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>get_weathe'
+      - delta_text: r<arg_key>location<
+      - delta_text: /a
+      - delta_text: rg_
+      - delta_text: key><
+      - delta_text: arg_value>N
+      - delta_text: YC</arg_value></too
+      - delta_text: l_
+      - delta_text: cal
+      - delta_text: l>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  8034683a823b28d6e214e70ff2cd55318bf354db9e9e520281e872c4124ad19a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  c641b345bf0c2d0e49830c48827e40dfafb3067cb3395ec1339024d26f283d84:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key
+      - delta_text: '>location</arg_key><arg_value>N'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  db10da5a24e6a2559321afc1a8f8cee315c95f5c42c18076ea767962c852dfd9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call></tool_call></tool_call>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        dynamo_v1:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  fc904182980d8097e681e7445bf41f1dee6c9e9998e3b6adb2898ffb6fbb7c2e:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        dynamo_v1:
+          calls: []
+          normal_text: ''
+  15704f432920cf0225f942bbcf58c8263010a3cf3d7e9b6dc5bb7663e5e454b8:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  6ac69d95b3f59f3a238b14167df186a23eb5cbb4641f5f6527d958a5d8903111:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+          explanation: SGLang glm47 preserves trailing prose after the last </tool_call>; Dynamo and vLLM drop it
+  35af68c561b593747c5e26b7c08c2a06c6c63a9f0e51114875794dbac2567f01:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  ec76f6e518c6e1f30960bf4cb631d27731e20facfd6cb5dd0c34bb4656b5a037:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  1c96446b62561d0e15cd8435d5006949fff13cacd3d5afe15b895452ec259c54:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  d080aa0b7f73401d1622d163dc4316d070cd8237e72bd4fae60af162445b187a:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+          explanation: vLLM and SGLang preserve the truncated <tool_call>... markup as content on missing-end-token recovery; Dynamo drops to keep wire tags out of message.content
+  8d1f38e2933d9d54dc13a7c70d360e6bb21d8f01e167e2b4dfbf4ba0c576fe9a:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo recovers the complete bare call body and strips the orphan close marker.
+          calls: []
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  04f2d7bb7a30218489b78e95f05b6ecbd4adf62d132d23f7a32cb1cb12f20b33:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+          explanation: vLLM and SGLang preserve the truncated <tool_call>... prefix as content on mid-arg-value truncation; Dynamo drops to keep wire tags out of message.content
+  88a4ba3902987286467fed678433d88a94fa5cd2580aa973c4c4a566668b7761:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+          explanation: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo and vLLM both drop it
+  5404bb4f92f6018172a90c90b0e5c99171e978171841fc14c292695ecd7f063e:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+          explanation: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo and vLLM both drop it
+  d31b19db75fbd12385c2392913aa92d41437ec7d287163e5d690e36f6c63c696:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+          explanation: vLLM and SGLang preserve the bare GLM call before the first <tool_call> as content; Dynamo recovers it as the first structured call before parsing the wrapped call.
+  e4b982ed8b4aae72f76748691cee36346cc23dcc68dbd3fec457f7664ad4995c:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete bare call body, and strips the orphan close marker.
+          calls: []
+          normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  21ad06c1b9c873a6733745400e0a5030f0ce148560d259535a8b1c1b7cd94e4c:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  4391b21a1f9df340a94c476e1d30fedba9fd0533bd46f8bfdaca0ff95d52c17c:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+          explanation: SGLang glm47 rejects whitespace between the function name and </tool_call> (`get_time `), emitting no calls; Dynamo and vLLM both tolerate it and extract the empty-args call
+  02c0265c824bc2abb25a8c7113c029d67145d0ff0380c690322f3ad9c08d5151:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              first_class: true
+              passengers: 2
+              destination: Paris
+          normal_text: ''
+  53de748ab0d4608fe28112878826a9b7db2e3625e0543853df0fed30389cd006:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  5bb268e22458e277ce25bb26d9d61bbc038582034ba3f28a282c4ca310471067:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  8240a95488d7653114004067fcc38b21813be35e7aa680fb4941012244db0a75:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+          explanation: SGLang glm47 trims trailing whitespace before the first <tool_call>; Dynamo and vLLM keep it verbatim
+  931b2f6363f8d4ab0fc148b9273d0c7b8428ebb1bab372af7b124141a29dd540:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: Let me know if you need more.
+          explanation: SGLang glm47 preserves trailing normal_text after the last </tool_call>; Dynamo and vLLM drop it
+  f8ea3da1138896229296a4baed37e6d0e787723853ba3e81c14edf2819a8229f:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+          explanation: SGLang glm47 concatenates the prefix and trailing prose; Dynamo and vLLM drop the post-wrapper text
+  4b5fa6e933d57a7d1cdbaeb796cf9aeda4d83dc469c20f0c567bfe1385ee311a:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: I will check the weather.  Then check LA weather.
+          explanation: SGLang glm47 concatenates inter-call narration and trailing prose; Dynamo and vLLM only emit the prefix before the first <tool_call>
+  f8247d27c35f51e8b63a34e26b127a99a543a2951d4008c05582ae1f16008542:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  0ce517d18861cca62a864ca286a6652435a5994012d705dcf27aeada7743909d:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  09bdcde3920a2b6842bcfe5a32732c290b6b03d13408656e7a006b08fe1c7323:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  f83044ac149107f68be7961e9682f1570119da2f0d033e76cadebd1aa2872d43:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  fb44dbe1a1b33db5e3d095946ad04aeb089107627b385cfa31a28260e4ba5204:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: ''
+  441e145ae662180147284f60f5cd6c02d0f27bb65f12258c16be6d81b4a70504:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: '   '
+  5baf0ba7e9b42df6c98daa787ff376e4265a729a27e1212cf464c3edaba7c941:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  ecc151e3700b0cea333a8767bf14812a8e912483001e3de2e896571ab57059d6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>location</arg_key>
+      - delta_text: <arg_value>
+      - delta_text: NYC
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  12f178ef17ce56f0bd5d5b09d3ec8e7e8d5f228f9aede1d7f78407018049a108:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: l>get_w
+      - delta_text: eather<arg_ke
+      - delta_text: y>loc
+      - delta_text: ation</arg_key><a
+      - delta_text: rg_
+      - delta_text: value>NYC
+      - delta_text: </arg_v
+      - delta_text: alue></tool_c
+      - delta_text: all><
+      - delta_text: tool_call>get_tim
+      - delta_text: e<a
+      - delta_text: rg_key>ti
+      - delta_text: mezone<
+      - delta_text: /arg_key><arg
+      - delta_text: _valu
+      - delta_text: e>EST</arg_value>
+      - delta_text: </t
+      - delta_text: ool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  cf804f8b24a186b1176485d8ad9e90702801fab34a1e7bfa31d355fb33ae90d1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>get_weathe'
+      - delta_text: r<arg_key>location<
+      - delta_text: /a
+      - delta_text: rg_
+      - delta_text: key><
+      - delta_text: arg_value>N
+      - delta_text: YC</arg_value></too
+      - delta_text: l_
+      - delta_text: cal
+      - delta_text: l>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  f7ee2977cde3a2848cfb475ad2f86b46a6a07cf420d509a095dd41c92cdf16f8:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NYC"'
+          normal_text: ''
+          explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). SGLang''s XML-to-JSON state machine (`glm47_moe_detector.py:377-407`) closes the incremental JSON string with `"` when `</arg_value>` is matched but emits the closing `}` only from `_finalize_tool_call` on `</tool_call>` (line 729); on EOF neither flush path runs so the streamed args buffer is shipped as `{"location": "NYC"` (open object). Dynamo drops the truncated call instead of emitting a malformed-JSON args payload (`glm47_parser.rs:194-215`, `allow_eof_recovery=false` production default).'
+  a439ea8f2003294f35639d72665325ce81cd3d691c0045a4f94c6604b8f3aaf4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key
+      - delta_text: '>location</arg_key><arg_value>N'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "N'
+          normal_text: ''
+          explanation: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). The stream ends mid-`<arg_value>` with `N` and never delivers `</arg_value>` or `</tool_call>`; SGLang's state machine (`glm47_moe_detector.py:419-428`) has already opened the JSON string and emitted `N` incrementally, but neither the closing `"` (gated on `</arg_value>`, line 396) nor `}` (gated on `</tool_call>`, line 729) is ever flushed. Dynamo drops the truncated call (`glm47_parser.rs:194-215`, `allow_eof_recovery=false` production default).
+  ff5c9a30d5bf4b6b5fc9653ccf2c5cc20b3109b802149b0b5fa33ba45b365686:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call></tool_call></tool_call>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        sglang_python:
+          calls: []
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+          explanation: SGLang strips orphan GLM close markers but does not recover the complete bare call body; Dynamo emits the recovered call.
+  8939d19cdd90f5ebdb5001320b20a250e27ef57e1abaea487814fbd3bdf40424:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  64b4cc805668232c74677e5b5f4255ad19c656f5e6d5cc72cd23dcbc72303878:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+  a8f450e54eebaee93f86be2c9e65a0e15705130f81efbbc406bafa45e5994b30:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  6460d6caf597993dfeadbf40cb5fd923fb7d4381042b4a888b93cc73ffb74eac:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: <arg_key>location</arg_key><arg_value>NYC</arg_value>
+            arguments: {}
+          normal_text: ''
+          explanation: vLLM treats the leading <arg_key>...</arg_value> bytes as a function name when no name precedes the first arg_key; Dynamo and SGLang both drop the malformed call
+  99ed1d5804944043a604e483a356838f852fc2fda3e96680f8328d1ed53aacde:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  6fb7f135d6385d59c2021e15f2d37ffd9a789e934779a78cf628e451eddc526d:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+          explanation: vLLM and SGLang preserve the truncated <tool_call>... markup as content on missing-end-token recovery; Dynamo drops to keep wire tags out of message.content
+  df4f0a48378108083684c19adf9b02f46319e7622424f0363ae555a1070eec77:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo recovers the complete bare call body and strips the orphan close marker.
+          calls: []
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  b7cc3475e21a4f814846ebcd97d2b7373a48f63fe7a5ec3e726fe92ccd0de447:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+          explanation: vLLM and SGLang preserve the truncated <tool_call>... prefix as content on mid-arg-value truncation; Dynamo drops to keep wire tags out of message.content
+  ce6587825a1fa8f642d996b492af639f8490b94c5ebe64fd9b8edb68190aa943:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  20697bca3f4ee52f1f53fc9e39098557b4495bdc7bd3c18aca8da4ab9f046bcf:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  5c1367cf43c4f6778c9d5fe63dcef4c661a47e09f399a5e99127c0e7f9624767:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+          explanation: vLLM and SGLang preserve the bare GLM call before the first <tool_call> as content; Dynamo recovers it as the first structured call before parsing the wrapped call.
+  d4b46a044ccbd169eca9a2265284993000f28d143959e9e0f1eac3c59f97613e:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          explanation: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete bare call body, and strips the orphan close marker.
+          calls: []
+          normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  7b61c3e6b9475e7b6f569387ff3dda9e60470119003931f94756fe4cf09f57ca:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  a96e1a42c6b2529a68203ae0fe5a7747c471a9d98df6ce5dcff7d7c542412e99:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+  4fde29394a6b5a76230ba3dc010dcdfe0ffedb58e075b4d4b257da5ab69d290d:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              first_class: true
+              passengers: 2
+              destination: Paris
+          normal_text: ''
+  d713b8de40c3ce2f1a082b91b4e732a9eec7826cde73457cea6198c2ca60a1e8:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+  05217d9ebdc91afe04cb7a5b9253a8d79761fd7e951efe28d1b017bcb3f88fc4:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  192b610ed896851ed56f66f0abfbee9c3c915d19b473f93027c2c1ffec03ea5b:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  bdbbc61ef60da97442f865a5cd898b00d9c8bd98bf87436e4ccbbcd3d73f995a:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  47dfaf90edce798e193bb2630afa871a0b61dedf978876a1f37ce1ead54d35f6:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+  dee001d2415de1193974a454af49865741b777c00127a208e75d3a7f628a6b1e:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  42b7125308c3d9baa161ed42022bbf5eb946a925d5bab50b1ec31a5315f1fb03:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  5982b2b5e8415db2c485c055c0dcec86f4ce1c9ae25fb3584ea7cc4ac691af12:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+  88e40e938783b92686ac1cbe9b77a87924f914142fbaeb9c6ba36cc319f29698:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+          explanation: vLLM forwards the unknown GLM tool name, while Dynamo validates against the supplied tools and drops the unparseable block.
+  296deda1ca91993aa672e27ef51fe9710e185803291c22ff28faa82b76c3a018:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+  37a26afc51410237e11ceca2a2476116d650dcc96fe4ef7e97bd8abd2c856094:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  a97dc2cc669f0763f978a8d877d144c840075c279b64b64bbe4197ed23a5c3cf:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: '   '
+  851f6be9ecf3969134eb68de9a8b116487127118fa6a6c40a5ebaa1bfa67d0d6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  07ad9880d4f34241f93cd0619b8711198062b23f41a8c86bdd52ff7992b2dfd6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>location</arg_key>
+      - delta_text: <arg_value>
+      - delta_text: NYC
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  bb28e2ddc9456a100378eaa6d6a8a108663e6daad9a0b1a5c59c08f6e95ffaa2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_cal
+      - delta_text: l>get_w
+      - delta_text: eather<arg_ke
+      - delta_text: y>loc
+      - delta_text: ation</arg_key><a
+      - delta_text: rg_
+      - delta_text: value>NYC
+      - delta_text: </arg_v
+      - delta_text: alue></tool_c
+      - delta_text: all><
+      - delta_text: tool_call>get_tim
+      - delta_text: e<a
+      - delta_text: rg_key>ti
+      - delta_text: mezone<
+      - delta_text: /arg_key><arg
+      - delta_text: _valu
+      - delta_text: e>EST</arg_value>
+      - delta_text: </t
+      - delta_text: ool_call>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+  1fa27fc9f697911e11fe0131ff221225063252bd6b6a1f68c96b9ed9d38ead81:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <t
+      - delta_text: ool
+      - delta_text: _call
+      - delta_text: '>get_weathe'
+      - delta_text: r<arg_key>location<
+      - delta_text: /a
+      - delta_text: rg_
+      - delta_text: key><
+      - delta_text: arg_value>N
+      - delta_text: YC</arg_value></too
+      - delta_text: l_
+      - delta_text: cal
+      - delta_text: l>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  23e222704c5453e9e33f8272ef5d4e1fd2abf32a2107cde77a5d26248ede249a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NYC"'
+          normal_text: ''
+          explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM''s `_build_args_json_so_far` (`glm4_moe_tool_parser.py:331-417`) builds the args JSON from completed `<arg_key>/<arg_value>` pairs and only appends the closing `}` when `is_complete=True`, which `_extract_tool_call_regions` (line 293) sets after observing `</tool_call>`. On EOF mid-`<tool_call>`, `is_complete=False`, so the streaming diff ships `{"location": "NYC"` with no closing brace. Dynamo drops the truncated call (`glm47_parser.rs:194-215`, `allow_eof_recovery=false` production default). Matches SGLang.'
+  d030f262c5a4dba1d69980fb978d4408d99c5f5203800e98aa16eefaeb44182f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key
+      - delta_text: '>location</arg_key><arg_value>N'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "N'
+          normal_text: ''
+          explanation: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM''s `_build_args_json_so_far` (`glm4_moe_tool_parser.py:331-417`) detects a partial `<arg_value>` (`has_partial_value=True`, line 365) and takes the string-type partial branch at line 403 (`parts.append(f''{key_json}: "{escaped}'')`), opening a JSON quote without closing it; the wrapping `{`/`}` follow the same `is_complete=False` path (the `</tool_call>` end was never observed), so the streamed args end at `{"location": "N` with no closing `"` or `}`. Dynamo drops the truncated call (`glm47_parser.rs:194-215`). Matches SGLang.'
+  a1227481daf29ecb8268a884be0a4effa785f8cf80bdd2c8dd6675e9b8870462:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call></tool_call></tool_call>
+      - delta_text: ''
+        finish_reason: length
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call></tool_call></tool_call>
+          explanation: vLLM preserves the raw GLM call body as content when the opening <tool_call> marker is missing; Dynamo recovers the complete bare call body and drops close-marker spam.
+  8f1fb936e3e3c1b9568decfcf4e1e2aa13419b71a30cfdab1b85bd61e379a449:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Checking:'
+  2b20357721384acd4c8252831cd6b60f10fc5f72acb3739929ce6b592257464f:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  cdad815e38959bee6f2583e5e87bab8c667df078ec3c770d4bdfdaf1b329eaf2:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+  561193c0c1ee64adbed5b8dc98202ee8662d8b73d7476c757052ef127a6f5d1d:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+          normal_text: ''
+  a1b5b9ba3b2a4cb141bab5f31e490b8a8875ac4439f287c629dc4fe0a961a224:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  8255d18a1b06c1542c5c8d7bb6dd7babb33be41cfe9b6c1f9279e8c05ee7d8b1:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: {}
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  2ceee6642cbc2bdea6d0847b4497606c4532e1fd6ebdb9f872b83682b2507f1f:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740992
+          normal_text: ''
+  7e469f8dca86b99d1d1094b7cdcdcc576e0503cd43e68bb679f3272eb1f38040:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  5500f23b89b213cf66bba8decdd395b1ecd06e985ff4ff6b3e51f1d97ba022c5:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.
+  659eedafd1c638c079d76f5764314da4ea256013eb2ed1d90b0c08f6aaf0b1e2:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: I will check the weather.
+  45fdacdb17ab6ea1e64b57b782e459df4ab6ed0e342c3a46723106b5234e1a43:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls: []
+          normal_text: ''
+  8e8b491c2c2cda007f8faa2ddb9f78db2c94d92fa78c623b41ef3790e3af845c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: stream
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NYC'
+          normal_text: ''
+  ac0f37714a47717a4602a92ccccac6c8c1c8bab715706146438c2fdbb40d2dc3:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:'
+producers:
+  6049f1cc47dd0528748452cc242dfe7ede7688c36380b3ca195ddad1c854f0e4:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: glm47
+      mode: batch
+    provenance: null
+  e3da78e3791d31585221123a3cf6052908f46f062358f2c965086f7948003b96:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: glm47
+      mode: stream
+    provenance: null
+  d5bff64f338ecaf5fd8b9d31330c4bedd98d4413f422def7a7d59ee7621d7a7a:
+    capture: dynamo_v1-5.0.1
+    document:
+      family: glm47
+      mode: batch
+    provenance: null
+  f06dba821a76004bc4b587676fe9332781786115c182f03bddedf5fdd024db6f:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: glm47
+      mode: batch
+    provenance: null
+  88ad787ec2b275b6bc4fbc962728f13c3982fb95d6f5a28a95c362c6babfadd7:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: glm47
+      mode: stream
+    provenance: null
+  7f458ed39414e395d08c80e68546fd7b008590e66ad20d18852acf8091cd93c8:
+    capture: vllm_python-0.23.0
+    document:
+      family: glm47
+      mode: batch
+    provenance: null
+  9969c683f61a287f2799b5cc9e192ca02d722b7dcd2da6ee35d997f595f96506:
+    capture: vllm_python-0.23.0
+    document:
+      family: glm47
+      mode: stream
+    provenance: null
+  4e934ff43930b548a2d2eb974354038744f9473ce146487794cb0a7578012850:
+    capture: vllm_python-0.24.0
+    document:
+      family: glm47
+      mode: batch
+      captured_with:
+        vllm_python: 0.24.0
+    provenance: null
+  a507956a7eedd17972076cbbabc9c9569f5ad432550a0b18d5b40e2d90eee4e2:
+    capture: vllm_python-0.24.0
+    document:
+      family: glm47
+      mode: stream
+      captured_with:
+        vllm_python: 0.24.0
+    provenance: null
+  e9f35efe28d2f2f154b0fbcc4632df2c7c04f2f71bd27a4a9aa26656583f1e83:
+    capture: vllm_python-0.25.1
+    document:
+      family: glm47
+      mode: batch
+      captured_with:
+        vllm_python: 0.25.1
+    provenance: null

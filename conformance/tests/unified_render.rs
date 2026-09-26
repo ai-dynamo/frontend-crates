@@ -16,15 +16,16 @@
 //! Output: `conformance/unified/unified_results.yaml`. The exploder and packager turn that
 //! feed into the committed `dynamo_v2-<ver>` shard, which is what the
 //! CONFORMANCE_v2.html tab actually reads — the tab never runs these parsers. The
-//! `committed_dynamo_capture_matches_the_live_parsers` test below fails if that
-//! shard drifts from the parsers.
+//! historical regression test below replays recorded requests against today's
+//! parsers. Explicit current-source verification also requires source evidence.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    UnifiedParserExt, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    Tool, UnifiedParserExt, assemble, create_tool_parser_for_family,
+    create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -503,7 +504,7 @@ fn render_unified_conformance_html() {
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
-    let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
+    let vllm_live: BTreeMap<(String, String), (String, Vec<Ev>)> = {
         let froot = common::ensure_fixtures().join("unified");
         let mut m = BTreeMap::new();
         // Shards key by TAXONOMY id (`UNIFIED.30-1`); the golden keys by SCENARIO
@@ -512,24 +513,28 @@ fn render_unified_conformance_html() {
         // sits right there, which is how this first went wrong.
         let mut by_tax: BTreeMap<(String, String), String> = BTreeMap::new();
         for entry in glob_yaml(&froot.join("inputs")) {
-            if let Ok(doc) = serde_yaml::from_str::<InputDoc>(
-                &std::fs::read_to_string(&entry).unwrap_or_default(),
-            ) {
+            if let Some(doc) = common::read_capture_fixture::<InputDoc>(&entry) {
                 for (cid, c) in doc.cases {
                     by_tax.insert((doc.family.clone(), cid), c.scenario);
                 }
             }
         }
-        if let Some(d) = common::version_dirs_ascending(&froot, "vllm_rust-").pop() {
-            for entry in glob_yaml(&d) {
-                if let Ok(doc) = serde_yaml::from_str::<CaptureDoc>(
-                    &std::fs::read_to_string(&entry).unwrap_or_default(),
-                ) {
+        let captures = common::historical_capture_dirs(&froot, "unified", "vllm_rust");
+        for d in &captures {
+            for entry in glob_yaml(d) {
+                let relative = entry.strip_prefix(d).expect("capture family path");
+                if common::latest_family_capture(&captures, relative) != Some(d) {
+                    continue;
+                }
+                if let Some(doc) = common::read_capture_fixture::<CaptureDoc>(&entry) {
                     for (cid, c) in doc.cases {
                         if let Some(sc) = by_tax.get(&(doc.family.clone(), cid)) {
                             m.insert(
                                 (doc.family.clone(), format!("UNIFIED.{sc}.{}", doc.family)),
-                                c.assembled,
+                                (
+                                    d.file_name().unwrap().to_string_lossy().into_owned(),
+                                    c.assembled,
+                                ),
                             );
                         }
                     }
@@ -649,7 +654,7 @@ fn render_unified_conformance_html() {
                 .unwrap_or_default();
             let vlive = vllm_live.get(&(file.family.clone(), id.clone()));
             let (vgot_html, vverdict, vclass_final) = match vlive {
-                Some(ev) => {
+                Some((_identity, ev)) => {
                     let matches = ev == &case.golden;
                     (
                         events_html(ev),
@@ -670,8 +675,19 @@ fn render_unified_conformance_html() {
                     "NO-DATA".to_string(),
                 ),
             };
+            let vlabel = vlive.map_or_else(
+                || "vLLM Rust (unavailable)".to_string(),
+                |(identity, _)| {
+                    format!(
+                        "vLLM Rust {} (captured)",
+                        identity
+                            .strip_prefix("vllm_rust-")
+                            .expect("vLLM capture identity")
+                    )
+                },
+            );
             let vcell = cell(
-                "vLLM Rust 0.25.1 (LIVE)",
+                &vlabel,
                 &case.input,
                 &case.golden,
                 &vgot_html,
@@ -748,11 +764,15 @@ fn render_unified_conformance_html() {
 #[derive(Deserialize)]
 struct CaptureDoc {
     family: String,
+    #[serde(default)]
+    version: Option<String>,
     cases: BTreeMap<String, CaptureCase>,
 }
 
 #[derive(Deserialize)]
 struct CaptureCase {
+    #[serde(default)]
+    capture_input: Option<CaptureRequest>,
     #[serde(default)]
     assembled: Vec<Ev>,
     #[serde(default)]
@@ -777,24 +797,55 @@ struct InputDoc {
 struct InputCase {
     #[serde(default)]
     scenario: String,
-    #[serde(default)]
-    input: String,
-    /// The guard must re-run each case under the SAME configuration the shard was
-    /// captured with; re-running everything under the default would report false
-    /// drift for every prefilled / guided-JSON case.
-    #[serde(default)]
-    init: Init,
 }
 
-/// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
-///
-/// The Unified tab is rendered by Python from the committed shard — it never runs
-/// the Rust parsers. So changing a parser without re-capturing leaves the page
-/// showing the OLD behavior while every Rust test still passes, and the two
-/// disagree silently. (That is exactly what happened when the unified parser
-/// landed: `unified_parity` was 33/33 green while the page still drew the split.)
-///
-/// This closes that gap: touch a parser, and the capture must be regenerated.
+#[derive(Deserialize)]
+struct CaptureRequest {
+    input: String,
+    init: Init,
+    tools: Vec<Tool>,
+    chunks: Vec<RequestChunk>,
+}
+
+#[derive(Deserialize)]
+struct RequestChunk {
+    delta_text: String,
+}
+
+/// Replay the bound request once so assembled and per-chunk results describe the
+/// same execution, even after the authored input or shared tool schema changes.
+fn replay_capture(family: &str, request: &CaptureRequest) -> (Vec<Ev>, Vec<Vec<Value>>) {
+    let mut parser = create_unified_parser_for_family(family, &request.tools)
+        .unwrap_or_else(|error| panic!("historical Unified parser `{family}`: {error}"));
+    request.init.apply(&mut parser, family);
+    let mut deltas = Vec::new();
+    let mut rows = Vec::new();
+    let mut input = String::new();
+    assert_eq!(
+        request.chunks.last().map(|chunk| chunk.delta_text.as_str()),
+        Some("‹finish›")
+    );
+    for (index, chunk) in request.chunks.iter().enumerate() {
+        let emitted = if index + 1 == request.chunks.len() {
+            parser.finish().expect("recorded Unified finish").events
+        } else {
+            input.push_str(&chunk.delta_text);
+            parser
+                .push(&chunk.delta_text)
+                .expect("recorded Unified push")
+        };
+        rows.push(emitted.iter().map(unified_delta_json).collect());
+        deltas.extend(emitted);
+    }
+    assert_eq!(input, request.input, "recorded schedule reconstructs input");
+    (assemble(&deltas).into_iter().map(Ev::from).collect(), rows)
+}
+
+/// Historical regression replays each retained request against today's parser.
+/// New or unavailable cases do not manufacture an expected result. This detects
+/// behavior changes on recorded requests; it does not certify current-source
+/// capture freshness. Setting CONFORMANCE_DYNAMO_V2_LABEL selects the separate
+/// strict check, which requires measured source evidence and every current input.
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
     let root = common::ensure_fixtures().join("unified");
@@ -808,23 +859,33 @@ fn validate_committed_dynamo_capture(root: &std::path::Path) {
             root.display()
         );
     }
-    // Select the parser identity before resolving its effective per-case owners.
-    // A release's sparse patches and a source's complete snapshot differ here.
-    let capture_dir = common::version_dirs_ascending_with_current(
-        root,
-        "dynamo_v2-",
-        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
-    )
-    .pop()
-    .expect("no committed dynamo_v2-<ver> capture dir");
-
-    validate_selected_dynamo_capture(root, &capture_dir);
+    if std::env::var_os("CONFORMANCE_DYNAMO_V2_LABEL").is_some() {
+        validate_capture_with_mode(root, root, "--validate-current-source");
+    } else {
+        // Historical regression can span different measured versions by family.
+        // Exact source verification is a separate explicit capture-stimulus check.
+        if common::historical_capture_dirs(root, "unified", "dynamo_v2").is_empty() {
+            eprintln!("historical Unified regression skipped: no eligible captured measurements");
+            return;
+        }
+        validate_selected_dynamo_capture(root, root);
+    }
 }
 
 fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
+    let mode = if capture_dir == root {
+        "--validate-latest-by-family"
+    } else {
+        "--validate-current"
+    };
+    validate_capture_with_mode(root, capture_dir, mode);
+}
+
+fn validate_capture_with_mode(root: &std::path::Path, capture_dir: &std::path::Path, mode: &str) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
-    let validation = common::capture_stimulus_command()
-        .arg("--validate-current")
+    let mut command = common::capture_stimulus_command();
+    command.arg(mode);
+    let validation = command
         .arg(capture_dir)
         .args(["--format", "json"])
         .arg("--inputs")
@@ -839,62 +900,22 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
     let captures: Vec<CaptureDoc> =
         serde_json::from_slice(&validation.stdout).expect("validated effective capture records");
 
-    // key -> (family, scenario, input, init), from the base inputs shard plus
-    // PR-qualified sparse overlays. New cases must carry their input metadata in
-    // the same overlay as the capture, rather than making the released shard mutable.
-    let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
-    for input_dir in input_dirs {
-        for entry in glob_yaml(&input_dir) {
-            let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
-                .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
-            for (key, case) in doc.cases {
-                // A sparse overlay can rename a case while preserving its scenario.
-                // The newer key replaces the released key for capture validation.
-                meta.retain(|(family, _), (scenario, _, _)| {
-                    family != &doc.family || scenario != &case.scenario
-                });
-                meta.insert(
-                    (doc.family.clone(), key),
-                    (case.scenario, case.input, case.init),
-                );
-            }
-        }
-    }
-
+    eprint!("{}", String::from_utf8_lossy(&validation.stderr));
     let mut stale: Vec<String> = Vec::new();
     let mut checked = 0usize;
-    let capture_keys: std::collections::BTreeSet<(String, String)> = captures
-        .iter()
-        .flat_map(|doc| {
-            doc.cases
-                .keys()
-                .map(|key| (doc.family.clone(), key.clone()))
-        })
-        .collect();
-    for key in meta.keys() {
-        if !capture_keys.contains(key) {
-            stale.push(format!(
-                "{} [{}] has no current Dynamo capture",
-                key.0, key.1
-            ));
-        }
-    }
     for doc in captures {
         for (key, committed) in doc.cases {
-            let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
-                stale.push(format!(
-                    "{} [{key}] has no input metadata in inputs or its PR overlays",
-                    doc.family
-                ));
-                continue;
-            };
+            let request = committed
+                .capture_input
+                .as_ref()
+                .expect("validated original request binding");
             checked += 1;
-            let id = format!("UNIFIED.{scenario}.{}", doc.family);
-
-            let live_assembled = dynamo_events(&doc.family, input, init);
+            let id = &doc.family;
+            let version = doc.version.as_deref().unwrap_or("selected");
+            let (live_assembled, live_chunks) = replay_capture(&doc.family, request);
             if live_assembled != committed.assembled {
                 stale.push(format!(
-                    "{id} [{key}] assembled\n    committed: {}\n         live: {}",
+                    "{id} [{key}] at {version} assembled\n    committed: {}\n         live: {}",
                     committed
                         .assembled
                         .iter()
@@ -911,29 +932,64 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
-                .into_iter()
-                .map(|r| r.deltas)
-                .collect();
             let committed_chunks: Vec<Vec<Value>> =
                 committed.chunks.into_iter().map(|c| c.expected).collect();
             if live_chunks != committed_chunks {
-                stale.push(format!("{id} [{key}] per-chunk deltas differ"));
+                stale.push(format!("{id} [{key}] at {version} per-chunk deltas differ"));
             }
         }
     }
 
+    if checked == 0 && mode == "--validate-latest-by-family" {
+        eprintln!("historical Unified regression skipped: no replayable captured requests");
+        return;
+    }
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
-        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
-         show the old parser behavior. Regenerate:\n  \
-         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
-         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
-         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        "{} of {checked} recorded Dynamo requests differ from the current parser. \
+         Assess the regression or capture a new measured checkpoint; preserve historical observations.\n\n{}",
         stale.len(),
         stale.join("\n\n"),
     );
+}
+
+#[test]
+fn historical_guard_replays_original_request_after_current_edits() {
+    let root =
+        std::env::temp_dir().join(format!("dynamo-historical-request-{}", std::process::id()));
+    let input_dir = root.join("inputs/gemma4");
+    let capture_dir = root.join("dynamo_v2-1.0.0/gemma4");
+    std::fs::create_dir_all(&input_dir).unwrap();
+    std::fs::create_dir_all(&capture_dir).unwrap();
+    let request = json!({"input":"original", "init":{"starting_state":"None","tool_output_mode":"Native","named_tool":null},
+        "tools":[], "finish_reason":"stop", "chunks":[{"delta_text":"ori"},{"delta_text":"ginal"},{"delta_text":"‹finish›"}]});
+    let typed: CaptureRequest = serde_json::from_value(request.clone()).unwrap();
+    let (assembled, chunks) = replay_capture("gemma4", &typed);
+    let capture = json!({"family":"gemma4","cases":{"retained":{"capture_input":request, "assembled":assembled,
+        "chunks":chunks.into_iter().map(|expected|json!({"expected":expected})).collect::<Vec<_>>()}}});
+    std::fs::write(
+        capture_dir.join("retained.yaml"),
+        serde_json::to_vec(&capture).unwrap(),
+    )
+    .unwrap();
+    let current = json!({"family":"gemma4", "cases":{
+        "retained":{"scenario":"retained","input":"changed today"},
+        "new":{"scenario":"new","input":"never captured"}}});
+    std::fs::write(
+        input_dir.join("cases.yaml"),
+        serde_json::to_vec(&current).unwrap(),
+    )
+    .unwrap();
+    validate_capture_with_mode(&root, &root, "--validate-latest-by-family");
+    assert!(
+        std::panic::catch_unwind(|| validate_selected_dynamo_capture(
+            &root,
+            &root.join("dynamo_v2-1.0.0")
+        ))
+        .is_err()
+    );
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]
@@ -1146,9 +1202,14 @@ fn shared_overlay_dirs(root: &std::path::Path, base: &str) -> Vec<PathBuf> {
 #[test]
 fn release_qualified_capture_order_preserves_current_and_released_owners() {
     let prefix = "dynamo_v2-";
+    let prerelease = common::version_capture_sort_key("dynamo_v2-0.3.2-rc1", prefix).unwrap();
     let older_release = common::version_capture_sort_key("dynamo_v2-0.3.2", prefix).unwrap();
     let current_release = common::version_capture_sort_key("dynamo_v2-0.4.0", prefix).unwrap();
+    let qualified_current =
+        common::version_capture_sort_key("dynamo_v2-0.4.0+current", prefix).unwrap();
+    assert!(prerelease < older_release);
     assert!(older_release < current_release);
+    assert!(current_release < qualified_current);
     assert!(common::version_capture_sort_key("dynamo_v2-0.3.3.patch1", prefix).is_none());
 }
 

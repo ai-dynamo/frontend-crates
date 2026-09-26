@@ -66,6 +66,8 @@ import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 import fixture_disposition
 import capture_stimulus
+import capture_policy
+from fixture_snapshot import fixture_snapshot_root
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from tables import common
@@ -1093,14 +1095,13 @@ def _candidate_items() -> list[dict[str, str]]:
 
 
 # --- per-impl version snapshots for the TC v2 (stream) tab ----------------------
-# The streamv1 corpus is versioned like batch, but with a different physical layout:
 # The legacy stream corpus is versioned like the batch corpus (no unversioned anchor):
 # fixtures-stream-v1/inputs/ (shared per-chunk delta_text) + fixtures-stream-v1/
 # <impl>-<version>/ (per-impl expected; lowest version = full anchor, higher =
 # changed-only). resolve_stream_fixtures.py reconstructs a flat tree for any selected
 # version set — the stream analogue of resolve_fixtures.py + the batch __ver_status map.
-# Read from the fixture extraction cache (loose YAMLs aren't in the repo; the LFS
-# tarballs under conformance/fixtures/ are extracted there on first use);
+# Read from the fixture extraction cache (the checked-in YAML history stores
+# are materialized there on first use);
 # _common.sh exports CONFORMANCE_FIXTURES_ROOT. Without this the stream tab's versioned
 # candidates come up empty and the Base/Compare parser selector doesn't render.
 _STREAM_SRC = (
@@ -1382,24 +1383,24 @@ _candidate_sig = markers.candidate_sig
 # and the stream parsers run on the batch text (key <impl>-s-<slug>). A cell's
 # `__cmp` (ordered [{key, label, block}]) drives its data-cmp payload + per-candidate
 # tooltip sections; `_merged_candidate_items()` supplies the matching chip list.
-def _stream_on_batch_versions() -> dict[str, str]:
-    """{impl: display version} for the merged tab's stream candidates. Dynamo -> the
-    v2 crate version; peers -> the engine version the batch-on-stream fixtures were
-    captured against (their `captured_with`), since those fixtures are the source of
-    the stream blocks shown here."""
-    out: dict[str, str] = {}
-    dynv = _dynamo_v2_version()
-    if dynv:
-        out[BASELINE_STREAM_IMPL] = dynv
+def _stream_on_batch_candidates() -> dict[tuple[str, str | None], dict]:
+    """Keep each recorded producer selectable without relabeling another family's output."""
+    versions: dict[str, set[str | None]] = {}
     for fp in sorted(STREAM_ON_BATCH_FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
         doc = yaml.safe_load(fp.read_text()) or {}
-        for impl, ver in (doc.get("captured_with") or {}).items():
-            if impl == BASELINE_STREAM_IMPL or impl not in STREAM_IMPL_KEYS:
-                continue
-            cv = _clean_version(ver)
-            if cv:
-                out.setdefault(impl, cv)
-    return out
+        headers = _normalize_impl_mapping(doc.get("captured_with") or {})
+        cases = [_normalize_impl_mapping(case) for case in (doc.get("cases") or {}).values()]
+        for impl in STREAM_IMPL_KEYS:
+            if any(impl in case for case in cases):
+                label = headers.get(impl)
+                version = capture_policy.parse_legacy_capture_label(impl, label)[1]["runtime_version"] if label else None
+                versions.setdefault(impl, set()).add(version)
+    return {(impl, version): {
+        "key": f"{impl}-s-{fixtures._version_slug(version) if version else 'unversioned'}",
+        "impl": impl, "version": version,
+        "label": _full_label(impl, version or "producer version unavailable", "stream"),
+        "default_bucket": "C",
+    } for impl, values in versions.items() for version in values}
 
 
 def _merged_candidate_items() -> list[dict[str, str]]:
@@ -1415,15 +1416,7 @@ def _merged_candidate_items() -> list[dict[str, str]]:
             "label": _full_label(impl, c['version'], "batch"),
             "default_bucket": c["default_bucket"],
         })
-    stream_versions = _stream_on_batch_versions()
-    for impl in STREAM_IMPL_KEYS:
-        ver = stream_versions.get(impl)
-        slug = fixtures._version_slug(ver) if ver else ""
-        out.append({
-            "key": f"{impl}-s-{slug}" if slug else f"{impl}-s", "impl": impl, "version": ver,
-            "label": _full_label(impl, ver, "stream"),
-            "default_bucket": "C",
-        })
+    out.extend(_stream_on_batch_candidates().values())
     return _sort_candidates(out)
 
 
@@ -1433,7 +1426,7 @@ def _attach_merged_cmp(cases: dict) -> None:
     batch-on-stream overlay). Keys/labels mirror `_merged_candidate_items()` so the
     compare chips, data-cmp payloads, and `cand-<key>` tooltip sections line up."""
     sob_cases = _build_stream_on_batch_cases(cases)
-    stream_versions = _stream_on_batch_versions()
+    stream_candidates = _stream_on_batch_candidates()
     for key, case in cases.items():
         if not isinstance(case, dict):
             continue
@@ -1458,11 +1451,16 @@ def _attach_merged_cmp(cases: dict) -> None:
                 case["__known_divergence"] = True
             expected = _expected(sob)
             for impl in STREAM_IMPL_KEYS:
-                ver = stream_versions.get(impl)
-                slug = fixtures._version_slug(ver) if ver else ""
+                producer = sob.get("__captured_with", {}).get(impl)
+                recorded = capture_policy.parse_legacy_capture_label(impl, producer)[1]["runtime_version"] if producer else None
+                candidate = stream_candidates.get((impl, recorded))
+                if candidate is None:
+                    continue
                 items.append({
-                    "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
-                    "label": _full_label(impl, ver, "stream"),
+                    "key": candidate["key"],
+                    "label": candidate["label"],
+                    "version": recorded,
+                    "captured_with": producer,
                     "block": _impl_get(expected, impl),
                 })
         if items:
@@ -1537,36 +1535,27 @@ def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -
     """
     expected: dict = {}
     overlay_case = _normalize_impl_mapping(overlay_case)
-    dynamo = _impl_get(overlay_case, BASELINE_STREAM_IMPL)
-    if isinstance(dynamo, dict) and ("calls" in dynamo or "normal_text" in dynamo):
-        expected[BASELINE_STREAM_IMPL] = {
-            "calls": dynamo.get("calls") or [],
-            "normal_text": dynamo.get("normal_text") or "",
-        }
-    elif not has_batch_text:
-        expected[BASELINE_STREAM_IMPL] = {"unavailable": "No batch model_text for this case."}
-    else:
-        expected[BASELINE_STREAM_IMPL] = {
-            "unavailable": "Dynamo parser v2 stream parser not yet implemented for this family"
-        }
-    for impl in PEER_IMPL_KEYS:
+    for impl in STREAM_IMPL_KEYS:
         block = _impl_get(overlay_case, impl)
         if not isinstance(block, dict):
-            expected[impl] = {
-                "unavailable": "No batch-on-stream capture for this engine."
-            }
-        elif "unavailable" in block:
-            expected[impl] = {"unavailable": block["unavailable"]}
+            reason = "No batch-on-stream capture for this engine."
+            if impl == BASELINE_STREAM_IMPL:
+                reason = ("Dynamo parser v2 stream parser not yet implemented for this family"
+                          if has_batch_text else "No batch model_text for this case.")
+            expected[impl] = {"unavailable": reason}
+        elif any(field in block for field in ("unavailable", "exception", "error")):
+            expected[impl] = dict(block)
         else:
             expected[impl] = {
-                "calls": block.get("calls") or [],
+                "calls": block.get("calls", block.get("tool_calls")) or [],
                 "normal_text": block.get("normal_text") or "",
-                "explanation": (
+            }
+            if impl != BASELINE_STREAM_IMPL:
+                expected[impl]["explanation"] = (
                     f"Captured from the {IMPL_DISPLAY[impl]} streaming parser on the batch text. "
                     "Streaming output differs from Dynamo parser v2 token-incremental "
                     "behavior by design (text vs token streaming)."
-                ),
-            }
+                )
     return expected
 
 
@@ -1579,7 +1568,10 @@ def _load_stream_on_batch_overlay() -> dict[tuple[str, str], dict]:
         doc = yaml.safe_load(fp.read_text()) or {}
         family = doc.get("family") or fp.parent.name
         for cid, block in (doc.get("cases") or {}).items():
-            overlay[(family, cid)] = block
+            overlay[(family, cid)] = {
+                **_normalize_impl_mapping(block),
+                "__captured_with": _normalize_impl_mapping(doc.get("captured_with") or {}),
+            }
     return overlay
 
 
@@ -1607,6 +1599,7 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             "__family": family,
             "__case_id": cid,
             "__fixture_path": bcase.get("__fixture_path", ""),
+            "__captured_with": overlay_case["__captured_with"],
             "description": bcase.get("description"),
             "model_text": bcase.get("model_text"),
             "ref": bcase.get("ref"),
@@ -1766,7 +1759,88 @@ def _version_of_label(label: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _candidate_model(items: list[dict]) -> list[dict]:
+def _capture_policy() -> dict:
+    return capture_policy.load_policy()
+
+
+def _policy_candidate_key(corpus: str, identity: str) -> str:
+    impl, version = capture_policy.split_sel(identity)
+    if corpus == "reasoning":
+        return impl
+    if corpus == "unified":
+        aliases = _capture_policy()["corpora"][corpus].get("saved_links", {})
+        return next((key for key, target in aliases.items() if target == identity),
+                    f"{'dynamo' if impl == 'dynamo_v2' else impl}@{version}")
+    suffix = "-b-" if corpus == "batch" else "-s-" if corpus == "batch_on_stream" else "-"
+    return impl + suffix + fixtures._version_slug(version)
+
+
+def _apply_capture_policy(candidates: list[dict], corpus: str) -> list[dict]:
+    rules = _capture_policy()["corpora"][corpus]
+    by_key = {candidate["key"]: candidate for candidate in candidates}
+    if len(by_key) != len(candidates):
+        raise ValueError(f"capture policy produces duplicate report candidate keys: {corpus}")
+    for identity, rule in rules.get("selectors", {}).items():
+        key = _policy_candidate_key(corpus, identity)
+        if key not in by_key:
+            continue
+        candidate = by_key[key]
+        if corpus == "reasoning" and candidate.get("version") != capture_policy.split_sel(identity)[1]:
+            continue
+        candidate["visible"] = rule.get("visible", True)
+        if rule.get("equivalent_to"):
+            target = _policy_candidate_key(corpus, rule["equivalent_to"])
+            if target not in by_key:
+                raise ValueError(f"missing equivalent report candidate: {corpus}/{target}")
+            candidate["equivalent_to"] = target
+        if not candidate["visible"]:
+            candidate["default_bucket"] = "C"
+    references = rules.get("references", {})
+    if references:
+        for candidate in candidates:
+            if candidate["default_bucket"] == "A":
+                candidate["default_bucket"] = "C"
+        for impl, reference in references.items():
+            selection = reference["selection"]
+            if selection == "unavailable":
+                continue
+            if corpus == "reasoning":
+                available = by_key.get(impl, {})
+                key = impl if selection != "latest" or available.get("version") or available.get("version_per_family") else None
+            elif corpus == "unified" and impl == "dynamo_v2" and selection == "latest":
+                key = "dynamo" if any(c["key"].startswith("dynamo@") for c in candidates) else None
+            elif selection != "latest":
+                key = _policy_candidate_key(corpus, selection)
+            else:
+                available = [c for c in candidates if c.get("version") and c.get("visible", True)
+                             and c["key"] == _policy_candidate_key(corpus, f"{impl}-{c['version']}")]
+                key = max(available, key=lambda c: fixtures._version_sort_key(c["version"]))["key"] if available else None
+            if key in by_key:
+                by_key[key]["default_bucket"] = "A"
+    return candidates
+
+
+def _policy_links(corpus: str) -> dict:
+    rules = _capture_policy()["corpora"][corpus]
+    links = {}
+    for identity, rule in rules.get("selectors", {}).items():
+        if not rule.get("visible", True):
+            links[_policy_candidate_key(corpus, identity)] = (
+                {"equivalent_to": _policy_candidate_key(corpus, rule["equivalent_to"])}
+                if rule.get("equivalent_to") else {"unavailable": rule.get("unavailable", "This capture is hidden.")})
+    for key, identity in rules.get("saved_links", {}).items():
+        selector = rules.get("selectors", {}).get(identity, {})
+        if selector.get("equivalent_to"):
+            value = {"equivalent_to": _policy_candidate_key(corpus, selector["equivalent_to"])}
+        elif not selector.get("visible", True):
+            value = {"unavailable": selector.get("unavailable", "This capture is hidden.")}
+        else:
+            value = {"equivalent_to": _policy_candidate_key(corpus, identity)}
+        links.setdefault(key, value)
+    return links
+
+
+def _candidate_model(items: list[dict], *, corpus: str | None = None) -> list[dict]:
     """Normalize a compare-bar candidate list to the model schema. The version is taken
     from the source item when present, else parsed from the label ("… 3.0.0 (batch)")
     so every candidate carries a `version` the view + guards can rely on."""
@@ -1781,9 +1855,11 @@ def _candidate_model(items: list[dict]) -> list[dict]:
             "label_html": _candidate_label_html(label),
             "default_bucket": it.get("default_bucket", "C"),
             "version": it.get("version") or _version_of_label(label),
+            "version_unavailable": "producer version unavailable" in label,
+            "version_per_family": "captured per family" in label,
             "parse_mode": _parse_mode_of_label(label),
         })
-    return out
+    return _apply_capture_policy(out, corpus) if corpus else out
 
 
 def _columns_model(mode: str, sub_cases: list[str]) -> tuple[list[dict], list[dict]]:
@@ -1841,7 +1917,8 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
     if cmp_items:
         for item in cmp_items:
             meta.append({"key": item["key"], "label": item["label"],
-                         "version": None, "block_raw": item["block"]})
+                         "version": item.get("version"), "captured_with": item.get("captured_with"),
+                         "block_raw": item["block"]})
     elif ver_status:
         # The mode is the TAB's, not a constant: this branch also serves the streamv1
         # tab, where dynamo_v2 and vllm_rust are stream-only impls (impls.py IMPL_SPECS)
@@ -2208,16 +2285,6 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_dynamo_label() -> str:
-    # The renderer is copied into /tmp; the checker must inspect the source checkout.
-    source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
-    return subprocess.run(
-        [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
-         "--repo-root", str(source_root), "--format", "label"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
-
-
 def _unified_capture_failure(record: dict) -> dict:
     return {key: record[key] for key in ("error", "unavailable") if record.get(key)}
 
@@ -2330,33 +2397,31 @@ def _load_unified_fixtures(base: Path):
     for ver, dirname in engine_versions.get("dynamo_v2", []):
         dynamo_by_ver[ver] = _read_dir(dirname)
 
-    current_dynamo_ver = _unified_dynamo_label()
-    target_release = fixtures._version_sort_key(current_dynamo_ver)
-    inherited_current_cases = {}
-    for version in sorted(
-        (
-            version
-            for version in dynamo_by_ver
-            if fixtures._version_sort_key(version) <= target_release
-        ),
-        key=fixtures._version_sort_key,
-    ):
-        for case_key, record in dynamo_by_ver[version].items():
-            inherited = dict(record)
-            if version != current_dynamo_ver:
-                inherited["inherited_from"] = version
-            inherited_current_cases[case_key] = inherited
-    inherited_current_cases.update(dynamo_by_ver.get(current_dynamo_ver, {}))
-    dynamo_by_ver[current_dynamo_ver] = inherited_current_cases
-    current_dynamo_cases = inherited_current_cases
+    families = {family for family, _key in inputs}
+    current_dynamo_versions = {
+        family: max(
+            (
+                version for version, cases in dynamo_by_ver.items()
+                if any(captured_family == family for captured_family, _key in cases)
+            ),
+            key=fixtures._version_sort_key,
+        )
+        for family in families
+        if any(
+            any(captured_family == family for captured_family, _key in cases)
+            for cases in dynamo_by_ver.values()
+        )
+    }
+    current_dynamo_cases = {
+        (family, key): dynamo_by_ver[version][(family, key)]
+        for family, version in current_dynamo_versions.items()
+        for captured_family, key in dynamo_by_ver[version]
+        if captured_family == family
+    }
     missing_current_case_keys = {
         (family, key)
-        for (family, key), input_case in inputs.items()
+        for family, key in inputs
         if (family, key) not in current_dynamo_cases
-        and (
-            (input_case.get("scenario") or key) not in unified_taxonomy.UNIFIED_TAX
-            or family in gen_unified_golden.scenario_families(input_case.get("scenario") or key)
-        )
     }
     engine_cases["dynamo_v2"] = current_dynamo_cases
 
@@ -2385,6 +2450,7 @@ def _load_unified_fixtures(base: Path):
             "dynamo": ddoc.get("assembled") or [],
             "dynamo_failure": _unified_capture_failure(ddoc),
             "dynamo_missing": (fam, key) in missing_current_case_keys,
+            "dynamo_version": current_dynamo_versions.get(fam),
             # Per-capture payloads, latest included. A version that never recorded this
             # case is ABSENT here rather than empty: an older capture predating the case
             # has no opinion about it, and scoring [] against golden would invent a
@@ -2450,7 +2516,7 @@ def _load_unified_fixtures(base: Path):
                     "parser": edoc.get("parser"),
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
-    versions["dynamo_v2"] = current_dynamo_ver
+    versions["dynamo_v2"] = current_dynamo_versions
     for impl, captures in peer_by_ver.items():
         versions[impl] = max(captures, key=fixtures._version_sort_key)
     # Captured history stays separate from the selected source, which may be missing.
@@ -2539,32 +2605,20 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # (the selected Reference is pulled to the left by the view). Unified keeps the
     # released Combined captures beside newer native UnifiedParser captures so the
     # table shows the actual version-to-version history.
-    # THIS tab's own capture version. It used to borrow _dynamo_v2_version(), which reads
-    # the STREAM tree (toolcalling/fixtures-stream-v1) — a different tree on a different
-    # release cadence — so the column was labelled with a version that did not produce
-    # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
-    dynamo_ver_label = _vers["dynamo_v2"]
-    dynamo_history_vers = [
-        version for version in dynamo_all_vers if version != dynamo_ver_label
-    ]
-    dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
+    dynamo_history_vers = dynamo_all_vers
+    dynamo_label = "Dynamo v2 Rust latest (captured per family)"
     peer_specs = []
     for ver in reversed(vllm_python_vers):
         peer_specs.append({
-            # Keep the established control key for the existing 0.25.1 column.
-            # Shared links use it, and this change adds a 0.26 UnifiedParser column;
-            # it must not invalidate the old table's URL contract.
-            "key": "vllm" if ver == "0.25.1" else f"vllm_python@{ver}",
+            "key": _policy_candidate_key("unified", f"vllm_python-{ver}"),
             "impl": "vllm", "source": "vllm_python",
             "version": ver, "label": f"vLLM Python {ver} (batch, Combined)",
             "stream": False,
         })
     for ver in reversed(vrust_vers):
         peer_specs.append({
-            # vllm_rust is the pre-existing 0.25.1 Combined column. The native
-            # UnifiedParser is an additional versioned column, not a replacement.
-            "key": "vllm_rust" if ver == "0.25.1" else f"vllm_rust@{ver}",
+            "key": _policy_candidate_key("unified", f"vllm_rust-{ver}"),
             "impl": "vllm", "source": "vllm_rust",
             "version": ver,
             "label": f"vLLM Rust {ver} (stream, Combined & Unified)",
@@ -2576,7 +2630,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         # the base — a golden REF never diverges from itself, so it would color every cell
         # green. See conformance_view.compareBarHtml (golden's hidden ref radio is dropped
         # when an engine is the default REF).
-        _cand("dynamo", dynamo_label, "A", dynamo_ver_label),  # Reference (default, starred)
+        _cand("dynamo", dynamo_label, "A"),  # Reference (default, starred)
         # Only the Reference is on by default — same rule as the stream and batch tabs.
         # Reset reloads at these defaults, so anything B here comes back checked every
         # time the reader clears the board, which reads as the page re-selecting itself.
@@ -2679,6 +2733,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
+            family_dynamo_ver = c.get("dynamo_version")
             dyn = _assemble_stream(dyn_chunk_deltas)
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
@@ -2785,14 +2840,17 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "input": {"kind": "chunks" if chunk_rows else "text", "text": c["input"], "chunks": chunk_rows,
                           "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
-                    {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
-                     "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
+                    {"key": "dynamo", "label": (
+                         _full_label("dynamo_v2", family_dynamo_ver, "stream, Combined & Unified")
+                         if family_dynamo_ver else "Dynamo v2 Rust (no capture)"
+                     ), "impl": "dynamo",
+                     "version": family_dynamo_ver, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
                                 "todo": _TODO if dverd != "MATCH" else None,
                                 "explanation": (
-                                    f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')}."
-                                    if c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')
+                                    f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(family_dynamo_ver, {}).get('inherited_from')}."
+                                    if c['dynamo_by_ver'].get(family_dynamo_ver, {}).get('inherited_from')
                                     else None
                                 )})},
                     {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
@@ -2822,7 +2880,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "impl": "dynamo", "version": pv, "parse_mode": "unified",
                      "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
                      "block": ({"unavailable": (
-                                    f"no {f} parser in Dynamo v2 {pv} — this build could not run the case"
+                                    f"no {f} capture recorded for Dynamo v2 {pv}"
                                     if pv not in prev_family_vers
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
@@ -2875,6 +2933,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     for s in ordered if f"unified_g{_tax(s)[0]}" == group_key]
         unified_glossary.append({"label": grp["label"], "rows": grp_rows})
 
+    _apply_capture_policy(candidates, "unified")
+    selected_reference = next((candidate["label"] for candidate in candidates if candidate["default_bucket"] == "A"), None)
+    reference_description = (f'Default Reference = <strong>{html_lib.escape(selected_reference)}</strong>. '
+                             if selected_reference else 'Default Reference is unavailable. Select a recorded parser to compare. ')
     return {
         "id": "tab-unified", "kind": "unified", "active": False, "mode": "unified",
         "no_parser_col": True,  # parser variant is already encoded in each engine's name
@@ -2884,19 +2946,18 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                       "measured against the GOLDEN oracle"),
         "columns": columns, "column_groups": column_groups,
         "candidates": candidates, "rows": rows, "stats": stats, "glossary": unified_glossary,
+        "saved_links": _policy_links("unified"),
+        "reference_unavailable": not any(c["default_bucket"] == "A" for c in candidates),
         "case_prefix": "UNIFIED.", "case_section_id": "unified",
         "case_docs_href": cases_href, "case_docs_label": "lib/parsers/UNIFIED_CASES.md",
-        "captured_note": ("vLLM captures include every packaged 0.25.1 and 0.26.x "
-                          "parser version. vLLM Rust 0.26.0 uses the native "
-                          "UnifiedParser for Gemma4 and CombinedParser for Qwen3/Kimi K2."),
+        "captured_note": _capture_policy()["corpora"]["unified"].get("captured_note", ""),
         "toolbar_desc_html": (
             'Oracle = <strong>GOLDEN</strong> (authored, best-effort recovery) · '
-            'Default Reference = <strong>Dynamo v2 Rust</strong>. '
-            'Compare with historical Dynamo and captured peer versions. '
+            + reference_description
+            + 'Compare with historical Dynamo and captured peer versions. '
             'A parser that does not exist for a family is shown as n/a. '
-            'A cell is red when the REF — the starred engine '
-            '(default Dynamo) — DIVERGES from golden in any class: leaked markup (↯), '
-            'merged/reordered events, or dropped content (✗). A green cell means the REF '
+            'A cell is red when the selected Reference diverges from golden: leaked markup (↯), '
+            'merged/reordered events, or dropped content (✗). A green cell means the Reference '
             'matches golden exactly; the NΔ count is how many Compare-with engines diverge '
             '(informational — they never color the cell). Star a different engine to judge '
             'it instead.'),
@@ -2913,6 +2974,7 @@ def build_combined_model(output_path: Path | None = None,
     """Assemble the whole-page JSON model (both toolcalling tabs + both reasoning
     tabs). Same loaded data + comparison semantics as render_combined_html."""
     artifact_root = (artifact_root or REPO_ROOT).resolve()
+    capture_policy.validate_materialized_policy(_capture_policy(), fixture_snapshot_root())
     resolved_output_path = _resolve_output_path(
         output_path, artifact_root, "tests/parity/CONFORMANCE.html")
     hrefs = common.set_links(
@@ -2940,7 +3002,8 @@ def build_combined_model(output_path: Path | None = None,
         "case_section_id": "toolcalling-batch",
         "case_docs_href": hrefs["toolcalling_cases"],
         "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
-        "candidates": _candidate_model(_merged_candidate_items()),
+        "candidates": _apply_capture_policy(_candidate_model(_merged_candidate_items(), corpus="batch"), "batch_on_stream"),
+        "saved_links": {**_policy_links("batch"), **_policy_links("batch_on_stream")},
         "captured_note": _captured_note("batch"),
         "toolbar_desc_html": (
             f'Parsers: <strong>v1</strong> batch '
@@ -2948,7 +3011,7 @@ def build_combined_model(output_path: Path | None = None,
             f'plus <strong>v2</strong> streaming on the same batch text '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
             f'Input: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-batch-v1/</a>).'),
+            f'(<a href="{hrefs["toolcalling_fixture_store"]}">conformance/fixtures-v1/batch/</a>).'),
         "details_note_html": None,
     })
     tabs.append(batch_tab)
@@ -2967,13 +3030,14 @@ def build_combined_model(output_path: Path | None = None,
         "case_section_id": "toolcalling-streamv1",
         "case_docs_href": hrefs["toolcalling_streaming_cases"],
         "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md",
-        "candidates": _candidate_model(_stream_candidate_items()),
+        "candidates": _candidate_model(_stream_candidate_items(), corpus="stream"),
+        "saved_links": _policy_links("stream"),
         "captured_note": _captured_note("streamv1"),
         "toolbar_desc_html": (
             f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
             f'Input: <strong>legacy v1</strong> non-Unified stream fixtures '
-            f'(<a href="{hrefs["toolcalling_stream_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-stream-v1/</a>).'),
+            f'(<a href="{hrefs["toolcalling_stream_fixture_store"]}">conformance/fixtures-v1/stream/</a>).'),
         "details_note_html": f"<p>{_stream_parity_explainer_html('streamv1')}</p>",
     })
     tabs.append(stream_tab)
@@ -3003,13 +3067,14 @@ def build_combined_model(output_path: Path | None = None,
             "case_section_id": f"reasoning-{rmode}",
             "case_docs_href": hrefs["reasoning_cases"],
             "case_docs_label": "lib/parsers/REASONING_CASES.md",
-            "candidates": _candidate_model(rtab.get("candidates", [])),
+            "candidates": _candidate_model(rtab.get("candidates", []), corpus="reasoning"),
+            "saved_links": _policy_links("reasoning"),
             "captured_note": "",
             "toolbar_desc_html": (
                 f'Parser: <strong>v1</strong> reasoning parser '
                 f'(<a href="{hrefs["reasoning_src"]}">parsers/v1/src/reasoning/</a>) · '
                 f'Input: <strong>v1</strong> reasoning fixtures '
-                f'(<a href="{hrefs["reasoning_fixture_store"]}">conformance/fixtures/reasoning/fixtures-v1/</a>).'),
+                f'(<a href="{hrefs["reasoning_fixture_store"]}">conformance/fixtures-v1/reasoning/</a>).'),
             "details_note_html": None,
         })
         tabs.append(rtab)

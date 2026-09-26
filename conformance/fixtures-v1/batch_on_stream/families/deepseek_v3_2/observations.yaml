@@ -1,0 +1,2359 @@
+schema: bound-observations-v1
+observations:
+  f51c92b052bf89b1856548cbc49ee0b902524ab9ffb152412c97a5b359bc5571:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  9f2f6959e57a73ca01a68fe5b50d197e4c496e823cdfc527ef1b903b293e6725:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  34fb02fd92c7cb83f97e1416ae32a09c0dcaac769ad9aea5364a6c7a7950c5d2:
+    request:
+      model_text: 'Both: <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  4f8133906683d51375ca776d3735fb028fa96686a0ef84bdd659d2c9d5c9498e:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  33c963540bd69b874733abc351caa35da35f4915f9a3a39b5d5bb669f3b915c4:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        nonsense
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  254db8b8d4dcf4355c05c0c4131e830724ee2782c65454d56b252263d49efd40:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  523e31162a45c518334d7b43ee171f887e84770bac43ffdca7210098d3e9dcf6:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke>
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  0234bbbb6fa50bb17e24e2e20fce088e0d1cae32c6e559f3c1c9b1e6987e390c:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  62d1abdbcfcb7bcf1e8076c6cc0a4d04865873c52ef580bc833211ba371a74f4:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  a4900575f46a187c0da66ce14011e0137a26226721d7a141f124acce847c08c0:
+    request:
+      model_text: '<｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  d167ea5df51df8eebf517d348bae1b4471c599a5b5668ec9c7a5b228672de740:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  027d0dd0c5c23d9f93ee47fa208cceaaf5b1f3a717065e0c03dffe1049a2273b:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York</｜DSML｜parameter>
+
+        </｜DSML｜invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+  90a53302faeb56baedd7b2dde53da16611825272fbf8d937f700f41a74d96ea0:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: {}
+  c4d1e0e93e7772f93dca88122da879f357cbc1a3fc67d99228dde0c099d65744:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  4ef36ddcd7e9f07aa363ff0b7e176582035de749717a1be41bf30ca7c729bed5:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  aefa6f0f7ba8fd9b546cea7942190634fa5c0e9c1446113eaa41136985bd6e1f:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="book_flight">
+
+        <｜DSML｜parameter name="destination" string="true">Paris</｜DSML｜parameter>
+
+        <｜DSML｜parameter name="passengers" string="false">2</｜DSML｜parameter>
+
+        <｜DSML｜parameter name="first_class" string="false">true</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  508eaac7ee6ca66931a9b35183cd34ebed34b5cf2367ce0719ddd5a816c15372:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Tōkyō central</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+  2aeb7521cd548fb8c4f223d76f73380a1ef4afa064f8877905d55a6a4bd41b97:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="set_limit">
+
+        <｜DSML｜parameter name="count" string="false">9007199254740993</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+  2cd91992c6c28fcf69c4740e7b0a76407f5e8f17f812615b1476cf16882d391f:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  b1073f458a7444caa1c12d1e5fbfc3ef0632d4b2927a7421a305129f32bebf46:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  255f567f0a54a23c8b1fabef0209dd2ee0c9a602b86b9e4a798688848f24ea6e:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  5acc97d9a2ff3db10a94970abf2ff7854312c343f5f422483391d87772cb6465:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Then check LA weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  8fe22fd78eee31a62db9a3c75487291272c3fcc83633bc59945097deb484c56b:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  369ec74f490d85d8b66f73b8f8246c3f98be91ac8c53050d8c6b29cf3629c6bd:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  0af41596e6fb0fcb68602c1c13a492a48d8cff582d9ac6e9f6c8ee59b5a6c3cb:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="unknown_tool">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  47345748de0d1bf203270eb5efc52c10df88de0d0deeeedf6c185de39ec3be27:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  f3fa717cd63d6ee86478d0a09dc21f8df0b7f1ab73c1e9c933f7f97ee6316107:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  f050bc03099864d34ca7b96a8443690dcf36e17fe0c7e405f4fa4900aac06188:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  6804e185b8ca39f37edad4ccf9e863172f2fc6ad99f24350e5b301083169c3fa:
+    request:
+      model_text: 'Both: <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  bda66428e1602cb1ab79a549a448404b6239523bfd7abdc0caa58b66067540c5:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "'
+  c853ea68fa1c48fd8e2d3ad1bb6aa5bea6e21a8c72a1deafbf3d401390d42db9:
+    request:
+      model_text: '<｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '<｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+  e9f3e693a484d10f2ef96ccc993628eda41f60974d6bc158695749294686576e:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "'
+  f97e4e8e73467f6ce289d08a48f8588929c32ba0dd9446ab7ee9b0b823f4aa10:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York</｜DSML｜parameter>
+
+        </｜DSML｜invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  53702a56f197b35c0938ef32f7a2d9a3996c610e7619e7f349ac43dd13d98f07:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: '{"location": "'
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  266e7159402ba403894384b37d363c3da37500da801abeb4f19a0caf8f770448:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="set_limit">
+
+        <｜DSML｜parameter name="count" string="false">9007199254740993</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740992
+  afc98f4ca008c06fe99e240548542d0ba655ba79e4604540c3d20d0eab011a19:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  ed6af31b102469b8eb99ead943218b5cbfdbe44305fed4950fc8cded4c12a6dd:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  9ff7c5fa131e75f557fa4b30195c5f3e27c0206a2a89dcb6dc815feca70bf5cb:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Then check LA weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather. '
+  719df121fe1954085b3a7ac003e7548e3d1583b3f83ce71e971a40fce49af005:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e8a6e61d9d57545ff35083e496da3d4fe41d9af2bcbfc48046a10ad7e4e3e310:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  18a0c28fab4d44054796f012b6fb62aa8072d6167260b693861ea42f7b13ab20:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  7a9df98f47062d3a756a2ba3506cf760917fca8a7cbf8541e2a7f07fb6e4e1b0:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  8af3d1596cd1372a55d8812e7af1a86f60a030eaa14bbd74ae42129a59d0adb8:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        nonsense
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  3dbcfbcdefba2d731394cb89bcc7e2f7020adb549a8df5e27f9ca2868613c3bb:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke>
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  935f386b4c4d7d0a8faa0282d4d89dec8aaeb0ba65aa9ca404e47c3eba9485a8:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  77125fddbff68afb6a40528732e7e43e08f931031e58e7e0b354dddf3e2266a4:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete DeepSeek DSML tool call'
+  46aa92258fb2f88624f414f54ef79e360e802f950b285f740d72b92fd5d698a5:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete DeepSeek DSML tool call'
+  a737b5bec7d657509b4603a3d4752ab830452e5661774690618fbcc432f2ac13:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York</｜DSML｜parameter>
+
+        </｜DSML｜invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete DeepSeek DSML tool call'
+  6b56413bed6ea9f3d3eeaf502b5b1cc36f8f71e57e7fa078b7adc6e8e54bcbd3:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Boston</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete DeepSeek DSML tool call'
+  12a2dc2b43626876672319f8bfdf25be65e8f12bd7453fced20c9c65b459146e:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  eb3dfb34b2b39ea73f6d1ef93174281c05db20e7a372d672096265fba7df9c58:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_time">
+
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  b0054b46f912c72af665b9578adc0918cb71eb64051c9a9161e844131b89edb7:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="book_flight">
+
+        <｜DSML｜parameter name="destination" string="true">Paris</｜DSML｜parameter>
+
+        <｜DSML｜parameter name="passengers" string="false">2</｜DSML｜parameter>
+
+        <｜DSML｜parameter name="first_class" string="false">true</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  c6c170536ac25cd7615b60c4aabedb1771fcbee22bbba7be1497a2ff1d6f4e81:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">Tōkyō central</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+      normal_text: ''
+  c2c7bcaf88896ae061c7ebb71d8c28105e372f4a3ae121a0db6c9c9adf81babb:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="set_limit">
+
+        <｜DSML｜parameter name="count" string="false">9007199254740993</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  6839ef17407a531dc6ef84435fa245735571cd2fab9efd04945f07a418fc37ff:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  654579ab569bb97984b3940294db1838b163b2d4187da79ed581cd320c119b94:
+    request:
+      model_text: 'I will check the weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls> Then check LA weather. <｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  0be13e317ceac56387a3aa198180979d500c097ad2c4ce2902fab287d7c3efca:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  f9ff19ff30071790b251da12e3662da2c742ba1baa441b58c86d29c5b5917ac2:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  d2f71b592043137b80719f92d8d032f53d0e98355a8913b5bd6c0e4cfb458132:
+    request:
+      model_text: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="unknown_tool">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
+  c011304fa5c16c4c4fad09edc0d077c1e60d1d8c6a0a04a4da03d07fcc89bc34:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: deepseek_v3_2
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+producers:
+  0cf3c81b17000c77f6e67ee8210bce613c94fae827128ca66f2cdf21f9fc5787:
+    capture: sglang_python-0.5.14
+    document:
+      family: deepseek_v3_2
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  23e6c024de2b919cbf51076e903da7900d36babffbc304f3f179ce3b2d3be3f0:
+    capture: vllm_python-0.26.0
+    document:
+      family: deepseek_v3_2
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  8f64beed902c45ffbd1d480db678f36947b13c17f56a1b8fe57617fdc4ad656b:
+    capture: vllm_rust-0.23.0
+    document:
+      family: deepseek_v3_2
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

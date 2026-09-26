@@ -1,0 +1,29 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: deepseek_v3
+capture: vllm_rust-0.26.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+  TOOLCALLING.streamv1.6.yaml:
+    family: deepseek_v3
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+views:
+  python:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}

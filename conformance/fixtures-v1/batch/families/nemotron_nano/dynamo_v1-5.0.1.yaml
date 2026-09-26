@@ -1,0 +1,47 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: nemotron_nano
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.4.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.5.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.6.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.7.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.8.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.batch.yaml:
+    family: nemotron_nano
+    mode: batch
+  TOOLCALLING.stream.1.yaml:
+    family: nemotron_nano
+    mode: stream
+  TOOLCALLING.stream.2.yaml:
+    family: nemotron_nano
+    mode: stream
+  TOOLCALLING.stream.3.yaml:
+    family: nemotron_nano
+    mode: stream
+  TOOLCALLING.stream.4.yaml:
+    family: nemotron_nano
+    mode: stream
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: 70e492dbcc8ba117dd6f0b5245588c3f3fb637d4727851b0362e7fcfb15a7b42
+        producer: e7d4464fd67456c44f8efab9a96d44e71cf9210f65b0df97365b85b40cd2846f
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}

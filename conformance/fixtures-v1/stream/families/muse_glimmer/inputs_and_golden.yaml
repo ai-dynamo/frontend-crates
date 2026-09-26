@@ -1,0 +1,1031 @@
+corpus: stream
+family: muse_glimmer
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: muse_glimmer
+    model_label: Muse Glimmer
+    mode: streamv1
+    spec: https://huggingface.co/meta-models/Muse-Glimmer-30B
+    refs:
+      local: Muse Glimmer response_template decode spec (tokenizer_config.json)
+      corpus_contract: 'Chunks carry TOOL-STAGE input shapes: tool channels framed <|start|>assistant to=<fn><|message|>...<|eom|> (the muse_glimmer reasoning stage normalizes the primer-consumed first header) and narration unwrapped. SGLang serving feeds its detector reasoning-stage output with ALL channels framed, so its standalone captures diverge on narration-adjacent cases by construction. Raw whole-turn shapes live in the batch and reasoning corpora.'
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path) with markers split across chunks
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|sta
+        - delta_text: rt|>assistant to=get_weather<|mess
+        - delta_text: age|><atem:functi
+        - delta_text: 'on_calls>
+
+            <atem:invoke name="get_w'
+        - delta_text: 'eather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:inv'
+        - delta_text: 'oke>
+
+            </atem:function_calls><|eo'
+        - delta_text: m|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls inside one wrapper
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=functions<|message|><atem:function_calls>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            '
+        - delta_text: '<atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            </atem:invoke>
+
+            '
+        - delta_text: </atem:function_calls><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.b:
+        description: Two invokes close together in one tool channel chunk
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><atem:invoke name="get_time"><atem:parameter name="timezone">EST</atem:parameter></atem:invoke></atem:function_calls><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.c:
+        description: Parallel calls with surrounding narration, chained by <|eom|>
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Let me look both up. '
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls>'
+        - delta_text: '<|eom|><|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ' Fetching now.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.2.d:
+        description: Same name twice (id distinctness), separate channel messages
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text passthrough)
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how can I hel
+        - delta_text: p you today?
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.a:
+        description: Wrapper with garbage / no parsable body
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            '
+        - delta_text: 'complete nonsense, no invoke here
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Unterminated JSON-shaped parameter value falls back to raw text
+        ref: Muse Glimmer value_parser json with allow_non_json
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:invoke name="search"><atem:parameter name="query">{"unclosed": </atem:parameter></atem:invoke><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.4.c:
+        description: Recipient-less message is content, not a tool channel
+        ref: Muse Glimmer recipient-routed channel grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant<|message|>No tool recipient was supplied.<|eot|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Missing parameter close drops the malformed invoke
+        ref: Muse Glimmer ATEM parameter grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.e:
+        description: Malformed invoke prefix followed by a valid complete invoke
+        ref: Muse Glimmer ATEM invoke recovery
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name=broken><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.4.f:
+        description: Tool name emitted as an XML tag instead of an ATEM invoke
+        ref: Muse Glimmer requires the invoke name attribute
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_weather<|message|><atem:function_calls><get_weather><atem:parameter name="location">NYC</atem:parameter></get_weather></atem:function_calls><|eom|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.a:
+        description: Missing end marker after a complete body (EOF recovery)
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.b:
+        description: Complete tool call without the assistant prefix
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ' to=get_weather<|message|><atem:function_calls>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.h:
+        description: Orphan close marker split across chunks after prefix prose
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Sure, here is the plan.</atem:inv
+        - delta_text: oke>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-arguments
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NY'
+        - delta_text: ''
+          finish_reason: length
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only the end marker (body complete)
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            '
+        - delta_text: ''
+          finish_reason: length
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-argument value
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">ES'
+        - delta_text: ''
+          finish_reason: length
+      TOOLCALLING.streamv1.5.f:
+        description: Bare valid invoke before a complete block-wrapped call
+        ref: Muse Glimmer accepts invokes with or without function_calls wrapping inside a tool channel
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+        - delta_text: <|start|>assistant to=get_time<|message|><atem:function_calls><atem:invoke name="get_time"><atem:parameter name="timezone">EST</atem:parameter></atem:invoke></atem:function_calls><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.5.g:
+        description: Orphan invoke close after prefix prose in one chunk
+        ref: Muse Glimmer ATEM invoke recovery
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Sure, here is the plan.</atem:invoke>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty arguments
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: ping
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<|start|>assistant to=ping<|message|><atem:function_calls>
+
+            <atem:invoke name="ping"></atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside the empty-arguments form
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: ping
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: "<|start|>assistant to=ping<|message|><atem:function_calls>\n<atem:invoke name=\"ping\">\n   \n</atem:invoke>\n</atem:function_calls><|eom|>"
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.6.c:
+        description: Missing arguments section has no distinct Muse spelling
+        explanation: Muse represents a parameterless call as an empty invoke, already covered by TOOLCALLING.streamv1.6.a; it has no arguments key or required body whose absence forms a separate case.
+        unavailable:
+          dynamo_v2: Muse has no arguments key whose absence differs from an empty invoke; TOOLCALLING.streamv1.6.a is its parameterless form.
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types (string + int + bool)
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            '
+        - delta_text: '<atem:parameter name="query">muse glimmer</atem:parameter>
+
+            <atem:parameter name="limit">5</atem:parameter>
+
+            '
+        - delta_text: '<atem:parameter name="safe">true</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped characters in a string value, split mid-multibyte run
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">καλημέρα '
+        - delta_text: '你好 — "quoted"</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.c:
+        description: String value where the tool schema declares an integer
+        ref: Muse Glimmer raw-value fallback
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: <|start|>assistant to=set_temperature<|message|><atem:invoke name="set_temperature"><atem:parameter name="celsius">twenty</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object and array parameter value
+        ref: Muse Glimmer value_parser json
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <|start|>assistant to=process_data<|message|><atem:invoke name="process_data"><atem:parameter name="payload">{"items":[1,2,3],"config":{"nested":true}}</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.e:
+        description: Large deep JSON-edge argument payload
+        ref: Muse Glimmer value_parser json
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <|start|>assistant to=process_data<|message|><atem:invoke name="process_data"><atem:parameter name="payload">{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves an integer beyond f64 contiguous precision
+        ref: Muse Glimmer value_parser json
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: integer
+        chunks:
+        - delta_text: <|start|>assistant to=set_limit<|message|><atem:invoke name="set_limit"><atem:parameter name="count">9007199254740993</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before the tool call only
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'Checking the weather now. '
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after the tool call only
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ' Called the weather service.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'One moment. '
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: Muse Glimmer recipient-routed channel framing
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ' Now the time. '
+        - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice) in one wrapper
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            '
+        - delta_text: '<atem:invoke name="get_weather">
+
+            <atem:parameter name="location">NYC</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.11.a:
+        description: Recipient and invoke tool names disagree
+        ref: Muse Glimmer invoke name is the structured call owner
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_time<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.11.b:
+        description: Empty invoke name is malformed and produces no call
+        ref: Muse Glimmer invoke name attribute requires a non-empty value
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=get_weather<|message|><atem:invoke name=""><atem:parameter name="location">NYC</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.11.c:
+        description: No distinct generation-primer header exists beyond the recipient prefix case
+        explanation: Muse always needs a recipient header to distinguish tool markup from quoted prose. Omitting only the assistant prefix is TOOLCALLING.streamv1.5.b; omitting the recipient header too is intentionally ordinary text, not a second call form.
+        unavailable:
+          dynamo_v2: Muse has no separate generation-primer header; assistant-prefix omission is covered by TOOLCALLING.streamv1.5.b, while headerless ATEM remains prose by design.
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name absent from supplied tools
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=get_stock<|message|><atem:function_calls>
+
+            <atem:invoke name="get_stock">
+
+            <atem:parameter name="symbol">NVDA</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.13.c:
+        description: Known and unknown invokes in one tool channel
+        ref: Muse Glimmer unknown names pass through unchanged
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant to=functions<|message|><atem:invoke name="get_weather"><atem:parameter name="location">NYC</atem:parameter></atem:invoke><atem:invoke name="unknown_tool"><atem:parameter name="location">LA</atem:parameter></atem:invoke><|eom|>
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.a:
+        description: Call/body separator characters inside one argument string value
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">text with </atem:parameter> inside</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.b:
+        description: Structural delimiters inside one argument string value
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">text with </atem:invoke> inside</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.30.c:
+        description: The family's own tool-call marker text inside one argument string value
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">quote: <atem:function_calls> is the opener</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.a:
+        description: Multi-call response with a call separator inside the first argument string
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">has </atem:parameter> inside</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: search
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+              limit:
+                type: integer
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<|start|>assistant to=search<|message|><atem:function_calls>
+
+            <atem:invoke name="search">
+
+            <atem:parameter name="query">has </atem:invoke> inside</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: '<|start|>assistant to=get_time<|message|><atem:function_calls>
+
+            <atem:invoke name="get_time">
+
+            <atem:parameter name="timezone">EST</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+        - delta_text: ''
+          finish_reason: tool_calls
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: Muse Glimmer response_template ATEM grammar
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>as
+        - delta_text: sistant to
+        - delta_text: =get_weath
+        - delta_text: er<|messag
+        - delta_text: e|><atem:f
+        - delta_text: unction_ca
+        - delta_text: 'lls>
+
+            <atem'
+        - delta_text: :invoke na
+        - delta_text: me="get_we
+        - delta_text: 'ather">
+
+            <a'
+        - delta_text: tem:parame
+        - delta_text: ter name="
+        - delta_text: location">
+        - delta_text: 'NYC</atem:'
+        - delta_text: parameter>
+        - delta_text: '
+
+            </atem:in'
+        - delta_text: 'voke>
+
+            </at'
+        - delta_text: em:functio
+        - delta_text: n_calls><|
+        - delta_text: eom|>
+        - delta_text: ''
+          finish_reason: tool_calls

@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: null
 provenance:
   status: captured
   origin:
@@ -8,1144 +10,269 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 926ee5284cb471b4fe10fb43302454e7396c9fb03e78c011d0580b01bff5be80
+    producer: dynamo_v2-0.1.23
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: e74d4463bfb4867b2a3d6a84af5086131163529dad42f01ec5f53b03bfa9e29e
+    producer: dynamo_v2-0.1.23
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: ea9b16c1a7055f57c0b2d3e4c30bc6fc410340d700cfcc1a6667a0d21f283b70
+    producer: dynamo_v2-0.1.23
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 7a2c7b7f312a68cf351b6fbffe31d1b6d602692826ffbac0af186f787086b452
+    producer: dynamo_v2-0.1.23
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: abafaeb54c8378bf60713a5fcdd87473f61ea756a47609133217560a753e675c
+    producer: dynamo_v2-0.1.23
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 59d966416fb2016d321235ab904bc5c9544a4fee95de78303400ee85c8e214b3
+    producer: dynamo_v2-0.1.23
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a2ab65cc0906c9c592c80fda25fe88adbe88c8f20ccd2d8a2615ccad8ac9169e
+    producer: dynamo_v2-0.1.23
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: f1af4838f3ffa80d3dbc17dcdf707feb1caa0bf43760a2cbfd918f4b452b9173
+    producer: dynamo_v2-0.1.23
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 7257eece0b11a64d8850bcefb45a11da331d54eb9cba43d2756d9f9068ae4800
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 05c3556e5daccd4d08915576c52e8e7049a49e1b54d8a06a76149dc0e168a4ef
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: fcd9beacd5e8e1726f5ef96bc5f1ac261bdc1862fa66b934e3d32f66823f3724
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 96f74ff506e0279e415ae789305efa9a8f766e6c3f1ea251d34b343516f35e38
+    producer: dynamo_v2-0.1.23
   guided_json_invalid_call:
-    case_key: UNIFIED.31-1
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 56e04fc3f3cffb5f0996cde775a2f8d30a6089b78e931e5d52efc87e0f8ef09c
+    producer: dynamo_v2-0.1.23
   guided_json_list_with_broken_element:
-    case_key: UNIFIED.31-4
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1dd15d7a51b13fbfda72593e671a50f9c41da91746c3bb113a7adf5759f51568
+    producer: dynamo_v2-0.1.23
   guided_json_malformed_json:
-    case_key: UNIFIED.31-2
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: cad5962bdd546ba4cf11520cf4a7ae81c7a8e226bea389794ddf520175c93478
+    producer: dynamo_v2-0.1.23
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 36146a634e78e614edbcb3b5eb502000d1ae0bc7e24833c31d6ea175acbfd49c
+    producer: dynamo_v2-0.1.23
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 5c68a88b42d2f93a6d6504fca0c43b18f1480d7092b5672fd7f798279c98a3c9
+    producer: dynamo_v2-0.1.23
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31-8
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 2f210bc647a00d52744b12307e8b3c04f9f9c8d300014f1ab263065a343d6e04
+    producer: dynamo_v2-0.1.23
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 24e450d512214b21340cf9d5cfd6299ffa1d1389486bc8e06e7224d7051a1f0a
+    producer: dynamo_v2-0.1.23
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 97479a6716e7a7e9847a5073925c70903cdcde92ee8d6981f9e5355cfefec603
+    producer: dynamo_v2-0.1.23
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31-10
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 5279bc086333d532b9d5b6e21da13fdb4480196824a5ce50b863c26f3405fdaa
+    producer: dynamo_v2-0.1.23
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31-11
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 87ce9f4f2adfe83febc78f1ebc19967ee5d5b6e9002adf956c96cac6f11da3ae
+    producer: dynamo_v2-0.1.23
   guided_json_partial_calls:
-    case_key: UNIFIED.31-3
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4944e83acea3739846bb058ddb3f7ab45b369afcb5f5baa565ef91d727d09561
+    producer: dynamo_v2-0.1.23
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31-9
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 58529270d04daf0891b77a6daf39f58d55907e37f406804cca55b8626eab60b3
+    producer: dynamo_v2-0.1.23
   guided_json_quoted_bare_header_after_payload:
-    case_key: UNIFIED.31-27
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 3d5e1e92bd5b43f7d83bf080261ce59a52d70ebf6af58808fada12241e353745
+    producer: dynamo_v2-0.1.23
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.31-25
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: ed7bba98a371bf6f116cc74e606ab203208f4a2851ddff89ca71fdd7b9c4f3f3
+    producer: dynamo_v2-0.1.23
   guided_json_quoted_bare_tool_header_in_answer:
-    case_key: UNIFIED.31-26
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a2f7b607932dc13a407068c411fe3b2554a8e94e1aa49ab5ba628d12a026c94f
+    producer: dynamo_v2-0.1.23
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 608454bab59bf081f76c1b13d268e01432856319dbe0172fda56ae8e765ab595
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 312c219321e8c8c3ec51010d221d4cfc32d1c0accd3db8ea3007ad27558fdebb
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31-18
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 2a1bd967138261de18cb5da8817b924932f9898609137a6d0d8add336ef1309b
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31-19
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: c391cb28d4bfbe3ef36c3b2c209de21bd6fed1b5ff772ec2a8e4b892bfc6216f
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 30d37dc6aeb84e2bb1b4d66318f04a1d22ce84008e05dedf22d7ec1c499e800e
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31-15
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 9d4e19db47e2c6d71f6610443dd0379668d1c8ca09f84c2d85ad356d57b5ed06
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31-16
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: da7025bec0d1888c0e601a6319a22b7e5fa883447326fe928ad8a70b470619f2
+    producer: dynamo_v2-0.1.23
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a8e267f78d44015c07d471830f0c5eeca2b5eb41739226466fc8aed7bf2d65d9
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: ddafc48ae315b390cef683059297c720324b517b5f4dfe8ecf33f85664acb1ad
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.31-12
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: f26676ed312bb7b63f892891e8bbc9c44aa3882b062949e8b27d2d218274d5df
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.31-13
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 8d41e73b7309ac2a0526c5124616d4831d737d2c1c9c076a18ab2b39db0c95c8
+    producer: dynamo_v2-0.1.23
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31-6
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 8c7f6c8d7186fa0a2c6ae97cd38db8c92abd8d0ae21a59936a978b5edd988f19
+    producer: dynamo_v2-0.1.23
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31-5
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 3e00d014b468ec2f1497c1ab28199280fab1cc9246ff56018d9d887f94f0a0d9
+    producer: dynamo_v2-0.1.23
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4a7ee80221dbd961d36a5b48b22be925146481fd6726e9203b8852160f113101
+    producer: dynamo_v2-0.1.23
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: dff5f80a6c12afae73fc2838c04e63b8ecab5e8ce94a5ca9123abc3e6cf98c23
+    producer: dynamo_v2-0.1.23
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31-7
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 576249f162174cb9b5576cd3da6b57ef649bd4fbeb95c55a0f636253e31e7383
+    producer: dynamo_v2-0.1.23
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 1fa72f42cd0b659f4b52eec3252d7fd82db3cdb110cbdba233df2c2a763d7438
+    producer: dynamo_v2-0.1.23
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 30b91099bfe09537a708bbc29b4c252dc34841a5ab24d5a1c750cd496090c06c
+    producer: dynamo_v2-0.1.23
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 6290d7f67b17c7b23403a961bdd2338965c455c2d854e2510d6eef4fd1c9796a
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 210f1e5b1343a3a5352229df587f50fc06495e022cb6ec2dfec1715f35254c44
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: d373894ca858332a1ecea8bd9654c1e2bf77fcb44dc5ad9268213aeec3278de6
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 58d6a29d62b73fedfdde1740fce775218de6e5e3025680e968a23dce9f2dcce0
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: fc951181a70242e32f4718d77ee06d08f89a3272f3c6743cccfaf1c968161561
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 34e4c57e4a9267e99587eaba0ed138fccefef60935f30e04f8ddd42f191b7891
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 3e79dbcde028dc70bb1a973b37eb08318c06bbe2a9c4a44c8effebb501db54bd
+    producer: dynamo_v2-0.1.23
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a65e23b43c5d036cc66616a2e3c29f1e1c750ba9c77058b673e53643018380e5
+    producer: dynamo_v2-0.1.23
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: bcd54bfcdafc14b8058dbf0475517d280be4962cd6558db36106f0c963f7f5d5
+    producer: dynamo_v2-0.1.23
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: d6bbd067ed38b58d7a84a10ba3ea3127c87e457a937b860877e1f6a3c62c5059
+    producer: dynamo_v2-0.1.23
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 0446d653ce5739aa981c6aa5ea82790cc559d07dc28d106171c403ba2ab25430
+    producer: dynamo_v2-0.1.23
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 3de0068ef990e4c64022020b73136fc600ec4e93679697e35ad7ec69eab78e42
+    producer: dynamo_v2-0.1.23
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 8ab20303557a1fe65485fe1fba5e3605050a4c2fd9ae046633a6e7200d5fa54a
+    producer: dynamo_v2-0.1.23
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 145c3d1cace6a36e580652626487d863675080bae935796dcad5e9cc50c704c3
+    producer: dynamo_v2-0.1.23
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: b1fc70ffa5c8476b66a86977d7f59af1a00c9dfea06261b153e634d1cd275267
+    producer: dynamo_v2-0.1.23
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 4d0756a2270e77dc63811dfbf2e358beec7ed68a194f9fa27284f37c5c1eea4d
+    producer: dynamo_v2-0.1.23
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: cd0e1ec4e956b706a956bbf8159bae25fbaad37b264040386ff6107ee7da9754
+    producer: dynamo_v2-0.1.23
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 2f3967d8405331ea4a077a153895fe2a2286e96b17521b0e4a281644f3ca37aa
+    producer: dynamo_v2-0.1.23
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 1d12249067e15dfddabc73aa872c18924cbd58bd4d668cd02941bd2a2e7d3090
+    producer: dynamo_v2-0.1.23
   retired__30_14:
-    case_key: UNIFIED.30-14
-    stimulus:
-      inline:
-        input: '<atem:invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: '<atem:invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a >'
-        - delta_text: ' b"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 6b4bebfbd6b81bb6fd710c323732124ae7ef4f9f88d78b2c98af0ae4fefe0bc1
+    producer: dynamo_v2-0.1.23
   retired__31_33:
-    case_key: UNIFIED.31-33
-    stimulus:
-      inline:
-        input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
-
-          <atem:parameter name="x">é🙂<par{value}</atem:parameter>
-
-          </atem:invoke> after<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <|start|>
-        - delta_text: assistant to=self
-        - delta_text: <|message|>
-        - delta_text: 'before '
-        - delta_text: <atem:invoke name="f">
-        - delta_text: '
-
-            '
-        - delta_text: <atem:parameter name="x">
-        - delta_text: é🙂
-        - delta_text: <par{value}</atem:parameter>
-        - delta_text: '
-
-            '
-        - delta_text: </atem:invoke>
-        - delta_text: ' after'
-        - delta_text: <|eom|>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 93e0d161fb06ba188896f89a13fa95617c5225f3852335eddc7757f843303c79
+    producer: dynamo_v2-0.1.23
   retired__31_34:
-    case_key: UNIFIED.31-34
-    stimulus:
-      inline:
-        input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: Response
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: to=self
-        - delta_text: <|message|>
-        - delta_text: literal
-        - delta_text: <|eom|>
-        - delta_text: <atem:invoke name="f">
-        - delta_text: <atem:parameter name="x">
-        - delta_text: '{"city":"Rome"}'
-        - delta_text: </atem:parameter>
-        - delta_text: </atem:invoke>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: f1dba43f302e31bfc9dfbc80b0144066b27cba692d9e980fbf014e4ab0076093
+    producer: dynamo_v2-0.1.23
   retired__31_35:
-    case_key: UNIFIED.31-35
-    stimulus:
-      inline:
-        input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: Response
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: to=self
-        - delta_text: <|message|>
-        - delta_text: literal
-        - delta_text: <|eom|>
-        - delta_text: <atem:invoke name="f">
-        - delta_text: <atem:parameter name="x">
-        - delta_text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
-        - delta_text: </atem:parameter>
-        - delta_text: </atem:invoke>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: cd830430d30480d89463aefa77becc19ca200d6d654b49c8564a1870fbb3e74b
+    producer: dynamo_v2-0.1.23
   retired__31_37:
-    case_key: UNIFIED.31-37
-    stimulus:
-      inline:
-        input: <atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <atem:invoke name="x<|eom|>
-        - delta_text: '[{"name":"f","arguments":{}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: fefe654436722ff162042608fec20b4b805e6a3470fa8cede63278720ad0559f
+    producer: dynamo_v2-0.1.23
   retired__31_40:
-    case_key: UNIFIED.31-40
-    stimulus:
-      inline:
-        input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
-
-          <atem:parameter name="x"><|start|>assistant to=self<|message|>quoted<|eom|></atem:parameter>
-
-          </atem:invoke> after<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <|start|>
-        - delta_text: assistant to=self
-        - delta_text: <|message|>
-        - delta_text: 'before '
-        - delta_text: <atem:invoke name="f">
-        - delta_text: '
-
-            '
-        - delta_text: <atem:parameter name="x">
-        - delta_text: <|start|>
-        - delta_text: assistant to=self
-        - delta_text: <|message|>
-        - delta_text: quoted
-        - delta_text: <|eom|>
-        - delta_text: </atem:parameter>
-        - delta_text: '
-
-            '
-        - delta_text: </atem:invoke>
-        - delta_text: ' after'
-        - delta_text: <|eom|>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 8557df961db0117e30ae88b63442d30dccb0974ca5704f836f37c768c3213950
+    producer: dynamo_v2-0.1.23
   retired__50_2:
-    case_key: UNIFIED.50-2
-    stimulus:
-      inline:
-        input: 'I mean to=self<|message|>literal<|eom|><atem:invoke name="</atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: Response
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: I mean to=self
-        - delta_text: <|message|>
-        - delta_text: literal
-        - delta_text: <|eom|>
-        - delta_text: <atem:invoke name="</atem:invoke>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1c893c1fbd533a4a8023bb37af3c74c93f64f6a05c33ae72af0be0b41a94f9de
+    producer: dynamo_v2-0.1.23
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 1bdb7eedb44dd76de8ff485cdb6d38c0d67f90e16eb6c55eecbc1a2a09307972
+    producer: dynamo_v2-0.1.23
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 369d1da6be0a5905261c443a19012dbf498f4a70c2a5ce3f79fe774da12d53bd
+    producer: dynamo_v2-0.1.23
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 2c86e7069d0d6f0ce41b2e1878c5991816ae4d167684febbb405ad52769e2a6a
+    producer: dynamo_v2-0.1.23
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 3c3e6f82a8882b90d2c2ae2fc0206cd604de771330b3e19798fe1924cb8ba81e
+    producer: dynamo_v2-0.1.23
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: c08ec3db06c2a04dfffd492c85d573d4e555e6e75b02990044ad032ad94118b4
+    producer: dynamo_v2-0.1.23
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: c60b7905c8a0c9b9118932cf006736ac8937a1d40b8b9da2b624890a65f19250
+    producer: dynamo_v2-0.1.23
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: b5aedf52aa77f702c4eca1d7648845b886446703c0f100656d85b2dc796617ca
+    producer: dynamo_v2-0.1.23
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 2840cbbc2374e2a0f0474c33730ec7ec6ea7b6bfb391b17002a73769e9ad017e
+    producer: dynamo_v2-0.1.23
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 34f28875343b8e0ca74491897a181c85847f716d590f132d1c7b63fc36893830
+    producer: dynamo_v2-0.1.23
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: d96f1d284de333f93ffcaae26e41377000a50d2dc9aaa85f7e51601647dcb3a5
+    producer: dynamo_v2-0.1.23
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: a3a2baa464c71ebad78d87a9f16a52a90e371cf00ad891b79432a2a402706fc7
+    producer: dynamo_v2-0.1.23
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 5535d9e50ac052f25a677dd577c8b50843840c26f9420229334f40988ca59ed5
+    producer: dynamo_v2-0.1.23
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: c5480ff85c2f14631e43171eb67f3c5b829b6bff262a0985df63446948899ad3
+    producer: dynamo_v2-0.1.23
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: debb2011e1c65ec718787742b6d44d58f9041227ae6290d8d94e916d289cc8ed
+    producer: dynamo_v2-0.1.23
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 3e1edafd3a69ad9a51b5fc77194201d281168f82293e702d0cc31729cad8c44c
+    producer: dynamo_v2-0.1.23
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: 76c9e8d7abcbabde409d759d08b1c7deaf65a3c73331b5cb4c859e52677b987a
+    producer: dynamo_v2-0.1.23
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: no reasoning parser registered for muse_glimmer
+    observation: c3e2eb880c96649bb4b86e46c1ca8bf6e82599dfbf0aaa082f0913b1170ec22c
+    producer: dynamo_v2-0.1.23
 metadata_changes:
   arg_marker_in_string:
     init:

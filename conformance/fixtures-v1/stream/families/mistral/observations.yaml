@@ -1,0 +1,6825 @@
+schema: bound-observations-v1
+observations:
+  96b2b0bd9c2d9eec99bb2446da7e73be4b1c6bcb4491c57e29bae0c9055f51d9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  76f1ea584d20a2bb068a50a19e70db1e9a62581e9387799abbef8f979e7b5f21:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  abeefae44dc15adc384918d0756fcc13781985f1e8ee1118da9a4d4217fa86e0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  c65fb67c749b6507592d09dc82bf8cab242e40d381b78482d59b105bcb7a0ace:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "unknown_tool",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: unknown_tool
+          arguments: '{"location":"LA"}'
+      - expected: []
+  0607c32b9c5c5512c5761b241b01ff6de55a3e892970d3f64e3beb528cebb85b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  b6461e9e8b074a7aeba175382decf98e9e147eb06ee4f0943941f0b5da3410b8:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  265f480f5ea5f232a180d49d5091ef6d9db6f8889326424481610aee1399b6f0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  c16c03128307ab2edc742f913d1807e886cd97a0ffe48a11d6e46a56498d1c5d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: Hello, how
+      - delta_text: ' can'
+      - delta_text: ' I help you'
+      - delta_text: ' today?'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Hello, how
+      - expected: []
+        normal_text: ' can'
+      - expected: []
+        normal_text: ' I help you'
+      - expected: []
+        normal_text: ' today?'
+      - expected: []
+  55be0e293dd184e5480efec13f6d4ff09d68635653fc7b143d39e3b212375710:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT a, SELECT b"}'
+      - expected: []
+  02752e7e80ff7b4b2237ad3e5affc68035c49bbc350b1bc8c9fa7f4a98a0835b:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+      - expected: []
+  4e23123052e06540685778b10bb92b69e6f4762f22f5a2e4dc340f407bf08331:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' [TOOL_CALLS marker]'
+      - delta_text: '[]'
+      - delta_text: '[/TOOL_CALLS marker]'
+      - delta_text: ' stays text"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"literal [TOOL_CALLS marker][][/TOOL_CALLS marker] stays text"}'
+      - expected: []
+  4c16ad45f5ccc1c25c38e3997e859c9dbae8097133bd99d52004f15cfd3309f6:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments": {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT a, SELECT b"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  774553984990b46e7d10b80e11e9b1f2985ddc9a0c8c895238d5982a52911586:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  eeb44e20f31beaa7d7fb0be55c11b3f294cb49b2423884f4aacd9ef2a5be4008:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS]no'
+      - delta_text: n
+      - delta_text: sense[/TOOL_CALLS]
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  d6fce901956eb528c53901998b3846d3c765ca32e6ca8857e31c941fed1853bb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  8cd98256055634feb296d85ab6f887b7785d4ce1962095d7fc3b550c29467eb1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  afdcae9fef9cd356a974b904c8db00e37aea3f420a99ea189123404c09a8b054:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+  cb606ab311027c71a528f7cfd8eb7c5f1b13657563bcd828aa01078c85110753:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  b7dcb79fd401f7ffeed252bc9a1247d1a9f65c2d6cfc983a066dc0a11a7f44d2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  c7235274e48585ed3a1898c0901a403a913b4c0f0c146af8ba7745c3cf304823:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"New York"}'
+  06bff469365daff2f3fba418f697f93e0b16d298bffc9bf38ea43354cf6d244e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+  d694163044a58406b4b1a5d5c7dd03e3adf52467a7910da6f585464b4cc14d63:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[T'
+      - delta_text: OOL
+      - delta_text: _CALL
+      - delta_text: 'S][{"name":'
+      - delta_text: ' "get_weather", "ar'
+      - delta_text: gu
+      - delta_text: men
+      - delta_text: 'ts": '
+      - delta_text: '{"location"'
+      - delta_text: ': "NYC"}}][/TOOL_CA'
+      - delta_text: LL
+      - delta_text: S]
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  5e455e2a9ac6e7465904e25d18f3496c8db70fb1b949862834c7cd42e96e4fe3:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  23242c192e1223fb2a499dccdee2d22879fe6bb435b2092c402f7d59b4bd2cf0:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  911f9e49d18dd2d33ff6379a957ece445d8865e98984186ea788568b3c96b9e1:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  c60601c2185b1a4cfbb578e0ca3b0c3acbdf58c6e1b381a1e0078fb73ca53a1f:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+          arguments: '{"destination":"Paris","first_class":true,"passengers":2}'
+      - expected: []
+  85fc5b022adaf9a0225689f7647cb70382ea9f79fd6652d264932708e54aec5f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Tōkyō \"central\""}'
+      - expected: []
+  a10108977bba5f8112a37c27326ad9a61548ffdb009970536419bd7c11c829cf:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: set_temperature
+          arguments: '{"celsius":"20"}'
+      - expected: []
+  95c4da07fb484bbf7ff5e16780ee4a37e8bfd94b9fcfe4df61d395a25d380edf:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"config":{"nested":true},"items":[1,2,3]}'
+      - expected: []
+  25c864629449e7c50fb06441ada29ef09cec9fddee4f5b42ce82a20ed57f4d97:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"payload":{"empty":{},"flags":{"enabled":true,"retry":null},"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]}}'
+      - expected: []
+  06bf3e1bf91776ac4858c6b88d9042be7cd6ddef8e3e82e5010f9e260784ce0f:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: set_limit
+          arguments: '{"count":9007199254740993}'
+      - expected: []
+  f15932899dedfcdaf34180c6c0530a15f332647079619031d79369b5fe6a50aa:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  f70d494c270b57247f567021f93a50d59ef73599ac1b7a8de160e080be09a6bd:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let'
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let'
+      - expected: []
+        normal_text: ' me'
+      - expected: []
+        normal_text: ' know if'
+      - expected: []
+        normal_text: ' you need more.'
+      - expected: []
+  3d59e9d2a50ac18993ce677bb8f6f848f36317c5282178ddfea47135c0cdef93:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  6b5dc634ff2ed079f9e0ed7196565bd70d37851640e94f794c7287d1e3e913ce:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Then check'
+      - delta_text: ' LA'
+      - delta_text: ' weather. [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Then check'
+      - expected: []
+        normal_text: ' LA'
+      - expected: []
+        normal_text: ' weather. '
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  b54fe479c782c9d5facad3ad3c2a2fa63334456b6e24e45e24d38a4caa5620b4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+  830d967af255a8bce86539eeae191960e451313f47800835818a2b49faa0d930:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '   '
+      - expected: []
+  ec4557717ccfa9b60748a7e3f199301531845f51415ce1010d394b657833eb73:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  1f11bc480ed1ec8a07baa2a301ddb5a0d84d65c4054b3abf7d22a39d4522b88f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  6a60fde5211908c53cca84247ae926ec7880c1ea6331a87c32b228c984acb8a5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  bd123136bbd2e533e2fd7318c380d5845f2c0c6e3095acf16fbbd27643fe468b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "unknown_tool",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  5eaf4ba6b55ab362f53616860f3594f28e7815fd044814beb45cba768f9301a2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  663d3c1cde05ca2e92c2fd88abe767cac6d837fa9b4f29ad65c44c8e3fd79953:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  a7f6f9d4f858e6b2fcdb3f0a28dbcbc858419e332a797c9c71499814e8e5ef26:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  b03c416dc989dd7c7006ec9bab5d15159fa1dd9a5710097c32a4d73c4c22198e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  51232b53b4369956ffd29bdf10094b89af986e04f7d5caf4534c0fabb00fb6f4:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  ee9764a79765ded97639cd97e8fbec588237039a98c3151403719ce6b1fbe23d:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' [TOOL_CALLS marker]'
+      - delta_text: '[]'
+      - delta_text: '[/TOOL_CALLS marker]'
+      - delta_text: ' stays text"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  e5cf073683ace4ab9543f5da1f4426009d18a1d1017a35e09fbcea82726a40ca:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments": {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  90b7a0fb2a5c2c92898b1f47bca879ff3d0c54c96dbe3cd21fa6c4ff05a0f713:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  bffa7b11a30b9a0689fc2c5cffd62c511ef3556499229c96a78dfdeff2b8d679:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS]no'
+      - delta_text: n
+      - delta_text: sense[/TOOL_CALLS]
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  f3fae1dfb6a1191d29ece59bb04ceb5532e7485eaa84714a9a1c430409571d46:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  7d1d29922139c3ac005142843e44ebec8da27dc5de1b23ed9fc5fd3a622e4f24:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  50dbb43669a0f2ba3ec85787bb7e86a2ad60930a04aa04e0e39966296b6bbfcb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  f1e9d89b6bd2c4014f4ab93c7b005766061261e9526ab08a018fe807f96872c0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}[/TOOL_CALLS'
+      - expected: []
+  e954c8f5c9a6ebf98d330945ae5ced89a455eddade6fdd0773e72f8d06e69cbe:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  dc35bfd4054bae10c9522713d59adfc3f7a37053139fa02377b0f3a1a29dc2d4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  cc289b97b3571154e0bcec3496cb6e22ea4c05a255f67a6bd08807986e5db8d4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  19df70c880799a622bdd7dac9e195f2bf812c3c853c69764e9fcf9852ae631cb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[T'
+      - delta_text: OOL
+      - delta_text: _CALL
+      - delta_text: 'S][{"name":'
+      - delta_text: ' "get_weather", "ar'
+      - delta_text: gu
+      - delta_text: men
+      - delta_text: 'ts": '
+      - delta_text: '{"location"'
+      - delta_text: ': "NYC"}}][/TOOL_CA'
+      - delta_text: LL
+      - delta_text: S]
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  40d7877a4273705e3fdf47321d2f1f35cbc19e92f8a7d968f12cf40b5cba6f37:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  a6d67782de0ed30712b844b197395743e23bb848cde7918a0dbc7e19046c2c0b:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  8394c96a33ef841d75ea08e02301df6f0d956d2498b281fc517c27648ea0d384:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  25eb7f90c192b6ee4da377dfe9df58831714ee94f81cd43c8441fcadea13c0b9:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  b656f8da1a0ac22b7c85390e067c1c46f752413714104e08cb885da94a46e0e3:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  8f6d85cd3067fb34ec8ef50d3b850991dac1ebd4ecbafb971c1728a7572dfc9a:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  ce0b80e35554727e68d8316f619a77b75739b7ffb987ad7f704e094e2608d651:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  f11f8c6093ab54f0da63e1a1cf48172f6996a4259783c618ecca352d107b7850:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  f89ce86a4883960edcf17f9c54a90adba6e8be6b15af69ff6d602e9187fca3d9:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  e6e374aca578512ff94cad9311956c95c86bfc695c7dd4dbf33cd45281325213:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  37f565e92c5a6f4295c1ef17a9390dbe1462de884b4d293da7b749fee0515eb7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let'
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  e3b26865f9f3e15392a575c695a59e0f1480f2e7f52c9f5d7fa9360efad88379:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  6b95e57999a7699b607e6ea626ea25eff970f1f90d0a4d54329d99033794938f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Then check'
+      - delta_text: ' LA'
+      - delta_text: ' weather. [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  9e978c4778dfc597a65816778dfc7a94c68d99ff78e001f901e5f2b334949c04:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  a882903be2da35552fb276a10a324fd8b56236505f3b62e5348d547a62b73f51:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  5e7eb032a618f8c7e439794fec35c3e388dac10a4950d4a9682b9b2ea3e03818:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  71404fcac6a4f86eface18d61dcda4c24b057b61c00f6048b8b5252e08e00522:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  2a1a15ca03be68ef085acdcf6e9e2cde5e038abe953a75b75e3bdc1d9454c025:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "unknown_tool",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: unknown_tool
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  9929a59f61bf18c59ca8ba73a6e444b920b5266e161ef1ff1d78e50d5eb6d599:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_time
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  236b74b5c79de93f4d448f04704d6ebaa69c1d96c51a27a9eb446e27d93afe55:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":'
+      - expected:
+        - index: 0
+          arguments: ' "NYC"}'
+      - expected:
+        - index: 0
+          name: get_time
+      - expected:
+        - index: 0
+          arguments: '{"timezone":'
+      - expected: []
+      - expected: []
+  d09e9dd051d3838ab77fdfe1774c9c39d1bf6e25cdf8b8abab42ffc488de2d67:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  8006f52fc6e141cebad4f4226b0246d40eac9819488ccea8841f3ba09b34f00e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a, SELECT'
+      - expected:
+        - index: 0
+          arguments: ' b"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  c15019d351b216687483e8b56a86b4b51210c907fbdbf35a1a293f7f71a5b67a:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]'
+      - expected: []
+      - expected: []
+  d217c9d6c1c37ae87c10567f0e64d9b665346ed0c6f7e0565704c594cb20b1ff:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' [TOOL_CALLS marker]'
+      - delta_text: '[]'
+      - delta_text: '[/TOOL_CALLS marker]'
+      - delta_text: ' stays text"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "literal'
+      - expected:
+        - index: 0
+          arguments: ' [TOOL_CALLS marker]'
+      - expected:
+        - index: 0
+          arguments: '[]'
+      - expected:
+        - index: 0
+          arguments: '[/TOOL_CALLS marker]'
+      - expected: []
+      - expected: []
+  cc306ad99725d9318b2fa5a39cd1b3610128a508405561fb0366e7d2002aa22e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments": {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a, SELECT'
+      - expected:
+        - index: 0
+          arguments: ' b"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  ec5c2e5e922c284c71b4741946e7ec3b2496a5058bd257e22b2af0220ac4c9ce:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]'
+      - expected:
+        - index: 0
+          arguments: '"}'
+      - expected:
+        - index: 0
+          name: get_time
+      - expected:
+        - index: 0
+          arguments: '{"timezone":'
+      - expected:
+        - index: 0
+          arguments: ' "EST"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  4030e4c4c8829fae43bf91c3170e802b7d5ce18d143e1fa64452dc335c409194:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+  ffaca96803277f81f23fd15e8aabcae8037ea10b068dc2c6f3c7f358d77fb5b2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          arguments: '{"location":'
+      - expected: []
+      - expected: []
+  378af670a0675cc5aaef6751305dee0cbdfabf653527ae33d7908490296e3387:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+  c6af11542621064a61f7cb4765cafd16d0087f5ec60cab8c3f206d25f2a262ee:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}][/TOOL_CALLS]'
+      - expected: []
+  7533415b5ae1a7853b48920fc149b67a9160bc9e79dd68192a496a0eaa65019e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"loc'
+      - expected: []
+  d399e7a90559f0fe578bcaea288431f25115b1dfbe20c533624181ccb9ca26ad:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location":'
+      - expected:
+        - index: 0
+          arguments: ' "Boston"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+      - expected:
+        - index: 1
+          arguments: '{"location": "New'
+      - expected:
+        - index: 1
+          arguments: ' York"}'
+      - expected: []
+  062af2d8953ec146f2e52384282720456e41b5ced6b17d3b2e58f2c82920781e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location":'
+      - expected:
+        - index: 0
+          arguments: ' "Boston"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+      - expected:
+        - index: 1
+          arguments: '{"location": "New'
+      - expected:
+        - index: 1
+          arguments: ' York'
+      - expected: []
+  b9f65fd5f3258f673e2f368a879e80e0e27ca9d34f06e77c2cffddf0de14a501:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[T'
+      - delta_text: OOL
+      - delta_text: _CALL
+      - delta_text: 'S][{"name":'
+      - delta_text: ' "get_weather", "ar'
+      - delta_text: gu
+      - delta_text: men
+      - delta_text: 'ts": '
+      - delta_text: '{"location"'
+      - delta_text: ': "NYC"}}][/TOOL_CA'
+      - delta_text: LL
+      - delta_text: S]
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[T'
+      - expected: []
+        normal_text: OOL
+      - expected: []
+        normal_text: _CALL
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  59c43203f62f9e13ce3633df8e8342b45611f4a7fced08a950fa1d9ed96bd34e:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected: []
+      - expected: []
+  11e9444d28ce62853343092423766a273cfe43c81f2ca4de918ad595e6b1b8ea:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected:
+        - index: 0
+          arguments: '{ }'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  7cad6799d5b0769751eeb4697f9335f124c1d3071f348aa95f0b80241da05ff3:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  8e697ffc237218e3ba0e9b5de0494a8c1df4541d74d96deb20bf647d9e73c5a3:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+      - expected:
+        - index: 0
+          arguments: '{"destination": "Paris",'
+      - expected:
+        - index: 0
+          arguments: ' "passengers": 2,'
+      - expected:
+        - index: 0
+          arguments: ' "first_class":'
+      - expected: []
+      - expected: []
+  08a319842886d7ff8df3b63ea4304b512b814d160e93f4db32b08edeac6baefa:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "Tōkyō'
+      - expected: []
+      - expected: []
+  b88607e454eca834d433a797fa23177b844457ffdffa50b33b8a554f492a5d6d:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: set_temperature
+      - expected:
+        - index: 0
+          arguments: '{"celsius": "20"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  20c66e632e9bb11920cb488451d0e6fedfaef426f6ad36780d29438e4d1e4452:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+      - expected:
+        - index: 0
+          arguments: '{"items": [1,2,3]'
+      - expected:
+        - index: 0
+          arguments: ', "config":'
+      - expected:
+        - index: 0
+          arguments: ' {"nested":'
+      - expected: []
+      - expected: []
+  bb973842fd39029b17f7db84f8eb69fb1458d060d43a42552c76ed0677e78581:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+      - expected:
+        - index: 0
+          arguments: '{"payload": {"regions":'
+      - expected:
+        - index: 0
+          arguments: ' [{"name": "west",'
+      - expected:
+        - index: 0
+          arguments: ' "scores":'
+      - expected:
+        - index: 0
+          arguments: ' [1, 2,'
+      - expected:
+        - index: 0
+          arguments: ' 3]}, {"name":'
+      - expected:
+        - index: 0
+          arguments: ' "east",'
+      - expected:
+        - index: 0
+          arguments: ' "scores": [4,'
+      - expected:
+        - index: 0
+          arguments: ' 5,'
+      - expected:
+        - index: 0
+          arguments: ' 6]}]'
+      - expected:
+        - index: 0
+          arguments: ','
+      - expected:
+        - index: 0
+          arguments: ' "flags": {"enabled": true,'
+      - expected:
+        - index: 0
+          arguments: ' "retry": null},'
+      - expected:
+        - index: 0
+          arguments: ' "empty":'
+      - expected: []
+      - expected: []
+  df629a41c5311fa717effed95e1fda1b62d8585f465bd4443000a14a14ae0613:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: set_limit
+      - expected:
+        - index: 0
+          arguments: '{"count": 9007199254740993}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  62c5243d2f8cf0a44efe12d2f6a2b4b16dd648688be73daf9a6d4db98bb3a889:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  a2fe83fb6ed864322e7c18edd133ce19ba50a5b8b2e391afc9ab3f9ead5ee15d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let'
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Let'
+      - expected: []
+        normal_text: ' me'
+      - expected: []
+        normal_text: ' know if'
+      - expected: []
+        normal_text: ' you need more.'
+      - expected: []
+  e598d51de5f85f721da09453928d00d422cee9b2dfddab062c2c94b2c9d4aafe:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  91785705449e9fdf02ce6dabcf1bbd466d4510861a32d1e01007ea27c06eeb6e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Then check'
+      - delta_text: ' LA'
+      - delta_text: ' weather. [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Then check'
+      - expected: []
+        normal_text: ' LA'
+      - expected: []
+        normal_text: ' weather. '
+      - expected: []
+        normal_text: '[{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}][/TOOL_CALLS]'
+      - expected: []
+  d08631105e2735ba2d995fa72ebfffa22e0969dc001d3767905ed1fe3df94844:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":'
+      - expected:
+        - index: 0
+          arguments: ' "NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone":'
+      - expected: []
+      - expected: []
+  d8964e851a1f682401ff30ae03e61fa653f5697893a124fd179999b9e5fff57e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]'
+      - expected:
+        - index: 0
+          arguments: '"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone":'
+      - expected:
+        - index: 1
+          arguments: ' "EST"}'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  52cbdfb0eeb935217a22e8724833cfb131670f965b975253cd8b33299c9effbb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  4f981289a8e0ae503497138718e72f34ddc353c4e8518d3af22a9ec277093eb5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "LA"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  35962b66fa1000f5874b8907987e7586a7740f90cbe45bf5d675b4a4a861dcbf:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "unknown_tool",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  d0c236614bc15d5961ccef33233656fa00893512f0cc32809171384a23f41508:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "unknown_tool",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "unknown_tool",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "LA"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  9e3277a9efbe53153f061f9adc979826f713f92eb0ed732c9f64667753dfe6bc:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_time",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  875020c8ce8deb2236ce2d088e88a93ccd7585267ff1062b6e62a6648eadc95a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location":'
+      - expected: []
+        normal_text: ' "NYC"}}, {"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {"timezone":'
+      - expected: []
+        normal_text: ' "EST"}}][/TOOL_CALLS] Done.'
+      - expected: []
+  11f05e6694a1bb410fe844e6a13aa6fb0e28a372fcd85dfdbb503d190a7713ca:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "LA"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  a24c8e9f12eee71330bd38260998e383c37e70bb56cd0193c37bba9cfae6c0bb:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' a, SELECT'
+      - expected: []
+        normal_text: ' b"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  0d347538435a4c403fce6031b2686344e32e1078bb551cc7c16b2ad0de3e5412:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' value WHERE'
+      - expected: []
+        normal_text: ' note'
+      - expected: []
+        normal_text: ' has brace'
+      - expected: []
+        normal_text: ' } and bracket'
+      - expected: []
+        normal_text: ' ]'
+      - expected: []
+        normal_text: '"}}][/TOOL_CALLS]'
+      - expected: []
+  9dbdcc99eebb8eb924962bba07cc6373baddbe0b7aca8f60010c9085f8b1ce7e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' [TOOL_CALLS marker]'
+      - delta_text: '[]'
+      - delta_text: '[/TOOL_CALLS marker]'
+      - delta_text: ' stays text"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "literal'
+      - expected: []
+        normal_text: ' [TOOL_CALLS marker]'
+      - expected: []
+        normal_text: '[]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS marker]'
+      - expected: []
+        normal_text: ' stays text"}}][/TOOL_CALLS]'
+      - expected: []
+  c1f6d9868e04ed6ab0d2c23b89448cabae1760b62f2d357b4b112a2f20c473eb:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a, SELECT'
+      - delta_text: ' b"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments": {"timezone": "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' a, SELECT'
+      - expected: []
+        normal_text: ' b"}},'
+      - expected: []
+        normal_text: ' {"name": "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {"timezone": "EST"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  9c0db708766d29d4b064b4a925d99dc432a7f08a345f31e2b9bc7e2a8c1629a3:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' value WHERE'
+      - expected: []
+        normal_text: ' note'
+      - expected: []
+        normal_text: ' has brace'
+      - expected: []
+        normal_text: ' } and bracket'
+      - expected: []
+        normal_text: ' ]'
+      - expected: []
+        normal_text: '"}}, {"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {"timezone":'
+      - expected: []
+        normal_text: ' "EST"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  10a5527e8036f3cae6a8b3f89e8abb33ae6916be2c2220e50522583ad2680600:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS]no'
+      - delta_text: n
+      - delta_text: sense[/TOOL_CALLS]
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS]no'
+      - expected: []
+        normal_text: n
+      - expected: []
+        normal_text: sense[/TOOL_CALLS]
+      - expected: []
+  728e27a837e29ccaa5f1d26ac02ccbdface7ffe87e795bac9fdfbb05f916742c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  4271a10bca24bc0f732fad126bea7b758010a46b5b68d7000a432fdc9294428a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "NYC"}}][/TOOL_CALLS]'
+      - expected: []
+  e0d028c9beff0357eaa02de1986a0c5352508c5c9eee2c689c819962d6470a0a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+  6c38a0159a43b234da9fd3f148e60224af3a50e902c572f18a64893d49b35908:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"loc'
+      - expected: []
+  7ff3f26470834247907018df53c5e4e4ccb2dbc82dcfbf34152836a84019e384:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time![TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location": "New'
+      - expected: []
+        normal_text: ' York"}}]'
+      - expected: []
+  e163e3a3802c7b4e2ce932ce480af243330af9f69929e90296b078241afde1a2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time![TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time![TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location": "New'
+      - expected: []
+        normal_text: ' York'
+      - expected: []
+  7cce3b968195af14498a9a271e5685d4405f1ecceb0187721b79397b68b04637:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[T'
+      - delta_text: OOL
+      - delta_text: _CALL
+      - delta_text: 'S][{"name":'
+      - delta_text: ' "get_weather", "ar'
+      - delta_text: gu
+      - delta_text: men
+      - delta_text: 'ts": '
+      - delta_text: '{"location"'
+      - delta_text: ': "NYC"}}][/TOOL_CA'
+      - delta_text: LL
+      - delta_text: S]
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "ar'
+      - expected: []
+        normal_text: gu
+      - expected: []
+        normal_text: men
+      - expected: []
+        normal_text: 'ts": '
+      - expected: []
+        normal_text: '{"location"'
+      - expected: []
+        normal_text: ': "NYC"}}][/TOOL_CA'
+      - expected: []
+        normal_text: LL
+      - expected: []
+        normal_text: S]
+      - expected: []
+  dd8d11412c11a546b082958984123a42495982d79d4540cf387a19f4573409ac:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {}}][/TOOL_CALLS]'
+      - expected: []
+  b1e87cac50d838385f6c43b8ba290364773f94eb7abbbaf80e642bb72b524523:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": { }}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  c96acf54da5d449967e9a244252474f849c156e4f88476f229711ff7954dab7b:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_time"}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  a32c76dee3f8608236f74d57b487a1158604f14baf4ed8a7a92bd5b18de13583:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "book_flight",'
+      - expected: []
+        normal_text: ' "arguments": {"destination": "Paris",'
+      - expected: []
+        normal_text: ' "passengers": 2,'
+      - expected: []
+        normal_text: ' "first_class":'
+      - expected: []
+        normal_text: ' true}}][/TOOL_CALLS]'
+      - expected: []
+  d6ef82a5137f70812b7c85efadf0f0b496a27de461d4936e5692d0aba88bb33b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "Tōkyō'
+      - expected: []
+        normal_text: ' \"central\""}}][/TOOL_CALLS]'
+      - expected: []
+  cec701d843fad200d9c7c12b7f501184fc5693ad9c7b6e283de24e6d0ac9e47b:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "set_temperature",'
+      - expected: []
+        normal_text: ' "arguments": {"celsius": "20"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  9b1a4b3a79a0f5f2d5b9476ce4a0fc8e783908a0351b5cedde156088ce8bbb77:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"items": [1,2,3]'
+      - expected: []
+        normal_text: ', "config":'
+      - expected: []
+        normal_text: ' {"nested":'
+      - expected: []
+        normal_text: ' true}}}][/TOOL_CALLS]'
+      - expected: []
+  ff6b3d26d042b82514fd4944bd93504cfd52ba44bd44fc7e86510208cfa3e098:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"payload": {"regions":'
+      - expected: []
+        normal_text: ' [{"name": "west",'
+      - expected: []
+        normal_text: ' "scores":'
+      - expected: []
+        normal_text: ' [1, 2,'
+      - expected: []
+        normal_text: ' 3]}, {"name":'
+      - expected: []
+        normal_text: ' "east",'
+      - expected: []
+        normal_text: ' "scores": [4,'
+      - expected: []
+        normal_text: ' 5,'
+      - expected: []
+        normal_text: ' 6]}]'
+      - expected: []
+        normal_text: ','
+      - expected: []
+        normal_text: ' "flags": {"enabled": true,'
+      - expected: []
+        normal_text: ' "retry": null},'
+      - expected: []
+        normal_text: ' "empty":'
+      - expected: []
+        normal_text: ' {}}}}][/TOOL_CALLS]'
+      - expected: []
+  e4f30654d1fb2456dbaa938a5d8d65b426c65bb3a3ff7cf662d3270764142a6c:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "set_limit",'
+      - expected: []
+        normal_text: ' "arguments": {"count": 9007199254740993}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  7d49d79f7d3247cbde695107d6db492dd3edc83a011ddd21a5d52ed9f843d86f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS]'
+      - expected: []
+  5b53a26c8ef32ec99ed4ff1bef34440b19e104af2204eb2f8d14604df52318b1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: '[TOOL_CALLS][{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let'
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Let'
+      - expected: []
+        normal_text: ' me'
+      - expected: []
+        normal_text: ' know if'
+      - expected: []
+        normal_text: ' you need more.'
+      - expected: []
+  ef96d81e9156a49e4f16d564081402ae1ccc101a03e320faf40c9bbb88270a05:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  a5f237f865bba9b19cc774797608d8b848c4604c0ab05a5e5b4a30e19fdf5a48:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: mistral
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. [TOOL_CALLS]'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: '[/TOOL_CALLS] Then check'
+      - delta_text: ' LA'
+      - delta_text: ' weather. [TOOL_CALLS]'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}][/TOOL_CALLS]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: '[/TOOL_CALLS] Then check'
+      - expected: []
+        normal_text: ' LA'
+      - expected: []
+        normal_text: ' weather. '
+      - expected: []
+        normal_text: '[TOOL_CALLS][{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}][/TOOL_CALLS]'
+      - expected: []
+producers:
+  96a409b91d18d2dcf918fe19534624ada5baa538dbc66cb711855f013ccca89a:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: mistral
+      mode: streamv1
+      captured_with:
+        dynamo_v1: 3.0.0
+    provenance: null
+  cc250d078f506a459b5d147fd4ae22f99448712168353cd2a6a73e8da4079ab8:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: mistral
+      mode: streamv1
+      captured_with:
+        sglang_python: 0.5.12.post1
+    provenance: null
+  a8e2f855fd48be7514a617c0a003f9a175d9b278214c68717f189e6cdbb91328:
+    capture: vllm_python-0.23.0
+    document:
+      family: mistral
+      mode: streamv1
+      captured_with:
+        vllm_python: 0.23.0
+    provenance: null
+  66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1:
+    capture: vllm_python-0.25.1
+    document:
+      family: mistral
+      mode: streamv1
+      captured_with:
+        vllm_python: 0.25.1
+    provenance: null
+  3aa50d0c63f0835702e1b2e70ab216535cc8274c3ab7f91b950e96e6155b96c3:
+    capture: vllm_rust-0.23.0
+    document:
+      family: mistral
+      mode: streamv1
+      captured_with:
+        vllm_rust: 0.23.0
+    provenance: null

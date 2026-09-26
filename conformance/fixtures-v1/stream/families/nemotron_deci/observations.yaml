@@ -1,0 +1,4002 @@
+schema: bound-observations-v1
+observations:
+  fdc69813fdcb561e377d45139b80ed4634028aa5bdfcd43b74489a855145d6d9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  4cae8410ff281540a3a66c2ec57974db205387da99a84b698e42cb8a6333b58d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  0a56fd8bf3f617d0e6f869d83e5b9975bc4dcc7b759d8947249d07da782db4ae:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  b46e140c5feaf084c5dcaf24e442750b85e045837a989360de9c595d4134b603:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  be20cbd7b017c450ebfc1f0cf9107647b7e38d78b47c8eb5ae8847cae2c9d1d9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL><TOOLCALL>
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected:
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+  9a7b22efa327224b82c6672626bb46fcd1aef1f7a325dcd31026939305b87970:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]</TOOLCALL> Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  8a4b293dce28217f3f4c3196ef50d235d382fe0ae6f99e8ea1e0854eca5c625e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  4b3f9360bda8f517f6acbd2bf0ba04735d6bf2a47db25c6ad22fc2813a294748:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: Hello, how
+      - delta_text: ' can'
+      - delta_text: ' I help you'
+      - delta_text: ' today?'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Hello, how
+      - expected: []
+        normal_text: ' can'
+      - expected: []
+        normal_text: ' I help you'
+      - expected: []
+        normal_text: ' today?'
+      - expected: []
+  8be65f9b91bf8e4515382607c5f984dd691cd22b1afee42c44d1ebb0507d457b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <TOOLCALL>no
+      - delta_text: n
+      - delta_text: sense</TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: <TOOLCALL>not a json array</TOOLCALL>
+      - expected: []
+  b0488d87efcae1fdc451e80ff9c4cd784c56c6a1d3f5ffc702183bf457428e4a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC</TOOLCALL>'
+      - expected: []
+  2a33959709f1a4df6d4ab4beefd5f8745bf29ad58ee9a6800701fee31f51771e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  1cdad1ef311a31e6c3331cebed4f11aa5bfae3ab7338495e03bf5a7b43c4ac94:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}</TOOLCALL>'
+      - expected: []
+  a5ca6e59fe31f1fb5b062b81d19f15ccb01f76038ecd6ba6fb5e16eb9ca33c92:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+  88ffe1e423392d6bcc9a06d54f6fe27640a8be2a17dc7c7a4fe5dee99336f221:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
+      - expected: []
+  5af30cc157376ad3ef4db636ceca5183467435e94f0d2b62f460109a7faa7bd5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  e3c66a1af92344bbb5ae53ca66870fa96f7447d66de8815dff8e64cdb257d2ce:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"New York"}'
+  a926d7ee0354e75640bbe1ea00c68a70feaa062f3495fd582c523c3c0b43697e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"New York"}'
+  102a36d5ba909fa7c0a1014fffc3e0eb883d2b9b5af730396d3cc01419d281ec:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <T
+      - delta_text: OOL
+      - delta_text: CALL>
+      - delta_text: '[{"name": "'
+      - delta_text: get_weather", "argu
+      - delta_text: me
+      - delta_text: nts
+      - delta_text: '": {"'
+      - delta_text: 'location": '
+      - delta_text: '"NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  3f0afd02a9e664202db168b32fba3874f41e42d6ec2fb94a82db31df31060d53:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  e921ee7ab5ee7a0c50b08724ea1eee28dc39705724e3f6854812d4a2ba31c205:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  2b253ed82e2e56f499b39258058624e615a00f81d62ab6fe9fc4e721b7db0144:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  f272e8846fc6589672b9f2388826311c247272b0f29b2b1daa437f1d313a9582:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+          arguments: '{"destination":"Paris","first_class":true,"passengers":2}'
+      - expected: []
+  65d19708c60905c834a813b4ff5dffdb41a0609f4fa8f070eca33336c337a326:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Tōkyō \"central\""}'
+      - expected: []
+  721e534946eaa81079277739805e351fe0f8bb935ef996e26218a8db02a8d8c3:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: set_temperature
+          arguments: '{"celsius":"20"}'
+      - expected: []
+  9b03e485c40155740025636ef6e1b24a67ce43766e913745a08667bc7f039cab:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"config":{"nested":true},"items":[1,2,3]}'
+      - expected: []
+  f388802d304508b192bd43c2095de2f600acef7984b9d6bde2c8a915c41f482f:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"payload":{"empty":{},"flags":{"enabled":true,"retry":null},"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]}}'
+      - expected: []
+  306e235b5984e2c25b923d45fcc5d1caba3b2c246fe3e13fed6cf52ac65bc3b5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  6433a5737afdb0a0575b01870c0f2c49f3fe264d4e671321fa0339a89cf3e7f5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let'
+      - expected: []
+        normal_text: ' me'
+      - expected: []
+        normal_text: ' know if'
+      - expected: []
+        normal_text: ' you need more.'
+      - expected: []
+  7c3e3ea43f4e3a8e997f4edd8270e78b519853067a8f68a20941adb8fcded5e5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let me
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  9b74f1201c34057a40678bce6f6fedb40f4db1be601c49ff997bc8ab3a6ea772:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Then check
+      - delta_text: ' LA'
+      - delta_text: ' weather. <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Then check'
+      - expected: []
+        normal_text: ' LA'
+      - expected: []
+        normal_text: ' weather. '
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  22829a869b0ef8d76676537b0844fd9594888286d890cd953141777dcc5f8fc6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+  93130c773f7e2b23757b6caef9f046414cd45f32ab15e74e3dc4066b7181a5e1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '   '
+      - expected: []
+  4d35638019847d5ffff3b0b75dfb8b16770f07d99c23cc422243dace18140693:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  798ddb4f396ece6554b2a45ce986eb56646612a06b1c6661aa38e486109add80:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  8ddbe370c8669843b712ae708fe9778208102d2a8c9717fc54be13179c833815:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  f7b79d606c18c1a056093b3a5b32abd217c39c62fb9bc674317c3c5418a0a2c0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  8aa88f094b1e84cd3464d351390389f6df6d34b2f61935c728e37e2a4047f0d2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL><TOOLCALL>
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  96d9d95950f1fc68d883ea436077f7006546bc8b1dfa3fb654bc07ed4b82510c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]</TOOLCALL> Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  3c03fd2387039e7b280472db14a52a72de0567039e03c3b6a2549fe4637d2967:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  713c89924907bcbda0c4d03a2575c6f39263c99316cb2e86bc543afcaee1bcf7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: Hello, how
+      - delta_text: ' can'
+      - delta_text: ' I help you'
+      - delta_text: ' today?'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  e5b4ef226d19a31ef6a0bf7666d91d59914e33d79aa5b6522941b24f97b2b7ee:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <TOOLCALL>no
+      - delta_text: n
+      - delta_text: sense</TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  206e47aca10622917c0f09db171b51525b7209d8a3db25caae1678167c7b7e71:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  d745fcdc957ea6d3c57535ca56c0aabbf416e63d1958cbc6c32373e663a4ce63:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  1db058cab26dd04fd4115ce6df3b9a6f36f36fd1ee750e5dd2698eb0dca92a7a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  0caf712c0f6e0622661eb11f1124c5f973af8d6c65517f76b45e51cecf196ead:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  d6ac02134748296604a3eca8ab082a39b759828e0b59486dba52ce611fd55a2d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  de97a66c57f096757250ff0166beb88dbf523f6ed44775f533633863dadbc85a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  bf18c4642316ee6757259451664f9c0df2ffd517e244e7d042db3148098ae740:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  482473b0952ab38b76874b98a4332994d25bd95e7ad4b99f581e05b1b8af82b8:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  dc97cbac8ebe353b0098e9e16aaf2b5aa00cfb5755b0d882f2854e7296f075b1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <T
+      - delta_text: OOL
+      - delta_text: CALL>
+      - delta_text: '[{"name": "'
+      - delta_text: get_weather", "argu
+      - delta_text: me
+      - delta_text: nts
+      - delta_text: '": {"'
+      - delta_text: 'location": '
+      - delta_text: '"NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  af0e9b924cac158f0a91a3fd6e5f4feb4045f7a9a2cc6881b4d1f6996c61d58d:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  88c953b21a8fa6f845f68b0633a915e0039b5de9756f41f7c6a06a6ffddac7f8:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  18b966232ee8f5ee4cb5d46c082864b129f8b7105d6c9fe038275ed7b383e120:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  d91f9645a5117309c238d23769d77d19516f141c532d2601b9d6020ce6d68c6d:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  f904185cfc9c47ec41b19b28f57ea23a9c1f3e615421804ad53ee426ba74c1d9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  d9568c69095a46d05d65c28555b035e0e55769cb33de1a81b15b43b10341926d:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  8b420f877a1aded5527a4d8c6bafe19e23dc5e636f689fd5f1e81fdb697db295:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  72a5443bcd1f2eacad71230564a58716cee427a3314741dce0669014204a83ee:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  eea45f633dc14b3176e617bea15d42a4a96ee36cd0684a56c796f3a303031fda:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  f0af39d04d758ed7aefa8598e1efc8c41d39aa7eb7b9db0e0e0ccbffe7f200a6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  4fa904f2253ac099c89c02bd2442c71be9e65c1b384e11f8b69d266ae1377963:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let me
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  4c7dbfee71ede9745a201c78f64a372d0f932de30c822fd105fd0f079e75b8bb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Then check
+      - delta_text: ' LA'
+      - delta_text: ' weather. <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  64ca22dd42e339a8576abaf92de981bb0cb7f3fa1b98908d070dde028f3b558e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  0075dcf91edc380719893aa69edced871c82662e39d48fb8f49ee6ad042fd27e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      unavailable: No SGLang Python parser for family 'nemotron_deci'.
+  dc0409259e83eda61b5ebce2108f194793fdb1ee434975d1c67ab0f4568a6e00:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  f1508eccc66545ae7b8d013c58e850f3c6f51434811be9fc9a1ac3bf4541c120:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "LA"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  a24f647c056e4d9b3086996d5ff81d2cf83a111b4c60e67f96d52b434a74c7b1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "unknown_tool",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  200187a554dd7ed1e3d6867afd4aaf3bc285ccc057297cd628ea7096e269c9cd:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_time",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  84130b9d902e4b88716511251690ae1a3ec4a0ea72ef192c841d5f68f41b8a4f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL><TOOLCALL>
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL><TOOLCALL>
+      - expected: []
+        normal_text: '[{"name":'
+      - expected: []
+        normal_text: ' "get_time", "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}]</TOOLCALL>'
+      - expected: []
+  57640d530fc3c1376c2aa8d76874f18e812f757f55339cf20d32a5194bf1ffc0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}}, {"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {"timezone":'
+      - delta_text: ' "EST"}}]</TOOLCALL> Done.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: <TOOLCALL>'
+      - expected: []
+        normal_text: '[{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location":'
+      - expected: []
+        normal_text: ' "NYC"}}, {"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {"timezone":'
+      - expected: []
+        normal_text: ' "EST"}}]</TOOLCALL> Done.'
+      - expected: []
+  a938a5db24148e83310e15f72d5b92b01bb84c3df357d42b282d65cf42bb401a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}},'
+      - delta_text: ' {"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "LA"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "LA"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  cda528bfe846db465e13ddcf7fe879cdfee36a47c7593973b2c211657e81f5fa:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <TOOLCALL>no
+      - delta_text: n
+      - delta_text: sense</TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: <TOOLCALL>no
+      - expected: []
+        normal_text: n
+      - expected: []
+        normal_text: sense</TOOLCALL>
+      - expected: []
+  00e34011c77bb89a6b6e5eb2c0c717343796d7562472da633857871b476d6900:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC</TOOLCALL>'
+      - expected: []
+  258e722f6b343b4ee4dbb2c08143ace2db54458027b68b2471260239ea483586:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "NYC"}}]</TOOLCALL>'
+      - expected: []
+  c54a0c5f0808cbd0631e0621f75a8e7fd3d995f18bef367525cd89a89c7cbbbb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}</TOOLCALL>'
+      - expected: []
+  4ac38d88dc8096ef6e5da604e776a9d4bd1268caba43bd11e5247d8b7bf50e83:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+  69439848457306032437cb4fc34b17922d2a189fec9c58c13fadfe95c8754c38:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]</TOOLCALL>'
+      - expected: []
+  26d2b167acd00f920b2958bf1b1c29b3922925327b56f592935d32e14544de7a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"loc'
+      - expected: []
+  fe1539c0df32dc3d612539d8b7a905e559f077fd75dfdd0eebd135edc4c4695b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York"}}]'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location": "New'
+      - expected: []
+        normal_text: ' York"}}]'
+      - expected: []
+  61bb5b2fea8cfdde68d809208f7fb92e3b6fdc935fcb53be7e18f36f61b5d8b2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}},'
+      - delta_text: ' {"name": "get_weather", "arguments":'
+      - delta_text: ' {"location": "New'
+      - delta_text: ' York'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}},'
+      - expected: []
+        normal_text: ' {"name": "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location": "New'
+      - expected: []
+        normal_text: ' York'
+      - expected: []
+  eb90d581b9e6cbe3bf650e91c6686bdc65a445dfc52a3081758e558b4c10af85:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: <T
+      - delta_text: OOL
+      - delta_text: CALL>
+      - delta_text: '[{"name": "'
+      - delta_text: get_weather", "argu
+      - delta_text: me
+      - delta_text: nts
+      - delta_text: '": {"'
+      - delta_text: 'location": '
+      - delta_text: '"NYC"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: <T
+      - expected: []
+        normal_text: OOL
+      - expected: []
+        normal_text: CALL>
+      - expected: []
+        normal_text: '[{"name": "'
+      - expected: []
+        normal_text: get_weather", "argu
+      - expected: []
+        normal_text: me
+      - expected: []
+        normal_text: nts
+      - expected: []
+        normal_text: '": {"'
+      - expected: []
+        normal_text: 'location": '
+      - expected: []
+        normal_text: '"NYC"}}]</TOOLCALL>'
+      - expected: []
+  71e3acce1dbebb019e108e1409747713469e4223d829ccc7664a56f95a3af5db:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {}}]</TOOLCALL>'
+      - expected: []
+  186291ca4fc87a921313a2b38f8e96e39e28a946625d86db4e82906848c8a479:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": { }}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  959be798fed07d84414eea2c6b0b53625de655992a83bb05dccb91a67615ec09:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_time"}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_time"}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  dd41fb4d40c5ae93adfb2b8ebdaf877292e67ab0cf3c002c5e9b242d6de517b1:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "book_flight",'
+      - expected: []
+        normal_text: ' "arguments": {"destination": "Paris",'
+      - expected: []
+        normal_text: ' "passengers": 2,'
+      - expected: []
+        normal_text: ' "first_class":'
+      - expected: []
+        normal_text: ' true}}]</TOOLCALL>'
+      - expected: []
+  d9ac94a9e05e78dad0be8282d1a1d73e5313e9558f8c5eeab64a1cfe931ca55b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "Tōkyō'
+      - expected: []
+        normal_text: ' \"central\""}}]</TOOLCALL>'
+      - expected: []
+  ab4753a7c6801ccd8ca2c7c714edb8d4000a5c581a140daba2fa19b85e69f692:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "set_temperature",'
+      - expected: []
+        normal_text: ' "arguments": {"celsius": "20"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  9d1178d6afdc31e917923366082614d9857412774f4833e2a7df839a6cc32a21:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"items": [1,2,3]'
+      - expected: []
+        normal_text: ', "config":'
+      - expected: []
+        normal_text: ' {"nested":'
+      - expected: []
+        normal_text: ' true}}}]</TOOLCALL>'
+      - expected: []
+  5e7f6e847a8845ee4c21b667dd9db9ef59ebb1e27df4368b4cac07743c53594d:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"payload": {"regions":'
+      - expected: []
+        normal_text: ' [{"name": "west",'
+      - expected: []
+        normal_text: ' "scores":'
+      - expected: []
+        normal_text: ' [1, 2,'
+      - expected: []
+        normal_text: ' 3]}, {"name":'
+      - expected: []
+        normal_text: ' "east",'
+      - expected: []
+        normal_text: ' "scores": [4,'
+      - expected: []
+        normal_text: ' 5,'
+      - expected: []
+        normal_text: ' 6]}]'
+      - expected: []
+        normal_text: ','
+      - expected: []
+        normal_text: ' "flags": {"enabled": true,'
+      - expected: []
+        normal_text: ' "retry": null},'
+      - expected: []
+        normal_text: ' "empty":'
+      - expected: []
+        normal_text: ' {}}}}]</TOOLCALL>'
+      - expected: []
+  5b4e4c88ed80b1478e0ecfc34bc333e4864f44f930918535eb84a491a9c8675a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <TOOLCALL>'
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL>
+      - expected: []
+  23776442c3aeec8e53a416e84fad8233befd55850766e7e7f1b37c18c3aa5311:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: '<TOOLCALL>[{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let
+      - delta_text: ' me'
+      - delta_text: ' know if'
+      - delta_text: ' you need more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<TOOLCALL>[{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL> Let
+      - expected: []
+        normal_text: ' me'
+      - expected: []
+        normal_text: ' know if'
+      - expected: []
+        normal_text: ' you need more.'
+      - expected: []
+  22fd07834343afb9d9a0bb73af110fa79ca48ef110a9f353ad50e310b3a8c806:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Let me
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <TOOLCALL>'
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL> Let me
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  068ceb574865ba95241fc9a24f96b30c5d65159bdbe493823620e5577a403721:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <TOOLCALL>'
+      - delta_text: '[{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}]'
+      - delta_text: </TOOLCALL> Then check
+      - delta_text: ' LA'
+      - delta_text: ' weather. <TOOLCALL>'
+      - delta_text: '[{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}]</TOOLCALL>'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <TOOLCALL>'
+      - expected: []
+        normal_text: '[{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}]'
+      - expected: []
+        normal_text: </TOOLCALL> Then check
+      - expected: []
+        normal_text: ' LA'
+      - expected: []
+        normal_text: ' weather. <TOOLCALL>'
+      - expected: []
+        normal_text: '[{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}]</TOOLCALL>'
+      - expected: []
+  b433786422c3b9af15b895e39242d385f09fb1b36f1edb3a8a4f084fa070b0b2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: nemotron_deci
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+producers:
+  e49cbb2e268550c48681c3fea327f0bb8afad7975718a26356ccb185ab1fd628:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: nemotron_deci
+      mode: streamv1
+      captured_with:
+        dynamo_v1: 3.0.0
+    provenance: null
+  c37a94f1d98bbe5d7204fd25256d1e702f134f6e70e13897d202ce8bec429221:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: nemotron_deci
+      mode: streamv1
+      captured_with:
+        sglang_python: 0.5.12.post1
+    provenance: null
+  aec2034749f9ae6937436e1b54280ae0d6831677219d492946c9c8decdfd7d0b:
+    capture: vllm_python-0.23.0
+    document:
+      family: nemotron_deci
+      mode: streamv1
+      captured_with:
+        vllm_python: 0.23.0
+    provenance: null
+  05f57450ab35fbe19663f2c09ee480cdedcb6dbc4600c5c6819ce552c4c98065:
+    capture: vllm_rust-0.23.0
+    document:
+      family: nemotron_deci
+      mode: streamv1
+      captured_with:
+        vllm_rust: 0.23.0
+    provenance: null

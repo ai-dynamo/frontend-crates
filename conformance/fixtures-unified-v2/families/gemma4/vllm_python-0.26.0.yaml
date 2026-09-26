@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: vllm_python-0.25.1
 provenance:
   status: legacy
   captured_with:
@@ -6,207 +8,34 @@ document:
   mode: unified
 changes:
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'call:[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'call:[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+    observation: 3074d371469699797e4899458dd60f63f924adea3c8f4fc670dab1f816ce3d59
+    producer: vllm_python-0.26.0
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I'll call call:get_weather
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 34340823bd1d2102e5a5b5280477997c242935cd93ffbc220a5630de7c104499
+    producer: vllm_python-0.26.0
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: null
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: Paris
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"}'
+    observation: 2c681410a572140dd31634fcdeac2c68e38b24eb9ac56b744cd9eb3f0651c247
+    producer: vllm_python-0.26.0
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+    observation: eae33137f70790ca8fc8fc40559d24310351a63bec5bc8e9015ad21176d15235
+    producer: vllm_python-0.26.0
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'call:{"unexpected": "shape"}'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'call:{"unexpected": "shape"}'
+    observation: 2dabe6c77040e69270cd84b457bc3cf43efcf3dee44ca5c8f479d8329878061d
+    producer: vllm_python-0.26.0
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: secret
-        - kind: text
-          text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'call:'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 143846d6c88b730639c28f28469ae7a7efe6614f74a94b9c947df604c40368a9
+    producer: vllm_python-0.26.0
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'call:[{"name": "get_weather", "arguments": {"city": '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'call:[{"name": "get_weather", "arguments": {"city": '
+    observation: 45029c9b794a2d3f89f3cd24f0d9968bd9b59d4e460e50ef3d9e66566ca75dbe
+    producer: vllm_python-0.26.0
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking
-        - kind: text
-          text: '<|tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<tool_call|>'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: e31422d7e1e1c29174fc4a33730b6efd307e5f24c877321cfea44c84ed87a8ed
+    producer: vllm_python-0.26.0
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: null
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{"city": "'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: Paris
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"}'
+    observation: ae5d607dbfa7f41a9823dd818282cfe07b0eed862c703127c776997ebdcdaf39
+    producer: vllm_python-0.26.0
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'firstthought
-
-
-            second'
-        - kind: text
-          text: done
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
+    observation: 870a6942ead13b9db943b1fc67a7980e260a50c4d2814f3cba347e0aa27512b3
+    producer: vllm_python-0.26.0
 metadata_changes: {}
 document_overrides: {}

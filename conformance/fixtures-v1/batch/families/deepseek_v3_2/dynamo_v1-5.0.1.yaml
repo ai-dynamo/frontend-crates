@@ -1,0 +1,47 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: deepseek_v3_2
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v3_2
+    mode: batch
+  TOOLCALLING.stream.1.yaml:
+    family: deepseek_v3_2
+    mode: stream
+  TOOLCALLING.stream.2.yaml:
+    family: deepseek_v3_2
+    mode: stream
+  TOOLCALLING.stream.3.yaml:
+    family: deepseek_v3_2
+    mode: stream
+  TOOLCALLING.stream.4.yaml:
+    family: deepseek_v3_2
+    mode: stream
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: b84df4ad91298a5a30570dffab0c4a18b538316df8700f968eb7c70a19b90e7a
+        producer: b9ee8776030fd78a5fc5e588cd48716ad7c31674b12eb4043542f342c2df216b
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

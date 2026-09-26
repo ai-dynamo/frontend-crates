@@ -1,0 +1,36 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: deepseek_v4
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+  TOOLCALLING.streamv1.5.yaml:
+    family: deepseek_v4
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 8369260464f7ddb501cbd9f201ce9a1308ec0b9830fcbc54820bc53e2f493457
+        producer: fd1cfff7e4e55e8a153f85bfd7b2ed67b0321210550ec91239650f817449b2ff
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 787f1d952c68d2af28da1555d59c1ad2d2f8e879a80496f3488d42bb0d778c65
+        producer: fd1cfff7e4e55e8a153f85bfd7b2ed67b0321210550ec91239650f817449b2ff
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: 8c2143ed85d12d40897d20102d3e73cfcd8a2ec4106cb55784ed60cd9cd0d0a5
+        producer: fd1cfff7e4e55e8a153f85bfd7b2ed67b0321210550ec91239650f817449b2ff
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

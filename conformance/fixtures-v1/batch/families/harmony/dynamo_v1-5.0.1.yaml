@@ -1,0 +1,47 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: harmony
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.4.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.5.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.6.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.7.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.8.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.batch.yaml:
+    family: harmony
+    mode: batch
+  TOOLCALLING.stream.1.yaml:
+    family: harmony
+    mode: stream
+  TOOLCALLING.stream.2.yaml:
+    family: harmony
+    mode: stream
+  TOOLCALLING.stream.3.yaml:
+    family: harmony
+    mode: stream
+  TOOLCALLING.stream.4.yaml:
+    family: harmony
+    mode: stream
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 8d5801448ae069f54078fdecb23c7fbef3f6322aafbc462bd2b6b90a1eaf7257
+        producer: 87486b7d49b452f2f632e2ec0c3ee099ed93e50571277175b3d3244b86e8053a
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

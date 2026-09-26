@@ -1,0 +1,792 @@
+corpus: stream
+family: phi4
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.10.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}, {"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "LA"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.13.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        description: Unknown-only call under default behavior
+        ref: derived from TOOLCALLING.batch.13.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "unknown_tool",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: derived from TOOLCALLING.batch.13.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}, {"name":'
+        - delta_text: ' "unknown_tool", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "LA"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.2.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls in JSON array
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}, {"name":'
+        - delta_text: ' "get_time", "arguments":'
+        - delta_text: ' {"timezone":'
+        - delta_text: ' "EST"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Both: functools[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}},'
+        - delta_text: ' {"name": "get_time",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"timezone": "EST"}}]'
+        - delta_text: ' Done.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}, {"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "LA"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.3.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.30.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        description: JSON-array call separator `,` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "run_query",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"sql": "SELECT a,'
+        - delta_text: ' SELECT b"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.30.b:
+        description: JSON structural delimiters `}` and `]` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "run_query",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"sql": "SELECT value'
+        - delta_text: ' WHERE note'
+        - delta_text: ' has'
+        - delta_text: ' brace }'
+        - delta_text: ' and bracket ]'
+        - delta_text: '"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.30.c:
+        description: Phi-4 marker-like text `func-tools` and `[]` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "run_query",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"sql": "literal func-tools'
+        - delta_text: ' marker[] stays'
+        - delta_text: ' text"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.31.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        description: Multi-call JSON array with call separator `,` inside the first argument string
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "run_query",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"sql": "SELECT a,'
+        - delta_text: ' SELECT b"}},'
+        - delta_text: ' {"name":'
+        - delta_text: ' "get_time", "arguments":'
+        - delta_text: ' {"timezone": "EST"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: derived from TOOLCALLING.batch.31.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "run_query",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"sql": "SELECT value'
+        - delta_text: ' WHERE note'
+        - delta_text: ' has'
+        - delta_text: ' brace }'
+        - delta_text: ' and bracket ]'
+        - delta_text: '"}},'
+        - delta_text: ' {"name": "get_time",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"timezone": "EST"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.4.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: functools[ wrapper with garbage
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: functools[non
+        - delta_text: se
+        - delta_text: nse]
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Missing close brace
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: Missing name key
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"arguments": {"location":'
+        - delta_text: ' "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Missing closing ]
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: No explicit end (truncation)
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing `]` without matching `functools[` open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-arguments JSON
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"loc'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "Boston"}},'
+        - delta_text: ' {"name":'
+        - delta_text: ' "get_weather", "arguments": {"location":'
+        - delta_text: ' "New York"}}'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "Boston"}},'
+        - delta_text: ' {"name":'
+        - delta_text: ' "get_weather", "arguments": {"location":'
+        - delta_text: ' "New York'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: fu
+        - delta_text: nct
+        - delta_text: ools[
+        - delta_text: '{"name": "g'
+        - delta_text: et_weather", "argum
+        - delta_text: en
+        - delta_text: ts"
+        - delta_text: ': {"l'
+        - delta_text: 'ocation": "'
+        - delta_text: NYC"}}]
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: 'Canonical "arguments": {}'
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: 'functools[{"name": "get_time",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside arguments {}
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: 'functools[{"name": "get_time",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' { }}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.c:
+        description: No arguments key
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: 'functools[{"name": "get_time"}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: 'functools[{"name": "book_flight",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"destination": "Paris", "passengers":'
+        - delta_text: ' 2, "first_class":'
+        - delta_text: ' true}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "Tōkyō \"central\""}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: 'functools[{"name": "set_temperature",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"celsius": "20"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: 'functools[{"name": "process_data",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"items": [1,2,3],'
+        - delta_text: ' "config": {"nested":'
+        - delta_text: ' true}}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: 'functools[{"name": "process_data",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"payload": {"regions": [{"name":'
+        - delta_text: ' "west", "scores":'
+        - delta_text: ' [1,'
+        - delta_text: ' 2, 3]'
+        - delta_text: '}, {"name": "east",'
+        - delta_text: ' "scores":'
+        - delta_text: ' [4, 5,'
+        - delta_text: ' 6]'
+        - delta_text: '}],'
+        - delta_text: ' "flags":'
+        - delta_text: ' {"enabled": true, "retry":'
+        - delta_text: ' null}, "empty":'
+        - delta_text: ' {}}}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.8.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. functools[{"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: 'functools[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}] Let'
+        - delta_text: ' me know'
+        - delta_text: ' if'
+        - delta_text: ' you need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. functools[{"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "NYC"}}] Let'
+        - delta_text: ' me know if'
+        - delta_text: ' you'
+        - delta_text: ' need more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. functools[{"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "NYC"}}] Then'
+        - delta_text: ' check LA weather.'
+        - delta_text: ' functools[{"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "LA"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.9.yaml:
+    family: phi4
+    mode: streamv1
+    model_label: Phi-4
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

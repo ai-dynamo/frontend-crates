@@ -1,0 +1,19 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: llama3_json
+capture: vllm_rust-0.26.0
+documents:
+  TOOLCALLING.streamv1.4.yaml:
+    family: llama3_json
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.26.0
+views:
+  python:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_rust-0.25.1
+    changes: {}
+    annotations: {}

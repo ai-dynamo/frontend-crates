@@ -614,7 +614,7 @@
     var engineRef = (tab.candidates || []).some(function (c) {
       return c.key !== 'golden' && c.default_bucket === 'A';
     });
-    if (hasGolden && !engineRef) {
+    if (hasGolden && !engineRef && !tab.reference_unavailable) {
       html += '<input type="radio" class="cmp-ref" name="ref_' + escapeAttr(tab.id)
         + '" value="golden" checked style="display:none" aria-hidden="true">';
     }
@@ -628,7 +628,7 @@
         + '<div class="cmprow cmphd"><span class="cmphd-ref" title="Reference (pick one)">ref</span>'
         + '<span class="cmphd-cmp" title="Compare-with">compare with</span></div>';
       (tab.candidates || []).forEach(function (c) {
-        if (c.impl !== impl) { return; }
+        if (c.impl !== impl || c.visible === false || c.equivalent_to) { return; }
         var isA = c.default_bucket === 'A';
         var isAB = c.default_bucket === 'A' || c.default_bucket === 'B';
         html += '<div class="cmprow' + (isA ? ' is-ref' : '') + '">'
@@ -1099,6 +1099,14 @@
     var section = document.createElement('section');
     section.id = tab.id;
     section.className = 'tab-panel' + (tab.active ? ' active' : '');
+    section._candidateAliases = new Map((tab.candidates || [])
+      .filter(candidate => candidate.equivalent_to)
+      .map(candidate => [candidate.key, candidate.equivalent_to]));
+    section._unavailableCaptures = new Map();
+    Object.entries(tab.saved_links || {}).forEach(([key, rule]) => {
+      if (rule.equivalent_to) { section._candidateAliases.set(key, rule.equivalent_to); }
+      if (rule.unavailable) { section._unavailableCaptures.set(key, rule.unavailable); }
+    });
     section.setAttribute('role', 'tabpanel');
     if (multiTab) { section.setAttribute('aria-labelledby', tab.id + '-button'); }
     var hasCands = tab.candidates && tab.candidates.length;

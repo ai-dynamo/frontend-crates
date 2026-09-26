@@ -112,9 +112,8 @@ for f in sorted(STREAM.glob("*/TOOLCALLING.streamv1*.yaml")):
         report.append(f"  {fam}/{cid}")
     if not touched:
         continue
-    # Re-dump the whole document. These files live inside git-lfs tarballs, so they are
-    # not line-reviewed, and safe_dump quotes every scalar correctly — which also clears
-    # the single-quote folding hazard for the rest of the file as a side effect.
+    # Re-dump the whole document so safe_dump quotes every scalar correctly and
+    # clears the single-quote folding hazard for the rest of the file.
     out = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=4096)
     check = yaml.safe_load(out)
     for cid, case in (check.get("cases") or {}).items():

@@ -135,7 +135,7 @@ def test_unified_publication_accepts_new_commit_with_unchanged_source(release_re
     assert origin["source_sha256"] == identity.source_fingerprint(release_repo, previous)
 
 
-def test_reader_carries_forward_latest_semantic_checkpoint(release_repo, monkeypatch):
+def test_current_source_selector_does_not_reuse_historical_checkpoint(release_repo, monkeypatch):
     (release_repo / "parsers/v2/Cargo.toml").write_text(
         '[package]\nname="dynamo-parsers-v2"\nversion="0.6.1"\n',
         encoding="utf-8",
@@ -143,7 +143,8 @@ def test_reader_carries_forward_latest_semantic_checkpoint(release_repo, monkeyp
     captures = {
         "0.6.0": {"records": {"gemma4/UNIFIED.1-1": {"format": "schema_v3"}}},
     }
-    assert identity.select_capture_label(release_repo, captures) == "0.6.0"
+    current = identity.dynamo_v2_provenance(release_repo, "current")
+    assert identity.select_capture_label(release_repo, captures) == current["label"]
 
     monkeypatch.setenv(identity.ENV_OVERRIDE, "current")
     current = identity.dynamo_v2_provenance(release_repo, "current")

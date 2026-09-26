@@ -1,0 +1,30 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: gemma4
+capture: vllm_python-0.26.0
+documents:
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    mode: batch
+    captured_with:
+      vllm_python: 0.26.0
+views:
+  python:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}

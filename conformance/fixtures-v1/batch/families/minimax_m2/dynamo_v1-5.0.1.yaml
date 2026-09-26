@@ -1,0 +1,55 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: minimax_m2
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.5.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.batch.yaml:
+    family: minimax_m2
+    mode: batch
+  TOOLCALLING.stream.1.yaml:
+    family: minimax_m2
+    mode: stream
+  TOOLCALLING.stream.2.yaml:
+    family: minimax_m2
+    mode: stream
+  TOOLCALLING.stream.3.yaml:
+    family: minimax_m2
+    mode: stream
+  TOOLCALLING.stream.4.yaml:
+    family: minimax_m2
+    mode: stream
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]':
+        observation: 048ee8a6e5e6f8de63326412bd6130a91711548a37717e51a1096111a1cba234
+        producer: 39fc2a0d383bf151ec19bf6dc6fc9e9f878cd6b54e8dcfe00953d66557c6207b
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 0997c61d97d7710b96529bd32cb40cfbda37794776d836f8085a1d064d5fecb5
+        producer: 39fc2a0d383bf151ec19bf6dc6fc9e9f878cd6b54e8dcfe00953d66557c6207b
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]':
+        observation: fbcc15d08d31b4f7ed1860d82faf11fcafb167e6131c2a69a2a747ad1b6dde55
+        producer: 7516d9388acdccbcb4efb4164c65f4e3a1f4ad11590d99093ed9c698729ceb49
+    annotations:
+      '["TOOLCALLING.stream.4.yaml","TOOLCALLING.stream.4.b"]': {}
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}
+      '["TOOLCALLING.batch.4.yaml","TOOLCALLING.batch.4.d"]': {}

@@ -60,7 +60,7 @@ def cache_root(tmp_path, monkeypatch):
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _fake_extract_tarball(
+        lambda _shard, source, destination, *, verbose=False: _fake_extract_tarball(
             source, destination, verbose
         ),
     )
@@ -270,7 +270,7 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _boom(
+        lambda _shard, source, destination, *, verbose=False: _boom(
             source, destination, verbose
         ),
     )
@@ -328,7 +328,7 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _counting_extract_tarball(
+        lambda _shard, source, destination, *, verbose=False: _counting_extract_tarball(
             source, destination, verbose
         ),
     )
@@ -402,38 +402,6 @@ def test_full_refresh_with_missing_base_advances_past_the_current_generation(
     _run_main(tmp_path, monkeypatch, manifest)
     plain = Path(capsys.readouterr().out.strip())
     assert plain == refreshed
-
-
-def test_extracted_snapshot_dir_resolves_to_the_new_generation_after_full_refresh(
-    cache_root, tmp_path, monkeypatch, capsys
-):
-    """Same MUST finding, the other consumer the audit specifically asked to
-    be hunted for: `package_fixtures.py`'s `_extracted_snapshot_dir()` used
-    to reconstruct the bare `{pin}-{fid}` path directly instead of following
-    `resolve_current_generation`, so it also kept resolving to the abandoned
-    (possibly corrupted) generation after a refresh."""
-    package_fixtures_src = SRC
-    if str(package_fixtures_src) not in sys.path:
-        sys.path.insert(0, str(package_fixtures_src))
-    import package_fixtures  # noqa: E402  (sibling module, same sys.path entry as extract_fixtures)
-
-    manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
-    _run_main(tmp_path, monkeypatch, manifest)
-    capsys.readouterr()
-    _run_main(tmp_path, monkeypatch, manifest, argv=["--full-refresh"])
-    refreshed_dir = Path(capsys.readouterr().out.strip())
-    assert refreshed_dir.name.endswith(".refresh1")
-
-    manifest_path = tmp_path / "package_fixtures_manifest.json"
-    manifest_path.write_text(json.dumps(manifest))
-    monkeypatch.setattr(package_fixtures, "ROOT", tmp_path)
-    monkeypatch.setattr(package_fixtures, "MANIFEST_REL", manifest_path.relative_to(tmp_path))
-
-    resolved = package_fixtures._extracted_snapshot_dir()
-    assert resolved == refreshed_dir, (
-        "_extracted_snapshot_dir() must resolve to the refreshed generation, "
-        f"not the abandoned original; got {resolved}"
-    )
 
 
 def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tmp_path, monkeypatch, capsys):

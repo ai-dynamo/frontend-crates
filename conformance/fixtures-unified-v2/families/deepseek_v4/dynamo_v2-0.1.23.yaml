@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: null
 provenance:
   status: legacy
   captured_with:
@@ -6,1944 +8,275 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: run
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: run
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 0ff10d58d4c6a633c29fb50d35af289d264abaab602c1ac158dfcc214de1262c
+    producer: dynamo_v2-0.1.23
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: São Paulo 東京
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"São Paulo 東京"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: f492d70a767e6e8063003418f5120d5ae040f3d7f9be4f9af8d6d9260b2ba069
+    producer: dynamo_v2-0.1.23
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: let me recall
-        - kind: text
-          text: Hello there. The capital is Paris.
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Hello there. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me recall
-        - expected: []
-        - expected:
-          - kind: text
-            text: The capital is Paris.
+    observation: 1dbcd88209457bc46f8aeb8aebde3978bb57b253bb1f197956d2d35487e6ad07
+    producer: dynamo_v2-0.1.23
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking the forecast
-        - kind: text
-          text: 'Sure, one sec. '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure, one sec. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking the forecast
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 6d55f5568e5e512b63474c9c4f0d1853c268ed45ec480482460e568636b63c85
+    producer: dynamo_v2-0.1.23
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 7f5754ed979af9e4818ebc0d05b46c9c1ac669192b72f3d68f760303cd5f50cc
+    producer: dynamo_v2-0.1.23
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 65869e23979306b67e3395db5357a9833c3b30657a776442373aca9ada645f16
+    producer: dynamo_v2-0.1.23
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a2ab65cc0906c9c592c80fda25fe88adbe88c8f20ccd2d8a2615ccad8ac9169e
+    producer: dynamo_v2-0.1.23
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 55cb78a8b718be0f00abbae108caeebccd0b5dc6f43539067992b62951b9d66d
+    producer: dynamo_v2-0.1.23
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 7257eece0b11a64d8850bcefb45a11da331d54eb9cba43d2756d9f9068ae4800
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 57c2e68dd55a3644678e30672df2d126924ca336cfa7486846ded77fe0ad5d3b
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 18049461bf24fad8e3806e3fc8a7bb6fc48f05c788ecbb80f8485c67cd8a7484
+    producer: dynamo_v2-0.1.23
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 9fb2dd65b0438dbfa5c6a50cd55a4a844fcd2aef586a35bed089c95ff401c80b
+    producer: dynamo_v2-0.1.23
   guided_json_invalid_call:
-    case_key: UNIFIED.31-1
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 56e04fc3f3cffb5f0996cde775a2f8d30a6089b78e931e5d52efc87e0f8ef09c
+    producer: dynamo_v2-0.1.23
   guided_json_list_with_broken_element:
-    case_key: UNIFIED.31-4
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1dd15d7a51b13fbfda72593e671a50f9c41da91746c3bb113a7adf5759f51568
+    producer: dynamo_v2-0.1.23
   guided_json_malformed_json:
-    case_key: UNIFIED.31-2
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: cad5962bdd546ba4cf11520cf4a7ae81c7a8e226bea389794ddf520175c93478
+    producer: dynamo_v2-0.1.23
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 0bbe581c2a65d4b35eedf1cc6b9034ac7d0c65ab11899b4a12ace181f6383bbe
+    producer: dynamo_v2-0.1.23
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 5c68a88b42d2f93a6d6504fca0c43b18f1480d7092b5672fd7f798279c98a3c9
+    producer: dynamo_v2-0.1.23
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31-8
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 04cb11c108d0e37fe28fe1a62f32676e1597540e1945d1800e0da526a23ca21a
+    producer: dynamo_v2-0.1.23
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 5cd06f3c945bf7666c9a16d19b69b434821a25c4b1e3ca5c8a4cd08e2924bb19
+    producer: dynamo_v2-0.1.23
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: a7dcc9c3966d9602f2049be3073842c31053e1ee970e477ef89dd160ccbd79f3
+    producer: dynamo_v2-0.1.23
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31-10
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 481d6577f3c6efa16b0c4b400d8e0001387003a35a480f33c9ba83f6310d4d1e
+    producer: dynamo_v2-0.1.23
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31-11
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: fa99b42a6cb7107e89bbf5b4ff9355125059a3d45b84eb0808399ae480881cf2
+    producer: dynamo_v2-0.1.23
   guided_json_partial_calls:
-    case_key: UNIFIED.31-3
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4944e83acea3739846bb058ddb3f7ab45b369afcb5f5baa565ef91d727d09561
+    producer: dynamo_v2-0.1.23
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31-9
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1dfd94d75f46839cef0f08f2a8e92b2db46d3c0c4cb587d4d8070d19823f1af4
+    producer: dynamo_v2-0.1.23
   guided_json_quoted_bare_header_after_payload:
-    case_key: UNIFIED.31-27
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 9d3b79b665b4b96f32722e0d47a9e6705bc589106ad09a6c37b5eefcc785fecb
+    producer: dynamo_v2-0.1.23
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.31-25
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 621cb570ab2daf9f406f9cd7fc24efcf67ecd3d453afb678aa82e1c78006480b
+    producer: dynamo_v2-0.1.23
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 608454bab59bf081f76c1b13d268e01432856319dbe0172fda56ae8e765ab595
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: b6e4fd597867eb1c0ae19db1072bd9b8eb32cea960f3990eadcd1384ebcba860
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31-18
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4efedd0faad1b6057f9e90f81ed01262240bff0f98e19c10f63adaebd2af096b
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31-19
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 154f04955fb77c5c895540dafe8b062c4cbb819278d50361abb73c7437d51fda
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 7ad64bbbb716c967199b87d611dee875e5e797a48acbc8c4952b3e086720ad8a
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31-15
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1ea35dcb33e630c63fb65f0156f0d74f0cde53487fb61a041fb430f60249de37
+    producer: dynamo_v2-0.1.23
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31-16
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 2a6edb4788aa8e596ac40565e5c181f17efadfae8356d121895226f98a88a05e
+    producer: dynamo_v2-0.1.23
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1bdebe2a7d13019456b6ff358e3c092354e53d5f7e2d6b96dbfd84692a6e69e5
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 6568e824340f72678e7dd8a563f0d9cc81613ffeec42718b01bb44a34ca53b10
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.31-12
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: bcf570f766f14661ef2b005faadd10ac7c8bc5a577a5d0ec05fea46792bdb954
+    producer: dynamo_v2-0.1.23
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.31-13
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 7caaed53a03460b6d1f048395a629e2912b054df5b20a348e3ac5c07246f8d3a
+    producer: dynamo_v2-0.1.23
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31-6
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: f8873fb50e60c2ba2652c24e6003a1e8c25dfc8ded54fee491530007f834fed1
+    producer: dynamo_v2-0.1.23
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31-5
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 33742716c5e6faab46afb2170b23d95dcc904eb2e505dbae62f9f3f67887520c
+    producer: dynamo_v2-0.1.23
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4a7ee80221dbd961d36a5b48b22be925146481fd6726e9203b8852160f113101
+    producer: dynamo_v2-0.1.23
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 46f31a6c00a6debf284d035ccc331a4115e41cee6ecf7836b210486027ee5853
+    producer: dynamo_v2-0.1.23
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31-7
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 8426f1cda031784438b10c663179cf7fac23ceb31c1cb79b52517d66a0d85589
+    producer: dynamo_v2-0.1.23
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: a
-        - kind: text
-          text: 'Here you go: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: a
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here you go: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 3b4acc287189e1bfa512bd22ced52ee59de666d3b20401713e221d7f8a4ad390
+    producer: dynamo_v2-0.1.23
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: ' then I''ll run '
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' and '
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then I''ll run '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: b59b66449f3dec8d440692ad96fc48fa7e276cfafd531c0fdf87fbaf610fa2fa
+    producer: dynamo_v2-0.1.23
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I will check that. </｜DSML｜invoke>
-        chunks:
-        - expected:
-          - kind: text
-            text: 'I will check that. '
-        - expected:
-          - kind: text
-            text: </｜DSML｜invoke>
+    observation: 7b984165251c9218d073ff8ac21d177659c5e289ac5bc06457bd2e02bb026708
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1e0d6eff6253b43cb7d8176f647e86cba013c9008da1db08e3047a1cac71c1d1
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: ac83283ca78b93ac02c00b77f9923b3b84ef96567db7a1d242a1b087afe2408d
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4580d1a922d61e51857dd68eb974399531cdf2b9882664e763448978c1a187d4
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: d081c8e9b05663399b3ab5c67e72974da6124ceb0c240ed0f0451093a353ef11
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: c5632ba941ba585f3cc1b2287e9c16e47a7a29f91330f36f35740e643e31723f
+    producer: dynamo_v2-0.1.23
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: f65328cc56c4162f0777c2f0c443c6992d8e9091005ffb33a1a93e2539983368
+    producer: dynamo_v2-0.1.23
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 7bb7841838ed4110ce2fa1f963eaba4527e8542176ce1d27a83ecc9f3ea17cc3
+    producer: dynamo_v2-0.1.23
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Look it up.Now answer.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: It's 18C.
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Look it up.
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Now answer.
-        - expected: []
-        - expected:
-          - kind: text
-            text: It's 18C.
+    observation: aacb0c08f1eae0bc7980e7e461f31f051a5ed2576a476b009e0fc34563eba8d6
+    producer: dynamo_v2-0.1.23
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: mid
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: mid
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 2ad716866ac9631d9aeeb04bf7021a086e9f6ec50c0983125f0d79e4794f4faa
+    producer: dynamo_v2-0.1.23
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: AB
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 654e5e7e56f2b83c5346c253a5c1b2b161b16bbf70e9a8ef73128afc8ae4203d
+    producer: dynamo_v2-0.1.23
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: reconsider
-        - kind: tool_call
-          name: log
-          arguments:
-            note: ''
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: reconsider
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"note":""}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: ecc9d6afd060eeb06239b2453f2c71da7e6023c1cb61b51bef7cab77ee1771c6
+    producer: dynamo_v2-0.1.23
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: reconsider
-        - kind: text
-          text: 'Logging now: '
-        - kind: tool_call
-          name: log
-          arguments:
-            note: ''
-        - kind: text
-          text: ' done.'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Logging now: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: reconsider
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"note":""}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' done.'
+    observation: 59ef6296db41b9324d422a471e768335edc0fde3b1d3dc4e0097df4545523996
+    producer: dynamo_v2-0.1.23
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: just thinking, no answer
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: just thinking, no answer
-        - expected: []
+    observation: 4e0a70b26f1ac0959f58d1b97bff447c3dc64283268baa53cafdaa5d12dba7de
+    producer: dynamo_v2-0.1.23
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: let me think
-        - kind: text
-          text: The answer is 42.
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: let me think
-        - expected: []
-        - expected:
-          - kind: text
-            text: The answer is 42.
+    observation: 0aebf67233d96f08fd7e81882bc99ff655574700d0b96b0382eaa49ffe99d5d6
+    producer: dynamo_v2-0.1.23
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Check weather.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: Check weather.
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 80fc3ecb553929199cabf7a0512f3b5e9ec67198115bc8123f583364ea24b7ca
+    producer: dynamo_v2-0.1.23
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: ABC
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: C
-        - expected: []
+    observation: 250f493457ccc6fa9d16a2989b31e88c0707aca50c67d2e45c569c01dfaf12dd
+    producer: dynamo_v2-0.1.23
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: AB
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: working on it
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: working on it
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: dc24eca1c274ff390c76dbdb940ee1d8173c148e0e81335b36fae1a60aff3401
+    producer: dynamo_v2-0.1.23
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking but stream ends
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking but stream ends
+    observation: 1c097a33aac6208b528b41e3959d0d4dee990df630db12f9eb26d9f0fb2147c7
+    producer: dynamo_v2-0.1.23
   retired__30_14:
-    case_key: UNIFIED.30-14
-    stimulus:
-      inline:
-        input: '<｜DSML｜invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: '<｜DSML｜invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a >'
-        - delta_text: ' b"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: da71b05e92cf2b3f6239f4a119a33d240b37cc2e858e157e475155898e93eb2f
+    producer: dynamo_v2-0.1.23
   retired__31_33:
-    case_key: UNIFIED.31-33
-    stimulus:
-      inline:
-        input: '<think>before <｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">é🙂<par{value}</｜DSML｜parameter></｜DSML｜invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <think>
-        - delta_text: 'before '
-        - delta_text: <｜DSML｜invoke name="f">
-        - delta_text: <｜DSML｜parameter name="x" string="true">
-        - delta_text: é🙂
-        - delta_text: <par{value}</｜DSML｜parameter>
-        - delta_text: </｜DSML｜invoke>
-        - delta_text: ' after'
-        - delta_text: </think>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 4187880b4f9e371c44e0454faa4e3bf49317e996cfb6584a644a82d2d7ef065e
+    producer: dynamo_v2-0.1.23
   retired__31_38:
-    case_key: UNIFIED.31-38
-    stimulus:
-      inline:
-        input: <｜DSML｜invoke name="f"><think>x</｜DSML｜invoke>[{"name":"f","arguments":{}}]
-        init:
-          starting_state: Reasoning
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <｜DSML｜invoke name="f">
-        - delta_text: <think>
-        - delta_text: x
-        - delta_text: </｜DSML｜invoke>
-        - delta_text: '[{"name":"f","arguments":{}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 95265f39b3915252ccb449f5400e2cfdf9310ab2cb3f992db2763b5359526ccb
+    producer: dynamo_v2-0.1.23
   retired__31_40:
-    case_key: UNIFIED.31-40
-    stimulus:
-      inline:
-        input: '<think>before <｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true"><think>quoted</think></｜DSML｜parameter></｜DSML｜invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <think>
-        - delta_text: 'before '
-        - delta_text: <｜DSML｜invoke name="f">
-        - delta_text: <｜DSML｜parameter name="x" string="true">
-        - delta_text: <think>
-        - delta_text: quoted
-        - delta_text: </think>
-        - delta_text: </｜DSML｜parameter>
-        - delta_text: </｜DSML｜invoke>
-        - delta_text: ' after'
-        - delta_text: </think>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: 1a8d6f4db5ec41146b7304a7ea22ea8b880d497badb45cfdf1b474af9973a062
+    producer: dynamo_v2-0.1.23
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks: []
+    observation: d1ca08d83d9c17cacdef04379ec4e551c1e4f328b32bfafa04fbe57b9e0b7e35
+    producer: dynamo_v2-0.1.23
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks: []
+    observation: 17c02af47b8987fecee01a86e8295f11705f1a8b1289547ed78a46c1510e979d
+    producer: dynamo_v2-0.1.23
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks: []
+    observation: 25bfcbcad6d979fc7f3d7e8275b6e72d1928dcfd4a48b93eacab304ab76e5c74
+    producer: dynamo_v2-0.1.23
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks: []
+    observation: d7d33485cde8001f5ff5702ad01d36ee9a9270aaed3731721e79088da049099e
+    producer: dynamo_v2-0.1.23
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks: []
+    observation: 31b00543fc3838064f6635291c3a95b8058b98897eb88b856750330d9ee1dc57
+    producer: dynamo_v2-0.1.23
   retired__muse_1:
-    case_key: UNIFIED.31-26
-    stimulus:
-      partial:
-        input: 'I mean <think>get_weather literal</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: Response
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: tool_calls
-        chunks:
-        - delta_text: 'I mean '
-        - delta_text: <think>
-        - delta_text: get_weather literal
-        - delta_text: </think>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
+    observation: ad5ba1c5bf5ebc5726277ac307e94cb94f2d190e87228e58b110a70e7e7a2503
+    producer: dynamo_v2-0.1.23
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'On it: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: 'On it: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 1f84d3587afa21ab662c28dd7ab5cf6d55aa56d3c20aa2e388d0b7d76e3b6baf
+    producer: dynamo_v2-0.1.23
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' then '
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 0aa41afe173af35aaceb97b04b8910c33593e58f45d7019bfed3893b0f0e04d1
+    producer: dynamo_v2-0.1.23
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The answer is 42, no tools needed.
-        chunks:
-        - expected:
-          - kind: text
-            text: The answer is 42, no tools needed.
+    observation: 135880063fdc4fde838f9dec1ff5207574f80f708e2b58fe29dbe4f06520694e
+    producer: dynamo_v2-0.1.23
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: check Acheck B
-        - kind: text
-          text: 'Sure. '
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: text
-          text: ' and '
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: check A
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' and '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: check B
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 2a2f93ba5e0bd07753ce3e21355cee947b17dcbb247f1db8a5a2547995c6ebac
+    producer: dynamo_v2-0.1.23
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'Before. '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: ' After.'
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Before. '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' After.'
+    observation: caa3335260296094ddf885ae9bf8774614b0de6998857360c9938feb29db4fca
+    producer: dynamo_v2-0.1.23
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: 5ef3668d321d881aef52cc43c045d2db8adf6d33944f1210734ecefef4363d8f
+    producer: dynamo_v2-0.1.23
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I should check. <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> now answer
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜tool_calls>
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜invoke name="get_weather">
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜parameter name="city" string="true">
-        - expected:
-          - kind: reasoning
-            text: Paris
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜parameter>
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜invoke>
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜tool_calls>
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
+    observation: 396e5e03cdb1c15bd8bd4039e4d6d30a312555d5316b96feb2a9f185d5dc66fe
+    producer: dynamo_v2-0.1.23
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I should check. <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> now answer
-        - kind: text
-          text: Sure.  Here you go.
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I should check. '
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜tool_calls>
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜invoke name="get_weather">
-        - expected:
-          - kind: reasoning
-            text: <｜DSML｜parameter name="city" string="true">
-        - expected:
-          - kind: reasoning
-            text: Paris
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜parameter>
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜invoke>
-        - expected:
-          - kind: reasoning
-            text: </｜DSML｜tool_calls>
-        - expected:
-          - kind: reasoning
-            text: ' now answer'
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' Here you go.'
+    observation: 3f9ec2abe7fb4eab743c1c7021ed2b5268a4072148386b610c40c6a01f65b1c9
+    producer: dynamo_v2-0.1.23
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
+    observation: a6279718efd35afe3b8e01132060dc7eb6c8f5f6212bfe3bc464d5a89024a006
+    producer: dynamo_v2-0.1.23
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: af48132fdcaff34798e97bfec22f8025f467ddb78b357f63c3bfb956e0b35521
+    producer: dynamo_v2-0.1.23
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: a3947fd4b5917a7015aee4fd7438ffeeb36c5a84b9995b6d62207c2c4c36f599
+    producer: dynamo_v2-0.1.23
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: The forecast shows clear skies for the rest of the week.
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected:
-          - kind: text
-            text: The forecast shows clear skies for the rest of the week.
+    observation: e87e4f841594dfe179e9ec030a83ec24760083294afbe80cff6e6aa1c9f82649
+    producer: dynamo_v2-0.1.23
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: ok
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: ok
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: ec2a15b5abd57120febab05627daddd9d3732ca61a907a62240c556a1b1d85f1
+    producer: dynamo_v2-0.1.23
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'first
-
-            second'
-        - kind: text
-          text: done
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: '
-
-              second'
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
+    observation: 81dd9e776c1790336ba41698db3f8ea80e4cc142678a4a1c6f2a47485b35fd00
+    producer: dynamo_v2-0.1.23
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"y":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: 785c14d6777e355632b215227e535dc8bed634e86de2dec8198a0a0a7b909228
+    producer: dynamo_v2-0.1.23
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Tokyo
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Tokyo"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
+    observation: cfafe0fc3b5bc806cb06a7c56d104859b9f33c0f0f1855fa1c8d3a12a2e33e7f
+    producer: dynamo_v2-0.1.23
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: first thoughtsecond thought
-        - kind: text
-          text: interlude done
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'interlude '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: second thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
+    observation: 30e9045830d76fbd48ab7f6221a6641471e9771a55a816452004d379737c3c73
+    producer: dynamo_v2-0.1.23
 metadata_changes:
   arg_marker_in_string:
     init:

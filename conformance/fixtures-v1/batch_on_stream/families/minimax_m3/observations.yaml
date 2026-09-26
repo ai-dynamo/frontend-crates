@@ -1,0 +1,3775 @@
+schema: bound-observations-v1
+observations:
+  b6b09e83746aa371299bbe709cd23bf5d45f2c1210e251ba91ff16d05367ec04:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  dc0efd2aec1549fc8b94532f6223ee61bf5633b89f375f12c64cf38426780dba:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[<invoke name="get_time">]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  6448a076806698e4223ab8d73d2795740d23b6ac1d963fa1d50816c747cb33a6:
+    request:
+      model_text: 'Both: ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both:  Done.'
+  a7e64e563905db198025998e992f3251e909dfbc23cc333ffbd31f648a8a8bc5:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  f8104eb8ac72d708c1fc5278d2dc363a682512ab6b5ece8fd89251c433551d2c:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        nonsense
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  f7f7fda4e6d6b81480342c49055e65c4044276b4701dd7907f1062a3a3bef28a:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="configure">
+
+        ]<]minimax[>[<settings>{"mode": "fast"]<]minimax[>[</settings>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: configure
+        parameters:
+          type: object
+          properties:
+            settings:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: configure
+        arguments:
+          settings: '{"mode": "fast"'
+      normal_text: ''
+  c97b9609041f1c1ca4f96ad54be44818da5d3aa3cb56068300144960d938f600:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke>
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  c4dd75737b4d8f06dbb7d3b722f42822a8874b78c772cd9a8df860d44f2eb0e3:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  3c7f2640061560a1263a9eca1a3cc218802fe05c14e662649faae2565b964c2b:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  0405db64d025b752dcb1b86ec799ca3be89a207b4c4db76bf1b2133a03c15375:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  fb346a2123336c476fbdbd60d371282c39005a40f8b99ca9550775b87b7cb7c7:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  3d7fb90962bbd5264293693de6eab4c8ce06f663b673cb55b5aac8beca832949:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="book_flight">
+
+        ]<]minimax[>[<destination>Paris]<]minimax[>[</destination>
+
+        ]<]minimax[>[<passengers>2]<]minimax[>[</passengers>
+
+        ]<]minimax[>[<first_class>true]<]minimax[>[</first_class>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  aba07acff5c747f0bd69b212b0f743414efbb8ea705f2596c62a4b8fa1d79bd4:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Tōkyō &quot;central&quot; &amp; west]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central" & west
+      normal_text: ''
+  c92c914b191e5d0c0380bb048a7b72679b9bdfc93b639bd6637ac83af7af9493:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_temperature">
+
+        ]<]minimax[>[<celsius>twenty]<]minimax[>[</celsius>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: twenty
+      normal_text: ''
+  15aef8347db6c92e914bd5cb1f4b1dde7f25451458a1552fa1d0fd736a89192c:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<items>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</items>
+
+        ]<]minimax[>[<config>]<]minimax[>[<nested>true]<]minimax[>[</nested>]<]minimax[>[</config>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: integer
+            config:
+              type: object
+              properties:
+                nested:
+                  type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+      normal_text: ''
+  43f97cb36bf3f3e9c157e55eaad714597b2ef52aa4fb99de2492416a9eab12f8:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<payload>]<]minimax[>[<regions>]<]minimax[>[<item>]<]minimax[>[<name>west]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[<item>]<]minimax[>[<name>east]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>4]<]minimax[>[</item>]<]minimax[>[<item>5]<]minimax[>[</item>]<]minimax[>[<item>6]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[</regions>]<]minimax[>[<flags>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[<retry>null]<]minimax[>[</retry>]<]minimax[>[</flags>]<]minimax[>[<empty>]<]minimax[>[</empty>]<]minimax[>[</payload>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+              properties:
+                regions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      scores:
+                        type: array
+                        items:
+                          type: integer
+                flags:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    retry:
+                      type:
+                      - 'null'
+                      - string
+                empty:
+                  type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+      normal_text: ''
+  e6665c15346359fac95e96e852822ae8acd7ecf5f14b5b3a97ed5215890abf4b:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_limit">
+
+        ]<]minimax[>[<count>9007199254740993]<]minimax[>[</count>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  59b24601975521788cdd1501dfca5d4a73475847d272e64bf547da7a84cb7110:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  e423959fe7a14a4d361d2dbf2320fb707c89336f592a0d5d86ebfdc6d93a224f:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  a479b51e50e1ce2f8ccf025408d1a646338f29d2aa0cdbf4a22f4cd65c04a59f:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  14909c9e7042be91583c6251ca173462b6496d46f349f8bac35e6e6907475d13:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        Then check LA weather.
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather. '
+  7212605849d29c389b89ebb52144850b32cffa7e855a8932a9236a2fb697fb52:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  fa811aa224795916bab61c5ef07731e17f53d31afc5caa1b7a694e9349c8e9a9:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
+  ff7a3a7ea196962c02c0262a78eacb43369e6bed6a7a81f9022f1489f29e8352:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+      normal_text: ''
+  870272e954c14e641a939d82b84b736249f5b048d08b381a47888e5d226f4c05:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  6864372833ec853219b84b1eb556df2d4cbd93c878645231c57471433ee3f89a:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  829b90344c16ffc1d7178de85b0d4438562e39530869f5fbcb5f240b5ab355b7:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  d42634ddf7c5d059aa2034e2ed4da8fcc5f108ed19312e45f4a24ece3d69b696:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  033f1a07423bad46bf10a5294ed472ebce193711df2f8607ab747cdb5b725949:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>New York]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  8763bf274cd9e6ff3bdd2538c55506813b28a6db635e1f5cd1392fe4e6d72358:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        '
+  8624c2bb816f20c4f74db428692ce22df2c7ede53a09f45f64af5fd2e3c9fdf8:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: '
+
+        '
+  906ffbd80b3c8fba4d19ae2294f00094c5dbd0f36646804aaa51affffc96f457:
+    request:
+      model_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check that. '
+  926337adb7175efb09bb64693a0398fd7131f3bb42dcf4c5116de387585efb6c:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  ce1d1b64fb9ab7e3bc977af59000a35d2602fee2c3eacad21da9c51ca2f09894:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  3975923ccf0fafdc94e7ba12ed1a76015e7ed5f468b75d411adbf9c67541677f:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  84d86138c4cba9779041d4703a292bc3192b724348d1dc034d4241138c2aad38:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[<invoke name="get_time">]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  32a22fca6a3089145064368885c9f98f94a26dc22a062db402c953782c1b0c7c:
+    request:
+      model_text: 'Both: ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  19b06c796b42517501d23c6cba1369eaeba076b695b26b894f9cd0300d4f3b9e:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  c340f3c29dfef9295d8b371c5306b1aadac6687c88a2e0f76a7d9f574a3675fd:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        nonsense
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  c94eff50782a2db359043c43b542308d1dc90736a9fc878cb93fa725e4f2d935:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="configure">
+
+        ]<]minimax[>[<settings>{"mode": "fast"]<]minimax[>[</settings>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: configure
+        parameters:
+          type: object
+          properties:
+            settings:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  01cb9a558e023b44216ec89d2a26dc36f956f365c9fdfd8ab13a765bcac2b3bc:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke>
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  a304761dfcd3fa3219da84317d8b997aba65576fe1c6fa04befeb54d20b53496:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  b581acc2fd8c48f306c0fec717a629daf48d4ff089e941413ece750eb8bf5aaa:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  2d00512d4b3ff866197335d379959fcfbfa3ee06373752a38b3d1c1bd6ac40db:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  40c0825d3506889eb6625fb5ce17ffe17137a3ed8f20f74a8f2367eb93da1c38:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  abae6e70c257b933f3e2d4d4d984ee340db3c2d699df250df9712d8a85f9551b:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="book_flight">
+
+        ]<]minimax[>[<destination>Paris]<]minimax[>[</destination>
+
+        ]<]minimax[>[<passengers>2]<]minimax[>[</passengers>
+
+        ]<]minimax[>[<first_class>true]<]minimax[>[</first_class>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  78ee53d9149839a6986ac636d62835ea42221f6def41eed8c6785dc9e62d3d0f:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Tōkyō &quot;central&quot; &amp; west]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  23d010b810732408e77d666e107c054e820119d9b6742fc7ecc15ac64478c0e5:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_temperature">
+
+        ]<]minimax[>[<celsius>twenty]<]minimax[>[</celsius>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  1ff5fa15c22d4fe377d9e11366b8db0b722968fdc204c829ee4bf3efa80da597:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<items>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</items>
+
+        ]<]minimax[>[<config>]<]minimax[>[<nested>true]<]minimax[>[</nested>]<]minimax[>[</config>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: integer
+            config:
+              type: object
+              properties:
+                nested:
+                  type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  6c7d657693b31284884237b96e520e508ad04a7340c24b06bca769b429731f11:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<payload>]<]minimax[>[<regions>]<]minimax[>[<item>]<]minimax[>[<name>west]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[<item>]<]minimax[>[<name>east]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>4]<]minimax[>[</item>]<]minimax[>[<item>5]<]minimax[>[</item>]<]minimax[>[<item>6]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[</regions>]<]minimax[>[<flags>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[<retry>null]<]minimax[>[</retry>]<]minimax[>[</flags>]<]minimax[>[<empty>]<]minimax[>[</empty>]<]minimax[>[</payload>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+              properties:
+                regions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      scores:
+                        type: array
+                        items:
+                          type: integer
+                flags:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    retry:
+                      type:
+                      - 'null'
+                      - string
+                empty:
+                  type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  d84d855b8ddabb09f175bf470ab5c78c673a880feaa8605ec9c4f64fa680ebb6:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_limit">
+
+        ]<]minimax[>[<count>9007199254740993]<]minimax[>[</count>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  ed0e3121a23f8b82622e505cebdace4cd80ffde8c24ab43bab866a29502ba76e:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  a33b9913a3344f67e783868027f3a9b8a71d04cb6d9bf81d8d16b5ba7382bba0:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  4425667ac3afae6afb4890ea1b6bcea9621ea6930655e16d09378fccf4efff66:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  d0d6799636ba0e2570b5c8d2c9cc884b681c996117d3d26cd36cbfd3ac84b1e9:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        Then check LA weather.
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  20b3c7f6c649fd3fd348e9baf7d84a97d0ab991559fd2e43a4f72be218d4b70d:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  a043827bb6038e37cd2b06ce86822d9152bca39a764230bb62b1cd5f79cc441e:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  61db95f0a83b9a2f5ffacea43fc1ee8c3e9e120ae2bd60445fb19d371992a30c:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  eb419ac9556d8b1ec454afccca22e59f6524daa33fee540ae9550cf256aea3d6:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  0b05419d4b1a8cfc3b9b5b5242ec688e0afe0a3c75dd98f4f070e7b464dc3589:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  2955de7d23ee835204db81d759be87027a2c2ca1705650be63ada3ea97b7fe1d:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  e8ef1739953745815c8046edade467088df3eb48405b6d0cebe6faeb3f7850e7:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  e90b5d1e7591dc4da6a4f4e600d7c173ba4d8d59f82f115a9cf273ef70753d71:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>New York]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  7506e646fe8dfdd1f48bdf8a15efb7f0f02fa5161a7959752068ea383cac36f7:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  f2cf4c9fed84505a5e32c8f282a73b14234e03722becd99be67d3b1b4b6d5fd0:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  391f8a80b72c191629e68c7b08bf52077f90330652169f30d8d61b4d745ec037:
+    request:
+      model_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  0af26660b70a30f7cb4ab02f8b14cc31b3eda5817357cd557a54ee76eb426098:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  2847a4798e2c83936779a04b5ea137dfb4ee584a712e2389b8efa181f2ef0b23:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      unavailable: Capture did not return this case.
+  0c93b31a25b2980777161de4751702a67a920c9b98e0a42f6a2a4af576e28f5b:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  eccf8043b07c27aeba1665d0ae512aa02fa097f0f929d554e219ac278bcbc4e4:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[<invoke name="get_time">]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  20e3ac9aeb96ca5785011e049d15f17d448017c9c4d2a227c55e65ac1103ec3b:
+    request:
+      model_text: 'Both: ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  6bd75a775a576f9adac758cd521d560b39eff20dafef0a9dbc2384373d8504fb:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  673ee569bbba702d731a3f4341106f09a8f9a934d01cb768f0c4c211031a9e06:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        nonsense
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  7183ed868bdf30c3358dc29b8a5c7fa03297bba96f022c44b9ee84158f3d3944:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="configure">
+
+        ]<]minimax[>[<settings>{"mode": "fast"]<]minimax[>[</settings>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: configure
+        parameters:
+          type: object
+          properties:
+            settings:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: configure
+        arguments:
+          settings: '{"mode": "fast"'
+  49e0ba437a92c3de51d71cbcb08910c425ea6277601625ede0608982f35ee47b:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke>
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  1e4639f634a41cdb38f8fd4ae9c9fb4cd15375b455fab6f4351f019f250384dd:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  691dffae3307adb6e2baae02767ae7dcf27f01cbc73afda792a399d556bbfbfa:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  94968fa7e895c0fe8e10dacb25d39ab1665c8addccc2fa44730daedcd4ea0498:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">
+
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  4f7b640946c6c47649b957f13b6335f8f80d671ba3befe357fc96dbe309dceeb:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_time">]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  e152fdac1c400bfc19c749e96b6500e21f892fa519af55a29eac1b4dcd751912:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="book_flight">
+
+        ]<]minimax[>[<destination>Paris]<]minimax[>[</destination>
+
+        ]<]minimax[>[<passengers>2]<]minimax[>[</passengers>
+
+        ]<]minimax[>[<first_class>true]<]minimax[>[</first_class>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: '2'
+          first_class: 'true'
+  e1ff7c2074621c053e8f840ba1528edd20f35983ca303acc2714d71788483a08:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Tōkyō &quot;central&quot; &amp; west]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō &quot;central&quot; &amp; west
+  c16f8ebb3b2dd7fc2bf3afb1244ca3e0ee9fb88402cfc646322ef5fb99d3faf6:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_temperature">
+
+        ]<]minimax[>[<celsius>twenty]<]minimax[>[</celsius>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: twenty
+  78c1edaa6d8253171e79a961b2b3a8033ea95794af6a01c39bf6d7d0355a0111:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<items>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</items>
+
+        ]<]minimax[>[<config>]<]minimax[>[<nested>true]<]minimax[>[</nested>]<]minimax[>[</config>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: integer
+            config:
+              type: object
+              properties:
+                nested:
+                  type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+            item:
+            - '1'
+            - '2'
+            - '3'
+          config:
+            nested: 'true'
+  e861d92e29a23fa2c5dfe6e15888c8d6e3aae8c7a0a784836e6a2907d079ed5a:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="process_data">
+
+        ]<]minimax[>[<payload>]<]minimax[>[<regions>]<]minimax[>[<item>]<]minimax[>[<name>west]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[<item>]<]minimax[>[<name>east]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>4]<]minimax[>[</item>]<]minimax[>[<item>5]<]minimax[>[</item>]<]minimax[>[<item>6]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[</regions>]<]minimax[>[<flags>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[<retry>null]<]minimax[>[</retry>]<]minimax[>[</flags>]<]minimax[>[<empty>]<]minimax[>[</empty>]<]minimax[>[</payload>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+              properties:
+                regions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      scores:
+                        type: array
+                        items:
+                          type: integer
+                flags:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    retry:
+                      type:
+                      - 'null'
+                      - string
+                empty:
+                  type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+              item:
+              - name: west
+                scores:
+                  item:
+                  - '1'
+                  - '2'
+                  - '3'
+              - name: east
+                scores:
+                  item:
+                  - '4'
+                  - '5'
+                  - '6'
+            flags:
+              enabled: 'true'
+              retry: null
+            empty: ''
+  999bb0f8ffd42abaaf2f4c941ef5f31be5847c417cfe71e79580bbaf5b76b91e:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="set_limit">
+
+        ]<]minimax[>[<count>9007199254740993]<]minimax[>[</count>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: '9007199254740993'
+  569b1ced6a294fd52c01b4561fb31d442b70fb62b54ee7a2fbf4107e8b04f58f:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  fd63bdaf8482ea8e6ba660952becd8c8639a9592708de469164a8da70d42a921:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call> Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  c5bd5a02c69713b58447e4c2e5e5de74d32d8e0d5f0d1c7c92de11fea30e6b83:
+    request:
+      model_text: 'I will check the weather. ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        Then check LA weather.
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  171e9c7c6865b918a81b9688e152279548be544b2d460f0c23a46e03407cc852:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  7a2fa18be90a403fd4eb549ed0fd836f4efb636276e68276b88f7197ba587a31:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  0a0a469df0073ee7d5008f3b809f4ebafb67bbf6e972798be9d2f60633974a35:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[<invoke name="unknown_tool">
+
+        ]<]minimax[>[<location>LA]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+  59e64d056d453b219fc743dbc3df2dd13ac0d9c89d1d165b3881e51f88762cba:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  72c80db842f308ce6c3c9e41c043180d1f48ce8cd16eb1fb9330c93fe563f0d7:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+  12f6ca893f668c3fbe136cbe3577498d845ddd0273090e1c8a579b59f8cc300f:
+    request:
+      model_text: ']<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NY'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  378da3ac38ff4dcae179989efba47f46dd3ca31e3639e70e1e08d745228fd1fb:
+    request:
+      model_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>
+
+        ]<]minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>Boston]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>
+
+        '
+  bab97a7b6baf0de9cc5a72ab6cbf1a2cfab0021f7f7ec95b523258a2c6be5c6b:
+    request:
+      model_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+  eb3fa5c6302b969262f76db4ffd3949db0aaea53f06d74c58c2b465f654a9760:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_m3
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+producers:
+  0d2d4e9bbe23ecf3afde33e8a391ace34847c8078f171cf459a9d2f73dcd3233:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: minimax_m3
+    provenance:
+      captured_with: 0.5.1
+      runtime_version: 0.5.1
+  d00c6cd199b63d22103995ea60c487cf0b5ad0c9467d6d1d36df832281c9684f:
+    capture: sglang_python-0.5.14
+    document:
+      family: minimax_m3
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  f5c3d8d6f21ea9fcd71a92616e4fe2147bba4b8e9bc270b65ced3e8e1f295f1d:
+    capture: vllm_python-0.26.0
+    document:
+      family: minimax_m3
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0

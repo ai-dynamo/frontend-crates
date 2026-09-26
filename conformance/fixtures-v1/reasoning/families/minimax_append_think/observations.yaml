@@ -1,0 +1,511 @@
+schema: bound-observations-v1
+observations:
+  1e0bb4fa72931d82b2283c9c57a57ece8e3bdf1084820d41f5912794a9c50aa0:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>
+  17188929ee46ffd4adc9c2f64c56f4c8765d52704904f56c9756aad7ec6ff848:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>plain answer
+  9141ca727a1423f48c8c0284c4616159c3ac492816abbf4198d892ecb849c824:
+    request:
+      model_text: thinking
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>thinking
+  bad0582753f841d1f23812f0a40b8709641230c33291fb5e9e3120c0ae23847a:
+    request:
+      model_text: compute</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>compute</think>answer
+  6d333af1c28628ce5c661d0072a9a5671c90da6d6d1e13727291c13703c262ba:
+    request:
+      model_text: before <think>thinking</think> after
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>before <think>thinking</think> after
+  629846a32f9761141f871e0cac3bedc7a43fba91dc3cd5de31fae87ce20007a2:
+    request:
+      model_text: 'Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: '<think>Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+  181aa128ff735139a41c0a11e363cd4e359bc702a08b1bf837491b9fb299fe4d:
+    request:
+      model_text: 'reasoning</think><minimax:tool_call>
+
+        <invoke name="get_weather">
+
+        <parameter name="location">NYC</parameter>
+
+        </invoke>
+
+        </minimax:tool_call>'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: '<think>reasoning</think><minimax:tool_call>
+
+            <invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+  87b4f8200ce47946289d19c50ec05e12079eabc94132f2befbece9e08724e515:
+    request:
+      model_text: normal</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>normal</think>answer
+  deff53f2f18de6e29aa6c63c5b4b0515bd03f41ca02f36a3d140cd6bfb5d18c6:
+    request:
+      model_text: partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>partial reasoning
+  8159e19303c5e44cd1155a626e76ba2353ed074fe2e55ea4a6b6b2d708719005:
+    request:
+      model_text: first</think> middle <think>second</think> done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>first</think> middle <think>second</think> done
+  fa129e94eee8be8d840ae577209aa3d8f75a566280322446c7a142224bd3abc5:
+    request:
+      model_text: preamble</think>body</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>preamble</think>body</think>answer
+  5dccd77fb9f01a37a3b2bbe32285b8082e6f8c7e1824e7363062348f6f67ef70:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>
+  175ddcd8ca605c780438ce68e8a0acbadbec60e76d8c16c8df359e6799148923:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>plain<think> answer
+  3fd96286c425680604c536cfbac8afd2dd3416bca8c5e0f6a510fba5e245e843:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - 'reasoning '
+      - content
+      - </think>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>reasoning <think>content<think></think>answer
+  e2e7382c5df39c3766ad61194c6d906db51cba7044986c92ad409ec668478c62:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - first</think>
+      - ' middle '
+      - second</think> done
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>first</think> middle second</think> done
+  12cb410c8c06597e489fa1574d84e7af758249299a608711f504bbcb8d430229:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - preamble</think>
+      - body</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>preamble</think>body</think>answer
+  daf44501a55539a445f5ba6e286fb8e918c374dd5357ae74d181b2958bd90422:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - thinking
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>thinking
+  b58d617baf1640275987529ae60175403a5f69de7e1dd8fee9f66f1214c8fc11:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - thinking</th
+      - ink>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>thinking</th<think>ink>answer
+  b2c453b3f960998ca0ecd26a12a715dabdf834b99e08bf5f27752903daef7f4d:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: minimax_append_think
+      mode: stream
+      chunks:
+      - plain <th
+      - esis answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: <think>plain <th<think>esis answer
+producers:
+  09b0009bcada869f38a6ebbc0c5cd3323a1b6bb48a9215932e908b2e06d29b43:
+    capture: inputs
+    document:
+      family: minimax_append_think
+      model_label: MiniMax append-think
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  0da32956e5ec6ed873d89da36fa61a993b9582647408cb0bd2f06c9425078e88:
+    capture: inputs
+    document:
+      family: minimax_append_think
+      model_label: MiniMax append-think
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM MiniMax M2 append-think reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_minimax_m2_append_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  0e6e4310ee65c7ad2c754c7b4b70498808d9790def08cd4809c54d4e2f764c65:
+    capture: vllm_python-0.24.0
+    document:
+      family: minimax_append_think
+      mode: stream
+    provenance: null

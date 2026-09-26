@@ -1,0 +1,293 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: minimax_m2
+capture: vllm_python-0.24.0
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.10.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.13.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.2.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.4.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.5.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.50.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.6.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.7.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.8.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+  TOOLCALLING.streamv1.9.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.24.0
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 809a0b49eebaab98fd2f3cd4690fc08e757336ab4703eec2bd3d4ffc7a6d1f09
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 3e35d576cc2b104e5f9cc156cc455c6bd82340e176794d4ce6a07543466dc8e1
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]':
+        observation: 22ee101ca44034c0e7184c92507023ae63745f2f8dba2a3c862c28d0031f5e46
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: acbb4ad10bc9ffbfeb1cf0eca85fc531088f060384bcee5e7b1f883830497e4d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.b"]':
+        observation: 2fb311b44a97606e9b8b34fb6b25158d847778fef29b4caf8adb1f587045aaed
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d64e143e6a4397d9e222305a3fffefcd322b9b54218e3120dc9c727c3099bf26
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: d8711f857d30f70e73f04f24b28a4d65ea7691b426d5cc8c580166e2c6eb68f4
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 582a7353f3ee11910668b725268ff1d6943cc46133a05cf0eceeb13f88654791
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 1032551c54b4e1bccee451add5f5f90a28e95a395867e6b78e3fd98bd8e3547d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: b8d44225f6dec3ad7be2f9f4556b691d859cea056b42e5d48b92b75ab2927156
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: 2b1f92bd5ef2f330ac71bc2ad6cdb9e1e76d44444f55dee28931e98731de1ac8
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: 03852ea9996c054accc4f75935625ccc19711decf093e70504645870e25ca89d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 849aac6be932c48043f7c0e1d8f4abb43430ad80940b9abb525d0f47ccf566b0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 3fac47fac79e5b6de2389804ddfaf0f6c32cb25fb900a095e8014d025fedca89
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: 96d194b22b55faece6168c698f2426a9fbf51197ef2ad508a94941b0c5ace1c3
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.f"]':
+        observation: 88c29889ce6c8dc73eb9a5750d0dc234ea84298a370d65d1ab721631cf42b4a0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.g"]':
+        observation: ab845be2f94431133cb4f995a5c29683a49f4797d9aa298ca5ff8e68e40eea28
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: cde9d4782def3ef671da5f71dd2c04f17dcdaee6176fd8bb9bcec69dca523cdb
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: 4145e12eabb43907a1db010f51cd1c14e07b3f0d3858c0e314a9825d71c307fd
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: 87f5698189206d2de5cea4ec6e3745ef99d03b72124762f5ecd773cddc2d1cb2
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: 7918e9fed1b9a7c48a8e298bf7bb791274e9035e0e9b8c7a5ffa8fee1b9350b5
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: 3ac5c599b16ff6dd4dfdfbaf2b201792d12922094af1fd649f00ae0a77284fad
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: 140456b81ef4e5c53923374d7e78a4281084512c093e22542880482607371784
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 8bcab670429080bedbc60745e2af6674d702a697c4d004a06b7308a055e6d33b
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: a6caa977ae43fa62b46618195a30d11711e29394fa84a54fb9407b9e52dd0526
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: d1ad8f3f078e05047d0678eed6595e8ad6a7909f1898864f594669e9e1816176
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 4d1864384de246e54f56b715ad3183a857d898f426a4a87679420c4e7344ce40
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: b64b257a6583485921ba5572c07cec06aa497788f4ba4e048912117d18cd67b0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.g"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.f"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.b"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}
+  rust:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]':
+        observation: 809a0b49eebaab98fd2f3cd4690fc08e757336ab4703eec2bd3d4ffc7a6d1f09
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]':
+        observation: 3e35d576cc2b104e5f9cc156cc455c6bd82340e176794d4ce6a07543466dc8e1
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]':
+        observation: 22ee101ca44034c0e7184c92507023ae63745f2f8dba2a3c862c28d0031f5e46
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]':
+        observation: acbb4ad10bc9ffbfeb1cf0eca85fc531088f060384bcee5e7b1f883830497e4d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.b"]':
+        observation: 2fb311b44a97606e9b8b34fb6b25158d847778fef29b4caf8adb1f587045aaed
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d64e143e6a4397d9e222305a3fffefcd322b9b54218e3120dc9c727c3099bf26
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]':
+        observation: d8711f857d30f70e73f04f24b28a4d65ea7691b426d5cc8c580166e2c6eb68f4
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 582a7353f3ee11910668b725268ff1d6943cc46133a05cf0eceeb13f88654791
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 1032551c54b4e1bccee451add5f5f90a28e95a395867e6b78e3fd98bd8e3547d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]':
+        observation: b8d44225f6dec3ad7be2f9f4556b691d859cea056b42e5d48b92b75ab2927156
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]':
+        observation: 2b1f92bd5ef2f330ac71bc2ad6cdb9e1e76d44444f55dee28931e98731de1ac8
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]':
+        observation: 03852ea9996c054accc4f75935625ccc19711decf093e70504645870e25ca89d
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]':
+        observation: 849aac6be932c48043f7c0e1d8f4abb43430ad80940b9abb525d0f47ccf566b0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]':
+        observation: 3fac47fac79e5b6de2389804ddfaf0f6c32cb25fb900a095e8014d025fedca89
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]':
+        observation: 96d194b22b55faece6168c698f2426a9fbf51197ef2ad508a94941b0c5ace1c3
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.f"]':
+        observation: 88c29889ce6c8dc73eb9a5750d0dc234ea84298a370d65d1ab721631cf42b4a0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.g"]':
+        observation: ab845be2f94431133cb4f995a5c29683a49f4797d9aa298ca5ff8e68e40eea28
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]':
+        observation: cde9d4782def3ef671da5f71dd2c04f17dcdaee6176fd8bb9bcec69dca523cdb
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]':
+        observation: 4145e12eabb43907a1db010f51cd1c14e07b3f0d3858c0e314a9825d71c307fd
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]':
+        observation: 87f5698189206d2de5cea4ec6e3745ef99d03b72124762f5ecd773cddc2d1cb2
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]':
+        observation: 7918e9fed1b9a7c48a8e298bf7bb791274e9035e0e9b8c7a5ffa8fee1b9350b5
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]':
+        observation: 3ac5c599b16ff6dd4dfdfbaf2b201792d12922094af1fd649f00ae0a77284fad
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]':
+        observation: 140456b81ef4e5c53923374d7e78a4281084512c093e22542880482607371784
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]':
+        observation: 8bcab670429080bedbc60745e2af6674d702a697c4d004a06b7308a055e6d33b
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]':
+        observation: a6caa977ae43fa62b46618195a30d11711e29394fa84a54fb9407b9e52dd0526
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]':
+        observation: d1ad8f3f078e05047d0678eed6595e8ad6a7909f1898864f594669e9e1816176
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]':
+        observation: 4d1864384de246e54f56b715ad3183a857d898f426a4a87679420c4e7344ce40
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]':
+        observation: b64b257a6583485921ba5572c07cec06aa497788f4ba4e048912117d18cd67b0
+        producer: 429ecea3049ac3e7dfad547e7dece00734a9cd59e1349ab2cd889bbb3c854812
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.d"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.g"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.a"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.b"]': {}
+      '["TOOLCALLING.streamv1.10.yaml","TOOLCALLING.streamv1.10"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.a"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.f"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.7.yaml","TOOLCALLING.streamv1.7.f"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.a"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.d"]': {}
+      '["TOOLCALLING.streamv1.1.yaml","TOOLCALLING.streamv1.1"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.a"]': {}
+      '["TOOLCALLING.streamv1.6.yaml","TOOLCALLING.streamv1.6.b"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.d"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]': {}
+      '["TOOLCALLING.streamv1.9.yaml","TOOLCALLING.streamv1.9.b"]': {}
+      '["TOOLCALLING.streamv1.8.yaml","TOOLCALLING.streamv1.8.c"]': {}
+      '["TOOLCALLING.streamv1.5.yaml","TOOLCALLING.streamv1.5.e"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.b"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.50.yaml","TOOLCALLING.streamv1.50"]': {}
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.d"]': {}

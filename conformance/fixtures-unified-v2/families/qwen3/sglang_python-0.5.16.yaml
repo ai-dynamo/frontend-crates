@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: sglang_python-0.5.14
 provenance:
   status: legacy
   captured_with:
@@ -6,773 +8,142 @@ document:
   mode: unified
 changes:
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 811ebdd0b050eb4f30ae141c6740d73ea8647479f839ddd1db82d2df3218881c
+    producer: sglang_python-0.5.16
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+    observation: 90f7c9d2f227d7a0ec01f4110b40895be39589db40f25313f04b64a042d6aec4
+    producer: sglang_python-0.5.16
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+    observation: 73dcf67451e5c34e855ba97f8ac0238d4bf9251dcbb540227c4abb0ec7fd4c39
+    producer: sglang_python-0.5.16
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: '[{"name": "get_weather", "arguments": {"city": "a '
-            arguments: ''
-        - expected:
-          - kind: text
-            text: ' b"}}]'
-        - expected:
-          - kind: text
-            text: ‹finish›
+    observation: 59f51f841841227e7a46b283480417161a2a543eed151372875211a1124a7379
+    producer: sglang_python-0.5.16
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        - expected: []
+    observation: c29ccd41f1741703d78df771c9bfd7db1e4d5d6992f54f77f3e68fc160bcdcc0
+    producer: sglang_python-0.5.16
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: fb9dde8f379f39f51871f510af18ff4b7c7a87c6174b6a952cbfded3bc2319b8
+    producer: sglang_python-0.5.16
   guided_json_invalid_call:
-    case_key: UNIFIED.31.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
+    observation: a0235f75791e541c8a6193032c3ce5c0fb2104e26528d516116976c2d7f9bcb5
+    producer: sglang_python-0.5.16
   guided_json_list_with_broken_element:
-    case_key: UNIFIED.31.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+    observation: 5a4f2077aaa24bd968762f38f5fc85ad9c469a58c8a2a5e4612f65b4c8aca6c7
+    producer: sglang_python-0.5.16
   guided_json_malformed_json:
-    case_key: UNIFIED.31.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"name": "get_weather", "arguments": {"city": "Par'
+    observation: 91a90f64764fffb68a2d8ebcdd896164484c2e44c8dfdc17acfdf4729a75d004
+    producer: sglang_python-0.5.16
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "log", "arguments": {"note": "'
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: '"}}]'
+    observation: 2aa5559da68f39eea002cec61a9f763221bc293d85cef10ffc0fc867dd1023b3
+    producer: sglang_python-0.5.16
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"city": "Paris"}'
+    observation: 8181de0cd616f60f3f5b41a0a49c6bea1d99cf2b1eec910d5bdbd87ced503bcd
+    producer: sglang_python-0.5.16
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31.h
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I''ll use '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 8d4d66a1c3888460bcffa4bc146ef948cf9da1d9d3b7aab294e6b79139ae43d9
+    producer: sglang_python-0.5.16
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31.v
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I''ll call '
-        - expected:
-          - kind: reasoning
-            text: <function=get_weather
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected:
-          - kind: text
-            text: ‹finish›
+    observation: 8c581d0c4b1f6824d55785d59f31d1553b692fb41d9a085061ed0daa08fd9c88
+    producer: sglang_python-0.5.16
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31.j
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: d3c37cde14a4a472707aa822765ed59d1eaa2ebf7619d0b8de5a364b9b5b2780
+    producer: sglang_python-0.5.16
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31.k
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 2b8917441a6609e2231679d73f7706d3d8b8cb94caf59713fbaf1d5a2ca62815
+    producer: sglang_python-0.5.16
   guided_json_partial_calls:
-    case_key: UNIFIED.31.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+    observation: bfa5aa246686b3bd6006fb472b826eb8becd3a0db383f3949ea52c839a5cc88a
+    producer: sglang_python-0.5.16
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31.i
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Sure. '
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 5402ea5bb8ccb7308ef3dbaae7f96f7b1a5fc65d37ec4c728917f6d222f8d579
+    producer: sglang_python-0.5.16
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: bd0701065f61a2abb615a431776bb8075f90a5c61721663814232039a496c14a
+    producer: sglang_python-0.5.16
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31.t
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: 311bc2d7d7d26f2f8adc131898849261b07984062bff9fa5494cfe599dc374ff
+    producer: sglang_python-0.5.16
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31.r
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        - expected: []
+    observation: 65d66c13d917c8d4843b4e4e4f53d92f2c9bcea66c46e5b79c57fe8a51e41f3d
+    producer: sglang_python-0.5.16
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31.s
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: cda4c61d15ff1af6f0fe8a78a962d96a1e26d4cb9b1f09a5cd058995c9ac7296
+    producer: sglang_python-0.5.16
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31.q
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: 82fc14412b9c6d20bf9600de5afe8e43a7d7d5aabded15778428d501e230d5e0
+    producer: sglang_python-0.5.16
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31.o
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '{"unexpected": "shape"}'
-        - expected: []
+    observation: fef7a809968cb0358bde303268f3059999d7e5a4bcdae4cbd35b786c4fb4f37c
+    producer: sglang_python-0.5.16
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31.p
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: cd732f09f1f1f15fe66646d97bb0effc8fc63ecad009ebdbd89feb700add8db3
+    producer: sglang_python-0.5.16
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31.u
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: <function=
-        - expected:
-          - kind: reasoning
-            text: secret
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected:
-          - kind: text
-            text: ‹finish›
+    observation: 4af5e426a99898814a8bbfb967adb4ca0e61ea977124f8542a109f89ce370a96
+    producer: sglang_python-0.5.16
   guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31.n
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: 7a249aa03ec42eb2072f63155fca10cb9573b105d9ff18d7ed6008ee71b7ed1d
+    producer: sglang_python-0.5.16
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.31.l
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": '
-        - expected: []
+    observation: 43f12ecc5adbe2e77c374097f9372c8cf72f2c9cccf6242723a774ffc8bbb3a4
+    producer: sglang_python-0.5.16
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.31.m
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 0b0228c4a9916a97637741c7a8a169cbd8e081d66f3324b65dd15f1e94a74753
+    producer: sglang_python-0.5.16
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31.f
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected: []
+    observation: 4cab21ea176cddab28ba801125f05e3c61328dd9903a036f503896afa166e3eb
+    producer: sglang_python-0.5.16
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: cdadbcecdee478954bc7365ad03b100eae420dc41a5c230b810259a9a8fcfef2
+    producer: sglang_python-0.5.16
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+    observation: 4c93938a6d15e315f07073cae699e295df202a63025f55b5ea0e311904ca82bb
+    producer: sglang_python-0.5.16
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31.g
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: e02f3bb2516abe9eceb84ae060a5a8ed73f150ac79f8fd0dcdc60b6030e0335a
+    producer: sglang_python-0.5.16
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: checking weather
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{'
-          - kind: tool_call
-            name: null
-            arguments: '"city": "London"'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+    observation: 4aeec7d685b496a48b6e15b9273c64adaa8b33227bac9c23b3dbb4a0e2cd54a7
+    producer: sglang_python-0.5.16
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: no tool needed
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: The answer is 42.
+    observation: 5a96ac7ab9286d0156d0ff0f1953e9d2cefc440baee0c97846631241e06ddaeb
+    producer: sglang_python-0.5.16
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: weighing options
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: 'Here''s what I found: '
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{'
-          - kind: tool_call
-            name: null
-            arguments: '"city": "Paris"'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+    observation: a5cdf9adbb196a387a1aaa5640a2e597ef5566c78ddd3c8db0f191c3e25df42a
+    producer: sglang_python-0.5.16
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: analyzing data
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 293ed9eb7baf5b000c180fba386777d33ad6a3cd7bbb9cf8c00510ad44b35c1d
+    producer: sglang_python-0.5.16
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: checking weather
-        - expected:
-          - kind: text
-            text: </think>
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 6074056374d2ee35f5eed86dfa69aa90bcf07b2bb4172aadb9757b567a7819b3
+    producer: sglang_python-0.5.16
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: checking weather
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{'
-          - kind: tool_call
-            name: null
-            arguments: '"city": "Paris"'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+    observation: 7cbb5f094706ffe2eee2a0638612cd224c5d0809837c68cd82052eefed6c4784
+    producer: sglang_python-0.5.16
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: literal
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' then a call'
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{'
-          - kind: tool_call
-            name: null
-            arguments: '"city": "Paris"'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+    observation: c25d2cd551cade5968c37ae5b5e1b5c2fcf0736ef368e98faf2be7d11d346a0d
+    producer: sglang_python-0.5.16
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: output
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '{'
-          - kind: tool_call
-            name: null
-            arguments: '"city": "Paris"'
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+    observation: 2cd3f9da4326c70b36c564489b2ce6705baea7472bdfa12b3de16fb3210cf7f4
+    producer: sglang_python-0.5.16
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    observation: 039a50a4074043d2b3702a85d346c8bf759d3ba1c1a1ec1f7e6dfd93869119db
+    producer: sglang_python-0.5.16
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+    observation: c976ded64c4434c5e998aa1563b2327820d4386c8da52907e1c105fdbbd9c81c
+    producer: sglang_python-0.5.16
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: 'Working on it... '
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-        - expected: []
-        - expected: []
-        - expected: []
+    observation: 15185fcdfc4a1ad500be70d904a4dbec8c2725c5ebcbc896030cc60d9eba0c7d
+    producer: sglang_python-0.5.16
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+    observation: bdf67a238be5b8a3b05db21aecd7a8b2991807799033a5c103b02e45db30c392
+    producer: sglang_python-0.5.16
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
+    observation: f1dd1da369dbde5d9f4820cba1e79a3324675bc72bb30b297aba8742d6277f6b
+    producer: sglang_python-0.5.16
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
+    observation: dd5e0750874ec91f37ac0f070abc8985b1a2efb1fc730f1bc3163529bb4e9c2f
+    producer: sglang_python-0.5.16
 metadata_changes: {}
 document_overrides: {}

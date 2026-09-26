@@ -76,10 +76,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use common::{
-    STREAM_DYNAMO_V2_CURRENT_CAPTURE, collect_yaml, ensure_fixtures,
-    version_dirs_ascending_with_current,
-};
+use common::{collect_yaml, ensure_fixtures, historical_capture_dirs, rust_stream_fixture_root};
 use dynamo_parsers_v2::{
     Tool, ToolCallDelta, ToolParser, ToolParserInput, create_tool_parser_for_family,
 };
@@ -825,19 +822,16 @@ fn toolcalling_stream_interleave_isolation() {
         .map(|(k, v)| (k.as_str(), v))
         .collect();
 
-    let sv1 = ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let sv1 = rust_stream_fixture_root(&ensure_fixtures());
     let inputs_root = sv1.join("inputs");
     assert!(inputs_root.is_dir(), "missing {}", inputs_root.display());
 
-    // Capture history for the v2 parser, folded ascending (latest wins per case)
-    // via the shared helper the canonical parity test uses.
-    let dyn_dirs =
-        version_dirs_ascending_with_current(&sv1, "dynamo_v2-", STREAM_DYNAMO_V2_CURRENT_CAPTURE);
-    assert!(
-        !dyn_dirs.is_empty(),
-        "no dynamo_v2-<version> dir under {}",
-        sv1.display()
-    );
+    // Resolve the same policy and complete family checkpoints as canonical parity.
+    let dyn_dirs = historical_capture_dirs(&sv1, "stream", "dynamo_v2");
+    if dyn_dirs.is_empty() {
+        eprintln!("historical parity skipped: no eligible captured measurements");
+        return;
+    }
 
     // Discover fixture families (input subdirs) and load every case per family,
     // alongside its recorded dynamo_v2 output.
@@ -867,7 +861,14 @@ fn toolcalling_stream_interleave_isolation() {
         recorded
             .entry(family.clone())
             .or_default()
-            .extend(load_recorded(&dyn_dirs, rel, &input_chunks));
+            .extend(load_recorded(
+                &common::latest_family_capture(&dyn_dirs, rel)
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                rel,
+                &input_chunks,
+            ));
         families.entry(family).or_default().extend(fx.cases);
     }
 

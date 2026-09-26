@@ -4,6 +4,7 @@
 
 import sys
 from pathlib import Path
+from urllib.parse import unquote, urljoin, urlsplit
 
 import pytest
 
@@ -26,7 +27,7 @@ def restore_local_link_context():
 
 def test_local_links_keep_destination_relative_behavior(monkeypatch):
     links = common.set_links(OUTPUT, REPO)
-    monkeypatch.setattr(common, "_fixtures_cache_root", lambda: "/fixture-cache")
+    monkeypatch.setattr(common, "_fixtures_cache_root", lambda: str(REPO.parent / "fixture-cache"))
 
     assert links["toolcalling_src"] == "../parsers/v1/src/tool_calling/"
     assert links["toolcalling_cases"] == "utils/lib/parsers/TOOLCALLING_CASES.md"
@@ -34,9 +35,43 @@ def test_local_links_keep_destination_relative_behavior(monkeypatch):
         "../parsers/v1/src/tool_calling/config.rs"
     )
     assert common.fixture_href("deepseek_v4/TOOLCALLING.batch.1.yaml") == (
-        "file:///fixture-cache/toolcalling/fixtures-batch-v1/inputs/"
+        "../../fixture-cache/toolcalling/fixtures-batch-v1/inputs/"
         "deepseek_v4/TOOLCALLING.batch.1.yaml"
     )
+
+
+@pytest.mark.parametrize("filename", ["TOOLCALLING.batch.1.yaml", "TOOLCALLING.batch.1 #2.yaml"])
+def test_local_fixture_link_resolves_from_file_and_http_report(tmp_path, monkeypatch, filename):
+    repo = tmp_path / "repo"
+    output = repo / "conformance/report.html"
+    cache = tmp_path / "fixture-cache"
+    target = cache / "toolcalling/fixtures-batch-v1/inputs/deepseek_v4" / filename
+    target.parent.mkdir(parents=True)
+    target.write_text("cases: {}\n")
+    common.set_links(output, repo)
+    monkeypatch.setattr(common, "_fixtures_cache_root", lambda: str(cache))
+
+    href = common.fixture_href(f"deepseek_v4/{filename}")
+
+    assert urlsplit(href).scheme == ""
+    local = urlsplit(urljoin(output.as_uri(), href))
+    assert local.scheme == "file"
+    assert Path(unquote(local.path)) == target
+    served = urlsplit(urljoin("http://example.test/repo/conformance/report.html", href))
+    assert served.scheme == "http"
+    assert served.netloc == "example.test"
+    assert served.fragment == ""
+    assert (tmp_path / unquote(served.path).lstrip("/")).read_bytes() == target.read_bytes()
+
+
+def test_fixture_links_without_render_context_keep_file_fallback(monkeypatch):
+    monkeypatch.setattr(common, "_LINK_CONTEXT", None)
+    monkeypatch.setattr(common, "_fixtures_cache_root", lambda: "/fixture-cache")
+    assert common.fixture_href("deepseek_v4/TOOLCALLING.batch.1.yaml") == (
+        "file:///fixture-cache/toolcalling/fixtures-batch-v1/inputs/deepseek_v4/TOOLCALLING.batch.1.yaml"
+    )
+    assert common.fixture_href("") == ""
+    assert common.fixture_href("https://example.test/case.yaml") == "https://example.test/case.yaml"
 
 
 def test_web_links_pin_sources_and_publish_fixture_inputs():
@@ -63,7 +98,7 @@ def test_web_links_pin_sources_and_publish_fixture_inputs():
     )
     assert links["toolcalling_fixture_store"] == (
         f"https://github.com/ai-dynamo/frontend-crates/tree/{revision}/"
-        "conformance/fixtures/toolcalling/fixtures-batch-v1/"
+        "conformance/fixtures-v1/batch/"
     )
     assert common.fixture_href("deepseek_v4/TOOLCALLING.streamv1.1.yaml") == (
         "https://ai-dynamo.github.io/frontend-crates/fixtures/toolcalling/"

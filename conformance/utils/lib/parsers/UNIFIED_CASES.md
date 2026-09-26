@@ -8,7 +8,7 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 ## Capture version policy
 
-Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. This migration does not change the older stream or batch-on-stream storage. Changing an existing Unified input requires rerunning and updating every prior affected version.
+Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged observations inherited within recorded checkpoints. The default reference selects each family's newest actual capture. Source SHA is optional first-capture origin metadata, never a capture name. Legacy batch, streaming, batch-on-stream, and reasoning captures use the separate `fixtures-v1/` store. Changing an existing Unified input requires rerunning and updating every prior affected version.
 
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 

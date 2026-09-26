@@ -1,0 +1,6337 @@
+schema: bound-observations-v1
+observations:
+  fa87892480cfcafb14bbf724cdce453ad717bf9b1ffa92d7ff4f06b0d330dfb8:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  9c8ba92697e29f85f4392cb6aaaddf983b57a76d0ca6fec7973be5fe867d44c5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"location": "LA"}}'
+  f6b59233645885ab762ff75347f5fce6556e3e24c05f50a887e710e32726c7bf:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  1cba0e1806f7a235a42d54dc1e884ad641e50aaa77b5a271475b55bfd094a503:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "unknown_tool", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' "unknown_tool", "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"location": "LA"}}'
+  dbead34e17a1ad2266b02774959b03ba9c3bcba6ddfe5cca41a598953df220a0:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone":'
+      - delta_text: ' "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' "get_time", "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+  63c77bb96c82197e833be31e0b6d8d7b8f559740e332ccfccfd7dfcb43d157b7:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <|python_tag|>'
+      - delta_text: '{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ' Done.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"timezone": "EST"}} Done.'
+  afb5d5d389afa7c9abbddd9f54bd367330c6a09d2e593d9ada5902c5ad5f7a74:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"location": "LA"}}'
+  f9b02baef8890d4d8d14213ae6f3f21d1583c0db2a9100e2132c3050f0bc34e4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: Hello, how
+      - delta_text: ' can'
+      - delta_text: ' I help you'
+      - delta_text: ' today?'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: Hello, how
+      - expected: []
+        normal_text: ' can'
+      - expected: []
+        normal_text: ' I help you'
+      - expected: []
+        normal_text: ' today?'
+      - expected: []
+  83924e8a252eb60bb0ba83f8ef24f612d0dfa93d532551239f61bbbb5241a9b8:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT a; SELECT b"}'
+      - expected: []
+  e0f54e7df6f0c94476aac6e303ec2a2028756f8297eddb9496d872ffdf87a3c6:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+      - expected: []
+  ca32093f1b0126a08d4fe568fda227d7cb91950a82cc570dbc64fe0e960f7a2f:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' <|python_tag marker|>'
+      - delta_text: '{name:x}'
+      - delta_text: ' stays text"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"literal <|python_tag marker|>{name:x} stays text"}'
+      - expected: []
+  18c958b27c386a61160b7045c4ef08793f37b0a147c4dcf517f120852124644d:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT a; SELECT b"}'
+      - expected: []
+        normal_text: ' "get_time", "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+  b8d231266f60327ee41b240307a378694d17452c3e0e89f7cf11804e5202cd7e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+  d761e30d2f97655917118a2f4128b6e9fe5cf7080d029e92b8202d919cc7760c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|python_tag|>non
+      - delta_text: sen
+      - delta_text: se
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  cae6ba5751f4b2c7b96e77a875b05753854f7c2188eaa43e3887c596000a1f16:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  64eb9bf7db3b18f5f602775bb095089930840aeef5764e09000f402ed9e51310:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  d2978055991ce34511f14b1d5d890d0a12a5c87f15f71e2e5b84412247c610ed:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+        normal_text: '{"name": "get_weather", "arguments": {{"name": "get_weather", "arguments": {}}'
+  2a00f505fe0171d0b8142d7499459b65e86328d53b6fec351b9ddb39b12da536:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  f3900fdb6be4579738d92be85e21bc4f07a904ed4166223e708687c0b3bc0732:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  c62e973121c6e8009015a221d9f05eb327c41c6aa9b07982ec77f9ffbf5097cc:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+      - expected: []
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location": "New York"}'
+  d40960f13f7440ab008a2d0fa808d81530a90944a38d5928671d26f024a1682d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!'
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+      - expected: []
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location": "New York'
+  54ca60a7e693c9f1dbc5526742c4a3b12141daf44de7daec5f29294f5c7c3d12:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|
+      - delta_text: pyt
+      - delta_text: hon_t
+      - delta_text: ag|>{"name"
+      - delta_text: ': "get_weather", "a'
+      - delta_text: rg
+      - delta_text: ume
+      - delta_text: 'nts":'
+      - delta_text: ' {"location'
+      - delta_text: '": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  d80142e9f270058025e273519e767ecaf91d7adb49b4f476ff5d8800716df54c:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  26e4c43804a885bcfd1bd69758d7da38ed8d71d9432b0ea95626becfe4d16c2f:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+          arguments: '{}'
+      - expected: []
+  b2092217319bb71e650fb8da3350aa46602b74ff252ba1f87fa45966a01e9341:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  1b1be97cceb1d5db8299355c656dd0377c21d597371378d8931f1667e9145e69:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+          arguments: '{"destination":"Paris","first_class":true,"passengers":2}'
+      - expected: []
+  4296c1138e5a4f802510a840ef58bf0ca4fb12d1a9acb67ec6c1be6698605a5a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"Tōkyō \"central\""}'
+      - expected: []
+  fd95d5b32017bbdd221ff45fb5011cba6dcda1177165bc7075b32c901f23d118:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: set_temperature
+          arguments: '{"celsius":"20"}'
+      - expected: []
+  73f4636dd9207f237150d6956c5a05ca16cca42db9283730c89530a8eae6cd3a:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"config":{"nested":true},"items":[1,2,3]}'
+      - expected: []
+  b8a80c418e7c508276509810bc2d6862c97fd478e69f4c89412aaf88f8192237:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+          arguments: '{"payload":{"empty":{},"flags":{"enabled":true,"retry":null},"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]}}'
+      - expected: []
+  6e3f98875c35b359d8001337dd8e97688e29afde5ecd9d6689c7987ad32ae8b0:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: set_limit
+          arguments: '{"count":9007199254740993}'
+      - expected: []
+  e07ae5ff31e072ff11c51cb0492f78cf43fca3a1ddfffc6aeac02f73d74df44d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+  60d162d63fb49f919da646393bf819b47e163a94b1ef63df5df916302f4ad784:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ' Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need more.'
+      - expected: []
+  52a493bf6466fe4553cd8d71ec3dbe7f43a9a86e43d022b546830bb8cc1c4812:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Let me know'
+      - delta_text: ' if'
+      - delta_text: ' you need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Let me know'
+      - expected: []
+        normal_text: ' if'
+      - expected: []
+        normal_text: ' you need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  8c4d53dbbe2c221d8bae01a6d97a3d7f4dbc07f1772c9e4ea88f1e221a79370e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Then check LA'
+      - delta_text: ' weather.'
+      - delta_text: ' <|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. '
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+      - expected: []
+        normal_text: ' Then check LA'
+      - expected: []
+        normal_text: ' weather.'
+      - expected: []
+        normal_text: ' '
+      - expected:
+        - index: 1
+          id: true
+          name: get_weather
+          arguments: '{"location":"LA"}'
+      - expected: []
+  67805394cc3524461b2e21658177649d276c189a6aaa9608075e36a6d154f772:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+  2cea8b5abd87015d3f6b17ac6e26778ced1a41e74deed56a63151225197db428:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '   '
+      - expected: []
+  c0626db71a5bd70d48ad8e8e80a445d9fab29ecbfb6ce1a3f7c5e9a92beb2124:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+  1e8584f193eca1e15f2ae17d6d674faff353d506c7f4cbc6150eafee8f2ec94e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+  4d4b617605f8d9dfbbac1d78b3410b08a853dc0528cc02bba0a8669a9912d587:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}'
+      - expected: []
+  8344a67050e94c73fb97dfb3489b19e109c3bdcd1f84c3ef98168ae6d1336498:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "unknown_tool", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}'
+      - expected: []
+  0f7e8b32b4a6f49287b05138265bf6879354dfbc54c8ba724bd21486ae520226:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone":'
+      - delta_text: ' "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          name: get_time
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+  6b7202893b99f2ebf076f73a01e234c63692e293c6aafb7524e5fd41782ee8c1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <|python_tag|>'
+      - delta_text: '{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ' Done.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  0135e489b1c794d10b7bc42df643ad9fbfb5f781268efd711735b51f7190b30d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 1
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+  e78b8c7609b0019e3fa4a16071a074dd5ee51940cc47a849e7981e4d79fff860:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a; SELECT b"}'
+      - expected: []
+  117905ec47b9c75703d1d9e98d7ba533ad4ba6415bcc07a41cd0871e826f6ad2:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]"}'
+      - expected: []
+  66b38e78d5feb7bded7379dd4003292475512017fdc4c93bafe07cc43a76e7d6:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' <|python_tag marker|>'
+      - delta_text: '{name:x}'
+      - delta_text: ' stays text"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "literal'
+      - expected:
+        - index: 0
+          arguments: ' <|python_tag marker|>'
+      - expected:
+        - index: 0
+          arguments: '{name:x} stays text"}'
+      - expected: []
+  2f95225a804764dd865dd92c747c4867d7eeec73036279003cc3e2d4f019c247:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a; SELECT b"}'
+      - expected:
+        - index: 1
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+  7f342f10cc9ba313a8a338ec62cf246c7054f702108737a3e5c68c7348b5ee15:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]"}'
+      - expected:
+        - index: 1
+          name: get_time
+      - expected:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+      - expected: []
+  1bace5721d184b13aab943d74cb6df06a4be367de9f656b36e513070d8ea0050:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|python_tag|>non
+      - delta_text: sen
+      - delta_text: se
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  ea6438e9aed35ed0559b664792639ab91bc0162e51cbc15645a4e678eac27857:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected: []
+  10c6c67528eb2970f3bc5435abd7e68fa30bda119234ffb6d7ecde3ad9d0968d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  ca2901818c503dcfcde4394686b2987689cef80e6db141edf3abdaaa43555861:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  322ad308b9a85ccfad662a50284b84a44ce090bf97f8d556851e7f3fba7cf3ea:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected: []
+  b1b0898a3ba5ef5b14812dca95d0adfebb81ab87fa244ed3c81f548f4530b921:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected: []
+  3eaff6a8ec79502a8669f114d249b3c19af1c11fca6d0c7da4f94425c15c285f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "Boston"}'
+      - expected:
+        - index: 1
+          name: get_weather
+      - expected: []
+      - expected: []
+  ff77cccd9e2139ad4427470af41c4bb0e16a482e724d03b167b1fa106b8a2506:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "Boston"}'
+      - expected:
+        - index: 1
+          name: get_weather
+      - expected: []
+      - expected: []
+  25fd449c4b1ae7417004cc1c1a9234cd21610e74e640f64995eaa93524e720fd:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|
+      - delta_text: pyt
+      - delta_text: hon_t
+      - delta_text: ag|>{"name"
+      - delta_text: ': "get_weather", "a'
+      - delta_text: rg
+      - delta_text: ume
+      - delta_text: 'nts":'
+      - delta_text: ' {"location'
+      - delta_text: '": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+  f3e07bee6f430f11a27718522b4b87753e40178ba731e6c3adc037e8214feb9e:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+      - expected:
+        - index: 0
+          arguments: '{}'
+      - expected: []
+  bf454f2b3a0f82480289d51d94b9818d4463969886115b0cb57f1f87852867dc:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+      - expected:
+        - index: 0
+          arguments: '{}'
+      - expected: []
+  3a0b11e4ad1aedb6335c7957cb33945e8d5aaf762a1eae2e0137249d4f2f6926:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+      - expected: []
+  83d77aa7cfcacc20909c2ccc62c466e8626bc5236f97454583ea4938ec5ba35e:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: book_flight
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"destination": "Paris"'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', "passengers": 2, "first_class": true}'
+      - expected: []
+  9ba4ab837330a093032d4758a2a3cf3047488add3d5e3796433e8de24338be7e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "Tōkyō \"central\""}'
+      - expected: []
+  41d8aa122f4b7ddab7a95d58f410d9809cad77611295167ea2eb0429c491ca27:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: set_temperature
+      - expected:
+        - index: 0
+          arguments: '{"celsius": "20"}'
+      - expected: []
+  48d3514761846b6ae28a02d3d8f56e152627c7f393bbea03ff5d36cd423b26e0:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: process_data
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"items": [1, 2, 3]'
+      - expected:
+        - index: 0
+          arguments: ', "config": {"nested": true}}'
+      - expected: []
+  879aa3957a10a803842fbe5ef109d0b9f7a064f56c605b1fb7697c3dcaa40b1b:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: process_data
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"payload": {'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '"regions": [{"name": "west"'
+      - expected:
+        - index: 0
+          arguments: ', "scores": [1, 2'
+      - expected:
+        - index: 0
+          arguments: ', 3]}, {'
+      - expected:
+        - index: 0
+          arguments: '"name": "east"'
+      - expected:
+        - index: 0
+          arguments: ', "scores": [4'
+      - expected:
+        - index: 0
+          arguments: ', 5'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', 6]}]'
+      - expected:
+        - index: 0
+          arguments: ', "flags": {"enabled": true'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', "retry": null}, "empty": {}}}'
+      - expected: []
+  c8fd1bc343eb2abcf029a1b81fa6e06ddaebc9837cd9091ec12182ece4f72d95:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: set_limit
+      - expected:
+        - index: 0
+          arguments: '{"count": 9007199254740993}'
+      - expected: []
+  05b0ac3cdffc3a1ff8fb89c86ac5635b9c6d3692dddd8afba5fe2cf8dafe5b95:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+  34bf449ab37c3e0f6ad2a64a0f32fd94b2a54aacf32b69610d168065777b7d43:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ' Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: ' Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need more.'
+      - expected: []
+  36262e079a2d04b6217b2d0da38687e857be2d5be1c81d45bfba249c2ce92806:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Let me know'
+      - delta_text: ' if'
+      - delta_text: ' you need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: ' Let me know'
+      - expected: []
+        normal_text: ' if'
+      - expected: []
+        normal_text: ' you need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  1d911f1d21168d60385a325871a7b36894477289191f027ae3372e4cfa3db1db:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Then check LA'
+      - delta_text: ' weather.'
+      - delta_text: ' <|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+        normal_text: ' Then check LA'
+      - expected: []
+        normal_text: ' weather.'
+      - expected: []
+      - expected:
+        - index: 1
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 1
+          arguments: '{"location": "LA"}'
+      - expected: []
+  c5e54bc052b9e3277f4212d8dc800bc8e70206e1b8190014015ae1debcd52346:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  7392990095526b11abf91b8f29f5761095f3b41d590a6c61009265e083f9c95c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  365835b5288187f82d850411fa11fc545875e65e360cddf40998abca7d59a75c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  c241df59bdfd732f7f3d5c0db937caf085363a1dbefaf2baf169aaa586c87d24:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: unknown_tool
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  6171d50b162325584efdf4c9ed0f88bcfcf099c7489dd50b6253366adea111fb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "unknown_tool", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  16a401f00f164a5f0ac112a7c6e2abe49fe2b20d1fa577d92f18f549cbf8001a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone":'
+      - delta_text: ' "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  49a5e4328f21da3dab4752786a4da799f4bc9c40d923ccc51d25a42a9d967f67:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: 'Both: <|python_tag|>'
+      - delta_text: '{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "NYC"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ' Done.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Both: <|python_tag|>'
+      - expected: []
+        normal_text: '{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location":'
+      - expected: []
+        normal_text: ' "NYC"}};{"name": "get_time",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  59424f9649d591a2400856a0ac74dd476ba220989f759c52a1a35a005286cad6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  076b3c625907e72684b4b1c358947bf9fb884878810271c47f3abf7c155e14bc:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a; SELECT b"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  3c46d6c8692a3727841a480ba601386fd3d1dffbaf5bb6a42263e6eeee1b8f49:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  83ac0b09801973d35d0e171975be3d0bd4f1b3cbf1e3b610143704979f8e324e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' <|python_tag marker|>'
+      - delta_text: '{name:x}'
+      - delta_text: ' stays text"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "literal'
+      - expected:
+        - index: 0
+          arguments: ' <|python_tag marker|>'
+      - expected:
+        - index: 0
+          arguments: '{name:x} stays text"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  e95f26cb8d06fef66ff7dfdd9c402f127d21e8191a4d4a8af711cd5b4a550018:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' a; SELECT b"}'
+      - expected: []
+      - expected: []
+      - expected: []
+  45c8ac6ad9b3b3968c06b866f65a78617c676ad19d3b7b6451cd767ebe12fc5d:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: run_query
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+      - expected:
+        - index: 0
+          arguments: ' value WHERE'
+      - expected:
+        - index: 0
+          arguments: ' note'
+      - expected:
+        - index: 0
+          arguments: ' has brace'
+      - expected:
+        - index: 0
+          arguments: ' } and bracket'
+      - expected:
+        - index: 0
+          arguments: ' ]"}'
+      - expected: []
+      - expected: []
+      - expected: []
+  b187718e0a41877bec94032023737764d2893a8a1326e58c18e6144c1a08b815:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+  daa49739e7925205132bbc2ec4b5b8b8003b4044c038b09170920b947ca02f8d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+  2469480533c870e855985d9e5d1e9abd5246af1d73a87a7f7e78902a06fb10ee:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+  3b34c6a7426134233fa480c52ff218d4c6454a3837a02e18ebc819b90c0a57a9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+  2f364504fad34214f4f9dc2b15a80e72367795875c70f9ca428cba38f9611804:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}};{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location":'
+      - expected: []
+        normal_text: ' "New York"}'
+      - expected: []
+  91d45ac19360e89e221e7e97e81326481febeff3ec17177a1d3a1ebf3423e6f4:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I'll start
+      - delta_text: ' by'
+      - delta_text: ' fetching the weather'
+      - delta_text: ' for both'
+      - delta_text: ' Boston'
+      - delta_text: ' and New'
+      - delta_text: ' York at the'
+      - delta_text: ' same'
+      - delta_text: ' time!<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "Boston"}};{"name":'
+      - delta_text: ' "get_weather", "arguments": {"location":'
+      - delta_text: ' "New York'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I'll start
+      - expected: []
+        normal_text: ' by'
+      - expected: []
+        normal_text: ' fetching the weather'
+      - expected: []
+        normal_text: ' for both'
+      - expected: []
+        normal_text: ' Boston'
+      - expected: []
+        normal_text: ' and New'
+      - expected: []
+        normal_text: ' York at the'
+      - expected: []
+        normal_text: ' same'
+      - expected: []
+        normal_text: ' time!<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "Boston"}};{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments": {"location":'
+      - expected: []
+        normal_text: ' "New York'
+      - expected: []
+  b5195f266caf3361058d186b3a015682e5da045d5f41482a4f91c7f8df4ee15f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|
+      - delta_text: pyt
+      - delta_text: hon_t
+      - delta_text: ag|>{"name"
+      - delta_text: ': "get_weather", "a'
+      - delta_text: rg
+      - delta_text: ume
+      - delta_text: 'nts":'
+      - delta_text: ' {"location'
+      - delta_text: '": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: <|
+      - expected: []
+        normal_text: pyt
+      - expected: []
+        normal_text: hon_t
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  390c2526d4c3e4beb5ce2a0d90e02a48e8fa7fe68ee316bda98003e9c8d6a151:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected: []
+      - expected: []
+  ec435255f3d154337f0e882a16309b807ff9c6eb3fb42a9785ced5622714010a:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected: []
+      - expected: []
+  a1d04893be6cd61c49473123882da45876f44a94aeea18e504de81001b90fdcb:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_time
+      - expected: []
+  806b1ca968fab8413dcbc375780623fac139eb15607b18d3e965f798464f8134:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: book_flight
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"destination": "Paris"'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', "passengers": 2, "first_class": true}'
+      - expected:
+        - index: 0
+          arguments: ''
+  0d590f9edc88ba987b189ff282ba03bb5fdb9dd6143298b480416cf9c66628b3:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"location": "Tōkyō \"central\""}'
+      - expected:
+        - index: 0
+          arguments: ''
+  647e4df1efaff92555340fa9d51b2c742314c666c7c0e0c5b04d85af6e539562:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: set_temperature
+      - expected:
+        - index: 0
+          arguments: '{"celsius": "20"}'
+      - expected:
+        - index: 0
+          arguments: ''
+  75f0aa1926ab02d4e4d7ad6290f24a8eab39577d8a5c852e7c08d81dcf865bdb:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"items": [1, 2, 3]'
+      - expected:
+        - index: 0
+          arguments: ', "config": {"nested": true}}'
+      - expected:
+        - index: 0
+          arguments: ''
+  ad90ad092eec4529b8a2fc54c56f96172e889b6d8f47d53c748bf087114cd042:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: process_data
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '{"payload": {'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: '"regions": [{"name": "west"'
+      - expected:
+        - index: 0
+          arguments: ', "scores": [1, 2'
+      - expected:
+        - index: 0
+          arguments: ', 3]}, {'
+      - expected:
+        - index: 0
+          arguments: '"name": "east"'
+      - expected:
+        - index: 0
+          arguments: ', "scores": [4'
+      - expected:
+        - index: 0
+          arguments: ', 5'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', 6]}]'
+      - expected:
+        - index: 0
+          arguments: ', "flags": {"enabled": true'
+      - expected: []
+      - expected:
+        - index: 0
+          arguments: ', "retry": null}, "empty": {}}}'
+      - expected:
+        - index: 0
+          arguments: ''
+  b539ad8acce5592d5d94d504f14b1703a708c5775d71bbabcc2172338b83b963:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: set_limit
+      - expected:
+        - index: 0
+          arguments: '{"count": 9007199254740993}'
+      - expected:
+        - index: 0
+          arguments: ''
+  ffdca60c4cfc9c75200955849a4698614cf2a05f88d0bed93f1aef1187a5d682:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <|python_tag|>'
+      - expected: []
+        normal_text: '{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}'
+      - expected: []
+  54af73e20de48ff620b76dd89920437ddca9e31fb3e7c06f90cc0fad11d0aa8d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ' Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          id: true
+          name: get_weather
+      - expected:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  9bc16f7e6c0c5566898bef2a99eb30972eab9ff9d7acbe35d9206aa485d69c72:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Let me know'
+      - delta_text: ' if'
+      - delta_text: ' you need'
+      - delta_text: ' more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <|python_tag|>'
+      - expected: []
+        normal_text: '{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}'
+      - expected: []
+        normal_text: ' Let me know'
+      - expected: []
+        normal_text: ' if'
+      - expected: []
+        normal_text: ' you need'
+      - expected: []
+        normal_text: ' more.'
+      - expected: []
+  5e7573c63a3e9ae5c2d450acea1ad075852c3c989654afb2e426e60bed1d1043:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: I will
+      - delta_text: ' check'
+      - delta_text: ' the weather. <|python_tag|>'
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"location": "NYC"}}'
+      - delta_text: ' Then check LA'
+      - delta_text: ' weather.'
+      - delta_text: ' <|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: I will
+      - expected: []
+        normal_text: ' check'
+      - expected: []
+        normal_text: ' the weather. <|python_tag|>'
+      - expected: []
+        normal_text: '{"name": "get_weather",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"location": "NYC"}}'
+      - expected: []
+        normal_text: ' Then check LA'
+      - expected: []
+        normal_text: ' weather.'
+      - expected: []
+        normal_text: ' <|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location":'
+      - expected: []
+        normal_text: ' "LA"}}'
+      - expected: []
+  27f86933fe11d68258f08a6d2f073e5ccc62bc4de95c32be637ae142ebc868c3:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}'
+      - expected: []
+  c3929a419d7a306b482b0906e068f277d515018a0a359e28e64eeb287fa48a63:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}'
+      - expected: []
+  f6ca7824467d354a28fc61111ce62b32b9879e4670607ea000b3cc8e02467dd2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "unknown_tool",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "unknown_tool",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}'
+      - expected: []
+  6a71d304003b042bb4c6dc3e6f1f069181c188cbeefadd3d48501b623846c81f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "unknown_tool", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - expected: []
+        normal_text: ' "unknown_tool", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}'
+      - expected: []
+  e15633b498437f7dce4ff006e2e074d31ae887735ab7c72643bf601dc4bfdfa1:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone":'
+      - delta_text: ' "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - expected: []
+        normal_text: ' "get_time", "arguments":'
+      - expected: []
+        normal_text: ' {"timezone":'
+      - expected: []
+        normal_text: ' "EST"}}'
+      - expected: []
+  4d38645195fa314b1a34622a012a1673d002f4a0116b8b2f95faa069dcf3005a:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - delta_text: ' "get_weather", "arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "LA"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}};{"name":'
+      - expected: []
+        normal_text: ' "get_weather", "arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "LA"}}'
+      - expected: []
+  6aa568c2e2792b28c523de713d5a34efb130bb98d9c1f4c432b75ae9263ecf0e:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' a; SELECT'
+      - expected: []
+        normal_text: ' b"}}'
+      - expected: []
+  411f8540bf966a2f487853ccb092290ec70dbf9898ba172514ad0ed9a3fc5013:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' value WHERE'
+      - expected: []
+        normal_text: ' note'
+      - expected: []
+        normal_text: ' has brace'
+      - expected: []
+        normal_text: ' } and bracket'
+      - expected: []
+        normal_text: ' ]'
+      - expected: []
+        normal_text: '"}}'
+      - expected: []
+  cda9510deb916fa478ea477da74b56665b8180a74e9ffdc571320129cbacee02:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "literal'
+      - delta_text: ' <|python_tag marker|>'
+      - delta_text: '{name:x}'
+      - delta_text: ' stays text"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "literal'
+      - expected: []
+        normal_text: ' <|python_tag marker|>'
+      - expected: []
+        normal_text: '{name:x}'
+      - expected: []
+        normal_text: ' stays text"}}'
+      - expected: []
+  cd57cebbfdb8e8c7e937e67a88b7f1032e0acc32584119eaf75d8d58bb2cf400:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' a; SELECT'
+      - delta_text: ' b"}};{"name":'
+      - delta_text: ' "get_time", "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' a; SELECT'
+      - expected: []
+        normal_text: ' b"}};{"name":'
+      - expected: []
+        normal_text: ' "get_time", "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+      - expected: []
+  698dfda0ee0c6fc149a02656d7fa5fe7ac546dc2e29c7154053abb377a3cf7d1:
+    request:
+      model_text: null
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "run_query",'
+      - delta_text: ' "arguments": {"sql": "SELECT'
+      - delta_text: ' value WHERE'
+      - delta_text: ' note'
+      - delta_text: ' has brace'
+      - delta_text: ' } and bracket'
+      - delta_text: ' ]'
+      - delta_text: '"}};{"name": "get_time",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {"timezone": "EST"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "run_query",'
+      - expected: []
+        normal_text: ' "arguments": {"sql": "SELECT'
+      - expected: []
+        normal_text: ' value WHERE'
+      - expected: []
+        normal_text: ' note'
+      - expected: []
+        normal_text: ' has brace'
+      - expected: []
+        normal_text: ' } and bracket'
+      - expected: []
+        normal_text: ' ]'
+      - expected: []
+        normal_text: '"}};{"name": "get_time",'
+      - expected: []
+        normal_text: ' "arguments":'
+      - expected: []
+        normal_text: ' {"timezone": "EST"}}'
+      - expected: []
+  5a9a890175b8ab0a3bb592c5d8e1944bb308a1d4089275985a92e6a429367693:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|python_tag|>non
+      - delta_text: sen
+      - delta_text: se
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: <|python_tag|>non
+      - expected: []
+        normal_text: sen
+      - expected: []
+        normal_text: se
+      - expected: []
+  307f3fc6bd0b30afbd017532fdd882d7e5b89510e8505f20ce48837b5059d77c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"'
+      - expected: []
+  6da351c85bf8303a4b553d1cdddb9930fc7c746e2cdf9cba290399b9700079de:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"arguments":'
+      - delta_text: ' {"location":'
+      - delta_text: ' "NYC"}}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"arguments":'
+      - expected: []
+        normal_text: ' {"location":'
+      - expected: []
+        normal_text: ' "NYC"}}'
+      - expected: []
+  5501b498fc7be2ee98d3786e1c77376a3d2f09fd8a8834eb9e369639f9b27eac:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      unavailable: 'vllm_rust parser not captured: ToolParserError::ParsingFailed { message: "invalid Llama JSON\nexpected `parameters`" }'
+  700cbe741caa842ec7254444ca6df531525c160d25e4c822392bbcab323047df:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}'
+      - expected: []
+  48e863b38e8b9eff892e42e55df694e4848d968f28fa92ca9cafb63665219ebe:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"loc'
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"loc'
+      - expected: []
+  71da35ec978984077e58c7fdb705be188394480936eb6aa02a5fdd73e9cda20c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: <|
+      - delta_text: pyt
+      - delta_text: hon_t
+      - delta_text: ag|>{"name"
+      - delta_text: ': "get_weather", "a'
+      - delta_text: rg
+      - delta_text: ume
+      - delta_text: 'nts":'
+      - delta_text: ' {"location'
+      - delta_text: '": "NYC"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: <|
+      - expected: []
+        normal_text: pyt
+      - expected: []
+        normal_text: hon_t
+      - expected: []
+        normal_text: ag|>{"name"
+      - expected: []
+        normal_text: ': "get_weather", "a'
+      - expected: []
+        normal_text: rg
+      - expected: []
+        normal_text: ume
+      - expected: []
+        normal_text: 'nts":'
+      - expected: []
+        normal_text: ' {"location'
+      - expected: []
+        normal_text: '": "NYC"}}'
+      - expected: []
+  9630f43de87ba734b2c4f62ead39f79921334e682a5e2098a6f4d05a6cf951a0:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": {}}'
+      - expected: []
+  76fd71a556ce7721affef8275a77ed55fac5d2d8dc970114cf80c5cb6bf0a571:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time",'
+      - delta_text: ' "arguments": { }}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_time",'
+      - expected: []
+        normal_text: ' "arguments": { }}'
+      - expected: []
+  0f99e940567ab8a14c1d166a640025ab8a978e286321a89fed1f2f54121b748a:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_time"}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_time"}'
+      - expected: []
+  c079239912acc276ec5cff28af7634f9359f27620ed3e4e797e58eb50bde787f:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "book_flight",'
+      - delta_text: ' "arguments": {"destination": "Paris",'
+      - delta_text: ' "passengers": 2,'
+      - delta_text: ' "first_class":'
+      - delta_text: ' true}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "book_flight",'
+      - expected: []
+        normal_text: ' "arguments": {"destination": "Paris",'
+      - expected: []
+        normal_text: ' "passengers": 2,'
+      - expected: []
+        normal_text: ' "first_class":'
+      - expected: []
+        normal_text: ' true}}'
+      - expected: []
+  7d475e449409808bc3a9fe914d104b93b59e81a0f7e7c8396a3c52a482385235:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "Tōkyō'
+      - delta_text: ' \"central\""}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "Tōkyō'
+      - expected: []
+        normal_text: ' \"central\""}}'
+      - expected: []
+  1db1d90651b82f3b6c56462e05c60f0885f76c9c3a460232b5efd4e681da89eb:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_temperature",'
+      - delta_text: ' "arguments": {"celsius": "20"}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "set_temperature",'
+      - expected: []
+        normal_text: ' "arguments": {"celsius": "20"}}'
+      - expected: []
+  395339bc8d6c37f49f4da4f390f5814922617cb23403e233fbc5da1802362da7:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"items": [1,2,3]'
+      - delta_text: ', "config":'
+      - delta_text: ' {"nested":'
+      - delta_text: ' true}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"items": [1,2,3]'
+      - expected: []
+        normal_text: ', "config":'
+      - expected: []
+        normal_text: ' {"nested":'
+      - expected: []
+        normal_text: ' true}}}'
+      - expected: []
+  638748d0b997f075d96ffbc2a8f324261c3d8eb473af5806476af7e0d0e2277b:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "process_data",'
+      - delta_text: ' "arguments": {"payload": {"regions":'
+      - delta_text: ' [{"name": "west",'
+      - delta_text: ' "scores":'
+      - delta_text: ' [1, 2,'
+      - delta_text: ' 3]}, {"name":'
+      - delta_text: ' "east",'
+      - delta_text: ' "scores": [4,'
+      - delta_text: ' 5,'
+      - delta_text: ' 6]}]'
+      - delta_text: ','
+      - delta_text: ' "flags": {"enabled": true,'
+      - delta_text: ' "retry": null},'
+      - delta_text: ' "empty":'
+      - delta_text: ' {}}}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "process_data",'
+      - expected: []
+        normal_text: ' "arguments": {"payload": {"regions":'
+      - expected: []
+        normal_text: ' [{"name": "west",'
+      - expected: []
+        normal_text: ' "scores":'
+      - expected: []
+        normal_text: ' [1, 2,'
+      - expected: []
+        normal_text: ' 3]}, {"name":'
+      - expected: []
+        normal_text: ' "east",'
+      - expected: []
+        normal_text: ' "scores": [4,'
+      - expected: []
+        normal_text: ' 5,'
+      - expected: []
+        normal_text: ' 6]}]'
+      - expected: []
+        normal_text: ','
+      - expected: []
+        normal_text: ' "flags": {"enabled": true,'
+      - expected: []
+        normal_text: ' "retry": null},'
+      - expected: []
+        normal_text: ' "empty":'
+      - expected: []
+        normal_text: ' {}}}}'
+      - expected: []
+  8234a8bca6f222226e9a6b10e0b5d200a9c627194ef1fda1ad2c7c1c2f724d83:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "set_limit",'
+      - delta_text: ' "arguments": {"count": 9007199254740993}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "set_limit",'
+      - expected: []
+        normal_text: ' "arguments": {"count": 9007199254740993}}'
+      - expected: []
+  090ac6a49891ee57dd63d6d465276a61e9054cf9effa0e66e8606596b244d00b:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '<|python_tag|>{"name":'
+      - delta_text: ' "get_weather",'
+      - delta_text: ' "arguments": {"location": "NYC"}}'
+      - delta_text: ' Let me'
+      - delta_text: ' know'
+      - delta_text: ' if you'
+      - delta_text: ' need more.'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: '<|python_tag|>{"name":'
+      - expected: []
+        normal_text: ' "get_weather",'
+      - expected: []
+        normal_text: ' "arguments": {"location": "NYC"}}'
+      - expected: []
+        normal_text: ' Let me'
+      - expected: []
+        normal_text: ' know'
+      - expected: []
+        normal_text: ' if you'
+      - expected: []
+        normal_text: ' need more.'
+      - expected: []
+  7406a48c9a8a2dfe7575e465145ee2641baa04b10d30ae31c740746eee830113:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      exception: 'ToolParserError::ParsingFailed (invalid Llama JSON
+
+        expected `parameters`)'
+  a9063015f2654598e8b9f88c0372001588deeaaa8e2988103c5f4c12347787d6:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks: []
+  7643be30bf107bb1543b9dd81e612004e4cfec8a9e381d2c667565700ce639b9:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: llama3_json
+      mode: streamv1
+      chunks:
+      - delta_text: '{"name": "get_weather",'
+      - delta_text: ' "arguments":'
+      - delta_text: ' {{"name": "get_weather", "arguments":'
+      - delta_text: ' {}}'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      exception: 'ToolParserError::ParsingFailed (near "{\"name\": \"get_weather\", \"arguments\":": invalid Llama JSON
+
+        expected `parameters`)'
+producers:
+  1c962f0b25ce46e379725c286fda87313f2a0e9c5f03e79a3cbc5ef2e9284ca1:
+    capture: dynamo_v1-3.0.0
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        dynamo_v1: 3.0.0
+    provenance: null
+  930ab0f20e3f3bcc78952d5d36ee3e267425d82c63ea2aa7a7a1a95b78290bbb:
+    capture: sglang_python-0.5.12.post1
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        sglang_python: 0.5.12.post1
+    provenance: null
+  4e57b2b429fa33d8832d445d5ec14b605e12d474ec35cde9c90b17f986d50575:
+    capture: vllm_python-0.23.0
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        vllm_python: 0.23.0
+    provenance: null
+  a20d01214385c653e0d29739b8c34ce90a9e1a66375c96c3440a629074655828:
+    capture: vllm_rust-0.23.0
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        vllm_rust: 0.23.0
+    provenance: null
+  8a53a428f15ef3296c637df16dc21b33877699ddd70eed8a7334482daf8d9d74:
+    capture: vllm_rust-0.24.0
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        vllm_rust: 0.24.0
+    provenance: null
+  8e034933831eecdab835b4f6b84aeecbc4cd36dc3c0ffc6e0dcc71a11c74fb1b:
+    capture: vllm_rust-0.25.1
+    document:
+      family: llama3_json
+      mode: streamv1
+      captured_with:
+        vllm_rust: 0.25.1
+    provenance: null

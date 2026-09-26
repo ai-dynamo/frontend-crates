@@ -1,0 +1,40 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: mistral
+capture: vllm_python-0.25.1
+documents:
+  TOOLCALLING.streamv1.2.yaml:
+    family: mistral
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+  TOOLCALLING.streamv1.31.yaml:
+    family: mistral
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.25.1
+views:
+  python:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d08631105e2735ba2d995fa72ebfffa22e0969dc001d3767905ed1fe3df94844
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: d8964e851a1f682401ff30ae03e61fa653f5697893a124fd179999b9e5fff57e
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}
+  rust:
+    base: vllm_python-0.23.0
+    changes:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]':
+        observation: d08631105e2735ba2d995fa72ebfffa22e0969dc001d3767905ed1fe3df94844
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]':
+        observation: d8964e851a1f682401ff30ae03e61fa653f5697893a124fd179999b9e5fff57e
+        producer: 66d31f1998f83ca88eee937fe88e9427b8a6fa53a96dde09e8bcb4e3849cd6e1
+    annotations:
+      '["TOOLCALLING.streamv1.2.yaml","TOOLCALLING.streamv1.2.c"]': {}
+      '["TOOLCALLING.streamv1.31.yaml","TOOLCALLING.streamv1.31.b"]': {}

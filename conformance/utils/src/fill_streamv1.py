@@ -5,8 +5,7 @@
 
 For each family + each batch case that has `model_text`, chunk the text into ~1-3
 "token" pieces, run the vLLM and SGLang streaming parsers over the chunks (inside
-the engine containers, one engine import each), and assemble the per-chunk fixture locally, then commit to the in-repo LFS store
-(conformance/fixtures/) via `package_fixtures.py`.
+the engine containers, one engine import each), and assemble the per-chunk fixture locally, then package it into the YAML store via `package_fixtures.py`.
 Dynamo is marked unavailable/TODO (no parser v2 stream parser for these families
 yet); the synthetic partial-token case `50` has no batch source and is left
 untouched.

@@ -518,27 +518,54 @@ def test_tooltip_builds_lazily_on_first_interaction(driver):
     assert built["chart"] and built["thCand"] > 0 and built["head"], f"lazy build incomplete: {built}"
 
 
-def test_popup_columns_match_compare_bar_candidates(driver):
-    """The popup chart's candidate columns are exactly the tab's compare-bar candidate
-    keys — the popup renders from the same model as the selector."""
-    _open_tab(driver, "toolcalling-batch")
-    result = driver.execute_script(
-        _BUILD_TOOLTIPS + """
-        const tab = document.querySelector('.tab-panel.active');
-        const barKeys = Array.from(tab.querySelectorAll('.cmpctl .cmprow-label[data-cand]'))
-          .map(function (e) { return e.getAttribute('data-cand'); }).sort();
-        let gridKeys = null;
-        for (const grid of tab.querySelectorAll('.ttip-chunks')) {
-          const ths = grid.querySelectorAll('th[data-cand]');
-          if (ths.length) { gridKeys = Array.from(ths).map(function (t) { return t.getAttribute('data-cand'); }).sort(); break; }
-        }
-        return {barKeys: barKeys, gridKeys: gridKeys};
-        """
-    )
-    assert result["gridKeys"], "no candidate chart built"
-    assert result["gridKeys"] == result["barKeys"], (
-        f"popup columns {result['gridKeys']} != compare-bar candidates {result['barKeys']}"
-    )
+@pytest.mark.parametrize("target", ["toolcalling-batch", "toolcalling-streamv1"])
+def test_popup_columns_match_compare_bar_candidates(driver, target):
+    """Popups own cell captures; the compare bar owns all selectable history."""
+    previous_tab = driver.execute_script("return document.querySelector('.tab-panel.active').id")
+    try:
+        _open_tab(driver, target)
+        result = driver.execute_script(
+            """
+            const tab = document.querySelector('.tab-panel.active');
+            const model = JSON.parse(document.getElementById('conformance-model').textContent)
+              .tabs.find(item => item.id === tab.id);
+            const candidates = model.candidates;
+            const barKeys = Array.from(tab.querySelectorAll('.cmpctl .cmprow-label[data-cand]'))
+              .map(element => element.dataset.cand).sort();
+            const td = Array.from(tab.querySelectorAll('td.cell[data-ttip-id]'))
+              .find(element => element.offsetParent !== null && element.getClientRects().length);
+            const source = Array.from(tab.querySelectorAll('table[data-parity-table] td.cell[data-ttip-id]'))
+              .find(element => element.dataset.ttipId === td.dataset.ttipId);
+            const rowIndex = Array.from(source.closest('tbody').children).indexOf(source.parentElement);
+            const columnIndex = Array.from(source.parentElement.querySelectorAll(':scope > td.cell')).indexOf(source);
+            const cell = model.rows[rowIndex].cells[model.columns[columnIndex].sub];
+            const cellKeys = cell.tooltip.candidates.map(candidate => candidate.key).sort();
+            window.__buildTooltip(td);
+            const headers = Array.from(td.querySelectorAll('.ttip-chunks th[data-cand]'));
+            const equivalents = candidates.filter(candidate => candidate.equivalent_to);
+            return {
+              barKeys,
+              gridKeys: headers.map(header => header.dataset.cand).sort(),
+              cellKeys,
+              ownedKeys: cellKeys.every(key => candidates.some(candidate => candidate.key === key)),
+              selectableKeys: candidates.filter(candidate => candidate.visible !== false && !candidate.equivalent_to)
+                .map(candidate => candidate.key).sort(),
+              hiddenEquivalents: equivalents.every(candidate =>
+                barKeys.includes(candidate.equivalent_to) && (!cellKeys.includes(candidate.key) || headers.some(header =>
+                  header.dataset.cand === candidate.key && getComputedStyle(header).display === 'none')))
+            };
+            """
+        )
+        assert result["gridKeys"], "no candidate chart built"
+        assert result["gridKeys"] == result["cellKeys"]
+        assert result["ownedKeys"]
+        assert result["barKeys"] == result["selectableKeys"]
+        assert result["hiddenEquivalents"]
+    finally:
+        driver.execute_script(
+            "document.querySelector('[data-tab-target=\"' + arguments[0] + '\"]').click()",
+            previous_tab,
+        )
 
 
 def test_no_doubled_assembled_call_names_in_dom(driver):

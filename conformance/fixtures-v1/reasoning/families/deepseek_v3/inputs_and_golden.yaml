@@ -1,0 +1,406 @@
+corpus: reasoning
+family: deepseek_v3
+capture: inputs
+documents:
+  REASONING.batch.yaml:
+    family: deepseek_v3
+    model_label: DeepSeek V3.x
+    mode: batch
+    captured_with:
+      vllm_python: 0.23.0
+      sglang_python: 0.5.12.post1
+    refs:
+      upstream: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    chat_template_kwargs:
+      thinking: true
+    cases:
+      REASONING.batch.1.b:
+        description: Plain text stays in force-reasoning mode
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        model_text: plain answer
+        expected:
+          dynamo_v1:
+            reasoning_text: plain answer
+            normal_text: ''
+          vllm_python:
+            reasoning_text: plain answer
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
+            explanation: Dynamo/vLLM treat DeepSeek V3 as force-reasoning when thinking is enabled; SGLang only enters reasoning after an explicit start marker.
+      REASONING.batch.2.a:
+        description: DeepSeek V3.x thinking output with explicit think tags
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: <think>thinking</think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: answer
+          vllm_python:
+            reasoning_text: thinking
+            normal_text: answer
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
+      REASONING.batch.3.a:
+        description: Reasoning followed by downstream tool-call text
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: '<think>choose tool</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        expected:
+          dynamo_v1:
+            reasoning_text: choose tool
+            normal_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+              ```json
+
+              {"location": "NYC"}
+
+              ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+          vllm_python:
+            reasoning_text: choose tool
+            normal_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+              ```json
+
+              {"location": "NYC"}
+
+              ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+          sglang_python:
+            reasoning_text: choose tool
+            normal_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+              ```json
+
+              {"location": "NYC"}
+
+              ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      REASONING.batch.3.b:
+        description: Open reasoning interrupted by downstream tool-call text is not configured for DeepSeek V3
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        explanation: Dynamo's DeepSeek V3 reasoning parser has no downstream tool-call boundary while reasoning is open; closed-span handoff is covered by REASONING.batch.3.a.
+      REASONING.batch.2.c:
+        description: Reasoning followed by normal answer text
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: <think>compute</think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: compute
+            normal_text: answer
+          vllm_python:
+            reasoning_text: compute
+            normal_text: answer
+          sglang_python:
+            reasoning_text: compute
+            normal_text: answer
+      REASONING.batch.2.d:
+        description: Normal text around reasoning is not applicable in force-reasoning mode
+        explanation: Force-reasoning parser families start inside reasoning; marker-free prefix text is not a normal-text prefix.
+      REASONING.batch.4:
+        description: Thinking-mode completion exits on a dangling end marker
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        model_text: normal</think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: normal
+            normal_text: answer
+          vllm_python:
+            reasoning_text: normal
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: normal</think>answer
+            explanation: Dynamo/vLLM treat a dangling end marker as the close for force-reasoning content; SGLang only enters reasoning after an explicit start marker.
+      REASONING.batch.5:
+        description: Missing end marker keeps the remaining text as reasoning
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: <think>partial reasoning
+        expected:
+          dynamo_v1:
+            reasoning_text: partial reasoning
+            normal_text: ''
+          vllm_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
+          sglang_python:
+            reasoning_text: partial reasoning
+            normal_text: ''
+      REASONING.batch.2.e:
+        description: Empty reasoning block
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: <think></think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: answer
+          vllm_python:
+            reasoning_text: ''
+            normal_text: answer
+          sglang_python:
+            reasoning_text: ''
+            normal_text: answer
+      REASONING.batch.2.f:
+        description: Complex reasoning content with Unicode and newlines
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: '<think>Line 1
+
+          Unicode: café
+
+          JSON-ish: {"x": [1, true]}</think>Done.'
+        expected:
+          dynamo_v1:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          vllm_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+          sglang_python:
+            reasoning_text: 'Line 1
+
+              Unicode: café
+
+              JSON-ish: {"x": [1, true]}'
+            normal_text: Done.
+      REASONING.batch.1.a:
+        description: Empty input
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        model_text: ''
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
+      REASONING.batch.6.a:
+        description: Multiple reasoning spans are concatenated by Dynamo
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        model_text: <think>first</think> middle <think>second</think> done
+        expected:
+          dynamo_v1:
+            reasoning_text: firstsecond
+            normal_text: middle  done
+          vllm_python:
+            reasoning_text: first
+            normal_text: ' middle <think>second</think> done'
+            explanation: Dynamo extracts each complete reasoning span; vLLM leaves the later complete span in normal_text.
+          sglang_python:
+            reasoning_text: first
+            normal_text: ' middle <think>second</think> done'
+            explanation: Dynamo extracts every complete reasoning span and concatenates them; SGLang exits reasoning at the first end marker and leaves the later span in normal_text.
+      REASONING.batch.6.b:
+        description: Stray end marker after a complete reasoning span(unbalanced-tag)
+        ref: dynamo
+        spec_ref: tests/parity/README.md
+        model_text: <think>preamble</think>body</think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: preamble
+            normal_text: bodyanswer
+            explanation: 'Lossless split: when a stray close marker appears outside any reasoning block, it is stripped (parser-owned syntax must not appear in normal_text). Reasoning is captured from the first <open>...<close> pair only; subsequent stray closes are discarded.'
+          vllm_python:
+            reasoning_text: preamble
+            normal_text: body</think>answer
+          sglang_python:
+            reasoning_text: preamble
+            normal_text: body</think>answer
+      REASONING.batch.3.c:
+        description: Recipientless Harmony commentary is not applicable to DeepSeek V3
+        explanation: DeepSeek V3 does not use Harmony commentary channels; visible text and downstream tool handoff use DeepSeek-specific think and tool-call markers.
+      REASONING.batch.3.d:
+        description: Directed Harmony commentary tool calls are not applicable to DeepSeek V3
+        explanation: DeepSeek V3 does not use Harmony `commentary to=functions.*` envelopes; downstream tool calls use DeepSeek-specific tool-call markers.
+      REASONING.batch.3.e:
+        description: Directed Harmony analysis tool calls are not applicable to DeepSeek V3
+        explanation: DeepSeek V3 does not use Harmony `analysis to=functions.*` envelopes; reasoning is represented by think tags.
+      REASONING.batch.3.f:
+        description: Harmony analysis/commentary/final channel sequencing is not applicable to DeepSeek V3
+        explanation: DeepSeek V3 has no Harmony channel protocol, so mixed analysis, commentary tool call, and final-channel sequencing is outside its grammar.
+  REASONING.stream.yaml:
+    family: deepseek_v3
+    model_label: DeepSeek V3.x
+    mode: stream
+    captured_with:
+      vllm_python: 0.23.0
+      sglang_python: 0.5.12.post1
+    refs:
+      upstream: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    chat_template_kwargs:
+      thinking: true
+    cases:
+      REASONING.stream.1.a:
+        description: Empty stream chunk
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        chunks:
+        - ''
+        expected:
+          dynamo_v1:
+            reasoning_text: ''
+            normal_text: ''
+          vllm_python:
+            reasoning_text: ''
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: ''
+      REASONING.stream.2.a:
+        description: Single reasoning block across chunks
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        chunks:
+        - <think>thin
+        - king</think>
+        - answer
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: answer
+          vllm_python:
+            reasoning_text: <think>thinking
+            normal_text: answer
+            explanation: Dynamo strips reasoning delimiters even when the block is streamed across chunks; vLLM leaks the start delimiter.
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
+      REASONING.stream.2.b:
+        description: Multiple reasoning spans across chunks
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        chunks:
+        - <think>first</think>
+        - ' middle '
+        - <think>second</think> done
+        expected:
+          dynamo_v1:
+            reasoning_text: firstsecond
+            normal_text: ' middle  done'
+          vllm_python:
+            reasoning_text: first
+            normal_text: ' middle <think>second</think> done'
+            explanation: Dynamo extracts each complete reasoning span across chunks; vLLM leaves the later complete span in normal_text.
+          sglang_python:
+            reasoning_text: first
+            normal_text: ' middle <think>second</think> done'
+            explanation: Dynamo re-enters reasoning on each open marker across chunks and concatenates all spans; SGLang exits at the first end marker and does not re-enter, leaving the later span in normal_text.
+      REASONING.stream.3.a:
+        description: Start marker split across chunks
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        chunks:
+        - <th
+        - ink>thinking</think>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: answer
+          vllm_python:
+            reasoning_text: <think>thinking
+            normal_text: answer
+            explanation: Dynamo buffers a split start delimiter and strips it; vLLM leaks the reconstructed delimiter.
+          sglang_python:
+            reasoning_text: thinking
+            normal_text: answer
+      REASONING.stream.3.b:
+        description: End marker split across chunks
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
+        chunks:
+        - <think>thinking</th
+        - ink>answer
+        expected:
+          dynamo_v1:
+            reasoning_text: thinking
+            normal_text: answer
+          vllm_python:
+            reasoning_text: <think>thinking</think>answer
+            normal_text: ''
+            explanation: Dynamo buffers a split end delimiter and resumes normal_text after it; vLLM keeps the delimiter and answer in reasoning_text.
+          sglang_python:
+            reasoning_text: thinking</think>answer
+            normal_text: ''
+            explanation: Dynamo buffers an end marker split across chunk boundaries and resumes normal_text after it; SGLang streams the partial delimiter as reasoning, so the split marker is never reassembled and the answer stays in reasoning_text.
+      REASONING.stream.3.c:
+        description: Partial start-marker prefix later resolves as force-reasoning text
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        chunks:
+        - plain <th
+        - esis answer
+        expected:
+          dynamo_v1:
+            reasoning_text: plain <thesis answer
+            normal_text: ''
+          vllm_python:
+            reasoning_text: plain <thesis answer
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain <thesis answer
+            explanation: Dynamo/vLLM keep marker-free chunks in force-reasoning mode; SGLang treats the unresolved partial marker as normal_text.
+      REASONING.stream.1.b:
+        description: Plain text stays in force-reasoning mode until an end marker
+        ref: 'inspired by vLLM DeepSeek V3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_deepseekv3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+        chunks:
+        - plain
+        - ' answer'
+        expected:
+          dynamo_v1:
+            reasoning_text: plain answer
+            normal_text: ''
+          vllm_python:
+            reasoning_text: plain answer
+            normal_text: ''
+          sglang_python:
+            reasoning_text: ''
+            normal_text: plain answer
+            explanation: Dynamo/vLLM keep marker-free stream text in force-reasoning mode; SGLang only enters reasoning after an explicit start marker.
+      REASONING.stream.2.c:
+        description: Stray end marker after a complete reasoning span, across chunks(unbalanced-tag)
+        ref: dynamo
+        spec_ref: tests/parity/README.md
+        chunks:
+        - <think>preamble</think>
+        - body</think>
+        - answer
+        expected:
+          dynamo_v1:
+            reasoning_text: preamble
+            normal_text: bodyanswer
+            explanation: 'Lossless split: when a stray close marker appears outside any reasoning block, it is stripped (parser-owned syntax must not appear in normal_text). Reasoning is captured from the first <open>...<close> pair only; subsequent stray closes are discarded.'
+          vllm_python:
+            reasoning_text: preamble
+            normal_text: body</think>answer
+          sglang_python:
+            reasoning_text: preamble
+            normal_text: body</think>answer
+      REASONING.stream.4.a:
+        description: Downstream streaming boundary is not applicable to DeepSeek V3
+        explanation: DeepSeek V3 has no configured Harmony commentary boundary; closed-span handoff is covered by REASONING.batch.3.a.
+      REASONING.stream.4.b:
+        description: Split downstream streaming boundary is not applicable to DeepSeek V3
+        explanation: DeepSeek V3 has no Harmony `commentary to=functions.*` stream boundary to split across chunks.
+      REASONING.stream.4.c:
+        description: Partial downstream boundary recovery is not applicable to DeepSeek V3
+        explanation: DeepSeek V3 has no Harmony commentary protocol, so partial commentary-boundary recovery is outside its grammar.
+      REASONING.stream.4.d:
+        description: Directed Harmony analysis tool calls are not applicable to DeepSeek V3
+        explanation: This parser family does not use Harmony `analysis to=functions.*` envelopes, so split analysis-channel tool-call handoff is outside its grammar.

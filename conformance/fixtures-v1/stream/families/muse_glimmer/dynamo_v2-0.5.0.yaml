@@ -1,0 +1,19 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: muse_glimmer
+capture: dynamo_v2-0.5.0
+documents:
+  TOOLCALLING.streamv1.yaml:
+    family: muse_glimmer
+    mode: streamv1
+    captured_with:
+      dynamo_v2: 0.5.0
+views:
+  python:
+    base: dynamo_v2-0.4.0
+    changes: {}
+    annotations: {}
+  rust:
+    base: dynamo_v2-0.4.0
+    changes: {}
+    annotations: {}

@@ -18,11 +18,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
-# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (extracted
-# from the in-repo LFS shard store via extract_fixtures.py). Run it every time,
+# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (materialized
+# from the in-repo YAML stores via extract_fixtures.py). Run it every time,
 # not only when the cache is empty: it exits instantly on a cache hit, and it
 # re-extracts when the committed manifest pin moved — otherwise a render after
-# pulling new shards would silently use a stale snapshot.
+# updating a store would silently use a stale snapshot.
 # extract_fixtures prints THIS manifest's snapshot dir on stdout. Point readers at
 # that exact dir, NOT the shared `<cache>/toolcalling` symlink: sibling checkouts
 # pinning a different snapshot race to repoint that symlink, so a render could read
@@ -117,19 +117,12 @@ _resolve_toolcalling_fixtures() {
     --out "$out" --select "dynamo_v1-${dynamo_v}" "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
 }
 
-# Reasoning fixtures are versioned like toolcalling: inputs/ = the OLD (v1-era) anchor,
-# <impl>-<version>/ = changed-only overlays for a newer engine. The page picks which
-# version to render, so this takes the versions as args ($2=vllm, $3=sglang).
+# The policy selects actual recorded reasoning snapshots, independently of runtime pins.
 _resolve_reasoning_fixtures() {
-  local out="$1" vllm_v="$2" sglang_v="$3"; mkdir -p "$out"
+  local out="$1"; mkdir -p "$out"
   python3 "$TOOLS/resolve_reasoning_fixtures.py" \
     --fixtures-root "$FIXTURES_ROOT/reasoning/fixtures-v1" \
-    --out "$out" --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
-}
-
-# The pinned reasoning peer versions = the engines pinned in pyproject.stub.toml.
-_reasoning_pinned_ver() {  # $1 = vllm | sglang
-  grep -oE "$1\[[^]]*\]==[^\"]+" "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//'
+    --out "$out" --policy "$FIXTURES_SNAP/capture-policy.yaml"
 }
 
 _copy_toolcalling_v2_fixtures() {
@@ -181,14 +174,17 @@ build_stage_conformance() {
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
   \cp -f "$TOOLS/fixture_disposition.py" "$STAGE/tests/parity/fixture_disposition.py"
+  \cp -f "$TOOLS/capture_policy.py" "$STAGE/tests/parity/capture_policy.py"
+  \cp -f "$TOOLS/capture_bindings.py" "$STAGE/tests/parity/capture_bindings.py"
+  \cp -f "$TOOLS/fixture_corpus.py" "$STAGE/tests/parity/fixture_corpus.py"
+  export CONFORMANCE_CAPTURE_POLICY="$FIXTURES_SNAP/capture-policy.yaml"
   \cp -f "$TOOLS/capture_stimulus.py" "$STAGE/tests/parity/capture_stimulus.py"
+  \cp -f "$TOOLS/dynamo_version.py" "$STAGE/tests/parity/dynamo_version.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures
-  # Current page: reasoning shows the pinned NEW peer versions, in sync with the v2
-  # toolcalling tab (both compare against the current engines).
-  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures" \
-    "$(_reasoning_pinned_ver vllm)" "$(_reasoning_pinned_ver sglang)"
+  # Reasoning resolves recorded captures through the same published policy.
+  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures"
 }
 
 build_stage() {

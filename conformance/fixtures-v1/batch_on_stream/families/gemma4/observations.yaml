@@ -1,0 +1,3476 @@
+schema: bound-observations-v1
+observations:
+  7d3bb4d44ca4d697955a221783b4222e23c99ebbdd9b611956f8b6d1db7c5532:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  1a684f205bdbd7f9f966e1659cc4e3bd3fd1e8fdcc4ca34b867a514f049a6b11:
+    request:
+      model_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both:  Done.'
+  6914b124a29475d7b50f56cd3aaec16dbf582d0d572487a15d9ed7f227c2bdd2:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  1374e526f2ccdee937930a3a5afbd2f765b07f5c10736f87fe5dd6063edf81ee:
+    request:
+      model_text: <|tool_call>nonsense<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  0ae675216113985b9648df4dad37817153bf0e8c6e94189405822a71a571b9c5:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  60e98d90e3a529ef47163ffe12e2b03224f68d0b62e9d777fff7a0a2119cb493:
+    request:
+      model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  23b2665b15d1ccfaceea05af0afb87fb70262ab53159311da8031f43cf37ea19:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  12100068369e1770a5326913e2d0fb2d0673d072be79568ee161040aa850c9bb:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  68123b9021e5d85254e8ece3acb631bda2a0ba87260dac15391e79b990ba52f1:
+    request:
+      model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  e9875ff686945395e8bee996b752253f71ef40d6ec1affb0f2650ff6d9f119bd:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  3e613946266590e934f87b48c2e772f0ff841e3ebccd73456909883431567bb5:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  96b271c8f2fd6369d97e833875d27e4c46de622781153d73de711b7a37c3089a:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  99b33561f1625ca4cf04fbe1ccc6dbedcd6a8672f73040fadf5f8e12ad6dfc49:
+    request:
+      model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: ''
+  15250da36f2e08759d5cebccc323d4ab78f9d6a4755608d3b3982197021bc702:
+    request:
+      model_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check that. '
+  600cc58d3308f1e706f23054e0b87caa70ebed89ffea3c1bebd39eb971ee930a:
+    request:
+      model_text: <|tool_call>call:get_time{}<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  1c14c711f2bf7ac7fbf263739284b548d1babb58e831fd84e83cde1a849af2b7:
+    request:
+      model_text: <|tool_call>call:get_time{ }<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  53e3d9368a58f045a1b81e1af69196ce91f938e4f3082685e7ba9276d134718b:
+    request:
+      model_text: <|tool_call>call:get_time<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  056306267ea9abd4528494df7732c0f38ef797c092a1865b4806e010f3b00e4c:
+    request:
+      model_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  0cb5544d8a3f194791639f358b4ccba68e526ac85b8482ccf57730b0cca621ca:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+      normal_text: ''
+  7ae4c7f05f0107e32c031ae49fa57bfe3456017d8a8d14452aeeeacc5f5adb0a:
+    request:
+      model_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+      normal_text: ''
+  bcf5925ddf06ead8e039ce7f1c4165da82eb347ac1f55d432af444c90f2d567f:
+    request:
+      model_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+      normal_text: ''
+  4e20041655c2b0be720d72d7816a084e9874126b598540631f609c6c9c836a1c:
+    request:
+      model_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+      normal_text: ''
+  4f3c0d21ec1b0a047e18384a8cef8cbc8876b471ef67e5bdb8ddbbde5600da95:
+    request:
+      model_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  14948d085e673b4690d8f04b92497f5af57a50b7419f955aca1d3f9bb9fdb2b7:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  96a2f9bcf08093827242ed0037b9094ab963df09af53a334c9b7265a91c327ea:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  e719528e3f318b654d28711c3784a434142c3401a153d14a353a905730e85d2b:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  b27cd392378328306893fb76e79898b973cb912faf04af8e913a2e09ae238d81:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather.  Then check LA weather. '
+  5b23ca8d88d871f7dcdca7dfbd5c164f22f5ae2d5709edb66c1e2d25f1099516:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  f94738e0d1fe06363bdffe581aa02c270113e3ccec272b4f471ef8cc3d8a444c:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  e1a7f4f6b53e6cf978ae06352ce3f8c7b3a426fd056bc1789738e6f658b4863a:
+    request:
+      model_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
+  08c9b8a00d9cb0c3efc0a835efff08deaa6ebd0f3836a4ab1cab157de04cd786:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+      normal_text: ''
+  ef86a8709f6df10eb49304780bbe744abf24c5bf724038994ee172f38ccf772f:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  4e7299d60ce88428ddba6683dc28796f0fef417b9dbfa0f2fa8e9038208bcaaf:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+      normal_text: ''
+  c6f4f6ef0f0d54820995500476c0d1560074d8657ffdef6be4d2fc55886896fd:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+      normal_text: ''
+  feb4ee9ab2c50a0fafcaccf416f5a1710c0dc6022379623c84d0cf278dd66128:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: literal <|tool_call marker> call:get_time{} stays text
+      normal_text: ''
+  72d1fabd8b42ff60c63e5847e6ef50bd5c1366be2d163b1ae57f55a107714001:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  17ab97c58676afdec04f567aff526f3bcffe5a208430897c25c6b7d71828e173:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  0e5245a02ab17eae5207d39312a7e5d2fe258c0b24f699eb960bb7259aa7d1d4:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  19f0199508226cf9dbaff5558991dc9c37faf858d1954cf79ebf9ac766b06ae2:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  24a50face9b4400f508ad8be412ff5398e768112044c4c056736584f13ab606e:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  ced315f8bd5bfd9bbce4d2876f597a2def5910c6c5c1779af7be21b8d09a421f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  1feab90503d58e20158697da81ea8b12ddc7de6ac05f823130485cd0ad3512cf:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "NYC"}{"location": "LA"}'
+  b01e3c221d8eaf294e6ca3de0639bdde586d498488e556cde49850f3d4f405bf:
+    request:
+      model_text: <|tool_call>nonsense<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  954017f5b05f25308940db0e357aa102384ae0a5f5cd3bd206b866290c83e0e0:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  2251f82e878848ee47a43c164c416869ca598f53853a4b2b68346ca1b9a889c2:
+    request:
+      model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  19fa05ca1c37c45a7fa3487d6f65eefb1daf596e7e2e9d91d56ede16b13b457e:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  3eb06753cca46984f4b35245a03a483dddbb531b4dc8c4fc7caf2fe25159a010:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  29f4b6dc2433e141f72ca084548bcb612abecf5d0de94f5b7398f7c2e7de037f:
+    request:
+      model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  b14d2984f5ec1423d0bb69895a0ecddb0b2627026cd5d5ff76bad249fb41d753:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: {}
+  c5ddac32e49ca42a7e856203d9ea2584c7c4e3c197633440a1fa3269381e81b9:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "Boston"}{"location": "New York"}'
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  5384547880aec15587f2d3a0120ae66fa9cb14f9cd1681707d166d1c232a1f9b:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weatherget_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  6be0bebe6ee2efc5e20ed81f1bb95bbd400a58e396df16fe87ebd852dd68b1a2:
+    request:
+      model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  133645123af28435abed0ef2ae9a27571f4465bd2da87f894715f8f220cfb3a0:
+    request:
+      model_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  7f1e48b7d05c1ea89920d252d01b9e0ca51f54868ba74d497d0113b3955a4c17:
+    request:
+      model_text: <|tool_call>call:get_time{}<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  667cf5d12f89cdd69f6aca8c28d3fe45d35a0be37e3e8879b4a813d28ab16a90:
+    request:
+      model_text: <|tool_call>call:get_time{ }<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  3735227ae28e0f60c461d3288817951c2e45942806dcdd299937143ddd49becc:
+    request:
+      model_text: <|tool_call>call:get_time<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8ff64b2ac379dc2894c6afc791991e835635e922e4303af43cf9900ddd26971a:
+    request:
+      model_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  b8f4de20133ce7e34d5589f09170a9c4cb1d6766a2666b186bb7eb108c8fab98:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+  0dbb8710e5e632223a43f84409cdde1bfee1309b280c259dee451d2a49cd2542:
+    request:
+      model_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+  d0e458df9598499d0508c1c8ef0e0f8d964cd2824083e4e1769d90f84738d926:
+    request:
+      model_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+  40286698ca5c680919900a5821ef1799698696f6642bb92cbb7c9d7c1b2b4478:
+    request:
+      model_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: 'null'
+            empty: {}
+  647f045f0f24de432a256f221f29c15c8d7912f05bc22e5bd40101ad8a9c272c:
+    request:
+      model_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+  81969445ac96b6a17046e8442b33f88efceb899b59d4606c4fa022ba0007d61c:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "NYC"}{"location": "LA"}'
+      normal_text: 'I will check the weather.  Then check LA weather. '
+  1d8f8395d7537a58948e26739cf738732af9b1d1f98198aed9ce5d7ec18c5a57:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  e41def4759d59f73aa98ef3780f5359425fff1e9de9152bcb20b24b44830c07e:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "NYC"}{"location": "LA"}'
+  37e5b6857e214aede5d88544fd5edb02db65efad2f9d3ee87ad4f53d7aba7178:
+    request:
+      model_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  8a65b70f47a0111849877975f2d4d1edf8d77708e9ca838efbd05a322a926a8a:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+  e96f972f284365a20f258f0c89ee13f55f542ac89dfeef43eea2ed6ca5378790:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+  93967a40aae7c377611ba4acdd1a2ec6f1c5b8190b1870f60edc2752bb1105da:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+  52fe1dac5bb899478f6bd0891e567c3cd7e9c87af2e734c696d2478e8928032b:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: literal <|tool_call marker> call:get_time{} stays text
+  9a7d31abd69f00413fe5f39b36f33a0cb24ba82a67e6a180a5f988cfde2771ec:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+      - name: get_time
+        arguments:
+          timezone: EST
+  c641b7169f4166319829b1bdc7b5e186953d449bb25e5bc954c7213c8887ea84:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+      - name: get_time
+        arguments:
+          timezone: EST
+  e85d847c4a799ad22ece707bf35e0515d123426b8c71a85c1a18c26d07c9dedb:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8f091c8fd8b7446f4011a18d7c89470dc179dc6100ece9550c064f29ac395c1f:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+  4d56fe35f59cc9f95f444deff7e6bc4e71efc0c0ff788ec3b8264564acb7a2b7:
+    request:
+      model_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
+  f9347758776810a05195326845943268a80a9826d5afab8dd03e10a51ccb7fd2:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+  0a4e2c7943b0a0723d9f43acaaf69b8353396cdd9bdd971b0fc6b1a5295c1a70:
+    request:
+      model_text: <|tool_call>nonsense<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>nonsense<tool_call|>
+  34b18dd8d19fb00ce0bf1dd980aabecd41a74bd50c7d5b72b2d414b6ccd5d2b0:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+  d0e3f582cf20e1acc31d129c7ff9a0601666f4aaab14e3d1822ebe202b39034d:
+    request:
+      model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+  1c7f7662751119c78af1b3590fe50f0b013bc564f027e342d55b9f4894663896:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+  f38964b0d736fe4df0ce6105dfb8c2b721d8bb3f5284e05c6362f324113ec062:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+  643ce29157c9bc20a7a40968c96149239f3f63c3440280b3f704e32cbeae6b94:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>N
+  08d5225cedd55dc04b10bf88035bdda0fae21b885d30a00da1781ee7e4c7d5fa:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+  a8f547a1f23d1c2f4b65fdb265fec0fb49f22c6f7b16b2c060de49df8682ad6f:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+  8cc681e11b65cd06d278c672f184fa2e40e3e5a9dde5a2c6a2f3f6810e82755b:
+    request:
+      model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+  be7bc9e516218ab4b56bf27adc36fa127587c617112a79826658d5e0525e9a5a:
+    request:
+      model_text: <|tool_call>call:get_time{}<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_time{}<tool_call|>
+  4c39d8905884b4a1c6231b8a6aec7ca0f26e256b67265a7d0bc436cc437b4e9a:
+    request:
+      model_text: <|tool_call>call:get_time{ }<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_time{ }<tool_call|>
+  db5165828b9173db77dbf676356e51aed724c861c9d4ea7f8fe42f961c756817:
+    request:
+      model_text: <|tool_call>call:get_time<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_time<tool_call|>
+  0c399fd9397edd504f2a3b9f70e0d29470e6279b35e525c2e4b579820c1109b7:
+    request:
+      model_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+  e7a955c74f050447ffa111b17f7dc526eb7452ba5fdfe889796362093fd52a4d:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+  dccfecebe27891cfcaaf1ea8cf3694ef54930c5ad80889a8840d2347d074361b:
+    request:
+      model_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+  f33915608eeba887c454dc82e733cff32dcff49eb86632a2c60f3a099db767a8:
+    request:
+      model_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+  ea1bd91837323b2861e9efce965a0d4d2f08375c0de0593af401c16d7a8a192b:
+    request:
+      model_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+  c37ec602806b379381f988d696559fd237bbb351d226cbf7e78d102f6f5e143d:
+    request:
+      model_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+  88f9f868565832da4c7edc7de96e7720e6389776f2aecda93c03fb4cf1d06765:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  bc818ed5d7dd44b6b3f4e703eab76b608e788f29a2d97f99a344211df5db3f53:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+  30d62305e337c33c38b9b8658c540d87daf56bcc5c64407501ed6d2128b65422:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+  c451718470577186108c07f83922801db836ed2b9d3dfb50a12e0ef8712e5940:
+    request:
+      model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+  2a2612a4d7116490284cc20b6807604d3faafed0913dab244653e304bbea5022:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  c393bff9f145836662a2c172029c9b46d306429b34454cc0e1556982d98c235d:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+  d35b585ba529dcfd31b050c6ad7277c148a19a27bcfb7fecead388e594a30de5:
+    request:
+      model_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+  8698fc094cf706bfc5649c390abaa404d1e05d7b4be2ad525c4fed89db9275b5:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+  2a3e6ec1817a552b6b7be23af0f33bdfb412b2fca344f2b718f038b8dedba0cf:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+  2852c5bd9f0056a4fe43cf59b8574bb80699b2585c43ef1a0c79e4f9ae4ca5ce:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+  f22ad9d1e353725799f5bac06f079bfc09209e063885ee624c6243c78c51d40e:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+  3f44daf7a14b9ea4b59ee1359141d59ae08964c0ed7cef844677f40513b1fa0e:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+  8df273b980ce1451ed661077d5584cf67db6ccfbe9cb7fdb9e59598d55af0bdf:
+    request:
+      model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+  8026615ed66ad01d5e48a4b38951a72d399cbb6950419d39079bfa5cce9e87fe:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  3b752a2dc7e25778f1abf0f2b5b7ee38ea3eec49f270fa5d3098e0b256931a42:
+    request:
+      model_text: <|tool_call>nonsense<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  8472d1613fe12eb0342b7ce6879349ef9f09d4219bc1b4ef3c448cdfee02649e:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  3397352508737f4ab5c4650caf5a03fcf622b21ce73ec27aa051f46a87769a4c:
+    request:
+      model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  38374b77542586c2c1b0b07e43f1f98e060e5a97d5506d17723af0461d21cd6d:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+  ce01b48ef84712e037b78548e66c3780b61dea27d80c02c2d299386d25a63ea0:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+  834720a0390e03042ac362fffb1ccd415aebbde600f0487bac1cda693cc15957:
+    request:
+      model_text: <|tool_call>call:get_weather{location:<|"|>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+  d902c7b7755c9d55f24abc159e8065ce1583adf83eeed56cf729525ff6f145cf:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+  8023cc1e9fd122cec6fa7e5a2c60db0f02efe414cec7e2a0ea6ec86360a93444:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+  78f4657ceb251bc9ec668bc8cf4a73e176c17967b6829495885fdb665804707d:
+    request:
+      model_text: <|tool_call>call:get_time<tool_call|>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: gemma4
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+producers:
+  1045aafdd64462b27aa20ea8f043804e09a30a896eb4eb3a03fa025d7edb9227:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: gemma4
+    provenance:
+      captured_with: 0.5.1
+      runtime_version: 0.5.1
+  05573ea8fa092dd7e9487a32850b834e6d09ff8cf68c229cb5852ac06e50631d:
+    capture: sglang_python-0.5.14
+    document:
+      family: gemma4
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  2d22979c0fbf27269002012e5aff9b24a6ddb419ccd82478c65591c3eabc35bb:
+    capture: vllm_python-0.26.0
+    document:
+      family: gemma4
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  04b1925b17e9dd13d49d22d4acca2a4295476fb674638a2936ff30807525aaba:
+    capture: vllm_rust-0.23.0
+    document:
+      family: gemma4
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

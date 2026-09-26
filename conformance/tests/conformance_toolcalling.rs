@@ -81,16 +81,15 @@ fn norm_text(s: Option<&str>) -> String {
 #[tokio::test(flavor = "multi_thread")]
 async fn toolcalling_batch_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): shared model_text/tools live in
-    // inputs/, Dynamo v1's expected in the dynamo_v1-<version>/ dirs. Old version dirs
-    // are capture history (never deleted); fold them ASCENDING so the latest
-    // capture's expected wins per case.
+    // inputs/, Dynamo v1's expected in the dynamo_v1-<version>/ dirs. Policy
+    // selects eligible history; each family reads one complete checkpoint.
     let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
-    let dyn_dirs = common::version_dirs_ascending(&batch_root, "dynamo_v1-");
-    assert!(
-        !dyn_dirs.is_empty(),
-        "no dynamo_v1-<version> dir under fixtures-batch-v1"
-    );
+    let dyn_dirs = common::historical_capture_dirs(&batch_root, "batch", "dynamo_v1");
+    if dyn_dirs.is_empty() {
+        eprintln!("historical parity skipped: no eligible captured measurements");
+        return;
+    }
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -115,28 +114,16 @@ async fn toolcalling_batch_parity() {
         if fx.mode != "batch" {
             continue;
         }
-        // Fold Dynamo v1's `expected.dynamo_v1` (from each dynamo_v1-<version>/<family>/
-        // <name>, ascending) into the shared inputs cases — the latest version wins per case.
+        // Each family checkpoint is complete; an absent case must stay absent
+        // instead of inheriting an older expectation during reading.
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        for dyn_dir in &dyn_dirs {
-            // Only a MISSING overlay is benign (this version simply didn't touch
-            // this family). A corrupt YAML or a real I/O error must fail loudly —
-            // swallowing it lets a stale older expectation win and pass falsely.
-            let dp = dyn_dir.join(rel);
-            let dyn_fx = match std::fs::read_to_string(&dp) {
-                Ok(t) => match serde_yaml::from_str::<Fixture>(&t) {
-                    Ok(f) => Some(f),
-                    Err(e) => {
-                        failures.push(format!("{}: dynamo overlay parse error: {e}", dp.display()));
-                        None
-                    }
-                },
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-                Err(e) => {
-                    failures.push(format!("{}: dynamo overlay read error: {e}", dp.display()));
-                    None
-                }
-            };
+        if let Some(dyn_dir) = common::latest_family_capture(&dyn_dirs, rel) {
+            // A missing case is unavailable at this checkpoint. Parse and I/O
+            // failures must still surface instead of hiding a corrupt capture.
+            for case in fx.cases.values_mut() {
+                case.expected = None;
+            }
+            let dyn_fx: Option<Fixture> = common::read_capture_fixture(&dyn_dir.join(rel));
             if let Some(dfx) = dyn_fx {
                 for (cid, dcase) in dfx.cases {
                     if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {

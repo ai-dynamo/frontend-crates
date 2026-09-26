@@ -215,7 +215,7 @@ In order:
 
 ### Unified parser hard gate
 
-Unified capture publication follows [the plain-version YAML contract](../../conformance/README.md#unified-storage-contract-plain-versioned-yaml-only). The older tool-calling stream and batch-on-stream tests keep their existing storage; they are outside this migration.
+Unified capture publication follows [the plain-version YAML contract](../../conformance/README.md#unified-storage-contract-plain-versioned-yaml-only). The older tool-calling stream and batch-on-stream captures use the separate reviewable `fixtures-v1/` store.
 
 Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 

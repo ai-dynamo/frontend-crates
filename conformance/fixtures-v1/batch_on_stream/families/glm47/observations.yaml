@@ -1,0 +1,2444 @@
+schema: bound-observations-v1
+observations:
+  0ff9e6dff0242536643d79eb679c55449bfe7f2238bed443314bab3a78c1e546:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+  5ddb8dfaf5a7a3bf5866b1cd102469e7fd19c5bc1460c0edeb3f8fc73363c53d:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both:  Done.'
+  4c6da9dc674d89de1e14ea0a3e70b80815dca8dd10212f9c3c948370bfe7cd47:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  91df490fe2f1717f63c1689b5dc7edbb5c507676420289bc9ea7358821c99a6b:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  aadad6ee8d03e79d3f10057011ea07ae4b213563e1dfd58af1c90cabcd916084:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  39ae2bcc708d8be23abc2cbc8bd039ada67b0ab630e5be47a91ae01d462b73ee:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  8c4bb33d25dd499116311ca6fc322cd90e6e9c7ce5bfcb996c09df2ea328544d:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  471d26bf42c532d2582e02d53c0d31d2c89bac01d8e22f7a3cc79625d2d201f2:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  6aca3ad37a7f51616ea72229e111ac45a719bc99d056f0c7c088212276ddf8c2:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  f824aa7a3fbada832bc69b2ca3459dc799e53db6de0c4065895e42fb961dc4bf:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  81d9303001cb593fa5720e3784c73003ab1b29d25be326421bd6fa67027e9f3d:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: ''
+  2608799f33356b64e6878cf1889f5ccfaa5e14d7e74d1befa0b7bf1139aba96e:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check that. '
+  9fd6cf4adcb81de003725adfc0a8776dfdda912195af5a48157e728bcffef04c:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  e335b3e4974eb179143114c17d23b9e6e901d8f0d65e3d139d8999ed5b14de76:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+      normal_text: ''
+  8c3ad511a542e6532f5b1c21b7cf070738575cd9cf4805cfcab140379fad097e:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  c1f436d3fa38fafe493bddc2aa0da4ff9f7b9c2eb11bdf1dd51a043bd26b2f7d:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+      normal_text: ''
+  37664fcc795c85e78c6d8db6871408e2d2047b811234c25b3e9f3a7546b64c93:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''
+  a7f102f28683f02aa21a991c5f4f3a87d5d24916bc827cce79c861644e83d88a:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  567d985cddf2293c10d96fa6a7f590ecb894bfda18597200e71847f06daaa522:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  3d49f75cc0249e492fc9ddec5304627972f2c08e021b3749391fa97a98621383:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  ea21f57da80e005777d18d4c550ca75f6dc75edfe793588a5b2dcd5d56ea31e8:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: 'I will check the weather.  Then check LA weather. '
+  f7cf813eee19e861c7db66b584657c96484f856bdccf395edde4375c92b5e506:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+  d460d6a5a8322f29c3043e2478e95529efab2213732cc14471f8e8cb72142e08:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+  611b1a941c9ffe062662d877ccc79101cb9e9caf50452f84ec8a06f0cd983b24:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
+  a00c38624a9ca672a51c661518e1105dadd7ecb8f0621fe6b364b8dc61c5ed41:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  e865969d2f31879687133c7d7fd2336ae7fb59cef3b7edf8b7b2405a71903035:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: ''
+  681552dd97c1df87e350df991142735fd8aadfe194c35262949d254d30c7bced:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  efa361b745b0f725333df3e6971d4f4656fa4710f65729ed9db7fbdfaff1e803:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  ad16f39708920d5cfceef5ae42236e6a3c9105a13a40b8f4f244e69757880a8b:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  f071cca5fe998ee9cdfc6b4f70026b0de0396bf83dd6d38ba11dad75527e8e4f:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'Both: '
+  8eba2a7397ff908684027ce3e6a5266d2b060e274d8ea32ad0d7a652a3e9940c:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  13196216a5d022fb245be777379eb51a437f637ee1f381e8e376691a0e91ee0e:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  beb7340fd443b0c54a4c4bea4298748a42fa11c5aa924bd82ac8716b305aad08:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NYC}'
+  e8536c90b2811de885548bbe829e5cd35a94524784f2595fb7808e931de14147:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "NYC"'
+  a359d3ca47428bacfe6c65a0888727c6c3058f98d15c192602d924cf92388c41:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+  1699e990e67120d78a49e3bc8b9272aed53a95d203d087f90410104b8f5c44d3:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "N'
+  30ce7552bc62df6da43c6a686e499eaa8bc8bfbae2c33dbc70bd0814e7f7b31b:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  872f73a2f2174f0209d4b8688b0a2db4eb901dbfb6d394724c8d42dfc0a6ebca:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+  d2df43d2a1323b6ad2b84d4e1f08b3f86c6d72f76e6f544c14be5f84252dd237:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  d55e18edf9ea39f5f0be94f564605d8be15c7acf4def4ca456d4faa041e7284f:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  d5a06ba7a245f4fc851376abc8c43cf20f98b31aa7952ff2351cd6fff66ad56a:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  6a180d2849a683e3f11906d18993ce4b56903c05b0e8383ae2a781dd3bd8a574:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+  12fccd6a149238ca5563934bad1707639a61c30624ca33a157838825a2244be3:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+  531ff6232fc7b43b29a806c26329043e50dfc50070d0be97ab1cb02ed45c741f:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  aa701cf4aaeb2a624e3484b0f417a4f30d82edca22f506bdc544e74c5ed39224:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  3a295bcd434e1278cf2ff7bd851389bc4eac7295ffa2244c80571ae36c25d879:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  73d2f02411e21666798430b73f7f61de95e4db8c597abacc75c0fff968bc76de:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  74bedd4b67b3f48caa8f7867ed97029ade6fed202f122ac03108c1315831b4f1:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  1c749528af6b6c01015c079d0d74ce2caa447ffa807ceae502852c9816186e8a:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  0adaf7716b80aa0223a70d3662fc2c975e332f8d31bee17702c2827ca9e32b52:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  6b41c8c79d137cc47aa4d6b8b3caa60ab240b0fdf1c9a5a101d372ee0a36e44b:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+  614c6bc5788d690cd898995ffbc4f3758ada267b3eda2a01085aee88d31bf555:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+  573bec0fa5244eb19bdff92d43600e65373953bc2be54e850dbd9e80bae5986f:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+  b856d9fffd4128f3c33344dd434bcc0d3b456d147caa9b2742d31f0d9e3fc7d5:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  39efc8a0fa8e656f95c7a70e549086048ff24920c6017e8584b49b0897d7e0b0:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+  ed18b52753e17395b60c08165b1a0fbf77568c0c8d1c445de573c608cead1af0:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+  013224456b618252cfabfa73e1537f8b1a7a00b9e8355bf58e3da95bdb59796a:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  61bdf5a35d24271fef9a455eaa331446e084a22ec850d7bb318d39ed3428dbfc:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+  db8b90a17a515dacd9e941f1918eba9fa9dd5f9c162df47e9159ab01e2e71ef9:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+  4d112fd47eb3c4c626e4697bd629b06f08be1860b89788f68f4b906e453d2a75:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+  68e98dc2640f48d0079822fe36fb6bf17119ae185ddf8aa882551a5918419643:
+    request:
+      model_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call>
+  60c40845a6e93978d42c3a86ab25e5d57b0cb9b16ea0f84ee73b5f1da7c1af70:
+    request:
+      model_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  8a2ab2850a96f1e02e616bd754e21fcdb8f856afb6a4c0bb42057fe460bf7eaa:
+    request:
+      model_text: <tool_call>get_time</tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_time</tool_call>
+  f1a9db340f45aa088b20b39367531fb4dbb85f449000e8092f8b7b8d98481ab7:
+    request:
+      model_text: <tool_call>get_time </tool_call>
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_time </tool_call>
+  0eb1598a10fa05370b675bffc2ac15030079426be9ebabbd7e50a736a301447b:
+    request:
+      model_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value><arg_key>passengers</arg_key><arg_value>2</arg_value><arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>
+  d32831f222aed0f1f1228c79db14eb091722e8fc8efdadea9a5c1d0835d5fd39:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>Tōkyō central</arg_value></tool_call>
+  ec84480eeeae2e54725fa8795f4cb391dfb25d0c97eca6a3453e053590aeac67:
+    request:
+      model_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>set_limit<arg_key>count</arg_key><arg_value>9007199254740993</arg_value></tool_call>
+  c28e19421bb1a33e07dee4165fa791ff91178bb5d5b34450b6be5aec1471c333:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  0b8b0f7223c1dbad0ace15ecb3e14bf16d0d0bbc4182ea57dde29b00e847d18c:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+  dc411fa6572bead754792d5bb3a77db0dfbf9d9dbff258f47762966467809b77:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+  980b923464f34812b2db3c49d3ee2fb14f182e9701baf0649043c81cc591093f:
+    request:
+      model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+  3ea5849176291dcbbbde321394c1c10470eb15bc857ed03100661da8175f8960:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  05a26dadf5c13f7e1923a79bc424b15935a8d53a355f7a394364a789090c10b4:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
+  7e244a2b26c14607b39262f67ababb217d190571d6e4db7aab85de4976deaf3c:
+    request:
+      model_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: <tool_call>unknown_tool<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  df89fd4f42a0ca85de9b5d6aa58bc6e267e3a6572b0218ab3f452d0abf4a3aef:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  cfc04221618b2c08c6bc7022116b89ab0a8838a5efee4384f78c90ae4802e1a3:
+    request:
+      model_text: 'Both: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call> Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Checking: '
+  7816241ad58363045ba19df4c37f2dd320244aac01aee83a3ae8fd24dd775a78:
+    request:
+      model_text: <tool_call><arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  dc467057b9fb36f0f40b1f163fc845425bc33ba40bf10c4e7fc6dbdd8a95b6e3:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: '
+  1148e6e4c589313bd50ee3fbe5442919ea920e220dc959a990b219c6025a31ca:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete GLM MoE tool call'
+  ac849e73383db8c18f43116b5ac1a7715ccc5718c03b76fd04a267e859f3e4da:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete GLM MoE tool call'
+  c6e36ff6d485bb4b409d46741a2e10db6ffd084d7490d7083beecf7d9a26bf24:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York</arg_value>
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete GLM MoE tool call'
+  5cd7464112629d15cd99822005b5d267a4dc630860e1feaf3e21279b29df958f:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>Boston</arg_value></tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      error: 'tool parser parsing failed: incomplete GLM MoE tool call'
+  c320847234c428ff12eea2af0661cb55b45c873fb9b5f8c84915a43f63521f25:
+    request:
+      model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: glm47
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+producers:
+  283fee3eea7796273042b4cacad9852ef60acff0835aa8f3a2fa9c5753c8087e:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: glm47
+    provenance:
+      captured_with: 0.5.1
+      runtime_version: 0.5.1
+  970535f730f3450a8d4c4715f1ae23cbeb93a1e7c84c28502191538c8834ec55:
+    capture: sglang_python-0.5.14
+    document:
+      family: glm47
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  f8226f7ebcba4f1d27a8a4c18d3c7b0641284b94d1f78659d6b0540b3972edfc:
+    capture: vllm_python-0.26.0
+    document:
+      family: glm47
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  2824e52963a4c72eeaa9b1076ab62b36e93df0a7836097e61eda0f12cee52359:
+    capture: vllm_rust-0.23.0
+    document:
+      family: glm47
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

@@ -1,0 +1,52 @@
+# Captures are discovered from the stores. Only selection exceptions belong here.
+schema_version: 1
+corpora:
+  batch:
+    selectors:
+      vllm_python-0.25.1:
+        visible: false
+        equivalent_to: vllm_python-0.26.0
+    references:
+      dynamo_v1: {selection: latest}
+    historical_readers:
+      dynamo_v1: {include_qualified: false, selection: latest}
+  stream:
+    selectors:
+      dynamo_v2-0.4.0:
+        visible: false
+        equivalent_to: dynamo_v2-0.5.0
+      vllm_python-0.25.1:
+        visible: false
+        equivalent_to: vllm_python-0.26.0
+      vllm_rust-0.25.1:
+        visible: false
+        equivalent_to: vllm_rust-0.26.0
+    references:
+      dynamo_v1: {selection: latest}
+    historical_readers:
+      dynamo_v2: {include_qualified: false, selection: latest}
+  reasoning:
+    references:
+      dynamo_v1:
+        selection: inputs
+        reason: Legacy input-anchor measurements; producer version was not retained.
+    historical_readers:
+      dynamo_v1:
+        include_qualified: false
+        selection: inputs
+        reason: Legacy input-anchor measurements; producer version was not retained.
+  batch_on_stream:
+    historical_readers:
+      dynamo_v2: {include_qualified: false, selection: latest}
+  unified:
+    saved_links:
+      vllm: vllm_python-0.25.1
+      vllm_rust: vllm_rust-0.25.1
+    references:
+      dynamo_v2: {selection: latest}
+    historical_readers:
+      dynamo_v2: {include_qualified: false, selection: latest}
+      vllm_rust: {include_qualified: false, selection: latest}
+    captured_note: >-
+      Peer columns show each packaged capture. Parser availability and the actual
+      captured version are shown in each cell; missing measurements stay unavailable.

@@ -1,0 +1,2452 @@
+schema: bound-observations-v1
+observations:
+  405248ace7e039538b3f95b571cfe0c8989686f5856bf03df94b5273fa5aeae5:
+    request:
+      model_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+  a1452ea4949e733eb84f8e169d7f7988d1f93734b3ec3a9d5487b4f31a096ae4:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  7f7c0aa20f4a661251d916e5672e87bf4f8c6949927ba22cc7be98a850358f63:
+    request:
+      model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+  954a073413eddba05a29490598324d8b1f6672855334b644f4e14b66324ee619:
+    request:
+      model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  d7f9f77dd8974b83742d4b06f11dff63e3490773d3aca8b4aa62ad1993c4b01a:
+    request:
+      model_text: '[nonsense]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '[nonsense]'
+  30b55768d6a007064dd5e6fd58a8c89b521158ec07e62772d9d9ebf8fa2edf1c:
+    request:
+      model_text: '[get_weather(location="NYC"'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  3ede9d5a9d1070e9dcca25db5d046d98391526ed95e77623ea095bcbde4e7be6:
+    request:
+      model_text: '[get_weather(location="NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '[get_weather(location="NYC"]'
+  29e4b016591965f69d6051acdbcffe51bec72237ade309195180e3abb0e552ad:
+    request:
+      model_text: '[get_weather(location="NYC")'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  0c9dde7d312302000e6a6417c9ba32a7a50cce7ad15678c6325ab22931780bf9:
+    request:
+      model_text: get_weather(location="NYC")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: get_weather(location="NYC")]
+  7f8a35f218e295ee10836d4a9708cebb8e9347313361da45b81ee82d47645e0f:
+    request:
+      model_text: '[get_weather(location="N'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  ddc4f13479cce01408917180ffc9c9be13db1b390b053c2f4cb200e7ee50bf59:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  65da94cc56a77026960fcea921a9e624cf4b3130dec423700eeca4442e17f227:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  819300ff6737eef923c954d1e10020b2454555ea90779b7aa49234ac3d23da14:
+    request:
+      model_text: '[get_time()]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  6eab5296fd4b64b63b0a9792fd2ed3f3fde2793ec3980ba10253097858e62c7e:
+    request:
+      model_text: '[get_time( )]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '[get_time( )]'
+  e9794c80da12084ae7bbd96dbe4b1c030ab3f2fcd40ed0996f4aff342656e49a:
+    request:
+      model_text: '[book_flight(destination="Paris", passengers=2, first_class=True)]'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  decdec2026376228d2dda275bfa9ffa6d5be749ef596a0e23bfa1ef5c7574bd0:
+    request:
+      model_text: '[get_weather(location="Tōkyō \"central\"")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+  f105cafcc48ba0fe7ab6411ae7af623082d5b87f02e6f53f2699a633eaacbf4f:
+    request:
+      model_text: '[set_temperature(celsius="20")]'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+  491012e214b0d2631c9112a096ecea8f6b955b88415793ea93d8bf71b38bd4fb:
+    request:
+      model_text: '[process_data(items=[1, 2, 3], config={"nested": True})]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+  5e9d570f1feeea9bc489f311c21c74162b3fd3b1fb499c56a3c2dda9c9053b7e:
+    request:
+      model_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":True,"retry":None},"empty":{}})]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+  b781bd2b5f25df7d800223bfe7d6f3ea819c9aef2ca49a7eaee3cbfa41e7dbf0:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  154a4b57ab62085bdae67fd39da8f583dcddfa22e21beba3d7a0ed2c97c4ef69:
+    request:
+      model_text: '[get_weather(location="NYC")] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  abfa0a9edc120779ea19b5e9ad131ff612b2b0ff487cfd92032b6aa9b91603ab:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  d87a0ef8cd8cc03e73c11c3e1f345bc6f72e47d7ee4187207299c7424de9b9f7:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  e8168cfe93df61047f1c892d4016ad114750478b4b51f853a8eb57cc4774e5b4:
+    request:
+      model_text: '[get_weather(location="NYC")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  6c3828a060353d73907b2aeff4475eab7148578dbd6ec6189a29faa9858932e6:
+    request:
+      model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+  3daa47507cce46454f675b6d7e571be1029a9018004fb38537feef6fc106220c:
+    request:
+      model_text: '[unknown_tool(location="NYC")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  348e039f40279f96ca606b458b920a1878667b3a1d0166ae6173cf7849806252:
+    request:
+      model_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  283c6827983c911ff07dcd5e9701a84cf86cef3955d49b8f2af54a52a8e53af0:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  a313ce50292f6ac5dab617b7c27cb83d1fce4b5eb73e9274a889a1c488d4a2f0:
+    request:
+      model_text: '[run_query(sql="SELECT a, SELECT b")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a, SELECT b
+  da992976469b9f1aa137e6198bbc1d0b96d0267b3a29b31b8c98fb46e4a6dc19:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]'
+  0c8ac6d60abfa628f4fdac559a2c52869e8a7d4a3bdc541c2e0b7f4377d38116:
+    request:
+      model_text: '[run_query(sql="literal [get_time marker] stays text")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: literal [get_time marker] stays text
+  8ebe913e12f396de21bdff584c998a33486d6b19b971bc37f58402e376c0c68c:
+    request:
+      model_text: '[run_query(sql="SELECT a, SELECT b"), get_time(timezone="EST")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a, SELECT b
+      - name: get_time
+        arguments:
+          timezone: EST
+  bc63147e9e21adf2284acb4e656dc656658e291596526fcdecaf4cd36275e669:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]"), get_time(timezone="EST")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]'
+  b55a37d59a7644442058d5cbd486816e99c14c66e26bc3fca3481f87017c233b:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  d5ab10ee056e56364ef5d4be6bf72c849db4f6eca5ef33efb52c19869e4022fb:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: '   '
+  1e4cc613d541bc76b60d59c23811dd8bab72054d926f0f9c096bb3ec130b1a94:
+    request:
+      model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
+  a89992fcab1723e376b50d4500e94b7826dc98037432ebce667e703ea5d51594:
+    request:
+      model_text: '[nonsense]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  2d9ea1593e6f9d59e243b37e3bd728eaadf51fc6b6b621a956b0895adfc57e01:
+    request:
+      model_text: '[get_weather(location="NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  20556ee974cefcc0ce8bfeb571688457f9da5e2cc338c97529c9563c8255c40a:
+    request:
+      model_text: '[get_weather(location="NYC")'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  98ad808dd70346eeb035dde36022378ee92544182cc02990472928d913823075:
+    request:
+      model_text: '[get_weather(location="N'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments: '{"location": "N'
+  2743e10d7a0f0de326d1c0e42b5a3cdd0c8a46e0bd20f276593514f06e142c11:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+  c4e1a0f6ca3d24a589dd85b130ee136a075f8a9b674349312c0a29e7e0a710e3:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
+  ef3ef91c5dc3e764187d01038bba855a1a928e2c4d5fd56f0e38f040081f1001:
+    request:
+      model_text: '[get_time( )]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_time
+        arguments: {}
+  b40760292a9ef8599f46b85fb7c437bc58e75772bfb5aa76fa1c92dc86c9e276:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. [get_weather(location="NYC")]
+  b1e5f3e7b2a8ab4c8f1c303de2ca53453f604d4bbca84117619cdda044ef57e5:
+    request:
+      model_text: '[get_weather(location="NYC")] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  785af19f03e0a2cc92b64a4592c8431e93f04090fc93c0ee1efab784e527d521:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
+  f8c5e866f0ee5101beafe9dca0a4f82060be3430fc09c87582e928d17280ee35:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+      normal_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
+  179b81a339b478113d1d04df8393a636ce1a37f1b3f6d423daaca79be1153fcc:
+    request:
+      model_text: '[unknown_tool(location="NYC")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+  602987f830f435a5e58eb4e2cc42ee275685ab7be98016e702300e64b9ebdf64:
+    request:
+      model_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: unknown_tool
+        arguments:
+          location: LA
+  73bfdf938dc61033703d791477578d62ddba63bcde16e9d70f348beb8bdd9a81:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  2a85ddb9acb0d60c30bdf6735e821f70d948c67488d7c628381fb40b2c984dc9:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]"), get_time(timezone="EST")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e090bc93e43dae5c7f4b12cd325fcd6242da7394c83c20e35f62ddb07b01991e:
+    request:
+      model_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  f0d96aacce9d6ef15b48176b0ea63706b44aab51e0467df7383ba02c4b1c0b16:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  0dbf4d6494236e176767b098a697037a0456716878e25524a441feedb00d9297:
+    request:
+      model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  b8107cead2147a07a74024b139d1c834498517f522e6fc16ce84c94d790f5814:
+    request:
+      model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  faca0b04ac82d4b7151db12809d02b3183148ab9387a58fc0a355b61b882a66b:
+    request:
+      model_text: '[nonsense]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  ea12f6f9262b43268b417232b46a7012c6d0194d207cbdb5d5729732a658211f:
+    request:
+      model_text: '[get_weather(location="NYC"'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  be0316a6c7ac29e77d3698c1ae611fb03023e8557bc45167c5492521d057f33d:
+    request:
+      model_text: '[get_weather(location="NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  883ee8312af2f2e5ffed582be9348541913733a59b89ccf6c0733641d39bd0c8:
+    request:
+      model_text: '[get_weather(location="NYC")'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  3bf06d98ad6ac708adf00950f4d745c69543406f2d4d7d8d54808de8d275c7d5:
+    request:
+      model_text: get_weather(location="NYC")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  0bb23988184aabab050667657b19660a51e81895c314415d64938e818bb2bd94:
+    request:
+      model_text: '[get_weather(location="N'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  35622300fd2e129f4698db296e6ae13bf673e8022a35067528cb80b9ffc525bf:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  c718ec52eb4d3da70ac224f011a335cecba1876e68344cfe82a02b80c87512a7:
+    request:
+      model_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  ca9b5a07433822771ee687f33498bbc67c60fe5385f0bf986fb7cbe247cd22a6:
+    request:
+      model_text: '[get_time()]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  cfb7454ac74db1c1b1c8b4cb0db4787b9e0a2e322cf323bae68a98078ddb4c7e:
+    request:
+      model_text: '[get_time( )]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  aa5869afa97123f99130285adc5fb7d94791cf20ed41a96dd2890b16db2453a7:
+    request:
+      model_text: '[book_flight(destination="Paris", passengers=2, first_class=True)]'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  7563849c3f0152ad884c1954b4feafb6c1428c1736c938596cf444d1a93b9acf:
+    request:
+      model_text: '[get_weather(location="Tōkyō \"central\"")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  5de3d8a638eedf73a7a0984483d4d290d991162d52147fb49b81713876a9a4ae:
+    request:
+      model_text: '[set_temperature(celsius="20")]'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  32397f7845ab676f19048042d9fd9c41ab58893789c448f633741d17201650f5:
+    request:
+      model_text: '[process_data(items=[1, 2, 3], config={"nested": True})]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  54b184bbcc18c99e368ef744e01dcb5e683c160b06ebe010a081c27dc635c2a7:
+    request:
+      model_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":True,"retry":None},"empty":{}})]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  526251200a9d0b229fe590caad711007e3e5fd4b82f0a754be6fa45b02dfbca5:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  b685e5c3e6904497a7c5ac11ad846aa1c49e9566b41c45b3818a3950b60894cb:
+    request:
+      model_text: '[get_weather(location="NYC")] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  3f2d3abfd03c28fe12e7102ac687e06e1078de5648b4d844718dd99cec4e36e0:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  025634b0c7c6b7a4d89b0a78daaaaf159448931f1356609b28650fad35460ccf:
+    request:
+      model_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  2d3b7d77bdbc9aa85ea57edb896ac793a6ee8f247f1a8547d8d590dc27bde390:
+    request:
+      model_text: '[get_weather(location="NYC")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  1fd3df77e6c417e5bd8329158953f77bdcc8b23ad2e9d6ece7dcb213e910e280:
+    request:
+      model_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  bb64e56b10f0973210a55c2296fb8634e5c87e9421f54a5a175d845b6842ff1c:
+    request:
+      model_text: '[unknown_tool(location="NYC")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  73f0d010295acb1af42418da04c4bcf608a0c7750acd804de7023803297629db:
+    request:
+      model_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  4b8269af3516baefe449ae4fed151af38aa1fd4d981b03d269a008214d1d032c:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  63553ab05d25a6f715f704392be1353e67a133303be01f0f53f68a1767cc4a1a:
+    request:
+      model_text: '[run_query(sql="SELECT a, SELECT b")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  8e1959b501b19733dc980e89162a5e5ae1cc3796b06fee24e58d137a30512b35:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  356b8933fcb122467fdbb377985734ad3f35905fdc62ea1d6547b6e5142022e4:
+    request:
+      model_text: '[run_query(sql="literal [get_time marker] stays text")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  3b782d5ca28ad64e57aeb608117b4c97557617f254bb8751930d8db800762236:
+    request:
+      model_text: '[run_query(sql="SELECT a, SELECT b"), get_time(timezone="EST")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  532abb7054ee53abf63b048c449e0710872e8999bdc47858fbecb0316436192d:
+    request:
+      model_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]"), get_time(timezone="EST")]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  b667d9714e6e766e422e0176aa55a92df324164c9fd4202f2b892d992e0c8989:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+  a1b24f73d14331388e8e15b835e0c8dc95d075fd1e657d6b2e341fb00d4f7405:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: pythonic
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
+producers:
+  d34f39c00db60c41b83a6b57ff742352b8e6ae645e9bf1b1f91a838e7918257e:
+    capture: sglang_python-0.5.14
+    document:
+      family: pythonic
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  266e1020c0616ea12efff59ba56ec866062bf1b68ba2b02685f391384161ea47:
+    capture: vllm_python-0.26.0
+    document:
+      family: pythonic
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  bc3194f9901484551a52ea7d06dbeb2450db596ceaa0f3ffceb2039606afc1ac:
+    capture: vllm_rust-0.23.0
+    document:
+      family: pythonic
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

@@ -1,3 +1,5 @@
+schema: checkpoint-v1
+base: dynamo_v2-0.1.23
 provenance:
   status: captured
   origin:
@@ -8,348 +10,133 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 79d79c03caa2ea120a370524f0d99465dd65e39bcedb0f4e79d7a77e137bf993
+    producer: dynamo_v2-0.3.2
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: dcb246838c7fd0dd9c0e00f9ca4fa718ae0fa1840efaa437039a2298e274293e
+    producer: dynamo_v2-0.3.2
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 3c5114353fd95e6e051bc9c993797a59ea547cac3543de2700743d9ad2bc059e
+    producer: dynamo_v2-0.3.2
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: ae5d8efc557736cc99f66f7767fae0494c6733e43804579a4662491e6d93ccb4
+    producer: dynamo_v2-0.3.2
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: dac6c3843b9e59ec685670a925393580c0558d3f3ffbb1d42359e6dbc2bf1ed7
+    producer: dynamo_v2-0.3.2
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 6379cf2c0e217c0929b4d99f3d04f893d9f531413347d10d3f5c4a97e642b35a
+    producer: dynamo_v2-0.3.2
   kimi_k3_elided_think_close_to_response:
-    case_key: UNIFIED.k3-5
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: beb13803945b730e8406eac7166b6d358340f135b44f793df5c8e528f132c9d0
+    producer: dynamo_v2-0.3.2
   kimi_k3_malformed_call_then_valid:
-    case_key: UNIFIED.k3-6
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: b7ba7d78a010ab8226439c2a7083968f79476d39d0cc2b354e0df77b7c52dd4d
+    producer: dynamo_v2-0.3.2
   kimi_k3_message_end_after_response:
-    case_key: UNIFIED.k3-4
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 07836d971366363a77983aee76fa00c129f07dea21090af14d474073e45f3c69
+    producer: dynamo_v2-0.3.2
   kimi_k3_raw_json_arguments:
-    case_key: UNIFIED.k3-2
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: bde3e1b13ee7e6bc201645e48760c2058070acb69a3737294555380bad08579a
+    producer: dynamo_v2-0.3.2
   kimi_k3_raw_json_eof:
-    case_key: UNIFIED.k3-7
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 306a6b9cf9e37e07814077c419bf0ea9a02635157eb19fd4fc4a2e6b3537a760
+    producer: dynamo_v2-0.3.2
   kimi_k3_spaced_xtml_markers:
-    case_key: UNIFIED.k3-3
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: a95a7dc59a782a9a4c465f44e93f8f0228764c751a566571cfa9788ecb74a2dc
+    producer: dynamo_v2-0.3.2
   kimi_k3_typed_argument_values:
-    case_key: UNIFIED.k3-1
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: a16fff4862257d38e0d026cc433c7e0c3f8ccdcf692ec2ab2eae0194c43e7697
+    producer: dynamo_v2-0.3.2
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: d01765d003e9d45b37fd8ed3bf10aa61e5be6bcf244ec3244acbbddb790d7fb3
+    producer: dynamo_v2-0.3.2
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: a890eecdb4f23aeb65648657abc0e630aec9772ce9e69a8939b1a2766b60e442
+    producer: dynamo_v2-0.3.2
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 81a32578f3396676bf32c7be4aea1e84167dfc1ade6ec946ffc7f18ed06198b0
+    producer: dynamo_v2-0.3.2
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 739d475ce930cd3b720cfe3ef967ff50e7fed14001e8a6a7255256dfe44269f9
+    producer: dynamo_v2-0.3.2
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 56ce9b7656e3410dc438a8f5f27e872fe99b64246effc110652cde9180050ad8
+    producer: dynamo_v2-0.3.2
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 1e9d3cc69756afb350aa9f35b4f39b1557468e4b58d90e617009bd499c306267
+    producer: dynamo_v2-0.3.2
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 0bd91d8bedec842abbb37b19e1ac80fddc08a567e999a3a1466174c0931de683
+    producer: dynamo_v2-0.3.2
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 6b5b90e573b684f044d093fc8239fced9407151c74fd74e41e4516c54f67fe30
+    producer: dynamo_v2-0.3.2
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 0efc84c64f53ab7c7675888f3bb318fab219ace92d8f42d4f50e754de3569668
+    producer: dynamo_v2-0.3.2
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 1754e16cadc71b1416c24052c52398e6c8e58dab086c0f85c0dc8c1115c4062d
+    producer: dynamo_v2-0.3.2
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: c10ccf8973af6552ee35c7b0c1a36599c7d67a69e6e4b8d592f753eabb75514f
+    producer: dynamo_v2-0.3.2
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: d291d245b0837892458e124689f2796c264806279ff02e0f1beede5bc6cfaeec
+    producer: dynamo_v2-0.3.2
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: d012803eeeb5a017b816c6047fd1328060931da7e5d4b4323d80a40f94701975
+    producer: dynamo_v2-0.3.2
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 82d19c40d5bdeb3e222b71c4a2a9349bbdd70a055f678b3e02326ecba01a3d8a
+    producer: dynamo_v2-0.3.2
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: c4eb94c5595f3443c186add98c4a03cb1190e1b63cb294d97c875cd38cde50b5
+    producer: dynamo_v2-0.3.2
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 284d0b821229de73cf4f9bbf7ec07f31bccf43c67b54a513f78f589ffb4e1457
+    producer: dynamo_v2-0.3.2
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 23c53f13b55ef3f99d74de8fb2ef71da865741e4da052eac7969d39e6ed08e35
+    producer: dynamo_v2-0.3.2
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 774ca0e714ddbd2c35cf3ed3a13f1df7fde7df1e16291159bec03c4e3083582f
+    producer: dynamo_v2-0.3.2
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 8f243bf3b9976bf0a42644f1e6b603d823c8dc46462285409d8e76020e4cb3fe
+    producer: dynamo_v2-0.3.2
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 2cda36109575eef57a28eba16942dc01107570648e8d4c0db237e0b0a93982c4
+    producer: dynamo_v2-0.3.2
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 0db76c8da77101a832df7c26199fe97d080b5c15d30652deb1cff4f408c2baa8
+    producer: dynamo_v2-0.3.2
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 7c1dd10589064b4720649b4b84194624daac149c84bb1404274414cbdc40e6a3
+    producer: dynamo_v2-0.3.2
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: fda61506e5fba560dfd574232ffb4d39234a220dbda2de87626b2532faf18db7
+    producer: dynamo_v2-0.3.2
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 7d050067cc7378826234fc6b7e93fdcd2f9b7d73db391db77674f84399b3a250
+    producer: dynamo_v2-0.3.2
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: a112b7d4c3336a9f4a8cc3b0d68a0c5394ebdda5f1afb4f0d81e9fcb3ac8533c
+    producer: dynamo_v2-0.3.2
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 85bd763f6a9252da1fde288db0d8cbdbbeceb58ef52bd4b3b7e508a51cdb611a
+    producer: dynamo_v2-0.3.2
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 036180e4445c8b8113aaf415924274afb80841fb7523b00eb1ea19c6cbe9ed26
+    producer: dynamo_v2-0.3.2
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: d4ab6cc322c5dddd0b7411a21a697877e188f3271effdcb9f74220ee3a27f271
+    producer: dynamo_v2-0.3.2
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: 2f385289f320dc866fc1013e7f8c54f112dc665748da70ebc08b7a7d94803cd3
+    producer: dynamo_v2-0.3.2
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+    observation: d2dc35457d10a44488d84d7c74a7a21d30a05c9b92b95cb76df8bf487c1fb4b9
+    producer: dynamo_v2-0.3.2
 metadata_changes: {}
 document_overrides: {}

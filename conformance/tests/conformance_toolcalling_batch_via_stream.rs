@@ -64,14 +64,14 @@ struct ExpCall {
 fn toolcalling_batch_via_stream_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
     // Dynamo v1's `expected.dynamo_v1` from the dynamo_v1-<version>/ dirs back in,
-    // ASCENDING — old version dirs are capture history, the latest wins per case.
+    // using the latest eligible complete checkpoint for each family.
     let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
-    let dyn_dirs = common::version_dirs_ascending(&batch_root, "dynamo_v1-");
-    assert!(
-        !dyn_dirs.is_empty(),
-        "no dynamo_v1-<version> dir under fixtures-batch-v1"
-    );
+    let dyn_dirs = common::historical_capture_dirs(&batch_root, "batch", "dynamo_v1");
+    if dyn_dirs.is_empty() {
+        eprintln!("historical parity skipped: no eligible captured measurements");
+        return;
+    }
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -162,10 +162,11 @@ fn toolcalling_batch_via_stream_parity() {
             continue;
         }
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        for dyn_dir in &dyn_dirs {
-            let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
-                .ok()
-                .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+        if let Some(dyn_dir) = common::latest_family_capture(&dyn_dirs, rel) {
+            for case in fx.cases.values_mut() {
+                case.expected = None;
+            }
+            let dyn_fx: Option<Fixture> = common::read_capture_fixture(&dyn_dir.join(rel));
             if let Some(dfx) = dyn_fx {
                 for (cid, dcase) in dfx.cases {
                     if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {

@@ -18,8 +18,9 @@ output unchanged.
 import argparse, sys
 from pathlib import Path
 import yaml
+import capture_policy
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
-from fixture_corpus import load, version_key  # noqa: F401 — re-exported
+from fixture_corpus import checkpoint_families, clear_checkpoint_observations, complete_family_snapshots, load, load_corpus, version_key  # noqa: F401 — re-exported
 from fixture_corpus import split_sel as split_impl_ver
 
 
@@ -36,13 +37,15 @@ _CAPTURED_KEY = {
 }
 
 
-def _stamp_captured_with(out: Path, impl: str, version: str) -> None:
+def _stamp_captured_with(out: Path, impl: str, version: str, families: set[str] | None = None) -> None:
     """Stamp captured_with.<impl>_python = version on every staged fixture that has a
     real (non-unavailable) expected.<impl> block, so the reasoning tab labels the peer
     candidate with the SELECTED version. Without this the anchor's captured_with stays
     put and the label wouldn't move between the old (v1) and new (v2) selections."""
     key = _CAPTURED_KEY.get(impl, impl if "_" in impl else f"{impl}_python")
     for fp in out.glob("*/*.yaml"):
+        if families is not None and fp.parent.name not in families:
+            continue
         doc = load(fp)
         cases = doc.get("cases") or {}
         has = any(
@@ -59,7 +62,7 @@ def _stamp_captured_with(out: Path, impl: str, version: str) -> None:
         )
 
 
-def resolve(fixtures_root, out, select, verbose=False):
+def resolve(fixtures_root, out, select, verbose=False, policy=None):
     """Stage inputs/ + selected peer-version overlays into a flat tree at `out`.
 
     `select` is a list of "<impl>-<version>" targets (e.g. ['vllm-0.24.0', 'sglang-0.5.14']).
@@ -67,6 +70,30 @@ def resolve(fixtures_root, out, select, verbose=False):
     selected version, patching expected.<impl> in each case."""
     root = Path(fixtures_root)
     out = Path(out)
+    corpus = load_corpus(root)
+    unavailable = {}
+    if policy is not None:
+        available = capture_policy.discover_captures(root)
+        references = policy["corpora"]["reasoning"].get("references", {})
+        implementations = {split_impl_ver(name)[0] for name in available} | set(references)
+        select = []
+        for impl in sorted(implementations):
+            rule = references.get(impl, {"selection": "latest"})
+            selection = rule["selection"]
+            matches = [name for name in available if split_impl_ver(name)[0] == impl
+                       and policy["corpora"]["reasoning"].get("selectors", {}).get(name, {}).get("visible", True)]
+            if selection == "inputs":
+                if not rule.get("reason"):
+                    raise ValueError("input-anchor reference requires a reason")
+                continue
+            if selection == "unavailable" or (selection == "latest" and not matches):
+                unavailable[impl] = rule.get("reason", "No historical capture is available")
+            elif selection == "latest":
+                select.append(matches[-1])
+            elif selection in matches:
+                select.append(selection)
+            else:
+                raise ValueError(f"selected reasoning capture is missing: {selection}")
 
     # 1. Copy inputs/ verbatim (the anchor — full expected.dynamo + lowest peer outputs).
     inputs = root / "inputs"
@@ -96,8 +123,11 @@ def resolve(fixtures_root, out, select, verbose=False):
         # already names the version that produced the data, so leave it alone.
         if not applied:
             continue
-        _stamp_captured_with(out, impl, split_impl_ver(applied[-1][1].name)[1])
         for _, vdir in applied:
+            documents = {(fp.parent.name, fp.name): load(fp) for fp in out.glob("*/*.yaml")}
+            cleared = clear_checkpoint_observations(root, vdir, documents, impl, corpus=corpus)
+            for family, filename in cleared:
+                (out / family / filename).write_text(yaml.safe_dump(documents[(family, filename)], sort_keys=False, allow_unicode=True, width=4096))
             for ofp in vdir.glob("*/*.yaml"):
                 tgt = out / ofp.parent.name / ofp.name
                 if not tgt.exists():
@@ -115,6 +145,23 @@ def resolve(fixtures_root, out, select, verbose=False):
                     yaml.safe_dump(base_doc, sort_keys=False, allow_unicode=True, width=4096)
                 )
 
+            if complete_family_snapshots(root):
+                _stamp_captured_with(out, impl, split_impl_ver(vdir.name)[1], checkpoint_families(vdir))
+        if not complete_family_snapshots(root):
+            _stamp_captured_with(out, impl, split_impl_ver(applied[-1][1].name)[1])
+
+    for fp in out.glob("*/*.yaml"):
+        if not unavailable:
+            break
+        document = load(fp)
+        for impl, reason in unavailable.items():
+            document.get("captured_with", {}).pop(impl, None)
+            for case in document.get("cases", {}).values():
+                if impl in case.get("expected", {}):
+                    case["expected"][impl] = {"unavailable": reason}
+        fp.write_text(yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=4096))
+
+
     if verbose:
         print(
             f"resolve_reasoning_fixtures: staged {len(list(out.glob('*/*.yaml')))} files"
@@ -128,5 +175,8 @@ if __name__ == "__main__":
     ap.add_argument("--fixtures-root", required=True, help="Path to fixtures-v1/")
     ap.add_argument("--out", required=True, help="Destination flat fixtures dir")
     ap.add_argument("--select", nargs="*", default=[], help="<impl>-<version> targets")
+    ap.add_argument("--policy", type=Path, help="Select recorded snapshots through capture-policy.yaml")
     a = ap.parse_args()
-    resolve(a.fixtures_root, a.out, a.select, verbose=True)
+    if a.policy and a.select:
+        ap.error("--policy and --select are mutually exclusive")
+    resolve(a.fixtures_root, a.out, a.select, verbose=True, policy=capture_policy.load_policy(a.policy) if a.policy else None)

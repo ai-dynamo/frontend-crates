@@ -12,9 +12,15 @@ Skips when Selenium or headless Chrome aren't available, so it adds no hard test
 dependency — it runs where a browser exists and is a no-op otherwise.
 """
 import shutil
+import sys
+from pathlib import Path
 import time
+from urllib.parse import urlencode
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import generate_conformance_table as table  # noqa: E402
 
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
@@ -585,11 +591,10 @@ def test_compare_url_restores_legacy_reference_without_self_compare(driver):
 
 
 @pytest.mark.parametrize("query,expected_base", [
-    ("base_tab-unified=dynamo%400.6.0%2Bsource." + "a" * 64, "dynamo"),
-    ("base_tab-unified=removed-parser", "dynamo"),
+    ("base_tab-unified=removed-qualified-capture", None),
+    ("base_tab-unified=removed-parser", None),
     ("cmp_tab-unified=vllm_rust", "dynamo"),
     ("base_tab-unified=", None),
-    ("base_tab-unified=dynamo%400.6.0", "dynamo@0.6.0"),
 ])
 def test_compare_url_distinguishes_removed_and_empty_reference(driver, query, expected_base):
     page = driver.current_url.split("?", 1)[0]
@@ -598,12 +603,78 @@ def test_compare_url_distinguishes_removed_and_empty_reference(driver, query, ex
         state = driver.execute_script(
             "const c=document.querySelector('#tab-unified .cmpctl');"
             "return {base:c.querySelector('input.cmp-ref:checked')?.value || null,"
-            "enabled:c.querySelectorAll('input.cmp-on:not(:disabled)').length};"
+            "enabled:c.querySelectorAll('input.cmp-on:not(:disabled)').length,"
+            "notice:document.querySelector('#tab-unified .capture-unavailable')?.textContent || null,"
+            "url:location.search};"
         )
+        if "removed" in query:
+            assert "Capture unavailable:" in state["notice"]
+            assert query in state["url"]
+        else:
+            assert state["notice"] is None
         assert state["base"] == expected_base
         assert (state["enabled"] > 0) is (expected_base is not None)
     finally:
         driver.get(page)
+
+
+@pytest.mark.parametrize("panel_id,old_key,new_key", [
+    (panel_id, table._policy_candidate_key(corpus, source), table._policy_candidate_key(corpus, rule["equivalent_to"]))
+    for corpus, rules in table.capture_policy.load_policy()["corpora"].items()
+    for source, rule in rules.get("selectors", {}).items() if rule.get("equivalent_to")
+    if table._policy_candidate_key(corpus, source) != table._policy_candidate_key(corpus, rule["equivalent_to"])
+    for panel_id in {"batch": ["tab-toolcalling-batch"], "batch_on_stream": ["tab-toolcalling-batch"],
+                     "stream": ["tab-toolcalling-streamv1"], "unified": ["tab-unified"],
+                     "reasoning": ["tab-reasoning-batch", "tab-reasoning-stream"]}[corpus]
+])
+@pytest.mark.parametrize("selection", [
+    "reference", "comparison", "default_reference", "empty_reference", "self_comparison", "duplicate_comparison",
+])
+def test_compare_url_restores_hidden_equivalent_capture(driver, panel_id, old_key, new_key, selection):
+    previous_url = driver.current_url
+    page = previous_url.split("?", 1)[0]
+    try:
+        default_key = driver.execute_script(
+            "const model=JSON.parse(document.getElementById('conformance-model').textContent);"
+            "return model.tabs.find(tab=>tab.id===arguments[0]).candidates"
+            ".find(candidate=>candidate.default_bucket==='A').key;",
+            panel_id,
+        )
+        base_key = default_key
+        compare_keys = [old_key]
+        expected_base = default_key
+        expected_compare = [new_key]
+        if selection == "reference":
+            base_key, compare_keys = old_key, [default_key]
+            expected_base, expected_compare = new_key, [default_key]
+        elif selection == "empty_reference":
+            base_key = ""
+            expected_base, expected_compare = None, []
+        elif selection == "self_comparison":
+            base_key, compare_keys = old_key, [old_key, new_key]
+            expected_base, expected_compare = new_key, []
+        elif selection == "duplicate_comparison":
+            compare_keys = [old_key, new_key]
+        query = {"view": "details", "tab": panel_id, f"cmp_{panel_id}": ",".join(compare_keys)}
+        if selection != "default_reference":
+            query[f"base_{panel_id}"] = base_key
+        driver.get(page + "?" + urlencode(query))
+        state = driver.execute_script(
+            "const c=document.getElementById(arguments[0]).querySelector('.cmpctl');"
+            "return {base:c.querySelector('input.cmp-ref:checked')?.value || null,"
+            "extra:[...c.querySelectorAll('input.cmp-on:checked:not(:disabled)')].map(x=>x.value),"
+            "enabled:c.querySelectorAll('input.cmp-on:not(:disabled)').length,"
+            "oldControl:[...c.querySelectorAll('input.cmp-ref')].some(x=>x.value===arguments[1]),"
+            "url:location.search};",
+            panel_id, old_key,
+        )
+        assert state["base"] == expected_base
+        assert state["extra"] == expected_compare
+        assert (state["enabled"] > 0) is (expected_base is not None)
+        assert state["oldControl"] is False
+        assert old_key not in state["url"]
+    finally:
+        driver.get(previous_url)
 
 
 def test_unified_release_labels_hide_capture_identity(driver):

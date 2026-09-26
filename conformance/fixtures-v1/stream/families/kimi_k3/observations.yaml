@@ -1,0 +1,1467 @@
+schema: bound-observations-v1
+observations:
+  12f2519d59e11c50e7d8c0e44693d3626c984eb6e4090c05d43755ad5c5d6541:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC
+      - delta_text: <|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  327558f53efa06fd814b2ba61af3cd000b12ea02c306bfdd312d82a6ddb405d5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  c6eaff45a7b4aea682afa9c6b19266e06a96680f85db57cb2b63127ab89031a3:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks: []
+    value:
+      chunks: []
+  4a930beb25014d6d1c9d0fc6af78681b893374da3e5454a550459d647eba8087:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="unknown_tool" index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: unknown_tool
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  e0084a6f9fca4f37948fea757e814a0c9d978dbaec71e34fa7e7b120947fec74:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="unknown_tool" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: unknown_tool
+          arguments: '{"location":"LA"}'
+          complete: true
+      - expected: []
+  8de49175839b96d7e1b768efefae15e1a786731852b19a492daa3f60cc5e12ff:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  84bc1346bf269755fa0bdc100c85ae07b35c8a5b4df2cdf6c05e3821cc890010:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+  89ab160cd534718bf70d813b52346a273cee4c69e44512862c9d0c1da499cb9d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>response<|sep|>Checking both. <|close|>response<|sep|><|open|>tools<|sep|>
+      - delta_text: <|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>EST<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: <|open|>response<|sep|> Done.<|close|>response<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Checking both. '
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: get_time
+          arguments: '{"timezone":"EST"}'
+          complete: true
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  2f6caece22e77bcc7e7fb1e7ffa856ef5e1d78960cece42191d3836d28953651:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"LA"}'
+          complete: true
+      - expected: []
+  a91f78478de6e12f4e643075ead9a3180cf5324090bc3db167ba76bf83e4d99f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: 'Hello, how '
+      - delta_text: can I help you today?
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'Hello, how '
+      - expected: []
+        normal_text: can I help you today?
+      - expected: []
+  b0e9bb8702dc35067ec36daae4fe5cb9e174f52202ef05f3b89546b480cf877c:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"value":"literal <|close|>call<|sep|> and <|open|>tools<|sep|> stay data"}'
+      - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: echo
+          arguments: '{"value":"literal <|close|>call<|sep|> and <|open|>tools<|sep|> stay data"}'
+          complete: true
+      - expected: []
+  40baee6239010247001f8b1bb0860bf278e6127178636d57dfd2612262cb9bf8:
+    request:
+      model_text: null
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"value":"literal <|close|>call<|sep|> stays data"}<|close|>json<|sep|><|close|>call<|sep|>'
+      - delta_text: <|open|>call tool="get_time" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: echo
+          arguments: '{"value":"literal <|close|>call<|sep|> stays data"}'
+          complete: true
+        - index: 1
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  f3febaa743722517f3df9d549ea62c2ab8946fbd112d8c7410f462d84312945d:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|>nonsense
+      - delta_text: <|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  30123f1c9e5c01fd5b0589b47a8833d509e7bcd8c5fac60c95b6c298ecc5c44e:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"location":"NYC"'
+      - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  ed4581b9a59d46c14a24a9e405b7468262587453e201ed031edd738a5cbd3e47:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  e3b8109242c557f0bab284359137323b4e6322d9797463e6d23e642e04ab7ff5:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC
+      - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  bf7776277ea18dfe83119e86f1858e3b10386a6deaca86871f2b8784acb1f6ce:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|>not-an-argument
+      - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"Paris"}'
+          complete: true
+      - expected: []
+  e60b004e6121605da3a1e60654ce4c5fd75f34e562fa92e245bdc581c0fcdfba:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+  8bd2cfe71e926ea7e1f07bd70d65956ed2f5ca0b808ab48225b83e1aacd86a6f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: 'I will check that. '
+      - delta_text: <|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'I will check that. '
+      - expected: []
+      - expected: []
+  a23986fe09f8094c891089584119c82b2ea7081364b4b4250e6a87227d536c16:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|>
+      - delta_text: <|open|>argument key="location" type="string"<|sep|>Par
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+  8e750943fb257d8bb8c2093b9b75651cf7ee69b9f487186e39b4ee78f531bbee:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York<|close|>argument<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+          complete: true
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"New York"}'
+          complete: true
+  de18f52a6adb5efc55cced5f786c1379aebba500583dc2e22eb02af2d4312e1c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Boston<|close|>argument<|sep|><|close|>call<|sep|>
+      - delta_text: <|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>New York
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"Boston"}'
+          complete: true
+      - expected: []
+  a7d7890599f958af5fbdd351a16f66f4e2cd3017292c07f852b1718afe2740ee:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|op
+      - delta_text: en|>tools<|se
+      - delta_text: p|><|open|>call tool="get_weather" index="1"<|s
+      - delta_text: ep|><|open|>argument key="location" type="string"<|sep|>NYC<|cl
+      - delta_text: ose|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  5b75cd453473fe78bd853cc22dd787ca497771fafac8c1e535aa2f0565b925f4:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  8a3682122eaf58a6b43ee64ebabc5f252bb211c611b3c979cc5f8c97f9b1c65b:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|> tools <|sep|><|open|> call tool="get_time" index="1" <|sep|>
+      - delta_text: <|open|> json type="object" <|sep|>{ }<|close|> json <|sep|>
+      - delta_text: <|close|> call <|sep|><|close|> tools <|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  a77cde69ad68cff50cadc96f20f569ccc4f01d187f63b811dc83804c162fb3fa:
+    request:
+      model_text: null
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_time" index="1"<|sep|>
+      - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  d0edcfa102abb372db7aedb8c4f5b9e8790429d47d3bdcd432ccb71202e3f9a7:
+    request:
+      model_text: null
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="book_flight" index="1"<|sep|>
+      - delta_text: <|open|>argument key="destination" type="string"<|sep|>Paris<|close|>argument<|sep|>
+      - delta_text: <|open|>argument key="passengers" type="number"<|sep|>2<|close|>argument<|sep|><|open|>argument key="first_class" type="boolean"<|sep|>true<|close|>argument<|sep|>
+      - delta_text: <|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: book_flight
+          arguments: '{"destination":"Paris","passengers":2,"first_class":true}'
+          complete: true
+      - expected: []
+  9e8ac5a8c5bff751e0a42c687f19aac9afbab06603f1ee4669d16075b29d1715:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            note:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"items":[1,2,3],"note":"literal <|close|>call<|sep|> stays data"}'
+      - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: process_data
+          arguments: '{"items":[1,2,3],"note":"literal <|close|>call<|sep|> stays data"}'
+          complete: true
+      - expected: []
+  cf1ffe80e1a8ed8fa9ce9fa63d67ec26cbd15e4aa50481d6f81c110cecc36201:
+    request:
+      model_text: null
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="set_temperature" index="1"<|sep|>
+      - delta_text: <|open|>argument key="celsius" type="string"<|sep|>20<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: set_temperature
+          arguments: '{"celsius":"20"}'
+          complete: true
+      - expected: []
+  c66a03fe73b105e8e97c55ad31db7b404e124bcc557131e682fd80486ed5b11f:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"items":[1,2,3],"config":{"nested":true}}'
+      - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: process_data
+          arguments: '{"items":[1,2,3],"config":{"nested":true}}'
+          complete: true
+      - expected: []
+  1880b3eaafa5fa9be142129cb59086b98684f03672f5f8ab5e5bd02c6147727f:
+    request:
+      model_text: null
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="process_data" index="1"<|sep|><|open|>json type="object"<|sep|>
+      - delta_text: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+      - delta_text: <|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - index: 0
+          name: process_data
+          arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}'
+          complete: true
+      - expected: []
+  d902c29b612fe7769e06fab1968d42614640d1783dc02bd45166bfec9fd78507:
+    request:
+      model_text: null
+      tools:
+      - name: set_limit
+        parameters:
+          type: object
+          properties:
+            count:
+              type: number
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="set_limit" index="1"<|sep|>
+      - delta_text: <|open|>argument key="count" type="number"<|sep|>9007199254740993<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+      - expected:
+        - index: 0
+          name: set_limit
+          arguments: '{"count":9007199254740993}'
+          complete: true
+      - expected: []
+  4cb6b4588fe7fb79e33558413c752681e7ff49e643c801a7a4686a61c0a3866f:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>response<|sep|>I will check the weather. <|close|>response<|sep|>
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'I will check the weather. '
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+  93c1e3448f7107c14314f4cd4284782369ec036efd1d00dadbe48670b1a049fb:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: <|open|>response<|sep|> Let me know if you need more.<|close|>response<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+        normal_text: ' Let me know if you need more.'
+      - expected: []
+  18ac71ad59ec11240ea910aa895516fdadb5d856d6bbd0bd9805611769df16de:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>response<|sep|>I will check. <|close|>response<|sep|>
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: <|open|>response<|sep|> Done.<|close|>response<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected: []
+        normal_text: 'I will check. '
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+        normal_text: ' Done.'
+      - expected: []
+  2d71efb73d411cc02867bf1c2d92f894bf49c60592f0809b89bcac0dcfbd83c2:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>NYC<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: <|open|>response<|sep|> Now LA. <|close|>response<|sep|>
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="location" type="string"<|sep|>LA<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+        finish_reason: tool_calls
+    value:
+      chunks:
+      - expected:
+        - index: 0
+          name: get_weather
+          arguments: '{"location":"NYC"}'
+          complete: true
+      - expected: []
+        normal_text: ' Now LA. '
+      - expected:
+        - index: 1
+          name: get_weather
+          arguments: '{"location":"LA"}'
+          complete: true
+      - expected: []
+  7a45f659b19402fb56f15b425a1c122189f866b8ceda3e74a7972ac34559928c:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: ''
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+      - expected: []
+  2e96a4066fea4d5bfa740fc0425b277be1ecccb34707d07c40cd673420b79566:
+    request:
+      model_text: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: kimi_k3
+      mode: streamv1
+      chunks:
+      - delta_text: '   '
+      - delta_text: ''
+        finish_reason: stop
+    value:
+      chunks:
+      - expected: []
+        normal_text: '   '
+      - expected: []
+producers:
+  3cbbf67a10a4b1b9114499b6540423020d7c8a644445f0ee5755ef197a4791f4:
+    capture: dynamo_v2-0.5.1
+    document:
+      family: kimi_k3
+      mode: streamv1
+      captured_with:
+        dynamo_v2: 0.5.1
+    provenance: null

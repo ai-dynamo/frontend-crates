@@ -1,0 +1,2905 @@
+schema: bound-observations-v1
+observations:
+  f200fd02ba2019d3859919df6e8819879cc5b637da48345454a0c20ba2fa614e:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  32f7c512d827111f14f15112bc23933b9deec607451c6064da8757cbfbe55d8e:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  9281f1c32bcfb97ca4f27f4726e43ed89c70257c8a3d4d208af27aa0234b58a3:
+    request:
+      model_text: 'Both: functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  18d368571a306ad706573e32b32db32a98b0f1738e61513870f218bf0234c9c8:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  c5acdce1050b63862868847052480b70c31c0f3a896b7e5ea2a1bddc49fb36ef:
+    request:
+      model_text: functools[nonsense]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  59b1392e87e0536c5a460cf1beab0c172790df0a745defb65bc502085eb86267:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  c317b45b6bb5dfb38750b74dea07a9f461ba64d8fcd4255a69498fe87391e200:
+    request:
+      model_text: 'functools[{"arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  5d2cd4d4374ef812574663a48a8b5280a9cae1c508e869d14952a9c48e854248:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  fa75a26e2587717ed8a24f9c3dca084d50ff14bd34533686ce99f7b4e72d8e3e:
+    request:
+      model_text: 'functools{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  d5895c3e7b5f7b3b5056c4b4ac42be526d0fb891b59c35601cb11e2ad20bcc14:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  63c9abbd89d3d7911b53fe5aeb83e964440f3d3b2a493938164f3c012e0c62ad:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  f5141daf93e7096b3498f3de94789489833fa06ef50b6026f94e5feebd31d90f:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  ca102b200eb9c6a9c38931f02ba294278aa0524b1507a354da592392676df2aa:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": {}}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  2c4a515705ddc0cf8063c32b0e262772ac16ec841886f565fbf49403150fe16d:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": { }}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  08931e5263300f360f2d8cec216f9893363d7a96b910e5dc2fbe3db254da0058:
+    request:
+      model_text: 'functools[{"name": "get_time"}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  fe0c7d995369d7f77d853faa0d8a26d9627ff0544b133f7afb6ee9ce6cfb6567:
+    request:
+      model_text: 'functools[{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}]'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  64e37b0b05e6c80e21bc1027bbfc27ac2a33af5cea6ee27f5ee6244e0b2221a9:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  536b10850a97873630e76c3c9874523a44631fcda3a18182668d9b67e197eb55:
+    request:
+      model_text: 'functools[{"name": "set_temperature", "arguments": {"celsius": "20"}}]'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  f3742296d7639d46719aac44bb911e1f7d5eb4b95efabb7c9470a70333f69ac6:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  6f8725e2df2a0323fab668d8620e1eddb7a13cebb39ee58289257b056ade585e:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  7881e1e5cb5d61def66cf5343834b6aad77d69bfef8f51eb4bcb01deb4d7dba8:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  4b027402c72a74048a060fa15e260645c99f21e924bd02ce032e6ffd54aed8b8:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  6850d295c7180397b97c779bb71bb52509673bd66ce71b55f5b0b27a3018eb0b:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  dd614527b93175d5f4ef1cdcbf6fd92dd941b5cc73dae8fb0880a77a12f0e1e2:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Then check LA weather. functools[{"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  078549ad3e85b6359fff476f6aa0483c0303d0dd4ef7737cea9784793631f577:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  8be946584d242a9f101d6a43c106554c9296b3defec4ceacc967de41a81283be:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  94dbd241235777428f97025e985bd69fb659cb83eb85cce4edf42d0e4e1aabae:
+    request:
+      model_text: 'functools[{"name": "unknown_tool", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  ab78f803a3210f7fdac01270ffbbd803c98945beee7c50f379620fb1d069e157:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "unknown_tool", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  509dc77e8a5badef80003f5ddeabbc9c37df7fded5a6d7beb5a7237cdd16b1f8:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  f3089c34d3febc4aeb5b882eeaf6d8939e3e8cae122b10e5aec316e83641a879:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  f41f5aa46377842c18f26b6042898d797466295a47c91e292c984f8528638905:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  621d0ab4a7ffb16beb2403b35d1b7f778976e606746166f1b5b9c031cf012a65:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "literal func-tools marker[] stays text"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  6e13b50c1d48eab6c2d7da990741d9fc27afdee595ef4dbd5dbcc759468fde7c:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  85d015ff6068c809e75c7e2f7d470e34cf27d3c3574d95444e41b25f46bcfdb1:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  cb7309c972e658e65ad8263ea5d69a4be51a8bfaefdce3b22a0c708d92f265c7:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  cd91c50e7adbd15d32816249f0b2fb60bc2c9b7d688644e85443054d2884ebab:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No SGLang parser for family 'phi4'.
+  6bdade33b3670cd9225ea9ed3a0160b7112beade9bb9549b7f87340099d9618c:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  adc95434abcd02d142ef37764dc01409378ec64293c3531bc184f10becf9defc:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No batch model_text for this case.
+  db68f2a53e55e649e51ca3c332196cc58c82538604c583310fed65281048c357:
+    request:
+      model_text: 'Both: functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  1526bea403bf9b816c446e9d65c448e974697dab02288be77a2bfc1ac9bfa3bc:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  4a8c9cd3833c467c85765c2a4569c36843866aa8ffe7d603359d63e220cecc3f:
+    request:
+      model_text: functools[nonsense]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  843ac2eb9f4a57166605fdc0a742140e98fdc2b7115fd3edb03b5b9e365ac818:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  787007ea8ab3a51946c57182f4addc1832689641568e6711b31f0bc86a102f92:
+    request:
+      model_text: 'functools[{"arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  937d1a1c99e56f2156692e08c97ef3e7e0ab5dbbcdc1051f83288fedf30ca405:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  988cf4aab8df31c54c8c6d6e1f81cc00d941146eec6f9652f6e1e3a0c79583b9:
+    request:
+      model_text: 'functools{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  157368e6f3b59169ad2fed937215ec382ba61ab56503cbeb5e0683bc3153b6e2:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  a9007f00924a6f019e59deeab16a124f7bb46e7c46408cef97adc178d3d10e99:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  c92802acdb78cd84f96bcb5f0f627bd3d4ae03abf39f9c1a7d52602c7e8bae01:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  7fe4d02e80225df0a0a43a7a25055d986d0fa167f6c8d65c528b632cd4f707ab:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": {}}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  cf6fa37d190892153d4f0b7434ebbb1736e8b4f7dba59ee7fc47a3f7fff594ea:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": { }}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  7c8e075cb32cfc43896cc37e0ae413c1145f41ee27b7e2506f87710320ca78f6:
+    request:
+      model_text: 'functools[{"name": "get_time"}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  393a0536fd03274626e17b127266c6e4bfaa0f76845190b65c245990496e3aa8:
+    request:
+      model_text: 'functools[{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}]'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  6d16b67e5787fd248a09ea6f3b03d872b15c8b50bc8346ef3d87da6b47965b5d:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  6e4ffce042b47f03efef53b115b2bc9e8fbf5c8551b23b13a6a162ebfaa55900:
+    request:
+      model_text: 'functools[{"name": "set_temperature", "arguments": {"celsius": "20"}}]'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  483d031c72b2dd3bbf122b6c6a93561db4df5014e16c2174ba6437e77cdb75d2:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  a16afee3998857e270aea28b889132683b83cfcb5e2286267866d2f1bb12646c:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  2a4464a80d78102286a465228fdd9b6bc27e0042d215f1eaeb7c2fe084fb26f7:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  1d3c825dd51f445eea6ecf1338c262bc6d424d95d1f6470fe6bbb81d2e973a17:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  d044434b9d85006fc6c4fe83bce3e460b0fae38d3f48bd053cbcb0d55c0e5b91:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  5aae90bdc90aaf25bb36a88eceec22b2a8a073b0fa578c0ceedfb69b2f97a677:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Then check LA weather. functools[{"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  10b6f438a30696fea2b61714e9fa39e2f17e82d53ceedbff2564eabd02633940:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  3d90f77e7ac791b50a67d627dba77a09bb5fbce994cf5d9809580fdae8b805d2:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  e950951bf0f860578e4b0cda55040edf49a0b3691fd80944dcd313e2b12a0d15:
+    request:
+      model_text: 'functools[{"name": "unknown_tool", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  8cbb15fd91db5511c0710e22d9c73bbbad8a5cb79c1908ac2453f3a8e898fcec:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "unknown_tool", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  aa0560706a610f19a9deb96a27a87db03c8a0ffbc818e76e1f0b3b445f0bd774:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  bfc43ba1f94c26d1494c27b9705ddde0fc7bda647142093b8540d0996f613b4e:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  a7649e37a9c96831f909b8a1b7d3ec122e184f53c4de0dbee54a0753753c13cb:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  885db8459f7b1efdcc444b1fefb50b33edf6d841b57f84748036fcec0e2e9a68:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "literal func-tools marker[] stays text"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  9b088c363aa4b44566dcc8f7f7221f8e04fa74e2f7a42532c9a6c867cab5f8c1:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  3edd699bbff3158b9008e3912e2916608587b69269560c602f7346eb5afedc9b:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  da9af64318fe54a1e7a71eb84f7fbeceb0b16acf3c0724ed813d71cee46128c0:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  33fefaa4d5cf17142bb98a47e85a5805ca06b442e486feb0c1ad2cb845f70430:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      calls: []
+  6b2ba3f180198cf34c67445d19e3241eb5a53fe9cbefb22449c1231b90ac0c96:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  c896950b01572524945393d052edb44db3a3ae304277983b9fee4b8c4aed62ff:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  8c6820ba62ba1d8b2071bd048cbb39682f3954cb7ac6701562e4b7e422d60c06:
+    request:
+      model_text: 'Both: functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}] Done.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  feae330bb345404ef97cba8e2e570b451efe860e2f8bdb9990b35168da4035f8:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  4d0e62c56cf837e162f7dcfd56925c865f528191538cbd012ef4d884c34939b9:
+    request:
+      model_text: functools[nonsense]
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  99ce33b1922e3e603df9eee34401a12d827590b4474f657d6570e7ec97e7ffab:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  a9eaeac8d074698cad57f2828a529ce0497fa7e281de0436fd08a90eaf50a8c5:
+    request:
+      model_text: 'functools[{"arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  9d6fe8e4314fbb77bbdd70cea39c87daaed731873abe493e284bad64c1d258d1:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  bd04e0413573fd3435bfb58ebe867c0cef1a80b501861ea3601fbb23493cfc8d:
+    request:
+      model_text: 'functools{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  8aceb0f2a9936df85d1d3e36df74506f4a411b3ceeb53f420d27f7ce29d73509:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"loc'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  f9d1fd3708b6396fb79526082300b9a8493c3b8ef361f7f2dbccf39fa3ad9632:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  df863a16a1cf27e06830fc7e65a6e4fd3bb6727725587998b36313025fa49f45:
+    request:
+      model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!functools[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  c56fff58e0325900937c6f3d5ad513f754098c63e9b7eea6c72cc4609756e83b:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": {}}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  c0f6d6f9f502a2d830d3a66afb1844348c0825ce4a933b28b93750f2ae4dd410:
+    request:
+      model_text: 'functools[{"name": "get_time", "arguments": { }}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  c424758b256827f3c4baaa6cd961169223934ad1df515011123cda36e2dbe66d:
+    request:
+      model_text: 'functools[{"name": "get_time"}]'
+      tools:
+      - name: get_time
+        parameters:
+          type: object
+          properties: {}
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  d2fd536026f62050c05c7eadb39eb765d105964a0813459b27e07717d1fd9b55:
+    request:
+      model_text: 'functools[{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}]'
+      tools:
+      - name: book_flight
+        parameters:
+          type: object
+          properties:
+            destination:
+              type: string
+            passengers:
+              type: integer
+            first_class:
+              type: boolean
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  649c349517857e6e76e4621e2749c3a4c5f62a90db016c72df7a81888683ff45:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  f3021f174e7bf98f22d8659d7470b56c3745050a72e609adbb908b5a02c3e765:
+    request:
+      model_text: 'functools[{"name": "set_temperature", "arguments": {"celsius": "20"}}]'
+      tools:
+      - name: set_temperature
+        parameters:
+          type: object
+          properties:
+            celsius:
+              type: integer
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  b4dde786c103471bacf301ddb3a643c4e242c93c5c5996074f9c4fec78be308d:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            items:
+              type: array
+            config:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  5d883846e03021f5b5b790fc966a11f70c60692384ff993ef4d9df632b95b59c:
+    request:
+      model_text: 'functools[{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}]'
+      tools:
+      - name: process_data
+        parameters:
+          type: object
+          properties:
+            payload:
+              type: object
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  25384cac3978203a3b4bf466f355de5a8b2756d1ed7f5be479e1e18d8ad05d64:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  884a84097ef1139c24b456751b557bfbbbb5f7affafa18a92c27228aa80b5eba:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  a6890f00bb43c5cb7f42dbd900ff3bf1daddc12d885efc0df430a49f7355fbad:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  64a710ec47c2fc52f0f52ea87ca90796e9ee7014c21621a5842ef602fce8744e:
+    request:
+      model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Then check LA weather. functools[{"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  b60f8760c0d0bd2ed8f245a0676fcc6425a6eefc03d0f9ed05935e18043b1f31:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  39a0489a65ecc46d6c5c41762ef14624bebca49e36c8bb8694bfe39bfa2dbd4e:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  93ec2057f9121a5a562e0142b17b09ca2ddc5a12fb532d4dab03b63c8ab6887f:
+    request:
+      model_text: 'functools[{"name": "unknown_tool", "arguments": {"location": "NYC"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  dcabe9754897ab9843203c6c8f08e289768edee854bd3aa8e25de5e08a2b17fe:
+    request:
+      model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "unknown_tool", "arguments": {"location": "LA"}}]'
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  233cf026acd87a51866dfe5315c15957b4eb882fc64edac95cc373a6191d014d:
+    request:
+      model_text: Hello, how can I help you today?
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  43a86d3b9df629b580833496679d6212eaee3913e29097e99669af9bfac8296f:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  3074ca023633d838e12f19d880f853933718308b80ba6b2011aa5e254b979fb9:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  205c21600295111cc44f4f70e9ceb2063b5544b1f1b14d305ea566d56655c57e:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "literal func-tools marker[] stays text"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  6aafdc91f82445a64c391c880e574e2066167fd5a2cd4977000a722b6b811cc0:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT a, SELECT b"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  59e18235fe647512937da606d476643279c8befa23888145a3a0dd445a4ac5b8:
+    request:
+      model_text: 'functools[{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]'
+      tools:
+      - name: run_query
+        parameters:
+          type: object
+          properties:
+            sql:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  bfc76fabbfa137f4c189eec1840be0daee9c18de0361cdad9e56bba7c2d4eeee:
+    request:
+      model_text: ''
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+  7f86d9bc6288bd93d878e870d9b6472a33de49fdf02878a89468f6e0a08c84ef:
+    request:
+      model_text: '   '
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: phi4
+      mode: batch
+      chunks: []
+    value:
+      unavailable: No vLLM Rust parser for family 'phi4'.
+producers:
+  45671dcb6dd4c8d1bd05d969dcf928e1f9bdc46251da0cc1e69403a7795b2a1a:
+    capture: sglang_python-0.5.14
+    document:
+      family: phi4
+    provenance:
+      captured_with: 0.5.14
+      runtime_version: 0.5.14
+  2867add72ae7c768d5182fd9b86efff7bbbd041d3bf93672f6cb7c06bb16d6e9:
+    capture: vllm_python-0.26.0
+    document:
+      family: phi4
+    provenance:
+      captured_with: 0.26.0
+      runtime_version: 0.26.0
+  4631c18db06535dc9fbc3f6f385c6690af676c46d83f9f8902804427db195aa7:
+    capture: vllm_rust-0.23.0
+    document:
+      family: phi4
+    provenance:
+      captured_with: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      runtime_version: 0.23.0
+      git_commit: 78743ab5bffd381e88f97e1c8ba20473b0ae6d75

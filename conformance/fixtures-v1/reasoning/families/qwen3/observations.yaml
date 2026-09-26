@@ -1,0 +1,1072 @@
+schema: bound-observations-v1
+observations:
+  a97f8b1de0fe3791099327e6dafd9b4ecb7f577661e48974c56c99e49a17392e:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  5b95622f5f462168332920b7c20f2f03ce2003f51ff524e43a3a1e90f1543204:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  1512610138200395809f09b00fdad2b184f8d872b1e2edc95221a624a11c8e62:
+    request:
+      model_text: <think>thinking</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  e6686f83f9e6bbfb7778e733f7102526dfa856cd762712013683c62e79dab874:
+    request:
+      model_text: <think>compute</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: compute
+          normal_text: answer
+  5adaf5f87d8c94628adc3cd4e9130ced4c62ec857e9fc613c581e14a6a9c08e0:
+    request:
+      model_text: before <think>thinking</think> after
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: before <think>thinking
+          normal_text: ' after'
+  457ece466e7fbbfefd7e7b61dbcdd015cf0698224f75538da6b20ea14d215058:
+    request:
+      model_text: <think></think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: answer
+  59d1f8ce42bd9673e22b2a870ee394a2a76cf4210fe93f6553f8c8530b13a387:
+    request:
+      model_text: '<think>Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}</think>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  afc808fd7ae3b87ab4ecad623f9c88e70535ff1253277dd41b47c0226b06f230:
+    request:
+      model_text: '<think>choose the weather tool</think><tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: choose the weather tool
+          normal_text: '<tool_call>
+
+            <function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+  e8976bf131ce1ed1fb793ae81b91a1ea40dbe0be350f33e0d61924e06ccb01d7:
+    request:
+      model_text: normal</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: normal</think>answer
+          explanation: Dynamo treats the text before an unpaired end marker as reasoning (implicit-opener recovery, matching vLLM); SGLang enters reasoning only on an explicit start marker, so the dangling end marker and surrounding text stay in normal_text.
+  24417255758d2866a2e045d06d5603d7f17d251c4feb1da2ca0b5f94942a6f9d:
+    request:
+      model_text: <think>partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  3b8e5966453d3dd4f356ff5189d5b83d6f5a49450a83e3cc20fb4b5a3e28ae99:
+    request:
+      model_text: <think>first</think> middle <think>second</think> done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle <think>second</think> done'
+          explanation: Dynamo extracts every complete reasoning span and concatenates them; SGLang exits reasoning at the first end marker and leaves the later span, with its literal markers, in normal_text.
+  18e09acea104fea2c623a5fb19f1223233af3f423e7b9d684fcb09f21baf4ee3:
+    request:
+      model_text: <think>preamble</think>body</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body</think>answer
+  af4222816625cd821aa4568d94d4cb80cc91f50f8f5f9f76b23c57a26a167dfe:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: ''
+  09d821953290abaedda130f33e384ff7d4945248012da4352148cb2d34c00bd8:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain answer
+  c0babee87a1bc02e82606848b6407f9d2c742fdf25e6c18ab84d8386d0d2445d:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>thin
+      - king</think>
+      - answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  c709d984d41d3f4f48733f66a994b75657a6fd745b5ffab2683cfc75f55e51c9:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>first</think>
+      - ' middle '
+      - <think>second</think> done
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: first
+          normal_text: ' middle <think>second</think> done'
+          explanation: Dynamo re-enters reasoning on each open marker across chunks and concatenates all spans; SGLang exits at the first end marker and does not re-enter, leaving the later span in normal_text.
+  1eaf9f28e0db616fc911ddde395f1f28fc0c31f6c1ca48736c406f8bfb801b12:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>preamble</think>
+      - body</think>
+      - answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: preamble
+          normal_text: body</think>answer
+  5c80f373a30d30db4af8840a40e27d64f6d5b3bc0a990e943fa3228d0f26a397:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <th
+      - ink>thinking</think>answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking
+          normal_text: answer
+  aa409f7986f9bd3268989b576b21a96a30c70aeeb3b62aa7f50ce1fbef7e7a1d:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>thinking</th
+      - ink>answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: thinking</think>answer
+          normal_text: ''
+          explanation: Dynamo buffers an end marker split across chunk boundaries and resumes normal_text after it; SGLang streams the partial delimiter as reasoning (it only holds back a partial marker when the whole pending buffer is a marker prefix), so the split marker is never reassembled and the answer stays in reasoning_text.
+  bcf9a3ccacce21bf4ffbd5bb057bb8623d6bd06511cf4f614c5a33922ff007ba:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - plain <th
+      - esis answer
+    value:
+      expected:
+        sglang_python:
+          reasoning_text: ''
+          normal_text: plain <thesis answer
+  74cef157676ef53550a6b9d41a6378f0ee4515ba9a618bc5827adf19e9e9d7cd:
+    request:
+      model_text: ''
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  73f3347c2f0b7335332a76c82210f92a26c5065c5d2b4375aba8b12d30e7ebd9:
+    request:
+      model_text: plain answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+          explanation: vLLM Qwen batch parser treats marker-free text as reasoning.
+  7879f20bfe68c8dd92de44e4a2eee945465c0126973daa3f757be3809c9abae8:
+    request:
+      model_text: <think>thinking</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: thinking
+          normal_text: answer
+  914acf7922e8ec32b3c497b17bba17d648d88aaae6b17fea16906f7ea2e0b8c2:
+    request:
+      model_text: <think>compute</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: compute
+          normal_text: answer
+  1411643eac58ace215ad5479d258ff1e20b606632076f0f50f2a96210b7f41c9:
+    request:
+      model_text: before <think>thinking</think> after
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: before thinking
+          normal_text: ' after'
+  4d10dbf7c0e5d428523263753de37238b568dd1b2c3accf62a6cc03ad3e6375d:
+    request:
+      model_text: <think></think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: answer
+  c621d958fe0bd35adf59ddb47c263fda5113257666a2bd4609f4a70039f73e6f:
+    request:
+      model_text: '<think>Line 1
+
+        Unicode: café
+
+        JSON-ish: {"x": [1, true]}</think>Done.'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: 'Line 1
+
+            Unicode: café
+
+            JSON-ish: {"x": [1, true]}'
+          normal_text: Done.
+  0d2648ab5ea360a6a102aa001901fcc24c3d237533009ab374d81107140192f5:
+    request:
+      model_text: '<think>choose the weather tool</think><tool_call>
+
+        <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: choose the weather tool
+          normal_text: '<tool_call>
+
+            <function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+  e215baebe9d217ee1f5491d59dc308979b4fec48018a699d4f6e8b2b636f0ed4:
+    request:
+      model_text: normal</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: normal
+          normal_text: answer
+  be2f78aad22473d3af04e2fe1fd936904f7ea84e8dcff311991a58355ab613ab:
+    request:
+      model_text: <think>partial reasoning
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: partial reasoning
+          normal_text: ''
+  5638a3d483eaa983f00b9fe51088726dc320dbcc37c853c29ed966e60c02ea7c:
+    request:
+      model_text: <think>first</think> middle <think>second</think> done
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: first
+          normal_text: ' middle <think>second done'
+  8ca8c624c83f9b79ff6ef084c40fa7ce41a32f2cf8bcdad2a632d0fa014efac1:
+    request:
+      model_text: <think>preamble</think>body</think>answer
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: batch
+      chunks: []
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: preamble
+          normal_text: bodyanswer
+  6f9fd8e882af7ea493b4e2eed6a13b0a6f4585b6cde66ef73ad48bb2c33fc65f:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - ''
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: ''
+          normal_text: ''
+  95e345099022093f694d35ad234fb630a4a5b463a56c7144e4f72c71ef96fd85:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - plain
+      - ' answer'
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain answer
+          normal_text: ''
+          explanation: vLLM Qwen streaming parser treats text before a reasoning end marker as reasoning; serving may bypass it when thinking is disabled.
+  a02322f3cd0cd581eb1247244c4dcd2fd3e175e7ad89086a62cf6399e0126385:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>thin
+      - king</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>thinking</think>
+          normal_text: answer
+  ce45094f4a302d481efbd908df8af10299f8ce32352f4f7bd6b6410d4ada8313:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>first</think>
+      - ' middle '
+      - <think>second</think> done
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>first</think>
+          normal_text: ' middle <think>second</think> done'
+  a10aa8a916451e0faa3532ddc130df38592e2a2d7959edc19e40ee44aed53112:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>preamble</think>
+      - body</think>
+      - answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>preamble</think>
+          normal_text: body</think>answer
+  3b8eedd2cc71bb0174e3067144415f21a0bc7992c922125276c7c5e5e32fbee1:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <th
+      - ink>thinking</think>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>thinking</think>answer
+          normal_text: ''
+  bf8143b7c57b7d8e945418ab32a88362a2eaacac94236db859b2d87fc50e2474:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - <think>thinking</th
+      - ink>answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: <think>thinking</think>answer
+          normal_text: ''
+  bfda9613516675e23cd6b65bc95ac6158f423de2e63bbd0d0f7911d0db039e23:
+    request:
+      model_text: null
+      tools: null
+      init: null
+      finish_reason: null
+      chat_template_kwargs: null
+      force_reasoning: null
+      document:
+        model_text: null
+        tools: null
+        init: null
+        finish_reason: null
+        chat_template_kwargs: null
+        force_reasoning: null
+      family: qwen3
+      mode: stream
+      chunks:
+      - plain <th
+      - esis answer
+    value:
+      expected:
+        vllm_python:
+          reasoning_text: plain <thesis answer
+          normal_text: ''
+          explanation: vLLM Qwen streaming parser treats marker-free stream text as reasoning in this shape.
+producers:
+  d017a511da774620dfd0fa2697b8c90408dbed3d9569bbcddfd7fa48085ad608:
+    capture: inputs
+    document:
+      family: qwen3
+      model_label: Qwen 3.x
+      mode: batch
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Qwen3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_qwen3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  e826c0d2b5689d7775712aeac92befdf43e45cf97d720f38b8d125df6dad6587:
+    capture: sglang_python-0.5.14
+    document:
+      family: qwen3
+      mode: batch
+    provenance: null
+  4017e762bbb584d3c1abab11f528e918bae153c497373881bd08f50727070d80:
+    capture: inputs
+    document:
+      family: qwen3
+      model_label: Qwen 3.x
+      mode: stream
+      captured_with:
+        vllm_python: 0.23.0
+        sglang_python: 0.5.12.post1
+      refs:
+        upstream: 'inspired by vLLM Qwen3 reasoning tests: https://github.com/vllm-project/vllm/blob/39910f2b25aacc09f5e7f166cdf0030b19f8b9e8/tests/reasoning/test_qwen3_reasoning_parser.py; local taxonomy: lib/parsers/REASONING_CASES.md'
+    provenance: null
+  23dc94d6cb65f9e6447d597a070d40d697f7dedb534c0d4405de701652cd4bb4:
+    capture: vllm_python-0.24.0
+    document:
+      family: qwen3
+      mode: batch
+    provenance: null
+  af0ec005809690f820c7dd490302c96583283c97e2a432095219cab1c4b5e9db:
+    capture: vllm_python-0.24.0
+    document:
+      family: qwen3
+      mode: stream
+    provenance: null

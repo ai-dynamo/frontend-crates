@@ -36,7 +36,7 @@ version: 1
 suites:
   toolcalling.batch:
     prefix: TOOLCALLING.batch
-    fixtures: conformance/fixtures/toolcalling/fixtures-batch-v1
+    fixtures: conformance/fixtures-v1/batch
     groups:
       "1":
         title: Single tool call (happy path)
@@ -149,7 +149,7 @@ suites:
 
   toolcalling.stream:
     prefix: TOOLCALLING.streamv1
-    fixtures: conformance/fixtures/toolcalling/fixtures-stream-v1
+    fixtures: conformance/fixtures-v1/stream
     groups:
       "1":
         title: Single tool call (happy path)
@@ -261,7 +261,7 @@ suites:
 
   reasoning.batch:
     prefix: REASONING.batch
-    fixtures: conformance/fixtures/reasoning/fixtures-v1
+    fixtures: conformance/fixtures-v1/reasoning
     groups:
       "1":
         title: Empty / plain input
@@ -314,7 +314,7 @@ suites:
 
   reasoning.stream:
     prefix: REASONING.stream
-    fixtures: conformance/fixtures/reasoning/fixtures-v1
+    fixtures: conformance/fixtures-v1/reasoning
     groups:
       "1":
         title: Empty / plain input

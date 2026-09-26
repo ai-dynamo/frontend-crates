@@ -2,7 +2,7 @@
 
 This directory is for checking parser behavior and generating an HTML conformance matrix. By default `render_table_v2.sh` writes `conformance/CONFORMANCE_v2.html`, but you can write another file such as `index.html`.
 
-For Unified capture publication, follow [the plain-version YAML contract](../README.md#unified-storage-contract-plain-versioned-yaml-only). This migration applies only to Unified. Keep the existing archive storage for the older tool-calling stream, batch-on-stream, batch, and reasoning tests.
+For Unified capture publication, follow [the plain-version YAML contract](../README.md#unified-storage-contract-plain-versioned-yaml-only). Batch, streaming, batch-on-stream, and reasoning captures live in the separate `fixtures-v1/` store and keep their existing version selection rules.
 
 Most work has three steps:
 
@@ -30,7 +30,7 @@ For tool-calling, the important fields are:
 
 Fixture locations:
 
-Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `conformance/fixtures/`. Unified fixtures live as reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores into one compatibility tree, so existing report and Rust consumers read the same paths. `conformance/utils/src/parser_families.yaml` is parser configuration, not a fixture.
+Batch, streaming, batch-on-stream, and reasoning fixtures live as reviewable YAML under `conformance/fixtures-v1/`. Unified fixtures live under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores into one compatibility tree, so existing report and Rust consumers read the same paths. `conformance/utils/src/parser_families.yaml` is parser configuration, not a fixture.
 
 | Store path (inside snapshot) | Used By |
 |---|---|
@@ -102,7 +102,7 @@ Change parser code under `parsers/v2/` when Dynamo behavior is wrong. When fixtu
 
 ### Capture Parser Behavior Into Fixtures
 
-Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets capture v2 fixture YAMLs locally. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs. After capturing, rebuild + commit the shard store with `package_fixtures.py`.
+Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets capture v2 fixture YAMLs locally. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs. After capturing, update the YAML stores with `package_fixtures.py`.
 
 `capture.sh` is not the v1 batch rewrite tool for the Dynamo `expected.dynamo_v1` blocks — those are verified in Section 1 against extracted fixtures; update the YAMLs locally and re-package when the expected batch output changes.
 
@@ -256,9 +256,9 @@ The implementation lives under `src/` — don't run these directly unless you're
 
 **Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former parser-marker shorthand mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs with full descriptive parser labels. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
 
-## Fixture Store (git-lfs)
+## Fixture stores
 
-Fixture shard tarballs live in the repo at `conformance/fixtures/`, tracked via git-lfs (`.gitattributes`). The manifest (`conformance/fixtures-manifest.json`) pins the current snapshot and the sha256 of every shard. On a fresh clone, make sure the LFS objects are present: `git lfs install && git lfs pull`.
+The manifest (`conformance/fixtures-manifest.json`) pins the contents of both YAML stores by digest. Legacy captures are grouped by corpus and family: `inputs_and_golden.yaml` owns the shared documents, and each implementation/version capture is one YAML file with all its test documents. Batch-on-stream uses the same layout; its shared headers select captures and preserve document and implementation order. Each capture retains its original `captured_with` label in provenance. A recorded version and commit SHA remain separate fields. Captures without a recorded version use an `unversioned` filename and a null `runtime_version`.
 
 ### Run conformance tests (fixtures extract transparently)
 
@@ -283,24 +283,20 @@ python3 conformance/utils/src/extract_fixtures.py --info
 
 For Unified corpus edits, regenerate after every source change: run the generator, explode the loose capture, update the family input/golden and capture YAML files, refresh the manifest pin, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale YAML or stale HTML is incomplete; verify that every resolved current capture contains the same case-ID set as the current generator.
 
-After re-capturing YAML locally with `capture.sh`, rebuild the store and commit it together with the manifest:
+After re-capturing YAML locally with `capture.sh`, update the YAML stores and manifest:
 
 ```bash
 # 1. Re-capture (see capture.sh commands above)
 
-# 2. Rebuild the shard store + manifest
+# 2. Update the YAML stores + manifest
 python3 conformance/utils/src/package_fixtures.py
-
-# 3. Commit both stores + manifest pin
-git add conformance/fixtures conformance/fixtures-unified-v2 conformance/fixtures-manifest.json
-git commit -s -m "fixtures: snapshot <stamp printed by the script>"
 ```
 
-The script builds deterministic per-version tarball shards for tool-calling and reasoning fixtures, updates the reviewable Unified YAML store, and writes the manifest that pins both stores.
+The script imports only changed loose captures, preserves the other family histories, and writes the manifest that pins both stores. Run `extract_fixtures.py` and regenerate `CONFORMANCE_v2.html` after packaging.
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 
-Add YAML files locally under the appropriate fixture tree, then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
+Add YAML files locally under the appropriate fixture tree, then publish a new snapshot exactly as above. The new family appears as a new directory under `fixtures-v1/`; the manifest pins the resulting store content.
 
 ## Notes
 

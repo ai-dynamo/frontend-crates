@@ -1,0 +1,24 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: mistral
+capture: vllm_python-0.26.0
+documents:
+  TOOLCALLING.streamv1.2.yaml:
+    family: mistral
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+  TOOLCALLING.streamv1.31.yaml:
+    family: mistral
+    mode: streamv1
+    captured_with:
+      vllm_python: 0.26.0
+views:
+  python:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}
+  rust:
+    base: vllm_python-0.25.1
+    changes: {}
+    annotations: {}

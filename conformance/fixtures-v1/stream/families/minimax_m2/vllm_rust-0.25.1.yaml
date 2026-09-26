@@ -1,0 +1,41 @@
+schema: legacy-checkpoint-v1
+corpus: stream
+family: minimax_m2
+capture: vllm_rust-0.25.1
+documents:
+  TOOLCALLING.streamv1.13.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+  TOOLCALLING.streamv1.4.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+  TOOLCALLING.streamv1.5.yaml:
+    family: minimax_m2
+    mode: streamv1
+    captured_with:
+      vllm_rust: 0.25.1
+views:
+  python:
+    base: vllm_rust-0.24.0
+    changes:
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]':
+        observation: 7e81f127c0d707daa2b7990406f7bc390b370de7b490fc1e2531168e65182eb0
+        producer: 05b166173b636459af4831d515b0022308aea2c8bf923679048a62ffda202d8a
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]':
+        observation: 17d9f462b0113ab565667682011e63f1cdfe0831084c9ecf0ae27e11c67c783b
+        producer: 05b166173b636459af4831d515b0022308aea2c8bf923679048a62ffda202d8a
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]':
+        observation: 9d287c85c996cfd3b914bf750f7de43bfc99d1813e2ac84f4ab36f857aa4b7a0
+        producer: 05b166173b636459af4831d515b0022308aea2c8bf923679048a62ffda202d8a
+    annotations:
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.c"]': {}
+      '["TOOLCALLING.streamv1.4.yaml","TOOLCALLING.streamv1.4.a"]': {}
+      '["TOOLCALLING.streamv1.13.yaml","TOOLCALLING.streamv1.13"]': {}
+  rust:
+    base: vllm_rust-0.24.0
+    changes: {}
+    annotations: {}

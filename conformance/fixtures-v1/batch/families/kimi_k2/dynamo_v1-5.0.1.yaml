@@ -1,0 +1,47 @@
+schema: legacy-checkpoint-v1
+corpus: batch
+family: kimi_k2
+capture: dynamo_v1-5.0.1
+documents:
+  TOOLCALLING.batch.2.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.4.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.5.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.6.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.7.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.8.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.batch.yaml:
+    family: kimi_k2
+    mode: batch
+  TOOLCALLING.stream.1.yaml:
+    family: kimi_k2
+    mode: stream
+  TOOLCALLING.stream.2.yaml:
+    family: kimi_k2
+    mode: stream
+  TOOLCALLING.stream.3.yaml:
+    family: kimi_k2
+    mode: stream
+  TOOLCALLING.stream.4.yaml:
+    family: kimi_k2
+    mode: stream
+views:
+  python:
+    base: dynamo_v1-3.0.0
+    changes:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]':
+        observation: 3022ad6bfaedff128f2364626767ab9151b14e15ad88a7c9ac721d6f391f2dbb
+        producer: c7e2e81dcf23cccb52a8ab84a0f0831805c249b24dc0d0b1d12c2bfcf97eddeb
+    annotations:
+      '["TOOLCALLING.batch.yaml","TOOLCALLING.batch.9.b"]': {}

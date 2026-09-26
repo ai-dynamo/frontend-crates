@@ -19,10 +19,12 @@
 //! can't consume per-chunk) are skipped for Dynamo. vLLM/SGLang per-chunk data in
 //! the fixtures is captured from the engines in their containers, not re-run here.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 mod common;
+#[path = "common/migration_stream_snapshot.rs"]
+mod migration_stream_snapshot;
 use common::{collect_yaml, fixture_name};
 
 use dynamo_parsers_v2::{
@@ -113,28 +115,44 @@ struct DynChunk {
 /// Fold Dynamo's expected (from dynamo_v2-<ver>/<family>/<name>) into an inputs
 /// Fixture, keyed under "dynamo_v2" per chunk + case, so the rest of the test —
 /// written for the old bundled layout — is unchanged.
-fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
+fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) -> BTreeSet<String> {
+    let complete_snapshot = dyn_dir
+        .components()
+        .any(|part| part.as_os_str() == ".reader-views");
+    if complete_snapshot {
+        for case in fx.cases.values_mut() {
+            case.unavailable.remove("dynamo_v2");
+            for chunk in &mut case.chunks {
+                chunk.expected.remove("dynamo_v2");
+                chunk.normal_text.remove("dynamo_v2");
+            }
+        }
+    }
     let dfp = dyn_dir.join(rel);
     // A missing overlay is benign; any other I/O error must surface, not vanish.
     let text = match std::fs::read_to_string(&dfp) {
         Ok(t) => t,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return BTreeSet::new(),
         Err(e) => panic!("{}: dynamo overlay read error: {e}", dfp.display()),
     };
     let dyn_fx: DynFixture = serde_yaml::from_str(&text)
         .unwrap_or_else(|e| panic!("{}: dynamo overlay parse error: {e}", dfp.display()));
+    let observed = dyn_fx.cases.keys().cloned().collect();
     for (cid, dcase) in dyn_fx.cases {
         let Some(case) = fx.cases.get_mut(&cid) else {
             continue;
         };
-        if let Some(reason) = dcase.unavailable {
-            case.unavailable.insert("dynamo_v2".to_string(), reason);
-            continue;
+        if let Some(reason) = &dcase.unavailable {
+            case.unavailable
+                .insert("dynamo_v2".to_string(), reason.clone());
+            if !complete_snapshot {
+                continue;
+            }
+        } else {
+            case.unavailable.remove("dynamo_v2");
         }
-        // Dirs fold ascending (latest wins). A later capture that supplies
-        // expectations must clear any unavailability an OLDER capture recorded,
-        // otherwise the case is silently skipped despite being supported now.
-        case.unavailable.remove("dynamo_v2");
+        // Complete snapshots retain the prior chunks even when a later legacy
+        // overlay marked the case unavailable without supplying new events.
         for (i, dchunk) in dcase.chunks.into_iter().enumerate() {
             if let Some(chunk) = case.chunks.get_mut(i) {
                 chunk
@@ -157,18 +175,74 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
             }
         }
     }
+    observed
 }
 
 fn stream_dynamo_dirs(sv1: &Path) -> Vec<std::path::PathBuf> {
-    common::version_dirs_ascending_with_current(
-        sv1,
-        "dynamo_v2-",
-        common::STREAM_DYNAMO_V2_CURRENT_CAPTURE,
-    )
+    common::historical_capture_dirs(sv1, "stream", "dynamo_v2")
 }
 
 #[test]
-fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
+fn empty_complete_snapshot_clears_input_observations() {
+    let root = std::env::temp_dir().join(format!("dynamo-empty-snapshot-{}", std::process::id()));
+    let capture = root.join(".reader-views/rust/dynamo_v2-1.0.0");
+    std::fs::create_dir_all(capture.join("qwen3")).unwrap();
+    let mut fixture: Fixture = serde_yaml::from_str("family: qwen3\ncases:\n  A:\n    unavailable: {dynamo_v2: old}\n    chunks:\n      - delta_text: x\n        expected: {dynamo_v2: [{index: 0, name: old}]}\n        normal_text: {dynamo_v2: old}\n").unwrap();
+    merge_dynamo(&mut fixture, &capture, Path::new("qwen3/probe.yaml"));
+    assert!(fixture.cases["A"].unavailable.is_empty());
+    assert!(fixture.cases["A"].chunks[0].expected.is_empty());
+    assert!(fixture.cases["A"].chunks[0].normal_text.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn recorded_empty_stream_is_distinct_from_absent_measurement() {
+    let root = std::env::temp_dir().join(format!("dynamo-observed-empty-{}", std::process::id()));
+    let capture = root.join(".reader-views/rust/dynamo_v2-1.0.0");
+    std::fs::create_dir_all(capture.join("qwen3")).unwrap();
+    std::fs::write(
+        capture.join("qwen3/probe.yaml"),
+        "cases:\n  measured:\n    chunks: []\n",
+    )
+    .unwrap();
+    let mut fixture: Fixture = serde_yaml::from_str(
+        "family: qwen3\ncases:\n  measured: {chunks: []}\n  absent: {chunks: []}\n",
+    )
+    .unwrap();
+    let observed = merge_dynamo(&mut fixture, &capture, Path::new("qwen3/probe.yaml"));
+    assert_eq!(observed, BTreeSet::from(["measured".to_string()]));
+    assert!(fixture.cases["measured"].chunks.is_empty());
+    assert!(fixture.cases["absent"].chunks.is_empty());
+    assert!(merge_dynamo(&mut fixture, &capture, Path::new("new_family/probe.yaml")).is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn complete_unavailable_snapshot_retains_its_resolved_chunks() {
+    let root = std::env::temp_dir().join(format!(
+        "dynamo-unavailable-snapshot-{}",
+        std::process::id()
+    ));
+    let capture = root.join(".reader-views/rust/dynamo_v2-1.0.0");
+    std::fs::create_dir_all(capture.join("qwen3")).unwrap();
+    std::fs::write(capture.join("qwen3/probe.yaml"),
+        "cases:\n  A:\n    unavailable: skipped\n    chunks:\n      - expected:\n          - index: 0\n            name: retained\n").unwrap();
+    let mut fixture: Fixture =
+        serde_yaml::from_str("family: qwen3\ncases:\n  A:\n    chunks:\n      - delta_text: x\n")
+            .unwrap();
+    merge_dynamo(&mut fixture, &capture, Path::new("qwen3/probe.yaml"));
+    assert_eq!(fixture.cases["A"].unavailable["dynamo_v2"], "skipped");
+    assert_eq!(
+        fixture.cases["A"].chunks[0].expected["dynamo_v2"][0]
+            .name
+            .as_deref(),
+        Some("retained")
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn stream_dynamo_dirs_follow_policy_and_exclude_qualified_history() {
     let root = std::env::temp_dir().join(format!(
         "dynamo-stream-dirs-{}-{}",
         std::process::id(),
@@ -179,7 +253,7 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
     ));
     std::fs::create_dir_all(root.join("dynamo_v2-0.3.1")).unwrap();
     std::fs::create_dir_all(root.join("dynamo_v2-0.3.4+historical")).unwrap();
-    std::fs::create_dir_all(root.join(common::STREAM_DYNAMO_V2_CURRENT_CAPTURE)).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-0.6.1")).unwrap();
 
     let names: Vec<_> = stream_dynamo_dirs(&root)
         .into_iter()
@@ -187,9 +261,68 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
         .collect();
     assert_eq!(
         names,
-        ["dynamo_v2-0.3.1", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
+        ["dynamo_v2-0.3.1", "dynamo_v2-0.6.1"].map(std::ffi::OsString::from)
     );
 
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn prerelease_compaction_preserves_latest_stream_capture() {
+    fn expected_name(fixture: &Fixture) -> &str {
+        fixture.cases["A"].chunks[0].expected["dynamo_v2"][0]
+            .name
+            .as_deref()
+            .unwrap()
+    }
+
+    let root = std::env::temp_dir().join(format!(
+        "dynamo-stream-prerelease-fold-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let relative = Path::new("qwen3/one.yaml");
+    let captures = [
+        ("0.1.0-rc1", "prerelease"),
+        ("0.1.0", "release"),
+        ("0.6.1", "release"),
+    ];
+    for (version, name) in captures {
+        let capture = root.join(format!("dynamo_v2-{version}/qwen3"));
+        std::fs::create_dir_all(&capture).unwrap();
+        std::fs::write(
+            capture.join("one.yaml"),
+            format!(
+                "cases:\n  A:\n    chunks:\n      - expected:\n          - index: 0\n            name: {name}\n            arguments: \"{{}}\"\n"
+            ),
+        )
+        .unwrap();
+    }
+
+    let base_fixture = || {
+        serde_yaml::from_str::<Fixture>(
+            "family: qwen3\ncases:\n  A:\n    chunks:\n      - delta_text: x\n",
+        )
+        .unwrap()
+    };
+    let dirs = common::version_dirs_ascending(&root, "dynamo_v2-");
+    let mut uncompacted = base_fixture();
+    for directory in &dirs {
+        merge_dynamo(&mut uncompacted, directory, relative);
+    }
+
+    let mut compacted = base_fixture();
+    for directory in dirs.iter().filter(|directory| {
+        directory.file_name().and_then(|name| name.to_str()) != Some("dynamo_v2-0.6.1")
+    }) {
+        merge_dynamo(&mut compacted, directory, relative);
+    }
+
+    assert_eq!(expected_name(&uncompacted), "release");
+    assert_eq!(expected_name(&compacted), "release");
     std::fs::remove_dir_all(root).unwrap();
 }
 
@@ -396,14 +529,14 @@ fn toolcalling_stream_parity() {
     // dynamo_v2-<version>/ dirs. This test drives the Dynamo parser *v2*; with the
     // impl-key split every dynamo_v2-* dir belongs to it (the v1 jail reference has
     // its own dynamo_v1-* namespace, tested elsewhere). Old version dirs are capture
-    // history, folded ASCENDING so the latest capture wins per case.
-    let sv1 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    // history; each family selects its latest complete Rust-view checkpoint.
+    let sv1 = common::rust_stream_fixture_root(&common::ensure_fixtures());
     let inputs_root = sv1.join("inputs");
     let dyn_dirs = stream_dynamo_dirs(&sv1);
-    assert!(
-        !dyn_dirs.is_empty(),
-        "no dynamo_v2-<version> dir under fixtures-stream-v1"
-    );
+    if dyn_dirs.is_empty() {
+        eprintln!("historical parity skipped: no eligible captured measurements");
+        return;
+    }
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -427,9 +560,9 @@ fn toolcalling_stream_parity() {
             }
         };
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        for dyn_dir in &dyn_dirs {
-            merge_dynamo(&mut fx, dyn_dir, rel);
-        }
+        let observed = common::latest_family_capture(&dyn_dirs, rel)
+            .map(|dyn_dir| merge_dynamo(&mut fx, dyn_dir, rel))
+            .unwrap_or_default();
         if !matches!(fx.mode.as_deref(), Some("stream" | "streamv1")) {
             continue;
         }
@@ -448,7 +581,7 @@ fn toolcalling_stream_parity() {
         let is_text = fx.family == "harmony_text";
 
         for (cid, case) in &fx.cases {
-            if dynamo_unavailable(&case.unavailable) {
+            if !observed.contains(cid) || dynamo_unavailable(&case.unavailable) {
                 skipped += 1;
                 continue;
             }

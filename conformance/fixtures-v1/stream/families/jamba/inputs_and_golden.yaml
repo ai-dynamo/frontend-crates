@@ -1,0 +1,842 @@
+corpus: stream
+family: jamba
+capture: inputs
+documents:
+  TOOLCALLING.streamv1.1.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (happy path)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.10.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}},'
+        - delta_text: ' {"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "LA"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.13.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.13.a:
+        description: Unknown-only call under default behavior
+        ref: derived from TOOLCALLING.batch.13.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "unknown_tool",'
+        - delta_text: ' "arguments": {"location": "NYC"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: derived from TOOLCALLING.batch.13.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}},'
+        - delta_text: ' {"name": "unknown_tool",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "LA"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.2.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Parallel calls in JSON array
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}},'
+        - delta_text: ' {"name": "get_time",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"timezone": "EST"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: 'Both: <tool_calls>'
+        - delta_text: '[{"name":'
+        - delta_text: ' "get_weather", "arguments": {"location":'
+        - delta_text: ' "NYC"}}, {"name":'
+        - delta_text: ' "get_time",'
+        - delta_text: ' "arguments": {"timezone":'
+        - delta_text: ' "EST"}}]</tool_calls> Done.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}},'
+        - delta_text: ' {"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "LA"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.3.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (plain text)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello, how
+        - delta_text: ' can'
+        - delta_text: ' I help you'
+        - delta_text: ' today?'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.30.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.30.a:
+        description: JSON-array call separator `,` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "run_query",'
+        - delta_text: ' "arguments": {"sql": "SELECT'
+        - delta_text: ' a, SELECT'
+        - delta_text: ' b"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.30.b:
+        description: JSON structural delimiters `}` and `]` inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "run_query",'
+        - delta_text: ' "arguments": {"sql": "SELECT'
+        - delta_text: ' value WHERE'
+        - delta_text: ' note'
+        - delta_text: ' has brace'
+        - delta_text: ' } and bracket'
+        - delta_text: ' ]'
+        - delta_text: '"}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.30.c:
+        description: XML wrapper marker `<tool_calls>...</tool_calls>` text inside one argument string value
+        ref: derived from TOOLCALLING.batch.30.c
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "run_query",'
+        - delta_text: ' "arguments": {"sql": "literal'
+        - delta_text: ' <tool_calls marker>'
+        - delta_text: '[]'
+        - delta_text: </tool_calls marker>
+        - delta_text: ' stays text"}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.31.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.31.a:
+        description: Multi-call JSON array with call separator `,` inside the first argument string
+        ref: derived from TOOLCALLING.batch.31.a
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "run_query",'
+        - delta_text: ' "arguments": {"sql": "SELECT'
+        - delta_text: ' a, SELECT'
+        - delta_text: ' b"}},'
+        - delta_text: ' {"name": "get_time",'
+        - delta_text: ' "arguments": {"timezone": "EST"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: derived from TOOLCALLING.batch.31.b
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "run_query",'
+        - delta_text: ' "arguments": {"sql": "SELECT'
+        - delta_text: ' value WHERE'
+        - delta_text: ' note'
+        - delta_text: ' has brace'
+        - delta_text: ' } and bracket'
+        - delta_text: ' ]'
+        - delta_text: '"}}, {"name":'
+        - delta_text: ' "get_time",'
+        - delta_text: ' "arguments": {"timezone":'
+        - delta_text: ' "EST"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.4.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Tool_calls wrapper with garbage
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <tool_calls>no
+        - delta_text: n
+        - delta_text: sense</tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.b:
+        description: Missing close brace in JSON
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.c:
+        description: Missing name key
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "NYC"}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.4.d:
+        description: Missing </tool_calls> close
+        ref: derived from TOOLCALLING.batch.4.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.5.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing </tool_calls> end marker
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.b:
+        description: Closing </tool_calls> without matching <tool_calls> open
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-arguments JSON
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"loc'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location":'
+        - delta_text: ' "Boston"}},'
+        - delta_text: ' {"name": "get_weather", "arguments":'
+        - delta_text: ' {"location": "New'
+        - delta_text: ' York"}}]'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+        - delta_text: ' by'
+        - delta_text: ' fetching the weather'
+        - delta_text: ' for both'
+        - delta_text: ' Boston'
+        - delta_text: ' and New'
+        - delta_text: ' York at the'
+        - delta_text: ' same'
+        - delta_text: ' time!<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location":'
+        - delta_text: ' "Boston"}},'
+        - delta_text: ' {"name": "get_weather", "arguments":'
+        - delta_text: ' {"location": "New'
+        - delta_text: ' York'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.50.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <t
+        - delta_text: ool
+        - delta_text: _call
+        - delta_text: 's>[{"name":'
+        - delta_text: ' "get_weather", "ar'
+        - delta_text: gu
+        - delta_text: men
+        - delta_text: 'ts": '
+        - delta_text: '{"location"'
+        - delta_text: ': "NYC"}}]</tool_ca'
+        - delta_text: ll
+        - delta_text: s>
+        - delta_text: ''
+          finish_reason: tool_calls
+  TOOLCALLING.streamv1.6.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: 'Canonical "arguments": {}'
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_time",'
+        - delta_text: ' "arguments": {}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside arguments {}
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_time",'
+        - delta_text: ' "arguments": { }}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.6.c:
+        description: No arguments key
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_time"}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.7.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "book_flight",'
+        - delta_text: ' "arguments": {"destination": "Paris",'
+        - delta_text: ' "passengers": 2,'
+        - delta_text: ' "first_class":'
+        - delta_text: ' true}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "Tōkyō'
+        - delta_text: ' \"central\""}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "set_temperature",'
+        - delta_text: ' "arguments": {"celsius": "20"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "process_data",'
+        - delta_text: ' "arguments": {"items": [1,2,3]'
+        - delta_text: ', "config":'
+        - delta_text: ' {"nested":'
+        - delta_text: ' true}}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "process_data",'
+        - delta_text: ' "arguments": {"payload": {"regions":'
+        - delta_text: ' [{"name": "west",'
+        - delta_text: ' "scores":'
+        - delta_text: ' [1, 2,'
+        - delta_text: ' 3]}, {"name":'
+        - delta_text: ' "east",'
+        - delta_text: ' "scores": [4,'
+        - delta_text: ' 5,'
+        - delta_text: ' 6]}]'
+        - delta_text: ','
+        - delta_text: ' "flags": {"enabled": true,'
+        - delta_text: ' "retry": null},'
+        - delta_text: ' "empty":'
+        - delta_text: ' {}}}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "set_limit",'
+        - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.8.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <tool_calls>'
+        - delta_text: '[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: </tool_calls>
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '<tool_calls>[{"name":'
+        - delta_text: ' "get_weather",'
+        - delta_text: ' "arguments": {"location": "NYC"}}]'
+        - delta_text: </tool_calls> Let
+        - delta_text: ' me'
+        - delta_text: ' know if'
+        - delta_text: ' you need more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <tool_calls>'
+        - delta_text: '[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: </tool_calls> Let me
+        - delta_text: ' know'
+        - delta_text: ' if you'
+        - delta_text: ' need'
+        - delta_text: ' more.'
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+        - delta_text: ' check'
+        - delta_text: ' the weather. <tool_calls>'
+        - delta_text: '[{"name": "get_weather",'
+        - delta_text: ' "arguments":'
+        - delta_text: ' {"location": "NYC"}}]'
+        - delta_text: </tool_calls> Then check
+        - delta_text: ' LA'
+        - delta_text: ' weather. <tool_calls>'
+        - delta_text: '[{"name":'
+        - delta_text: ' "get_weather", "arguments":'
+        - delta_text: ' {"location":'
+        - delta_text: ' "LA"}}]</tool_calls>'
+        - delta_text: ''
+          finish_reason: stop
+  TOOLCALLING.streamv1.9.yaml:
+    family: jamba
+    mode: streamv1
+    model_label: AI21 Jamba
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+        - delta_text: ''
+          finish_reason: stop
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+        - delta_text: ''
+          finish_reason: stop

@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+import fixture_disposition
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
@@ -30,7 +31,7 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
-# an immutable fixture extraction snapshot (from the in-repo LFS store). `_common.sh`
+# an immutable fixture extraction snapshot (from the in-repo YAML stores). `_common.sh`
 # exports CONFORMANCE_FIXTURES_ROOT; standalone runs resolve the exact snapshot printed
 # by `extract_fixtures.py`. Powers the per-impl version radios: the generator resolves each
 # version snapshot and re-runs the load path so cell keys align exactly with the
@@ -57,10 +58,7 @@ def _version_slug(version: str) -> str:
 
 def _version_sort_key(version: str) -> tuple:
     """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", version)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
+    return fixture_disposition.version_sort_key(version)
 
 
 def _impl_versions() -> dict[str, list[str]]:
