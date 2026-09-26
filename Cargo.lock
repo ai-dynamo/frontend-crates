@@ -1164,6 +1164,7 @@ dependencies = [
  "futures",
  "num-traits",
  "openai-harmony",
+ "percent-encoding",
  "regex",
  "rstest",
  "rustpython-ruff_python_ast",

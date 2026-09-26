@@ -27,6 +27,7 @@ openai-harmony.workspace = true
 ruff-python-ast.workspace = true
 ruff-python-parser.workspace = true
 num-traits.workspace = true
+percent-encoding = "2.3.2"
 
 # Streaming tool-call jail (ported from dynamo lib/llm). The jail wraps the
 # streaming parsers, so it needs the OpenAI chat stream protocol types plus the
