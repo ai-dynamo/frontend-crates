@@ -1,0 +1,114 @@
+name: Notify Slack
+
+on:
+  workflow_run:
+    # This matches each workflow's `name:` key, NOT its filename. Renaming
+    # `name: ci` in ci.yml silently disables alerting — change both together.
+    workflows: [ci]
+    types: [completed]
+  # Lets a maintainer re-report any historical run without waiting for a merge.
+  # Also the only way to exercise this workflow end-to-end, since `workflow_run`
+  # only fires once the file exists on the default branch.
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'ID of a ci run to report on'
+        required: true
+
+permissions:
+  contents: read
+  actions: read # required to list the jobs of a *different* workflow run
+
+concurrency:
+  # Guards against event redelivery double-posting. Never cancel: a second
+  # attempt of the same run is a distinct failure worth reporting.
+  group: notify-slack-${{ github.event.workflow_run.id || inputs.run_id }}-${{ github.event.workflow_run.run_attempt || 1 }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    # `!= 'success'` rather than `== 'failure'` so a `startup_failure` — a
+    # malformed workflow landing on main — is reported too.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion != 'success' &&
+        github.event.workflow_run.conclusion != 'cancelled' &&
+        github.event.workflow_run.conclusion != 'skipped'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify the webhook secret is configured
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FE_CRATES_WEBHOOK_URL }}
+        run: |
+          # An unset secret expands to the empty string and the post would fail
+          # silently, which is indistinguishable from a green main. Fail loudly.
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "::error::SLACK_FE_CRATES_WEBHOOK_URL is unset or empty — cannot notify."
+            exit 1
+          fi
+
+      - name: Build the Slack payload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+        run: |
+          set -euo pipefail
+
+          api() {
+            # --fail + --retry-all-errors: ride out transient 5xx / secondary rate
+            # limits, and fail loudly rather than feeding an HTML error body to jq.
+            curl -sS --fail --retry 3 --retry-all-errors --retry-delay 3 \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" "$@"
+          }
+
+          base="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          run_json="$(mktemp)"
+          api "${base}" >"${run_json}"
+
+          # Page the job list; `filter` is left at its default (`latest`) so that
+          # after a "Re-run failed jobs" we report the current attempt, not stale ones.
+          jobs_acc="$(mktemp)"
+          page=1
+          while [ "${page}" -le 10 ]; do
+            page_json="$(mktemp)"
+            api "${base}/jobs?per_page=100&page=${page}" >"${page_json}"
+            jq -c '(.jobs // [])[]' "${page_json}" >>"${jobs_acc}"
+            [ "$(jq '(.jobs // []) | length' "${page_json}")" -lt 100 ] && break
+            page=$((page + 1))
+          done
+
+          # `:x:` is a standard emoji; a workspace-custom one such as `:failed:`
+          # renders as literal text in workspaces that don't define it.
+          failed="$(jq -r 'select(.conclusion == "failure") | ":x: " + .name' "${jobs_acc}")"
+          if [ -z "${failed}" ]; then
+            # A run can fail with no failed job at all (startup_failure, or a
+            # run-level timeout). Say so rather than posting an empty list.
+            failed=":x: (no job-level failure — run concluded '$(jq -r .conclusion "${run_json}")')"
+          fi
+
+          jq -n \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg server "${GITHUB_SERVER_URL}" \
+            --arg failed "${failed}" \
+            --slurpfile run "${run_json}" \
+            '$run[0] as $r
+             | { text: (
+                 ":alert: *\($repo) — `\($r.head_branch)` CI failure*\n"
+                 + "workflow `\($r.name)` · attempt \($r.run_attempt) · "
+                 + "<\($server)/\($repo)/commit/\($r.head_sha)|`\($r.head_sha[0:7])`> \($r.display_title)\n"
+                 + "<\($r.html_url)|Run summary>\n"
+                 + $failed
+               ) }' >payload.json
+
+          cat payload.json
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a  # v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_FE_CRATES_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload-file-path: payload.json
