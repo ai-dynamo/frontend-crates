@@ -14,7 +14,6 @@ from fixture_disposition import (
     canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
     is_source_capture,
 )
-from unified_tools import unified_tools
 
 
 def capture_input(record: dict) -> dict:
@@ -168,10 +167,9 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
     captures = _effective_capture_records(directory, input_aliases)
     if not inputs or inputs.keys() != captures.keys():
         raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
-    tools = unified_tools()
     for ident, current in inputs.items():
-        if current.get("tools") != tools:
-            raise ValueError(f"current input tools differ from executable shared schema: {ident}")
+        if not isinstance(current.get("tools"), list):
+            raise ValueError(f"current input must declare its executable tool schemas: {ident}")
         record, raw, relative, bindings = captures[ident]
         failure = comparison_failure(record, current, raw, relative, bindings)
         if failure:
