@@ -138,6 +138,7 @@ impl From<async_openai::types::chat::ReasoningEffort> for ReasoningEffort {
             async_openai::types::chat::ReasoningEffort::Medium => ReasoningEffort::Medium,
             async_openai::types::chat::ReasoningEffort::High => ReasoningEffort::High,
             async_openai::types::chat::ReasoningEffort::Xhigh => ReasoningEffort::Xhigh,
+            async_openai::types::chat::ReasoningEffort::Max => ReasoningEffort::Max,
         }
     }
 }
@@ -2117,6 +2118,7 @@ mod tests {
                 prompt_tokens_details: Some(PromptTokensDetails {
                     audio_tokens: None,
                     cached_tokens: Some(0),
+                    ..Default::default()
                 }),
                 completion_tokens_details: Some(CompletionTokensDetails {
                     reasoning_tokens: Some(5),
