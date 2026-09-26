@@ -526,13 +526,15 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
 fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     let value = html_unescape(raw);
     let trimmed = value.trim();
-    if trimmed.eq_ignore_ascii_case("null") {
-        return Value::Null;
-    }
 
+    // Without a schema, preserve the literal text instead of inventing a type.
     let Some(schema) = schema else {
         return Value::String(value);
     };
+
+    if trimmed.eq_ignore_ascii_case("null") && schema_permits_null(schema) {
+        return Value::Null;
+    }
 
     if schema_has_type(Some(schema), "string") || schema_has_type(Some(schema), "enum") {
         return Value::String(value);
@@ -587,6 +589,18 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     }
 
     Value::String(value)
+}
+
+// Match the v2 MiniMax parser: a declared null alternative or an unconstrained
+// schema permits JSON null, while a string-only field keeps the literal text.
+fn schema_permits_null(schema: &Value) -> bool {
+    if schema_has_type(Some(schema), "null") {
+        return true;
+    }
+    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
+        return true;
+    }
+    schema.get("type").is_none() && schema.get("anyOf").is_none() && schema.get("oneOf").is_none()
 }
 
 // Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
@@ -663,6 +677,34 @@ mod tests {
             call.function.name.clone(),
             serde_json::from_str(&call.function.arguments).expect("valid JSON arguments"),
         )
+    }
+
+    #[test]
+    fn literal_grep_pattern_null_stays_string_while_nullable_fields_become_null() {
+        let tools = vec![ToolDefinition {
+            name: "grep".into(),
+            parameters: Some(serde_json::json!({
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "path": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                }
+            })),
+            strict: Some(true),
+        }];
+        let input = concat!(
+            "]<]minimax[>[<tool_call>",
+            "]<]minimax[>[<invoke name=\"grep\">",
+            "]<]minimax[>[<pattern>null]<]minimax[>[</pattern>",
+            "]<]minimax[>[<path>null]<]minimax[>[</path>",
+            "]<]minimax[>[</invoke>",
+            "]<]minimax[>[</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_minimax_m3(input, &MiniMaxM3ParserConfig::default(), Some(&tools))
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let (_, args) = call_name_and_args(&calls[0]);
+        assert_eq!(args, serde_json::json!({"pattern": "null", "path": null}));
     }
 
     #[test]
