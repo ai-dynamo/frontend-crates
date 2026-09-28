@@ -199,7 +199,7 @@ def test_v2_blob_is_compacted_and_hydrates_clean(model_v2_raw):
 def test_v2_all_tabs_present(model_v2):
     ids = [t["id"] for t in model_v2["tabs"]]
     assert ids == [
-        "tab-toolcalling-batch", "tab-toolcalling-streamv2",
+        "tab-toolcalling-batch", "tab-toolcalling-streamv1",
         "tab-reasoning-batch", "tab-reasoning-stream", "tab-unified",
     ], ids
 
@@ -208,7 +208,7 @@ def test_v2_tab_labels_show_parser_generation(model_v2):
     labels = {tab["id"]: tab["label"] for tab in model_v2["tabs"]}
 
     assert labels["tab-toolcalling-batch"].startswith("Tool Calling v1")
-    assert labels["tab-toolcalling-streamv2"].startswith("Tool Calling v1")
+    assert labels["tab-toolcalling-streamv1"].startswith("Tool Calling legacy stream")
     assert labels["tab-unified"].startswith("Unified v2")
 
 
@@ -556,7 +556,7 @@ def test_v2_batch_tab_has_all_peer_versions(model_v2):
 def test_v2_stream_tab_has_v1jail_ref_v2_and_peers(model_v2):
     # memory: dynamo_v1-3.0.0 on the stream tab is the v1 jail+batch reference (all
     # families) — must be present; plus the v2 candidate and the peers.
-    keys = {c["key"] for c in _tab(model_v2, "tab-toolcalling-streamv2")["candidates"]}
+    keys = {c["key"] for c in _tab(model_v2, "tab-toolcalling-streamv1")["candidates"]}
     assert any(k.startswith("dynamo_v1") for k in keys), f"no v1-jail ref candidate: {keys}"
     assert any(k.startswith("dynamo_v2") for k in keys), f"no v2 candidate: {keys}"
     assert any(k.startswith("vllm") for k in keys) and any(k.startswith("sglang") for k in keys)
@@ -578,7 +578,7 @@ def test_v2_dynamo_versions_come_from_fixtures(model_v2):
         return version.split("+source.", 1)[0].split(".patch", 1)[0]
 
     fixture_dynamo = set()
-    for tree in ("toolcalling/fixtures-batch-v1", "toolcalling/fixtures-stream-v2"):
+    for tree in ("toolcalling/fixtures-batch-v1", "toolcalling/fixtures-stream-v1"):
         for impl, vers in _peer_versions(tree).items():
             if impl.startswith("dynamo"):
                 fixture_dynamo |= {release_version(v) for v in vers}
@@ -635,15 +635,15 @@ def test_v2_facts_shape(model_v2):
             assert keys <= set(f), f
 
 
-def test_v2_deepseek_v4_streamv2_parser_links_dsml(model_v2):
+def test_v2_deepseek_v4_streamv1_parser_links_dsml(model_v2):
     # Migrated from test_stream_on_batch.test_dsv4_v2_parser_cell_links_dsml_parser, which
     # called g._parser_cell_html directly. Assert the same fact on the built model: the
-    # deepseek_v4 streamv2 parser cell links the DSML parser source and is NOT flagged
+    # deepseek_v4 streamv1 parser cell links the DSML parser source and is NOT flagged
     # unimplemented (the DeepSeek-v4 v2 stream parser exists, at dsml.rs).
-    tab = _tab(model_v2, "tab-toolcalling-streamv2")
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
     htmls = [r["parser"]["html"] for r in tab["rows"]
              if r.get("family") == "deepseek_v4" and r.get("parser")]
-    assert htmls, "no deepseek_v4 row with a parser cell in the streamv2 tab"
+    assert htmls, "no deepseek_v4 row with a parser cell in the streamv1 tab"
     html = htmls[0]
     assert "DeepSeekV4ToolStreamParser text path" in html
     assert "parsers/v2/src/tool_calling/dsml.rs" in html
@@ -698,11 +698,11 @@ def test_implemented_v2_families_not_marked_not_implemented(model_v2):
 
 # ---- reference-aware "not implemented" map (was window.__PARSER_NI) ------------
 
-def test_v2_parser_ni_matches_stream_v2_families(model_v2):
+def test_v2_parser_ni_matches_stream_v1_families(model_v2):
     ni = model_v2["parser_ni"]
     assert ni, "empty parser_ni map"
-    sv2 = _cache_root() / "toolcalling/fixtures-stream-v2"
-    dv2 = max((d for d in sv2.glob("dynamo_v2-*") if d.is_dir()),
+    sv1 = _cache_root() / "toolcalling/fixtures-stream-v1"
+    dv2 = max((d for d in sv1.glob("dynamo_v2-*") if d.is_dir()),
               key=lambda d: [int(x) for x in re.findall(r"\d+", d.name)], default=None)
     assert dv2 is not None
     fixture_fams = {p.name for p in dv2.iterdir() if p.is_dir()}
@@ -716,7 +716,7 @@ def test_v2_stream_parser_only_covers_implemented_families(model_v2):
     # The registry owns which families Dynamo v2 implements. Keep the rendered model
     # aligned with that declaration instead of relying on a corpus-wide n/a ratio,
     # which changes whenever a supported family or case is added.
-    tab = _tab(model_v2, "tab-toolcalling-streamv2")
+    tab = _tab(model_v2, "tab-toolcalling-streamv1")
     v2 = next(c["key"] for c in tab["candidates"] if c["key"].startswith("dynamo_v2"))
     registry = yaml.safe_load((UTILS / "src/parser_families.yaml").read_text())["families"]
     for row in tab["rows"]:
@@ -757,7 +757,7 @@ def test_v2_batch_tab_stream_candidates_use_current_peers(model_v2):
         if c.get("parse_mode") == "stream"
     )
     assert "stream" in labels
-    peers = _peer_versions("toolcalling/fixtures-stream-v2")
+    peers = _peer_versions("toolcalling/fixtures-stream-v1")
     for impl in ("vllm_python", "sglang_python"):
         newest = max(peers.get(impl, {"0"}), key=lambda v: [int(x) for x in re.findall(r"\d+", v)] or [0])
         assert newest in labels, f"batch tab missing current stream peer {impl} {newest}"

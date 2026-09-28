@@ -61,6 +61,7 @@ mod l1;
 
 use std::sync::Arc;
 
+use l1::PrefixLookup;
 pub use l1::{CacheEventFn, L1Cache, L1CacheStats};
 
 use crate::{
@@ -91,8 +92,6 @@ pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
     l1_enabled: bool,
-    /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
-    /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match`]).
     extend_on_hit: bool,
     /// Called once after every successful encode while L1 is active.
     token_observer: Option<CacheTokenUsageFn>,
@@ -212,53 +211,40 @@ impl CachedTokenizer {
 
 impl Encoder for CachedTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
-        // No specials => no boundaries are ever produced. Skip the lookup, miss-counter
-        // bump, and insert attempt entirely — otherwise the tiktoken wrapping path (which
-        // deliberately passes an empty list) pays the cost on every call with no chance
-        // of a hit.
         if !self.l1_enabled {
             return self.inner.encode(input);
         }
 
-        if let Some((prefix_tokens, prefix_len, deepest_boundary)) =
-            self.l1.longest_prefix_match(input)
-        {
-            let cached_tokens = prefix_tokens.len();
-            let suffix = &input[prefix_len..];
-            let encoding = if suffix.is_empty() {
-                Encoding::Sp(prefix_tokens.to_vec())
-            } else if self.extend_on_hit {
-                // Cache the new suffix at its deepest boundary so the next turn hits
-                // deeper, then return the full merged tokens. The deepest boundary was
-                // already found by `longest_prefix_match`, so no rescan is needed here.
-                Encoding::Sp(self.l1.extend_after_match(
+        let matched = match self.l1.lookup_prefix(input) {
+            PrefixLookup::Hit(matched) => matched,
+            PrefixLookup::Miss(prefix_hashes) => {
+                let encoding = Encoding::Sp(self.l1.populate_and_encode_with_hashes(
                     input,
-                    prefix_tokens,
-                    prefix_len,
-                    deepest_boundary,
+                    prefix_hashes.into_iter(),
                     self.inner.as_ref(),
-                )?)
-            } else {
-                let suffix_enc = self.inner.encode(suffix)?;
-                // Reserve exact capacity so appending the suffix doesn't grow-realloc and
-                // re-copy the (large) cached prefix.
-                let mut merged: Vec<TokenIdType> =
-                    Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
-                merged.extend_from_slice(&prefix_tokens);
-                merged.extend_from_slice(suffix_enc.token_ids());
-                Encoding::Sp(merged)
-            };
-            self.observe_token_usage(cached_tokens, encoding.token_ids().len());
-            return Ok(encoding);
-        }
+                )?);
+                self.observe_token_usage(0, encoding.token_ids().len());
+                return Ok(encoding);
+            }
+        };
 
-        // Miss path: tokenize once, caching the cumulative prefix at every boundary as we
-        // go. The returned ids equal an uncached encode (special tokens are atomic), so we
-        // avoid the redundant second tokenization a separate full-encode + insert would
-        // cost. Returns Encoding::Sp — consistent with the hit path (see the storage-
-        // normalization note in the module docs).
-        let encoding = Encoding::Sp(self.l1.populate_and_encode(input, self.inner.as_ref())?);
-        self.observe_token_usage(0, encoding.token_ids().len());
+        let cached_tokens = matched.tokens.len();
+        let encoding = if self.extend_on_hit {
+            Encoding::Sp(self.l1.extend_after_match_with_hash(
+                input,
+                matched,
+                self.inner.as_ref(),
+            )?)
+        } else {
+            let suffix_enc = self.inner.encode(&input[matched.prefix_len..])?;
+            // Reserve once to avoid copying the cached prefix during vector growth.
+            let mut merged: Vec<TokenIdType> =
+                Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
+            merged.extend_from_slice(&matched.tokens);
+            merged.extend_from_slice(suffix_enc.token_ids());
+            Encoding::Sp(merged)
+        };
+        self.observe_token_usage(cached_tokens, encoding.token_ids().len());
         Ok(encoding)
     }
 

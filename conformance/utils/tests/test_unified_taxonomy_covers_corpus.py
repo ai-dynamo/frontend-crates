@@ -82,6 +82,11 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
     for family in FAMILIES:
         prefix = invoke_header_prefix(family)
+        if family == "glm47":
+            # GLM's outer marker is itself the invoke opener, so there is no
+            # separate inner header to place before a guided payload.
+            assert prefix == ""
+            continue
         assert prefix
         assert prefix == prefix.lstrip()
         if family != "deepseek_v41":
@@ -219,13 +224,13 @@ def test_e2e_tags_agree_between_descriptions_and_markdown() -> None:
 # and nothing complained. Require the full name AND require it to exist.
 
 _SIBLING_DOCS = {
-    "TOOLCALLING.streamv2": UTILS / "lib" / "parsers" / "TOOLCALLING_STREAMING_V2_CASES.md",
+    "TOOLCALLING.streamv1": UTILS / "lib" / "parsers" / "TOOLCALLING_STREAMING_V1_CASES.md",
     "TOOLCALLING.batch": UTILS / "lib" / "parsers" / "TOOLCALLING_CASES.md",
     "REASONING.batch": UTILS / "lib" / "parsers" / "REASONING_CASES.md",
 }
-_QUALIFIED = re.compile(r"\b(?:TOOLCALLING|REASONING)\.(?:batch|streamv2)\.\d+(?:\.[a-z])?")
+_QUALIFIED = re.compile(r"\b(?:TOOLCALLING|REASONING)\.(?:batch|streamv1)\.\d+(?:\.[a-z])?")
 # a stage segment with no axis in front of it — the shape that named nothing
-_BARE = re.compile(r"(?<![.\w])(?:batch|streamv2)\.\d+(?:\.[a-z])?")
+_BARE = re.compile(r"(?<![.\w])(?:batch|streamv1)\.\d+(?:\.[a-z])?")
 _CITING = [UTILS / "lib" / "parsers" / "UNIFIED_CASES.md", SRC / "gen_unified_golden.py"]
 
 
@@ -234,7 +239,7 @@ def test_sibling_case_references_are_fully_qualified() -> None:
     offenders = {k: v for k, v in offenders.items() if v}
     assert not offenders, (
         f"unqualified case references (missing the axis prefix): {offenders}. "
-        "Cite the full name, e.g. `TOOLCALLING.streamv2.2.a`, not `streamv2.2.a`."
+        "Cite the full name, e.g. `TOOLCALLING.streamv1.2.a`, not `streamv1.2.a`."
     )
 
 
@@ -245,7 +250,7 @@ def test_sibling_case_references_exist() -> None:
         bad = [
             ref
             for ref in sorted(set(_QUALIFIED.findall(f.read_text(encoding="utf-8"))))
-            # group-level ids (`...streamv2.2`) have no entry of their own; a sub-case does
+            # group-level ids (`...streamv1.2`) have no entry of their own; a sub-case does
             if not any(ref.startswith(k) and ref in body for k, body in bodies.items())
         ]
         if bad:
@@ -577,20 +582,21 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v4": 80,
             "deepseek_v41": 80,
             "gemma4": 82,
+            "glm47": 80,
             "kimi_k2": 80,
             "kimi_k3": 88,
             "muse_glimmer": 81,
             "qwen3": 80,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 571
+    assert sum(per_family.values()) == 651
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "7-3", "30-14", "50-1", "50-2"} | {
+    deferred = {"1-2", "5-4", "5-5", "6-2", "7-3", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 91
+    assert len(UNIFIED_TAX) == 92
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -811,6 +817,7 @@ def _family_value(scenario, family):
             "deepseek_v4": "</｜DSML｜invoke>",
             "deepseek_v41": "</｜DSML｜ invoke>",
             "gemma4": "}<tool_call|>",
+            "glm47": "</tool_call>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
             "muse_glimmer": "</atem:function_calls>",
@@ -876,6 +883,39 @@ def _native_input_calls(family, raw):
     body is not evidence that the parser must dispatch it. The caller keeps DSML's
     empty-output EOF contract separate.
     """
+    if family == "glm47":
+        calls = []
+        cursor = 0
+        while True:
+            header = re.search(
+                r'(?:<tool_call>|\A)([A-Za-z0-9_.-]+)(?=<arg_key>|</tool_call>)',
+                raw[cursor:],
+            )
+            if header is None:
+                return calls
+            name = header[1]
+            at = cursor + header.end()
+            arguments = {}
+            while raw.startswith("<arg_key>", at):
+                key_end = raw.find("</arg_key>", at)
+                assert key_end >= 0, (family, "unterminated argument key", raw)
+                key = raw[at + len("<arg_key>"):key_end]
+                value_start = key_end + len("</arg_key>")
+                assert raw.startswith("<arg_value>", value_start), (
+                    family, "missing argument value", raw,
+                )
+                value_start += len("<arg_value>")
+                value_end = raw.find("</arg_value>", value_start)
+                if value_end < 0:
+                    break
+                arguments[key] = raw[value_start:value_end]
+                at = value_end + len("</arg_value>")
+            calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
+            outer_end = raw.find("</tool_call>", at)
+            if outer_end < 0:
+                return calls
+            cursor = outer_end + len("</tool_call>")
+
     headers = {
         "deepseek_v4": r'<｜DSML｜invoke name="([^"]+)">',
         "deepseek_v41": r'<｜DSML｜ invoke name="([^"]+)">',

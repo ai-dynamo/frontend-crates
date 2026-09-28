@@ -108,3 +108,7 @@ def test_a_capture_runs_on_both_sglang_shapes(reasoning_parser, expected):
     module = _load(reasoning_parser)
     assert module._stream_chunks("muse_glimmer", ["hi"]) == [[{"kind": "text", "text": "hi"}]]
     assert [c["active"] for c in CONSTRUCTED] == [expected]
+
+
+def test_glm_uses_the_registered_reasoning_detector_name():
+    assert _load(_Released).FAMILY_PARSERS["glm47"] == ("glm45", "glm47")

@@ -1756,7 +1756,7 @@ cases:
   two_calls:
     lifecycle: active
     scenario: two_calls
-    description: 'Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.'
+    description: 'Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.'
     policy: []
     display_id: UNIFIED.2-1
     historical_ids:
@@ -1840,7 +1840,7 @@ cases:
   two_calls_same_name:
     lifecycle: active
     scenario: two_calls_same_name
-    description: 'The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.'
+    description: 'The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.'
     policy: []
     display_id: UNIFIED.2-2
     historical_ids:
@@ -1924,7 +1924,7 @@ cases:
   text_only:
     lifecycle: active
     scenario: text_only
-    description: 'Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.'
+    description: 'Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.'
     policy: []
     display_id: UNIFIED.3-1
     historical_ids:
@@ -5600,7 +5600,7 @@ cases:
   tool_no_close:
     lifecycle: active
     scenario: tool_no_close
-    description: 'A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.'
+    description: 'A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.'
     policy: []
     display_id: UNIFIED.5-2
     historical_ids:
@@ -5874,7 +5874,7 @@ cases:
   empty_args:
     lifecycle: active
     scenario: empty_args
-    description: 'A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.'
+    description: 'A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv1.6.a.'
     policy:
     - P3
     display_id: UNIFIED.6-1
@@ -5943,7 +5943,7 @@ cases:
   arg_unicode:
     lifecycle: active
     scenario: arg_unicode
-    description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.'
+    description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.'
     policy: []
     display_id: UNIFIED.7-1
     historical_ids:
@@ -6091,7 +6091,7 @@ cases:
   text_before_tool:
     lifecycle: active
     scenario: text_before_tool
-    description: 'Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.'
+    description: 'Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.'
     policy: []
     display_id: UNIFIED.8-1
     historical_ids:
@@ -6244,7 +6244,7 @@ cases:
   text_sandwich:
     lifecycle: active
     scenario: text_sandwich
-    description: 'Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.'
+    description: 'Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.'
     policy: []
     display_id: UNIFIED.8-3
     historical_ids:
@@ -6323,7 +6323,7 @@ cases:
   text_between_calls:
     lifecycle: active
     scenario: text_between_calls
-    description: 'Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.'
+    description: 'Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.'
     policy: []
     display_id: UNIFIED.8-4
     historical_ids:

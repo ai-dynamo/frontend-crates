@@ -45,6 +45,7 @@ GRAMMAR_NOTE = {
     "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
+    "glm47": "reasoning `<think>...</think>`, tool `<tool_call>NAME<arg_key>KEY</arg_key><arg_value>VALUE</arg_value></tool_call>`.",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
@@ -161,6 +162,9 @@ def r_tool(fam, name, key, val, idx):
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
                 f"{val}\n</parameter>\n</function>\n</tool_call>")
+    if fam == "glm47":
+        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
+                f"<arg_value>{val}</arg_value></tool_call>")
     if fam == "muse_glimmer":
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
@@ -171,6 +175,33 @@ def r_tool(fam, name, key, val, idx):
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+
+def qwen3_input_as_glm47(input_text):
+    """Translate a Qwen-shaped edge fixture into GLM XML."""
+    function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
+    parameter = re.compile(r"<parameter=([^>]+)>(.*?)</parameter>", re.DOTALL)
+
+    def convert_function(match):
+        name, body = match.groups()
+        rendered = parameter.sub(
+            lambda parameter_match: (
+                f"<arg_key>{parameter_match.group(1).strip()}</arg_key>"
+                f"<arg_value>{parameter_match.group(2).strip()}</arg_value>"
+            ),
+            body,
+        )
+        return f"{name}{rendered.strip()}"
+
+    converted = function.sub(convert_function, input_text)
+    converted = converted.replace("<tool_call>\n", "<tool_call>")
+    converted = re.sub(r"<function=([^>]+)>\n?", r"\1", converted)
+    converted = re.sub(
+        r"<parameter=([^>]+)>\n?", r"<arg_key>\1</arg_key><arg_value>", converted
+    )
+    converted = converted.replace("\n</parameter>", "</arg_value>")
+    converted = converted.replace("\n</function>", "")
+    return converted.replace("\n</tool_call>", "</tool_call>")
 
 
 def kimi_input_as_dsml(input_text):
@@ -385,6 +416,8 @@ def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
+    if fam == "glm47":
+        return ""
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
     # Search for the name AFTER the opener. A family whose opener already carries the
@@ -520,33 +553,33 @@ CLEAN = [
       "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
-    # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
+    # --- Group 2: multiple tool calls (TOOLCALLING.streamv1.2) — tool-only, green everywhere ---
     ("two_calls",
-     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.",
+     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.",
      [], [("tool", "f", "x", "1"), ("tool", "g", "y", "2")], M, M),
     ("two_calls_same_name",
-     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.",
+     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
-     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
+     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
      [], [("text", "The answer is 42, no tools needed.")], M, M),
 
-    # --- Group 7: argument fidelity (TOOLCALLING.streamv2.7) ---
+    # --- Group 7: argument fidelity (TOOLCALLING.streamv1.7) ---
     ("arg_unicode",
-     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.",
+     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.",
      [], [("tool", "get_weather", "city", "São Paulo 東京")], M, M),
 
-    # --- Group 8: content / narration position (TOOLCALLING.streamv2.8) ---
+    # --- Group 8: content / narration position (TOOLCALLING.streamv1.8) ---
     ("text_before_tool",
-     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.",
+     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.",
      [], [("text", "On it: "), ("tool", "get_weather", "city", "Paris")], M, M),
     ("text_sandwich",
-     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.",
+     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.",
      [], [("text", "Before. "), ("tool", "get_weather", "city", "Paris"), ("text", " After.")], M, M),
     ("text_between_calls",
-     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.",
+     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.",
      [], [("tool", "f", "x", "1"), ("text", " then "), ("tool", "g", "y", "2")], M, M),
     ("narrated_calls",
      "Multiple tool calls with visible narration between each — tool_call -> text -> tool_call -> text -> tool_call. The agentic pattern: call, narrate, call again. Every call and every inter-call text span must surface as its own ordered event.",
@@ -585,6 +618,21 @@ CLEAN = [
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
 
 EDGE = [
+    ("glm47_parameterless_call_shape_inside_argument",
+     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {
+         "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
+     }}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "glm47": (
+             "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
+             D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"),
+             M,
+         ),
+     })),
+
     ("truncated_tool_eof",
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
      ["P2"],
@@ -697,7 +745,7 @@ EDGE = [
       }),
 
     ("empty_args",
-     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
+     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv1.6.a.",
      ["P3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -713,7 +761,7 @@ EDGE = [
      }),
 
     ("tool_no_close",
-     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
+     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -1485,6 +1533,15 @@ def _guided_product():
                 fill=(None if dispatches else
                       (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
             )
+            if scenario == "guided_json_schema_error_not_a_call_bare_opener":
+                # GLM's outer tool marker is itself the complete invoke opener.
+                # It has no separate bare inner header, so this crossing is the
+                # same bare JSON behavior covered by `guided_json_invalid_call`.
+                family_inputs = OnlyFamilies({
+                    family: spec
+                    for family, spec in family_inputs.items()
+                    if family != "glm47"
+                })
             out.append((
                 scenario,
                 f"Guided JSON, payload is {pay_name}, surrounded by {sur_desc}. "
@@ -1712,7 +1769,7 @@ EDGE += [
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
-        if fam == "deepseek_v4" and fam not in spec:
+        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
             return spec["qwen3"]
         return spec[fam]
     return spec
@@ -1844,6 +1901,10 @@ def _build_edge_cases(fam, specs):
                 kimi_input, *rest = per_fam["kimi_k2"]
                 per_fam = dict(per_fam)
                 per_fam[fam] = (kimi_input_as_dsml(kimi_input), *rest)
+            elif fam == "glm47" and "qwen3" in per_fam:
+                qwen_input, *rest = per_fam["qwen3"]
+                per_fam = dict(per_fam)
+                per_fam[fam] = (qwen3_input_as_glm47(qwen_input), *rest)
             else:
                 raise KeyError(
                     f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "

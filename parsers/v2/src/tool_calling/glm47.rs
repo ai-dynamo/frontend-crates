@@ -1,260 +1,296 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Streaming tool-call parser for GLM-4.7 / GLM 5.1.
+//! GLM-4.7/5.x XML tool calls and their legacy ToolParser projection.
 //!
-//! GLM emits tool calls as
-//!   `<tool_call>NAME<arg_key>k1</arg_key><arg_value>v1</arg_value>...</tool_call>`
-//! The function name comes directly after `<tool_call>` (there is no inner
-//! `<function=` marker), and there is exactly ONE call per
-//! `<tool_call>...</tool_call>` block; multiple calls are multiple blocks.
-//!
-//! The streaming concern (buffering, chunk-split marker safety, normal_text
-//! suppression) is owned here. The per-block value typing is delegated to the v1
-//! batch parser `try_tool_call_parse_glm47` driven by `Glm47ParserConfig::default()`,
-//! so a streamed call matches exactly what the batch parser produces. Arguments
-//! are re-serialized in source `<arg_key>` order because the v1 parser builds
-//! them from a `HashMap` whose key order is non-deterministic; the streaming
-//! fixtures store the arguments as an exact JSON string, so order is pinned to
-//! the model-emitted order (the order vLLM's Rust parser also preserves).
+//! GLM's outer `<tool_call>` block is itself the invoke: the function name is
+//! followed directly by `<arg_key>`/`<arg_value>` pairs. `WrappedBlockScanner`
+//! owns all buffering, recovery, and chunk-boundary handling; this module only
+//! supplies the grammar and value emitter.
 
-use crate::tool_calling::scan::reorder_arguments;
-use crate::tool_calling::v1core::{Glm47ParserConfig, ToolDefinition, try_tool_call_parse_glm47};
-
+use crate::tool_calling::scan::{
+    BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
+    InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
+    marker_prefix_suffix_len, reorder_arguments,
+};
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
+use crate::tool_calling::v1core::{Glm47ParserConfig, ToolDefinition, parse_glm47_invoke};
 
-const BLOCK_START: &str = "<tool_call>";
-const BLOCK_END: &str = "</tool_call>";
+pub(crate) const BLOCK_START: &str = "<tool_call>";
+pub(crate) const BLOCK_END: &str = "</tool_call>";
 const ARG_KEY_START: &str = "<arg_key>";
 const ARG_KEY_END: &str = "</arg_key>";
 const ARG_VALUE_START: &str = "<arg_value>";
+const ARG_VALUE_END: &str = "</arg_value>";
 
-/// Orphan markers that can anchor a bare call body that was emitted without a
-/// leading `<tool_call>` opener (truncation / malformed framing). The first of
-/// these in the buffer marks the boundary; the function name is the token
-/// immediately before it. Mirrors `first_orphan_glm47_marker_index` in the v1
-/// parser so streaming recovery agrees with batch recovery.
 const ORPHAN_ANCHORS: [&str; 4] = [BLOCK_END, ARG_KEY_START, ARG_KEY_END, ARG_VALUE_START];
 
-/// Stream parser for GLM-4.7 tool calls.
-pub struct Glm47ToolStreamParser {
-    buffer: String,
-    suppress_normal_text: bool,
-    next_index: usize,
+fn spec() -> WrappedBlockSpec {
+    WrappedBlockSpec {
+        family: "glm47",
+        block_starts: vec![BLOCK_START.to_string()],
+        block_ends: vec![BLOCK_END.to_string()],
+        // The block opener is also the invoke opener. The scanner consumes the
+        // opener as block markup and passes the body plus closer to the emitter.
+        invoke_start: BLOCK_START.to_string(),
+        invoke_end: BLOCK_END.to_string(),
+        orphan_markers: ORPHAN_ANCHORS
+            .iter()
+            .map(|marker| (*marker).to_string())
+            .collect(),
+        holdback_markers: [
+            BLOCK_START,
+            BLOCK_END,
+            ARG_KEY_START,
+            ARG_KEY_END,
+            ARG_VALUE_START,
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect(),
+        bare_recovery_latch: BareRecoveryLatch::Clear,
+        invoke_latch: InvokeLatch::IfEmitted,
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(glm47_boundary)),
+        preserve_special_tokens: true,
+        ..Default::default()
+    }
+}
+
+pub(crate) struct Glm47Emitter {
     config: Glm47ParserConfig,
     tools: Vec<ToolDefinition>,
+}
+
+impl InvokeEmitter for Glm47Emitter {
+    fn parse_invoke(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        let call = match parse_glm47_invoke(invoke, &self.config, Some(&self.tools)) {
+            Ok(call) => call,
+            Err(error) => {
+                tracing::warn!(
+                    why = "glm47_unparseable_invoke",
+                    tool_index,
+                    error = %error,
+                    "GLM stream dropped a delimited invoke that failed value typing"
+                );
+                return Ok(None);
+            }
+        };
+        Ok(Some(ToolCallDelta {
+            tool_index,
+            name: Some(call.function.name),
+            arguments: reorder_arguments(&call.function.arguments, &source_arg_key_order(invoke)),
+            complete: true,
+        }))
+    }
+}
+
+#[derive(Default)]
+struct Glm47BoundaryProgress {
+    cursor: usize,
+    in_arg_value: bool,
+    completed_arg_value: bool,
+    possible_outer_end: Option<usize>,
+}
+
+impl Glm47BoundaryProgress {
+    fn end(&mut self, text: &str, flush: bool) -> Option<usize> {
+        while self.cursor < text.len() {
+            let rest = &text[self.cursor..];
+            if self.in_arg_value {
+                if rest.starts_with(BLOCK_START) && self.possible_outer_end.is_some() {
+                    let body = &rest[BLOCK_START.len()..];
+                    match body.find(ARG_KEY_START) {
+                        Some(at)
+                            if !body[..at].is_empty()
+                                && body[..at].chars().all(|ch| {
+                                    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
+                                }) =>
+                        {
+                            return self.possible_outer_end;
+                        }
+                        None if !flush => return None,
+                        _ => {}
+                    }
+                }
+                if !flush
+                    && self.possible_outer_end.is_some()
+                    && rest.len() < BLOCK_START.len()
+                    && BLOCK_START.starts_with(rest)
+                {
+                    return None;
+                }
+                if rest.starts_with(ARG_VALUE_END) {
+                    self.in_arg_value = false;
+                    self.completed_arg_value = true;
+                    self.possible_outer_end = None;
+                    self.cursor += ARG_VALUE_END.len();
+                    continue;
+                }
+                if rest.len() < ARG_VALUE_END.len() && ARG_VALUE_END.starts_with(rest) {
+                    return flush.then_some(self.possible_outer_end).flatten();
+                }
+                if rest.starts_with(BLOCK_END) {
+                    self.possible_outer_end
+                        .get_or_insert(self.cursor + BLOCK_END.len());
+                    self.cursor += BLOCK_END.len();
+                    continue;
+                }
+                if rest.len() < BLOCK_END.len() && BLOCK_END.starts_with(rest) {
+                    return flush.then_some(self.possible_outer_end).flatten();
+                }
+            } else {
+                if rest.starts_with(ARG_VALUE_START) {
+                    self.in_arg_value = true;
+                    self.cursor += ARG_VALUE_START.len();
+                    continue;
+                }
+                if rest.starts_with(BLOCK_END) {
+                    return Some(self.cursor + BLOCK_END.len());
+                }
+                if (rest.len() < ARG_VALUE_START.len() && ARG_VALUE_START.starts_with(rest))
+                    || (rest.len() < BLOCK_END.len() && BLOCK_END.starts_with(rest))
+                {
+                    return None;
+                }
+            }
+            let ch = rest.chars().next().expect("cursor is before text end");
+            self.cursor += ch.len_utf8();
+        }
+        if flush && !self.in_arg_value && self.completed_arg_value {
+            Some(self.cursor)
+        } else {
+            flush.then_some(self.possible_outer_end).flatten()
+        }
+    }
+}
+
+#[derive(Default)]
+struct Glm47Boundary {
+    native: Glm47BoundaryProgress,
+    guided: Glm47BoundaryProgress,
+}
+
+impl InvokeBoundary for Glm47Boundary {
+    fn block_is_invoke(&self) -> bool {
+        true
+    }
+
+    fn bare_invoke_start(&self, text: &str) -> Option<usize> {
+        find_bare_invoke_start(text)
+    }
+
+    fn bare_invoke_holdback(&self, text: &str) -> usize {
+        trailing_holdback_len(text)
+    }
+
+    fn accepts_bare_invoke(&self, invoke: &str) -> bool {
+        if invoke.contains(ARG_KEY_START) {
+            return true;
+        }
+        let Some(end) = Glm47BoundaryProgress::default().end(invoke, false) else {
+            return false;
+        };
+        let invoke = &invoke[..end];
+        let name = invoke.strip_suffix(BLOCK_END).unwrap_or(invoke).trim();
+        !name.is_empty()
+            && !name.ends_with('.')
+            && name
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+    }
+
+    fn bare_invoke_uses_eof_boundary(&self) -> bool {
+        true
+    }
+
+    fn owns_guided_prefix(&self) -> bool {
+        true
+    }
+
+    fn guided_invoke_at(&self, text: &str) -> Option<(usize, usize)> {
+        text.find(BLOCK_START).map(|at| (at, BLOCK_START.len()))
+    }
+
+    fn is_guided_invoke_marker(&self, marker: &str) -> bool {
+        marker == BLOCK_START
+    }
+
+    fn guided_prefix_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        context: GuidedInvokePrefixContext,
+    ) -> Option<GuidedInvokePrefix> {
+        let body = candidate.strip_prefix(BLOCK_START)?;
+        if body.trim_start().starts_with(['{', '[']) {
+            return Some(GuidedInvokePrefix::Match(BLOCK_START.len()));
+        }
+        if !context.outside_reasoning {
+            return Some(GuidedInvokePrefix::Strip(BLOCK_START.len()));
+        }
+        self.guided
+            .end(body, false)
+            .map(|end| GuidedInvokePrefix::Strip(BLOCK_START.len() + end))
+            .or(Some(GuidedInvokePrefix::Pending))
+    }
+
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        self.native.end(candidate, flush)
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, text: &str) -> usize {
+        marker_prefix_suffix_len(text, [BLOCK_END, ARG_VALUE_START, ARG_VALUE_END])
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+fn glm47_boundary() -> Box<dyn InvokeBoundary> {
+    Box::new(Glm47Boundary::default())
+}
+
+/// The one GLM scanner construction site shared by native UnifiedParser and
+/// the legacy ToolParser compatibility surface.
+pub(crate) fn glm47_scanner(tools: &[Tool]) -> WrappedBlockScanner<Glm47Emitter> {
+    WrappedBlockScanner::new(
+        spec(),
+        Glm47Emitter {
+            config: Glm47ParserConfig::default(),
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+        },
+    )
+}
+
+/// Compatibility projection for callers that still use the tool-only trait.
+pub struct Glm47ToolStreamParser {
+    scanner: WrappedBlockScanner<Glm47Emitter>,
 }
 
 impl Glm47ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            buffer: String::new(),
-            suppress_normal_text: false,
-            next_index: 0,
-            config: Glm47ParserConfig::default(),
-            tools: tools.iter().map(ToolDefinition::from).collect(),
+            scanner: glm47_scanner(tools),
         }
-    }
-
-    fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
-        let mut out = ToolParseResult::default();
-
-        loop {
-            // A bare call body (no `<tool_call>` opener) is anchored by the first
-            // orphan marker (`<arg_key>` / `</tool_call>` / ...) that precedes the
-            // next wrapped opener. The function name is the identifier token
-            // immediately before that anchor; prose before the name stays
-            // normal_text. The v1 batch parser recovers these the same way, so
-            // the Dynamo column never leaks tool markup into user-visible text.
-            let wrapped_start = self.buffer.find(BLOCK_START);
-            let bare = self.bare_anchor(wrapped_start);
-
-            // A lone `</tool_call>` (BLOCK_END) with no wrapped opener before it
-            // and no recoverable bare call anchoring it is a TRUE orphan close:
-            // malformed markup that must never leak into normal_text. In GLM
-            // `</tool_call>` doubles as the close of a bare call (it is in
-            // ORPHAN_ANCHORS), so only strip it when `bare_anchor` finds no bare
-            // body before it — otherwise the bare arm below recovers the call. A
-            // bare body always has a function-name identifier before its first
-            // orphan marker, so `bare.is_none()` reliably means "no bare call".
-            // Emit the preceding prose when not suppressing, drain through the
-            // marker, clear suppression, and continue. Mirrors the orphan-close
-            // idiom in `minimax_m3`.
-            if bare.is_none()
-                && let Some(pos) = self.buffer.find(BLOCK_END)
-                && wrapped_start.is_none_or(|open| pos < open)
-            {
-                if !self.suppress_normal_text && pos > 0 {
-                    out.normal_text.push_str(&self.buffer[..pos]);
-                }
-                self.buffer.drain(..pos + BLOCK_END.len());
-                self.suppress_normal_text = false;
-                continue;
-            }
-
-            match (wrapped_start, bare) {
-                // Bare anchor comes first (or there is no wrapped opener).
-                // `bare_anchor` only returns `Some` when the bare body precedes
-                // any wrapped opener, so this arm always wins over the wrapped
-                // arm when a bare call is present.
-                (_, Some(bare)) => {
-                    // Surface prose preceding the bare function name.
-                    if bare.name_start > 0 {
-                        if !self.suppress_normal_text {
-                            out.normal_text.push_str(&self.buffer[..bare.name_start]);
-                        }
-                        self.buffer.drain(..bare.name_start);
-                    }
-
-                    // Recover only once the bare body's `</tool_call>` close has
-                    // streamed; otherwise hold the body (no leak) and wait. At
-                    // EOF an unterminated bare body is dropped (truncation). The
-                    // prose prefix was already drained, so the function name is
-                    // now at the front of the buffer.
-                    let Some(end_rel) = self.buffer.find(BLOCK_END) else {
-                        if flush {
-                            tracing::warn!(
-                                why = "glm47_incomplete_tool_call",
-                                "GLM-4.7 stream dropped incomplete bare tool call at EOF"
-                            );
-                            self.buffer.clear();
-                        }
-                        break;
-                    };
-                    let close = end_rel + BLOCK_END.len();
-                    let bare_body = self.buffer[..close].to_string();
-                    self.buffer.drain(..close);
-                    self.suppress_normal_text = true;
-                    // Wrap so the v1 parser takes its normal wrapped path.
-                    let wrapped = format!("{BLOCK_START}{bare_body}");
-                    if let Some(delta) = self.parse_block_delta(&wrapped)? {
-                        tracing::warn!(
-                            why = "glm47_bare_call_recovery",
-                            tool_index = delta.tool_index,
-                            "GLM-4.7 stream recovered a complete bare tool call without <tool_call> opener"
-                        );
-                        out.calls.push(delta);
-                        self.next_index += 1;
-                    }
-                    continue;
-                }
-                // Wrapped opener comes first.
-                (Some(start), _) => {
-                    if start > 0 {
-                        if !self.suppress_normal_text {
-                            out.normal_text.push_str(&self.buffer[..start]);
-                        }
-                        self.buffer.drain(..start);
-                    }
-
-                    // Wait for the matching block end before parsing. The whole
-                    // block (name + args) is value-typed by the v1 parser in one
-                    // shot.
-                    let Some(end_rel) = self.buffer.find(BLOCK_END) else {
-                        if flush {
-                            tracing::warn!(
-                                why = "glm47_incomplete_tool_call",
-                                "GLM-4.7 stream dropped incomplete tool call at EOF"
-                            );
-                            self.buffer.clear();
-                        }
-                        break;
-                    };
-
-                    let block_end = end_rel + BLOCK_END.len();
-                    let block = self.buffer[..block_end].to_string();
-                    self.buffer.drain(..block_end);
-
-                    // A complete wrapped block is fully consumed here, so natural
-                    // text after it (inter-call / trailing) is kept again: drop
-                    // only the block markup and clear suppression. This matches
-                    // the v1 batch parser, which strips the complete-block markup
-                    // and preserves surrounding text verbatim (cases 8.b/8.c/8.d).
-                    self.suppress_normal_text = false;
-
-                    if let Some(delta) = self.parse_block_delta(&block)? {
-                        out.calls.push(delta);
-                        self.next_index += 1;
-                    }
-                    continue;
-                }
-                // No opener and no bare anchor: emit buffered text, but hold back
-                // anything split across this chunk boundary that the next chunk
-                // could turn into a tool call — a partial marker, a partial
-                // orphan anchor plus the bare function name before it, or a
-                // trailing bare identifier awaiting its `<arg_key>` — unless
-                // flushing.
-                (None, None) => {
-                    let keep = if flush {
-                        0
-                    } else {
-                        trailing_holdback_len(&self.buffer)
-                    };
-                    let emit_len = self.buffer.len().saturating_sub(keep);
-                    if emit_len > 0 {
-                        if !self.suppress_normal_text {
-                            out.normal_text.push_str(&self.buffer[..emit_len]);
-                        }
-                        self.buffer.drain(..emit_len);
-                    }
-                    break;
-                }
-            }
-        }
-
-        Ok(out)
-    }
-
-    /// Locate a bare call anchor in the buffer: the first orphan marker (before
-    /// any wrapped `<tool_call>` opener) whose preceding identifier token is a
-    /// plausible function name. Returns `None` when no such anchor exists (the
-    /// region is plain prose or a normal wrapped block). `wrapped_start` is the
-    /// index of the next `<tool_call>` opener, so an orphan marker that belongs
-    /// to a wrapped block (i.e. appears after the opener) is ignored.
-    fn bare_anchor(&self, wrapped_start: Option<usize>) -> Option<BareAnchor> {
-        let marker_idx = ORPHAN_ANCHORS
-            .iter()
-            .filter_map(|m| self.buffer.find(m))
-            .min()?;
-        // An orphan marker after the next wrapped opener belongs to that block.
-        if wrapped_start.is_some_and(|w| w <= marker_idx) {
-            return None;
-        }
-        let before = self.buffer[..marker_idx].trim_end();
-        let name_start = before
-            .char_indices()
-            .rev()
-            .find(|(_, ch)| ch.is_whitespace())
-            .map(|(idx, ch)| idx + ch.len_utf8())
-            .unwrap_or(0);
-        let candidate = before[name_start..].trim();
-        if candidate.is_empty()
-            || !candidate
-                .chars()
-                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-        {
-            return None;
-        }
-        Some(BareAnchor { name_start })
-    }
-
-    /// Parse one complete `<tool_call>...</tool_call>` block into a delta.
-    ///
-    /// Delegates value typing to the v1 batch parser, then re-orders the
-    /// arguments to the source `<arg_key>` order so the serialized JSON string
-    /// matches the engine reference output exactly.
-    fn parse_block_delta(&self, block: &str) -> anyhow::Result<Option<ToolCallDelta>> {
-        let (calls, _content) = try_tool_call_parse_glm47(block, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
-            return Ok(None);
-        };
-        let arguments = reorder_arguments(&call.function.arguments, &source_arg_key_order(block));
-        Ok(Some(ToolCallDelta {
-            tool_index: self.next_index,
-            name: Some(call.function.name),
-            arguments,
-            complete: true,
-        }))
     }
 }
 
@@ -267,47 +303,45 @@ impl ToolParser for Glm47ToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        true
+        self.scanner.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.buffer.push_str(chunk);
-        self.drain(false)
+        self.scanner.push(chunk)
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.drain(true)
+        self.scanner.finish()
     }
 }
 
-/// A located bare call anchor: `name_start` is the byte offset of the function
-/// name token in the buffer (prose before it is normal_text).
-#[derive(Clone, Copy)]
-struct BareAnchor {
-    name_start: usize,
+fn find_bare_invoke_start(text: &str) -> Option<usize> {
+    let marker_idx = ORPHAN_ANCHORS
+        .iter()
+        .filter_map(|marker| text.find(marker))
+        .min()?;
+    if text
+        .find(BLOCK_START)
+        .is_some_and(|wrapped| wrapped < marker_idx)
+    {
+        return None;
+    }
+    let before = text[..marker_idx].trim_end();
+    let name_start = before
+        .char_indices()
+        .rev()
+        .find(|(_, ch)| ch.is_whitespace())
+        .map(|(idx, ch)| idx + ch.len_utf8())
+        .unwrap_or(0);
+    let candidate = before[name_start..].trim();
+    (!candidate.is_empty()
+        && candidate
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')))
+    .then_some(name_start)
 }
 
-/// Number of trailing bytes to withhold from normal_text at a chunk boundary so
-/// a marker or bare function name split across the boundary is not leaked.
-///
-/// Reached only when the buffer holds no complete `<tool_call>` opener and no
-/// complete orphan anchor. Three overlapping split cases must be retained:
-///   * a partial `<tool_call>` opener (`<too`);
-///   * a partial orphan anchor (`<arg`, `</too`, ...) — and the bare
-///     function-name identifier immediately before it, since the next chunk may
-///     complete the anchor and make that identifier the call name;
-///   * a trailing bare identifier with no marker yet (`get_weather`), which the
-///     next chunk may anchor with `<arg_key>`.
-///
-/// All framing markers start with `<`, so a lone trailing `<` is treated as a
-/// possible orphan anchor and the preceding identifier is held too. Mirrors the
-/// v1 `first_orphan_glm47_marker_index` recovery policy: emit nothing that could
-/// be the prefix of an orphan anchor or a pending bare call. Held-back bytes are
-/// flushed on the next chunk (or at EOF), so the concatenated normal_text is
-/// unchanged — only its chunk boundaries shift.
 fn trailing_holdback_len(text: &str) -> usize {
-    // Longest proper-prefix of any framing marker that `text` ends with, and
-    // whether that partial suffix could belong to an orphan anchor.
     let mut marker_keep = 0;
     let mut orphan_partial = false;
     for marker in [
@@ -318,49 +352,44 @@ fn trailing_holdback_len(text: &str) -> usize {
         ARG_VALUE_START,
     ] {
         let is_orphan = marker != BLOCK_START;
-        for len in 1..marker.len() {
-            if text.ends_with(&marker[..len]) {
-                if len > marker_keep {
-                    marker_keep = len;
+        for length in 1..marker.len() {
+            if text.ends_with(&marker[..length]) {
+                if length > marker_keep {
+                    marker_keep = length;
                     orphan_partial = is_orphan;
-                } else if len == marker_keep && is_orphan {
+                } else if length == marker_keep && is_orphan {
                     orphan_partial = true;
                 }
             }
         }
     }
-
-    // Hold the preceding bare identifier when the partial suffix could be an
-    // orphan anchor, or when there is no partial marker at all (a bare name
-    // still awaiting its `<arg_key>`).
     if !orphan_partial && marker_keep != 0 {
         return marker_keep;
     }
-    let ident_end = text.len() - marker_keep;
-    let name_start = text[..ident_end]
+    let identifier_end = text.len() - marker_keep;
+    let name_start = text[..identifier_end]
         .char_indices()
         .rev()
         .take_while(|(_, ch)| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
         .last()
         .map(|(idx, _)| idx)
-        .unwrap_or(ident_end);
+        .unwrap_or(identifier_end);
     text.len() - name_start
 }
 
-/// Argument key names in the order they appear in a tool-call block.
 fn source_arg_key_order(block: &str) -> Vec<String> {
     let mut names = Vec::new();
     let mut cursor = 0;
-    while let Some(rel) = block[cursor..].find(ARG_KEY_START) {
-        let start = cursor + rel + ARG_KEY_START.len();
-        let Some(end_rel) = block[start..].find(ARG_KEY_END) else {
+    while let Some(relative) = block[cursor..].find(ARG_KEY_START) {
+        let start = cursor + relative + ARG_KEY_START.len();
+        let Some(end) = block[start..].find(ARG_KEY_END) else {
             break;
         };
-        let name = block[start..start + end_rel].trim();
+        let name = block[start..start + end].trim();
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + end_rel + ARG_KEY_END.len();
+        cursor = start + end + ARG_KEY_END.len();
     }
     names
 }
@@ -369,26 +398,43 @@ fn source_arg_key_order(block: &str) -> Vec<String> {
 mod tests {
     use super::*;
 
-    fn weather_tools() -> Vec<Tool> {
-        vec![Tool {
-            name: "get_weather".to_string(),
-            description: None,
-            parameters: serde_json::json!({
-                "type": "object",
-                "properties": { "location": { "type": "string" } }
-            }),
-            strict: None,
-        }]
+    fn tools() -> Vec<Tool> {
+        vec![
+            Tool {
+                name: "get_weather".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "city": { "type": "string" } }
+                }),
+                strict: None,
+            },
+            Tool {
+                name: "get_time".into(),
+                description: None,
+                parameters: serde_json::json!({"type": "object", "properties": {}}),
+                strict: None,
+            },
+            Tool {
+                name: "run".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "cmd": { "type": "string" } }
+                }),
+                strict: None,
+            },
+        ]
     }
 
-    fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
+    fn legacy(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
         let mut parser = Glm47ToolStreamParser::new(tools);
-        let mut out = ToolParseResult::default();
+        let mut output = ToolParseResult::default();
         for chunk in chunks {
-            out.append(parser.push(chunk).expect("push"));
+            output.append(parser.push(chunk).expect("push"));
         }
-        out.append(parser.finish().expect("finish"));
-        out
+        output.append(parser.finish().expect("finish"));
+        output
     }
 
     #[test]
@@ -409,11 +455,44 @@ mod tests {
             let input = format!(
                 "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
             );
-            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            let result = legacy(&tools, &[&input]).coalesce_calls();
             assert_eq!(result.calls.len(), 1);
             // Parsing into Value here would impose the numeric limit under test.
             assert_eq!(result.calls[0].arguments, format!("{{\"value\":{value}}}"));
         }
+    }
+
+    #[test]
+    fn literal_entities_remain_argument_data() {
+        let tools = vec![Tool {
+            name: "inspect".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "type": "object", "properties": {
+                    "text": {"type": "string"}, "payload": {"type": "object"}
+                }
+            }),
+            strict: None,
+        }];
+        let input = concat!(
+            "<tool_call>inspect<arg_key>text</arg_key><arg_value>",
+            "&lt;tag&gt; &amp; &quot;x&quot; &apos;y&apos; &#65; &amp;lt;",
+            "</arg_value><arg_key>payload</arg_key><arg_value>",
+            r#"{"text":"&quot; &amp;"}"#,
+            "</arg_value></tool_call>"
+        );
+        let result = legacy(&tools, &[input]).coalesce_calls();
+        assert!(result.normal_text.is_empty());
+        assert_eq!(result.calls.len(), 1);
+        let arguments: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).unwrap();
+        assert_eq!(
+            arguments,
+            serde_json::json!({
+                "text": "&lt;tag&gt; &amp; &quot;x&quot; &apos;y&apos; &#65; &amp;lt;",
+                "payload": {"text": "&quot; &amp;"}
+            })
+        );
     }
 
     #[test]
@@ -473,7 +552,7 @@ mod tests {
             let input = format!(
                 "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
             );
-            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            let result = legacy(&tools, &[&input]).coalesce_calls();
             assert!(result.normal_text.is_empty());
             assert_eq!(result.calls.len(), 1);
             let arguments: serde_json::Value =
@@ -483,413 +562,346 @@ mod tests {
     }
 
     #[test]
-    fn repeated_arg_key_emits_key_once() {
-        // A repeated <arg_key> must not produce duplicate keys in the arguments.
-        let out = parse_chunks(
-            &weather_tools(),
+    fn native_legacy_projection_parses_glm_xml() {
+        let output = legacy(
+            &tools(),
             &[
-                "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>\
-               <arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
+                "<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>",
             ],
         );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        let args = merged.calls[0].arguments.clone();
+        let calls = output.coalesce_calls();
+        assert_eq!(calls.normal_text, "");
+        assert_eq!(calls.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(calls.calls[0].arguments, r#"{"city":"Paris"}"#);
+    }
+
+    #[test]
+    fn legacy_projection_is_split_invariant() {
+        let input = "before <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call> after";
+        let whole = legacy(&tools(), &[input]).coalesce_calls();
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            let split_output =
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls();
+            assert_eq!(split_output, whole, "split at {split}");
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_known_no_argument_bare_call_at_every_valid_split() {
+        let input = "get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_time"));
+        assert_eq!(want.calls[0].arguments, "{}");
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_bare_call_with_arguments_at_every_valid_split() {
+        let input = "run<arg_key>cmd</arg_key><arg_value>git status</arg_value></tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("run"));
+        assert_eq!(want.calls[0].arguments, r#"{"cmd":"git status"}"#);
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_does_not_recover_punctuation_or_prose_before_orphan_close() {
+        for input in ["get_time.</tool_call>", "Please wait café</tool_call>"] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            let expected_calls = usize::from(input.contains(BLOCK_START));
+            assert_eq!(
+                want.calls.len(),
+                expected_calls,
+                "unexpected calls for {input:?}"
+            );
+            let expected_text = input
+                .split_once(BLOCK_END)
+                .map(|(prefix, _)| prefix)
+                .unwrap_or(input);
+            assert_eq!(want.normal_text, expected_text);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_unknown_bare_tool_without_arguments_at_every_split() {
+        let input = "foo</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("foo"));
+        assert_eq!(want.calls[0].arguments, "{}");
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_the_last_identifier_before_an_orphan_close() {
+        let input = "Please wait</tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "Please ");
+        assert_eq!(want.calls.len(), 2);
+        assert_eq!(want.calls[0].name.as_deref(), Some("wait"));
+        assert_eq!(want.calls[1].name.as_deref(), Some("get_time"));
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_preserves_embedded_close_and_finds_the_following_call_at_every_split() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>git log </tool_call> --oneline</arg_value></tool_call> café <tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, " café ");
+        assert_eq!(want.calls.len(), 2);
+        assert_eq!(want.calls[0].name.as_deref(), Some("run"));
         assert_eq!(
-            args.matches("\"location\"").count(),
-            1,
-            "duplicate key in arguments: {args}"
+            want.calls[0].arguments,
+            r#"{"cmd":"git log </tool_call> --oneline"}"#
         );
+        assert_eq!(want.calls[1].name.as_deref(), Some("get_time"));
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn emits_complete_call_on_close() {
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "<tool_call>get_weather<arg_key>",
-                "location</arg_key>",
-                "<arg_value>NYC</arg_value></tool_call>",
-            ],
-        );
-        assert_eq!(out.normal_text, "");
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].tool_index, 0);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    fn legacy_recovers_at_possible_outer_close_when_argument_value_never_closes() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>git log </tool_call> --oneline";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, " --oneline");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].arguments, r#"{"cmd":"git log "}"#);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn accepts_whitespace_between_glm_xml_elements() {
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "<tool_call>get_weather\n",
-                "<arg_key>location</arg_key> \n\t<arg_value>Tokyo</arg_value>\n",
-                "</tool_call>",
-            ],
-        );
-
-        assert_eq!(out.normal_text, "");
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"Tokyo"}"#);
-    }
-
-    #[test]
-    fn emits_two_parallel_calls() {
-        let tools = vec![
-            Tool {
-                name: "get_weather".to_string(),
-                description: None,
-                parameters: serde_json::json!({
-                    "type": "object",
-                    "properties": { "location": { "type": "string" } }
-                }),
-                strict: None,
-            },
-            Tool {
-                name: "get_time".to_string(),
-                description: None,
-                parameters: serde_json::json!({
-                    "type": "object",
-                    "properties": { "timezone": { "type": "string" } }
-                }),
-                strict: None,
-            },
-        ];
-        let out = parse_chunks(
-            &tools,
-            &[
-                "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
-                "<tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>",
-            ],
-        );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 2);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
-        assert_eq!(merged.calls[1].tool_index, 1);
-        assert_eq!(merged.calls[1].name.as_deref(), Some("get_time"));
-        assert_eq!(merged.calls[1].arguments, r#"{"timezone":"EST"}"#);
-    }
-
-    #[test]
-    fn preserves_prefix_text_before_block() {
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "Checking: ",
-                "<tool",
-                "_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
-            ],
-        );
-        assert_eq!(out.normal_text, "Checking: ");
-        assert_eq!(out.coalesce_calls().calls.len(), 1);
-    }
-
-    #[test]
-    fn holds_back_partial_start_marker() {
-        // The `<tool_call>` marker is split across two chunks; the partial
-        // prefix must not leak as normal_text.
-        let mut parser = Glm47ToolStreamParser::new(&weather_tools());
-        let first = parser.push("hello <tool").expect("push");
-        assert_eq!(first.normal_text, "hello ");
-        let second = parser
-            .push("_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>")
-            .expect("push");
-        assert_eq!(second.normal_text, "");
-        assert_eq!(second.calls.len(), 1);
-    }
-
-    #[test]
-    fn suppresses_incomplete_tool_call_at_eof() {
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "<tool_call>get_weather<arg_key>location</arg_key>",
-                "<arg_value>NY",
-            ],
-        );
-        assert_eq!(out.normal_text, "");
-        assert!(out.calls.is_empty());
-    }
-
-    #[test]
-    fn preserves_source_arg_key_order() {
-        // destination, passengers, first_class is deliberately NOT alphabetical:
-        // the serialized arguments must keep the model-emitted arg-key order.
-        let tools = vec![Tool {
-            name: "book_flight".to_string(),
-            description: None,
-            parameters: serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "destination": { "type": "string" },
-                    "passengers": { "type": "integer" },
-                    "first_class": { "type": "boolean" }
-                }
-            }),
-            strict: None,
-        }];
-        let out = parse_chunks(
-            &tools,
-            &[
-                "<tool_call>book_flight<arg_key>destination</arg_key><arg_value>Paris</arg_value>",
-                "<arg_key>passengers</arg_key><arg_value>2</arg_value>",
-                "<arg_key>first_class</arg_key><arg_value>true</arg_value></tool_call>",
-            ],
-        );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
+    fn legacy_preserves_close_and_open_markers_inside_an_argument() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call> after</arg_value></tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.calls.len(), 2);
         assert_eq!(
-            merged.calls[0].arguments,
-            r#"{"destination":"Paris","passengers":2,"first_class":true}"#
+            want.calls[0].arguments,
+            r#"{"cmd":"before </tool_call><tool_call> after"}"#
         );
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn function_only_call_no_args() {
-        let tools = vec![Tool {
-            name: "get_time".to_string(),
-            description: None,
-            parameters: serde_json::json!({ "type": "object", "properties": {} }),
-            strict: None,
-        }];
-        let out = parse_chunks(&tools, &["<tool_call>get_time</tool_call>"]);
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_time"));
-        assert_eq!(merged.calls[0].arguments, "{}");
-    }
-
-    // ── Bare-call recovery (no `<tool_call>` opener) — conformance 5.b/5.f/5.g.
-    // The v1 batch parser recovers a complete call body emitted without the
-    // outer opener; the streaming parser must do the same so tool markup never
-    // leaks into the Dynamo `normal_text` column.
-
-    #[test]
-    fn recovers_bare_call_without_opener() {
-        // 5.b: `NAME<arg_key>...</tool_call>` with no `<tool_call>` open.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "get_weather<arg_key>location</arg_key>",
-                "<arg_value>",
-                "NYC</arg_value></tool_call>",
-            ],
-        );
+    fn legacy_preserves_parameterless_call_shape_inside_an_argument() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("run"));
         assert_eq!(
-            out.normal_text, "",
-            "bare body must not leak as normal_text"
+            want.calls[0].arguments,
+            r#"{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}"#
         );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn recovers_bare_call_after_prose_keeps_prose() {
-        // 5.g: genuine prose before the bare call stays normal_text; the bare
-        // body is recovered, not leaked.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "I will",
-                " check",
-                " that. get_weather<arg_key>location</arg_key>",
-                "<arg_value>NYC</arg_value>",
-                "</tool_call>",
-            ],
-        );
-        assert_eq!(out.normal_text, "I will check that. ");
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    fn legacy_unclosed_argument_recovers_before_a_following_call() {
+        for input in [
+            "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>",
+            "run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>",
+        ] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            assert_eq!(want.calls.len(), 2, "input {input:?}");
+            assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
+            assert_eq!(want.calls[1].name.as_deref(), Some("get_weather"));
+            assert_eq!(want.calls[1].arguments, r#"{"city":"Paris"}"#);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn recovers_bare_call_before_wrapped_call() {
-        // 5.f: a bare call followed by a complete wrapped call — both recover,
-        // with distinct indices.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "get_weather<arg_key>location</arg_key>",
-                "<arg_value>",
-                "NYC</arg_value></tool_call><tool_call>",
-                "get_weather<arg_key>location</arg_key>",
-                "<arg_value>",
-                "Boston</arg_value></tool_call>",
-            ],
-        );
-        assert_eq!(out.normal_text, "");
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 2);
-        assert_eq!(merged.calls[0].tool_index, 0);
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
-        assert_eq!(merged.calls[1].tool_index, 1);
-        assert_eq!(merged.calls[1].arguments, r#"{"location":"Boston"}"#);
+    fn legacy_recovers_missing_argument_value_close_at_terminal_outer_close() {
+        let input = "<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].arguments, r#"{"city":"Paris"}"#);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn preserves_trailing_text_after_block() {
-        // 8.b: trailing narration after a complete block flows into normal_text.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
-                " Let me know if you need more.",
-            ],
-        );
-        assert_eq!(out.normal_text, " Let me know if you need more.");
-        assert_eq!(out.coalesce_calls().calls.len(), 1);
+    fn saved_outer_closer_recovers_wrapped_and_bare_calls_at_every_split() {
+        let wrapped = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        let bare = "run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        for input in [wrapped, bare] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            assert_eq!(want.normal_text, "");
+            assert_eq!(want.calls.len(), 1);
+            assert_eq!(want.calls[0].name.as_deref(), Some("run"));
+            assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn preserves_inter_call_and_trailing_text() {
-        // 8.d: narration between two complete blocks flows into normal_text;
-        // both calls are emitted with distinct indices.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
-                " Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>",
-            ],
-        );
-        assert_eq!(
-            out.normal_text,
-            "I will check the weather.  Then check LA weather. "
-        );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 2);
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
-        assert_eq!(merged.calls[1].arguments, r#"{"location":"LA"}"#);
+    fn saved_outer_closer_survives_partial_marker_eof_without_recovering_missing_closers() {
+        let wrapped = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        for marker in [ARG_VALUE_END, BLOCK_END] {
+            for (at, _) in marker.char_indices().skip(1) {
+                let input = format!("{wrapped}{}", &marker[..at]);
+                let got = legacy(&tools(), &[&input]).coalesce_calls();
+                assert_eq!(got.calls.len(), 1, "partial {marker:?} at {at}");
+                assert_eq!(got.calls[0].arguments, r#"{"cmd":"first"}"#);
+                assert_eq!(got.normal_text, &marker[..at]);
+            }
+        }
+
+        for tail in ["", "</not_tool_call>"] {
+            let input = format!("{wrapped}{tail}");
+            let got = legacy(&tools(), &[&input]).coalesce_calls();
+            assert_eq!(got.calls.len(), 1, "tail {tail:?}");
+            assert_eq!(got.calls[0].arguments, r#"{"cmd":"first"}"#);
+        }
+
+        for input in [
+            "<tool_call>run<arg_key>cmd</arg_key><arg_value>first<",
+            "run<arg_key>cmd</arg_key><arg_value>first<",
+        ] {
+            assert!(
+                legacy(&tools(), &[input]).coalesce_calls().calls.is_empty(),
+                "missing real closer must not recover: {input:?}"
+            );
+        }
     }
 
     #[test]
-    fn plain_text_still_flows_as_normal_text() {
-        let out = parse_chunks(
-            &weather_tools(),
-            &["Hello, how", " can I help you", " today?"],
-        );
-        assert_eq!(out.normal_text, "Hello, how can I help you today?");
-        assert!(out.calls.is_empty());
+    fn legacy_drops_malformed_block_and_keeps_following_call_at_every_split() {
+        let input = "<tool_call></tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_time"));
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn drops_truncated_bare_call_at_eof() {
-        // Bare body with no closing `</tool_call>` before EOF: dropped (no leak,
-        // no partial call).
-        let out = parse_chunks(
-            &weather_tools(),
-            &["get_weather<arg_key>location</arg_key><arg_value>NY"],
-        );
-        assert_eq!(out.normal_text, "");
-        assert!(out.calls.is_empty());
+    fn malformed_and_eof_tool_markup_is_dropped() {
+        let output = legacy(&tools(), &["visible <tool_call>get_weather<arg_key>city"]);
+        assert_eq!(output.normal_text, "visible ");
+        assert!(output.calls.is_empty());
     }
 
     #[test]
-    fn retains_bare_name_across_boundary_before_arg_key() {
-        // Boundary falls BETWEEN the bare function name and its `<arg_key>`:
-        // the name must be held (not emitted as normal_text) until the next
-        // chunk supplies the anchor, or the bare call is lost.
-        let mut parser = Glm47ToolStreamParser::new(&weather_tools());
-        let first = parser.push("get_weather").expect("push");
-        assert_eq!(
-            first.normal_text, "",
-            "pending bare name must not leak before its <arg_key>"
-        );
-        assert!(first.calls.is_empty());
-        let second = parser
-            .push("<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>")
-            .expect("push");
-        assert_eq!(second.normal_text, "");
-        let out = {
-            let mut o = ToolParseResult::default();
-            o.append(first);
-            o.append(second);
-            o.append(parser.finish().expect("finish"));
-            o
-        };
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    fn complete_argument_body_recovers_without_outer_close_at_every_split() {
+        let input = "<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(want.calls[0].arguments, r#"{"city":"Paris"}"#);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
     }
 
     #[test]
-    fn retains_bare_name_across_boundary_inside_arg_key() {
-        // Boundary splits `<arg_key>` itself (`<arg` | `_key>`): both the
-        // partial orphan anchor AND the bare name before it must be held, so
-        // neither the name nor the `<arg` markup leaks into normal_text.
-        let mut parser = Glm47ToolStreamParser::new(&weather_tools());
-        let first = parser.push("get_weather<arg").expect("push");
-        assert_eq!(
-            first.normal_text, "",
-            "name + partial <arg_key> must be held across the split"
-        );
-        assert!(first.calls.is_empty());
-        let second = parser
-            .push("_key>location</arg_key><arg_value>NYC</arg_value></tool_call>")
-            .expect("push");
-        assert_eq!(second.normal_text, "");
-        let out = {
-            let mut o = ToolParseResult::default();
-            o.append(first);
-            o.append(second);
-            o.append(parser.finish().expect("finish"));
-            o
-        };
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
-    }
-
-    #[test]
-    fn strips_split_orphan_close_marker() {
-        // A lone `</tool_call>` (BLOCK_END) in prose with NO matching
-        // `<tool_call>` opener and NO recoverable bare call before it is a true
-        // orphan close (here split across a chunk boundary: `</tool` | `_call>`).
-        // It must be stripped, never leaked into normal_text, and yield no calls.
-        let out = parse_chunks(
-            &weather_tools(),
-            &["I will", " check that. ", "</tool", "_call> ok", ""],
-        );
-        assert_eq!(
-            out.normal_text, "I will check that.  ok",
-            "orphan </tool_call> leaked into normal_text: {:?}",
-            out.normal_text
-        );
-        assert!(out.calls.is_empty(), "orphan close must not produce a call");
+    fn bare_name_is_held_until_its_argument_marker_arrives() {
+        let mut parser = Glm47ToolStreamParser::new(&tools());
         assert!(
-            !out.normal_text.contains("tool_call") && !out.normal_text.contains("arg_"),
-            "tool markup leaked: {:?}",
-            out.normal_text
+            parser
+                .push("get_weather")
+                .expect("push")
+                .normal_text
+                .is_empty()
         );
-    }
-
-    #[test]
-    fn retains_bare_name_across_boundary_at_lone_angle() {
-        // The ambiguous split `get_weather<` | `arg_key>...`: a lone trailing
-        // `<` could open either `<tool_call>` or an orphan anchor, so the name
-        // is held until disambiguated. Here it resolves to a bare call.
-        let out = parse_chunks(
-            &weather_tools(),
-            &[
-                "get_weather<",
-                "arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
-            ],
-        );
-        assert_eq!(out.normal_text, "");
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+        let mut output = parser
+            .push("<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>")
+            .expect("push");
+        output.append(parser.finish().expect("finish"));
+        let calls = output.coalesce_calls();
+        assert_eq!(calls.normal_text, "");
+        assert_eq!(calls.calls.len(), 1);
     }
 }

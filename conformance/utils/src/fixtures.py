@@ -276,7 +276,7 @@ BATCH_SUB_CASE_GROUPS = [
             "5.e",
             "5.f",
             "5.g",
-            # streamv2.5.h (split orphan close) is streaming-only but shares the 5.*
+            # streamv1.5.h (split orphan close) is streaming-only but shares the 5.*
             # Malformed band. TODO: group by parent number (5) instead of listing every
             # 5.<letter>, and dedup this list against tests/parity/toolcalling/table.py
             # (two copies of BATCH_SUB_CASE_GROUPS drift — a new sub-case must be added
@@ -317,8 +317,8 @@ SPLIT_PARENT_SUBCASES = {
     "13": ("13.a",),
 }
 
-# Streaming taxonomy: TOOLCALLING.streamv2.<batch#> mirrors the batch taxonomy
-# 1:1 (streamv2.1 == batch.1, etc.), so the columns group exactly like the batch
+# Streaming taxonomy: TOOLCALLING.streamv1.<batch#> mirrors the batch taxonomy
+# 1:1 (streamv1.1 == batch.1, etc.), so the columns group exactly like the batch
 # tab. Only sub-cases that actually exist in fixtures become columns; the rest
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
@@ -327,7 +327,7 @@ STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
 
 SUB_CASE_GROUPS_BY_MODE = {
     "batch": BATCH_SUB_CASE_GROUPS,
-    "streamv2": STREAM_SUB_CASE_GROUPS,
+    "streamv1": STREAM_SUB_CASE_GROUPS,
 }
 
 _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE = {
@@ -541,21 +541,21 @@ def load_all_cases(
             # Derive a case-level `expected` (assembled calls + normal_text per
             # impl, or {unavailable}) so the rest of the generator — which expects
             # the batch-style {calls, normal_text} shape — works unchanged.
-            if mode == "streamv2":
+            if mode == "streamv1":
                 case["expected"] = _derive_stream_expected(case)
             elif isinstance(case.get("expected"), dict):
                 case["expected"] = _normalize_impl_mapping(case["expected"])
             cases[(family, sub)] = case
     _CAPTURED_WITH_BY_MODE[mode] = captured_with
-    if mode == "streamv2":
-        _attach_streamv2_batch_expected(cases, docs)
+    if mode == "streamv1":
+        _attach_streamv1_batch_expected(cases, docs)
     return _normalize_split_parent_cases(cases), labels
 
 
-def _attach_streamv2_batch_expected(cases: dict, docs: dict | None = None) -> None:
-    """For each streamv2 case, attach `batch_expected[impl]` from the matching batch
+def _attach_streamv1_batch_expected(cases: dict, docs: dict | None = None) -> None:
+    """For each streamv1 case, attach `batch_expected[impl]` from the matching batch
     case (same family + sub), so the stream tab can color each engine's stream
-    against its own batch (streamv2.<sub> mirrors batch.<sub>).
+    against its own batch (streamv1.<sub> mirrors batch.<sub>).
 
     Reads the same source as its caller: with in-memory `docs` from a stream-only
     resolve there are no batch docs to match, exactly as when the caller staged a

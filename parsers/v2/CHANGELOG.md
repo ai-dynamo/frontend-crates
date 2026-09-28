@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.7.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.2...dynamo-parsers-v2-v0.7.3) - 2026-09-23
+
+### Bug fixes
+
+- *(parsers-v2)* Preserve literal entities in GLM arguments ([#249](https://github.com/ai-dynamo/frontend-crates/pull/249))
+
+## [0.7.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.1...dynamo-parsers-v2-v0.7.2) - 2026-09-23
+
+### Features
+
+- *(parsers)* Support both DSML dialects in DeepSeek tool parser ([#255](https://github.com/ai-dynamo/frontend-crates/pull/255))
+
+## [0.7.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.0...dynamo-parsers-v2-v0.7.1) - 2026-09-23
+
+### Bug fixes
+
+- *(parsers)* Accept DeepSeek V4.1 JSON invocation bodies ([#250](https://github.com/ai-dynamo/frontend-crates/pull/250))
+
 ## [0.6.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.2...dynamo-parsers-v2-v0.6.3) - 2026-09-22
 
 ### Bug fixes

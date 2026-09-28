@@ -86,11 +86,11 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 # Batch-on-stream overlay: each engine's STREAMING parser run over the v1 batch
 # fixture text, keyed by the v1 batch case id. The batch-on-stream tab reuses the
 # v1 batch taxonomy/input but renders these stream outputs as `expected`.
-STREAM_ON_BATCH_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures-batch-on-stream-v2"
+STREAM_ON_BATCH_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures-batch-on-stream-v1"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 # Streaming cases use our own doc (renumbered to the batch+10 taxonomy), not the
 # v1 TOOLCALLING_CASES.md.
-TOOLCALLING_STREAMING_V2_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+TOOLCALLING_STREAMING_V1_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
@@ -164,7 +164,7 @@ from fixtures import (  # noqa: E402,F401
     _CAPTURED_WITH_BY_MODE,
     _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE,
     _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE,
-    _attach_streamv2_batch_expected,
+    _attach_streamv1_batch_expected,
     _build_family_inheritance,
     _build_family_to_rust_ref,
     _derive_no_peer_sets,
@@ -592,15 +592,15 @@ def _parser_cell_html(
     row_label = html_lib.escape(family)
     if suff:
         row_label += f'<span class="parser-suffix">{html_lib.escape(suff)}</span>'
-    if family == "harmony" and stream_context == "streamv2":
+    if family == "harmony" and stream_context == "streamv1":
         return _v2_parser_cell_html(
             row_label,
             family,
             "HarmonyToolStreamParser token-id path",
             "harmony.rs",
             "parse_tool_call_streaming_incremental",
-            "v2 stream fixtures",
-            "TC stream token-id row. It consumes `delta_token_ids` from v2 stream fixtures directly.",
+            "legacy stream fixtures",
+            "TC stream token-id row. It consumes `delta_token_ids` from legacy, non-Unified stream fixtures directly.",
         )
     if family == "harmony" and stream_context == "batch_on_stream":
         return _v2_parser_cell_html(
@@ -619,14 +619,14 @@ def _parser_cell_html(
             "HarmonyToolStreamParser text path",
             "harmony.rs",
             "parse_tool_call_streaming_text",
-            "v2 stream fixtures",
+            "legacy stream fixtures",
             "Synthetic v2 row for gpt-oss text streaming. The text path re-tokenizes a held suffix, then feeds the same token-incremental Harmony stream parser used by the token-id row.",
         )
-    if family == "deepseek_v4" and stream_context in ("streamv2", "batch_on_stream"):
-        fixtures = "v2 stream fixtures" if stream_context == "streamv2" else "v1 batch fixtures"
+    if family == "deepseek_v4" and stream_context in ("streamv1", "batch_on_stream"):
+        fixtures = "legacy stream fixtures" if stream_context == "streamv1" else "v1 batch fixtures"
         note = (
             "TC stream row. It consumes DSML text chunks and emits compact complete-invoke deltas."
-            if stream_context == "streamv2"
+            if stream_context == "streamv1"
             else "TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 DSML streaming parser."
         )
         return _v2_parser_cell_html(
@@ -639,18 +639,18 @@ def _parser_cell_html(
             note,
         )
     v2_cell = _V2_STREAM_PARSER_CELLS.get(family)
-    if v2_cell and stream_context in ("streamv2", "batch_on_stream"):
+    if v2_cell and stream_context in ("streamv1", "batch_on_stream"):
         backend, source_file, marker = v2_cell
-        fixtures = "v2 stream fixtures" if stream_context == "streamv2" else "v1 batch fixtures"
+        fixtures = "legacy stream fixtures" if stream_context == "streamv1" else "v1 batch fixtures"
         note = (
             f"TC stream row. It consumes {marker} text chunks and emits per-chunk tool-call deltas."
-            if stream_context == "streamv2"
+            if stream_context == "streamv1"
             else f"TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 {marker} streaming parser."
         )
         return _v2_parser_cell_html(
             row_label, family, backend, source_file, "push", fixtures, note
         )
-    if stream_context in ("streamv2", "batch_on_stream"):
+    if stream_context in ("streamv1", "batch_on_stream"):
         # No Dynamo parser v2 stream parser for this family yet. Inventory-only
         # row; don't link the v1 batch parser.
         return _v2_missing_stream_parser_cell_html(family)
@@ -761,7 +761,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     """
     # Streaming descriptions come from our own renumbered doc; batch/others from
     # the v1 TOOLCALLING_CASES.md.
-    cases_md = TOOLCALLING_STREAMING_V2_CASES_MD if mode == "streamv2" else TOOLCALLING_CASES_MD
+    cases_md = TOOLCALLING_STREAMING_V1_CASES_MD if mode == "streamv1" else TOOLCALLING_CASES_MD
     if not cases_md.exists():
         return {}
     pat = re.compile(
@@ -1021,7 +1021,7 @@ def _v2_display_version(impl: str) -> str | None:
     peers -> the engine version they were captured against."""
     if impl == BASELINE_STREAM_IMPL:
         return _dynamo_v2_version()
-    return _clean_version((_CAPTURED_WITH_BY_MODE.get("streamv2") or {}).get(impl))
+    return _clean_version((_CAPTURED_WITH_BY_MODE.get("streamv1") or {}).get(impl))
 
 
 def _clean_version(v: object) -> str | None:
@@ -1093,9 +1093,9 @@ def _candidate_items() -> list[dict[str, str]]:
 
 
 # --- per-impl version snapshots for the TC v2 (stream) tab ----------------------
-# The streamv2 corpus is versioned like batch, but with a different physical layout:
-# The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
-# fixtures-stream-v2/inputs/ (shared per-chunk delta_text) + fixtures-stream-v2/
+# The streamv1 corpus is versioned like batch, but with a different physical layout:
+# The legacy stream corpus is versioned like the batch corpus (no unversioned anchor):
+# fixtures-stream-v1/inputs/ (shared per-chunk delta_text) + fixtures-stream-v1/
 # <impl>-<version>/ (per-impl expected; lowest version = full anchor, higher =
 # changed-only). resolve_stream_fixtures.py reconstructs a flat tree for any selected
 # version set — the stream analogue of resolve_fixtures.py + the batch __ver_status map.
@@ -1104,7 +1104,7 @@ def _candidate_items() -> list[dict[str, str]]:
 # _common.sh exports CONFORMANCE_FIXTURES_ROOT. Without this the stream tab's versioned
 # candidates come up empty and the Base/Compare parser selector doesn't render.
 _STREAM_SRC = (
-    fixtures._fixtures_cache_root() / "toolcalling/fixtures-stream-v2"
+    fixtures._fixtures_cache_root() / "toolcalling/fixtures-stream-v1"
 )
 
 
@@ -1113,7 +1113,7 @@ _PATCH_SUFFIX_RE = re.compile(r"\.patch\d+$")
 
 def _base_stream_version(ver: str) -> str:
     """A `X.patchN` capture is the SAME parser binary re-run to backfill newer
-    cases onto version `X` (e.g. 0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h).
+    cases onto version `X` (e.g. 0.1.11.patch1 = the 0.1.11 binary on streamv1.5.h).
     It folds onto `X` for display — it is not a standalone candidate version. The
     on-disk shard stays separate so the pristine `X` capture is never rewritten;
     the resolver folds the overlay because it sorts equal to `X`."""
@@ -1121,7 +1121,7 @@ def _base_stream_version(ver: str) -> str:
 
 
 def _stream_impl_versions() -> dict[str, list[str]]:
-    """{stream_impl: versions ascending} discovered from the fixtures-stream-v2/
+    """{stream_impl: versions ascending} discovered from the fixtures-stream-v1/
     <impl>-<version>/ dirs (no hardcoded anchor — the baseline is whichever version is
     lowest). Ordered dynamo_v1, dynamo_v2, vllm_rust, vllm_python, sglang_python (canonical
     stream column order)."""
@@ -1249,7 +1249,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     """{(family, sub): {impl: {slug: {block, version, status}}}} for the stream tab.
 
     Resolve each versioned peer @ each of its versions (others pinned) and re-run
-    load_all_cases("streamv2") so keys match the rendered table (same assembly +
+    load_all_cases("streamv1") so keys match the rendered table (same assembly +
     split-parent normalization). Single-version impls (dynamo_v2, vllm_rust) are
     recorded once from the pinned resolve. `block` is the assembled per-impl
     {calls, normal_text} used for the per-cell `data-cmp` signature."""
@@ -1263,7 +1263,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     corpus = _source_corpus(str(_STREAM_SRC))
     overlaid = {i: vs for i, vs in impl_versions.items() if len(vs) > 1}
     pinned = {i: vs[-1] for i, vs in impl_versions.items()}
-    saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv2")
+    saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv1")
     result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
 
     def _raw_chunk_counts(impl, version):
@@ -1345,7 +1345,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
         # The docs are stream-only, so load_all_cases finds no batch docs to attach
         # batch_expected from — same as when the staged tree held stream files alone.
         docs, _folded = resolve_stream(_STREAM_SRC, select, corpus=corpus)
-        cases, _labels = load_all_cases("streamv2", docs=docs)
+        cases, _labels = load_all_cases("streamv1", docs=docs)
         return cases
 
     try:
@@ -1365,7 +1365,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     finally:
         # load_all_cases stamps this per call; put the pinned render's value back.
         if saved_captured is not None:
-            _CAPTURED_WITH_BY_MODE["streamv2"] = saved_captured
+            _CAPTURED_WITH_BY_MODE["streamv1"] = saved_captured
     return result
 
 
@@ -1666,7 +1666,7 @@ def _load_panel_cases(
         # model spans both the batch parsers (from __ver_status) and the stream
         # parsers run on the same batch text (batch-on-stream overlay).
         _attach_merged_cmp(cases)
-    elif mode == "streamv2":
+    elif mode == "streamv1":
         # Stream analogue of the batch version map: per-cell candidates are the
         # peer engine versions (vLLM 0.23.0/0.24.0, SGLang 0.5.12.post1/0.5.14),
         # plus single-version Dynamo v2 + vLLM Rust.
@@ -1677,10 +1677,10 @@ def _load_panel_cases(
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
-    # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
+    # The streamv1 tab uses the stream comparison: color = stream-vs-own-batch,
     # agreement = cross-engine stream agreement (each engine's stream parser vs the
     # others').
-    comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
+    comparison = "stream_vs_batch" if mode == "streamv1" else "cross_engine"
     return {
         "mode": mode,
         "cases": cases,
@@ -1843,7 +1843,7 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
             meta.append({"key": item["key"], "label": item["label"],
                          "version": None, "block_raw": item["block"]})
     elif ver_status:
-        # The mode is the TAB's, not a constant: this branch also serves the streamv2
+        # The mode is the TAB's, not a constant: this branch also serves the streamv1
         # tab, where dynamo_v2 and vllm_rust are stream-only impls (impls.py IMPL_SPECS)
         # and can never be "(batch)". Hardcoding it made the tooltip header contradict
         # the compare bar, which builds the same candidates via _stream_candidate_items.
@@ -2224,7 +2224,7 @@ def _unified_capture_failure(record: dict) -> dict:
 
 def _load_unified_fixtures(base: Path):
     """Read the exploded per-case / per-family / per-version unified fixtures (same
-    layout as toolcalling/fixtures-stream-v2: inputs/ + golden/ + <impl>-<version>/)
+    layout as toolcalling/fixtures-stream-v1: inputs/ + golden/ + <impl>-<version>/)
     and reconstruct the (cases feed, per-engine caps, versions) the tab model expects.
     Returns None if the tree isn't present."""
     if not (base / "inputs").is_dir():
@@ -2540,7 +2540,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # released Combined captures beside newer native UnifiedParser captures so the
     # table shows the actual version-to-version history.
     # THIS tab's own capture version. It used to borrow _dynamo_v2_version(), which reads
-    # the STREAM tree (toolcalling/fixtures-stream-v2) — a different tree on a different
+    # the STREAM tree (toolcalling/fixtures-stream-v1) — a different tree on a different
     # release cadence — so the column was labelled with a version that did not produce
     # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
@@ -2953,28 +2953,28 @@ def build_combined_model(output_path: Path | None = None,
     })
     tabs.append(batch_tab)
 
-    # --- Tool Calling (stream data): per-chunk streamv2 ---
-    stream_spec = _load_panel_cases("streamv2")
+    # --- Tool Calling (legacy stream corpus): per-chunk streamv1 ---
+    stream_spec = _load_panel_cases("streamv1")
     stream_href = _plain_href_rewriter("toolcalling", hrefs["toolcalling_stream_fixtures"])
-    stream_tab = _toolcalling_tab_model(stream_spec, stream_href, parser_stream_context="streamv2")
+    stream_tab = _toolcalling_tab_model(stream_spec, stream_href, parser_stream_context="streamv1")
     stream_tab.update({
-        "id": "tab-toolcalling-streamv2",
-        "label": "Tool Calling v1 (stream data)",
-        "label_html": ('Tool Calling v1 <span class="tab-sub">'
+        "id": "tab-toolcalling-streamv1",
+        "label": "Tool Calling legacy stream (v1 corpus)",
+        "label_html": ('Tool Calling legacy stream <span class="tab-sub">'
                        '(<span class="w-stream">stream</span> data)</span>'),
-        "tab_title": "Tool Calling (stream data): Dynamo parser v2 on v2 stream fixtures",
-        "case_prefix": "TOOLCALLING.streamv2.",
-        "case_section_id": "toolcalling-streamv2",
+        "tab_title": "Tool Calling (legacy stream corpus): Dynamo parser v2",
+        "case_prefix": "TOOLCALLING.streamv1.",
+        "case_section_id": "toolcalling-streamv1",
         "case_docs_href": hrefs["toolcalling_streaming_cases"],
-        "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
+        "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md",
         "candidates": _candidate_model(_stream_candidate_items()),
-        "captured_note": _captured_note("streamv2"),
+        "captured_note": _captured_note("streamv1"),
         "toolbar_desc_html": (
             f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
-            f'Input: <strong>v2</strong> stream fixtures '
-            f'(<a href="{hrefs["toolcalling_stream_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-stream-v2/</a>).'),
-        "details_note_html": f"<p>{_stream_parity_explainer_html('streamv2')}</p>",
+            f'Input: <strong>legacy v1</strong> non-Unified stream fixtures '
+            f'(<a href="{hrefs["toolcalling_stream_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-stream-v1/</a>).'),
+        "details_note_html": f"<p>{_stream_parity_explainer_html('streamv1')}</p>",
     })
     tabs.append(stream_tab)
 

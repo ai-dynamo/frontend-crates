@@ -6,7 +6,7 @@
 # This file enumerates what "complete fixture coverage" means for a parser family.
 # Before it existed the taxonomy lived implicitly in the union of `description:`
 # fields across ~20 families' fixture YAMLs, and every new-parser PR re-discovered
-# it during review (PR #120: batch groups 6/8/30 and the whole stream-v2 corpus
+# it during review (PR #120: batch groups 6/8/30 and the whole legacy stream corpus
 # were missing and no tool could say so). `check_family_coverage.py --family <f>`
 # diffs a family's case IDs against this file and fails on unexplained gaps.
 #
@@ -148,8 +148,8 @@ suites:
           b: {desc: Multi-call response with structural delimiters inside one argument string value, required: false}
 
   toolcalling.stream:
-    prefix: TOOLCALLING.streamv2
-    fixtures: conformance/fixtures/toolcalling/fixtures-stream-v2
+    prefix: TOOLCALLING.streamv1
+    fixtures: conformance/fixtures/toolcalling/fixtures-stream-v1
     groups:
       "1":
         title: Single tool call (happy path)
@@ -353,7 +353,7 @@ suite_exemptions:
   harmony_text:
     toolcalling.batch: harmony_text is the text-driven conformance variant of harmony; the v1 batch corpus is captured under the harmony family.
   muse_glimmer:
-    toolcalling.batch: muse has no v1 batch parser; it is captured through the stream-v2 and unified corpora only.
+    toolcalling.batch: muse has no v1 batch parser; it is captured through the legacy stream-v1 and unified corpora only.
 
 # Pre-taxonomy coverage gaps, grandfathered so the lint stays green on the current
 # corpus while still holding NEW families to the full bar. Each entry is a backfill

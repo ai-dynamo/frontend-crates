@@ -224,8 +224,8 @@ fn load_allowlist() -> BTreeMap<String, BTreeMap<String, String>> {
 
 #[test]
 fn toolcalling_stream_split_sweep() {
-    let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
-    let inputs_root = sv2.join("inputs");
+    let sv1 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let inputs_root = sv1.join("inputs");
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -249,7 +249,7 @@ fn toolcalling_stream_split_sweep() {
             Ok(f) => f,
             Err(e) => panic!("{}: YAML parse error: {e}", path.display()),
         };
-        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv2")) {
+        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv1")) {
             continue;
         }
         if !REGISTERED_FAMILIES.contains(&fx.family.as_str()) {
@@ -377,7 +377,7 @@ fn toolcalling_stream_split_sweep() {
         assert!(
             n > 0,
             "family '{family}' is registered in REGISTERED_FAMILIES but swept 0 stream cases — \
-             add stream-v2 fixtures (or a trace) for it"
+             add stream-v1 fixtures (or a trace) for it"
         );
     }
 

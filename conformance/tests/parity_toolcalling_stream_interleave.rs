@@ -3,7 +3,7 @@
 
 //! Per-choice isolation sweep for Dynamo parser v2 (DIS-2381 step 3).
 //!
-//! Invariant under test, applied across the whole streamv2 corpus:
+//! Invariant under test, applied across the whole streamv1 corpus:
 //!
 //! ```text
 //!   demux(parse(interleave(A@0, B@1))) == (parse(A), parse(B))
@@ -825,18 +825,18 @@ fn toolcalling_stream_interleave_isolation() {
         .map(|(k, v)| (k.as_str(), v))
         .collect();
 
-    let sv2 = ensure_fixtures().join("toolcalling/fixtures-stream-v2");
-    let inputs_root = sv2.join("inputs");
+    let sv1 = ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let inputs_root = sv1.join("inputs");
     assert!(inputs_root.is_dir(), "missing {}", inputs_root.display());
 
     // Capture history for the v2 parser, folded ascending (latest wins per case)
     // via the shared helper the canonical parity test uses.
     let dyn_dirs =
-        version_dirs_ascending_with_current(&sv2, "dynamo_v2-", STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        version_dirs_ascending_with_current(&sv1, "dynamo_v2-", STREAM_DYNAMO_V2_CURRENT_CAPTURE);
     assert!(
         !dyn_dirs.is_empty(),
         "no dynamo_v2-<version> dir under {}",
-        sv2.display()
+        sv1.display()
     );
 
     // Discover fixture families (input subdirs) and load every case per family,
@@ -852,7 +852,7 @@ fn toolcalling_stream_interleave_isolation() {
             Ok(f) => f,
             Err(e) => panic!("{}: YAML parse error: {e}", path.display()),
         };
-        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv2")) {
+        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv1")) {
             continue;
         }
         let family = fx.family.clone();

@@ -2,7 +2,7 @@
 """Re-capture ONE peer impl at a PINNED version against the repaired inputs.
 
 Drives capture_driver._container_capture directly instead of going through
-capture.sh/fill_streamv2, which rewrite the whole corpus into the pre-#93 flat layout and
+capture.sh/fill_streamv1, which rewrite the whole corpus into the pre-#93 flat layout and
 mark dynamo_v2 as TODO. This touches exactly one impl's overlay tree.
 
 Usage: recapture_peer.py <container> <impl> <mode> <inputs-dir> <out.json>
@@ -19,7 +19,7 @@ import capture_driver as cd  # noqa: E402
 
 container, impl, mode, inputs, out_path = sys.argv[1:6]
 PARSERS = {"vllm_python": cd.VLLM, "sglang_python": cd.SGLANG}[impl]
-glob = "TOOLCALLING.streamv2*.yaml" if mode == "stream" else "TOOLCALLING.batch*.yaml"
+glob = "TOOLCALLING.streamv1*.yaml" if mode == "stream" else "TOOLCALLING.batch*.yaml"
 
 import pathlib  # noqa: E402
 jobs = []

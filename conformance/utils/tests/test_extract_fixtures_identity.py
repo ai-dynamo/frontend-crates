@@ -5,7 +5,7 @@
 `extract_fixtures.py` used to name its extraction directory by `manifest["snapshot"]`
 (a human-readable pin) alone. Shard content is not uniquely determined by that pin --
 a shard set can be re-pinned in place under an unchanged pin (it happened once, to
-fixtures-batch-on-stream-v2). When that happened, the stale-check failed and the code
+fixtures-batch-on-stream-v1). When that happened, the stale-check failed and the code
 ran `shutil.rmtree()` directly on the live, previously-published directory, then
 re-extracted in place -- while a concurrent, unlocked reader (a test in another git
 worktree, or `_common.sh`, which never acquires the flock at all) could still be
