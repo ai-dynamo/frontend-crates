@@ -50,10 +50,12 @@ git tag -s -m "release dynamo-mm-preprocessor 0.1.0" \
 git push origin dynamo-mm-preprocessor-v0.1.0
 ```
 
-The first release workflow may fail at its trusted-publishing step before this
-bootstrap is complete. Once the crate exists, configure its trusted publisher
-as described below and rerun the workflow; the already-published version is a
-no-op, and later releases are automatic.
+The first release workflow will fail if it reaches this crate before the
+manual bootstrap. That failure may leave other pending crate releases
+unpublished too. Bootstrap promptly after the merge, configure this crate's
+trusted publisher as described below, then rerun the workflow with
+`workflow_dispatch`. The already-published version is a no-op, and the rerun
+can finish any pending releases. Later releases are automatic.
 
 Note: a manual peg skips the auto-changelog; add a `CHANGELOG.md` entry in the same PR if the release warrants one.
 
