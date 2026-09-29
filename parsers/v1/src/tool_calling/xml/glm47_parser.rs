@@ -551,16 +551,51 @@ fn get_param_schema_type<'a>(
     tools: Option<&'a [ToolDefinition]>,
     function_name: &str,
     param_name: &str,
+    raw: &str,
 ) -> Option<&'a str> {
     let tool = tools?.iter().find(|t| t.name == function_name)?;
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
+    // An explicit `null` is null wherever the schema permits it, even in a string union.
+    if raw.trim() == "null" && schema_permits_null(param) {
+        return Some("null");
+    }
     // Prefer string in unions because JSON-looking text is ambiguous.
     if schema_has_type(param, "string") {
         return Some("string");
     }
-    param.get("type")?.as_str()
+    if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
+        return Some(schema_type);
+    }
+    // Select a scalar hint from a union using the JSON value, not branch order.
+    let raw = raw.trim();
+    if !matches!(
+        raw.as_bytes().first(),
+        Some(b'n' | b't' | b'f' | b'-' | b'0'..=b'9')
+    ) {
+        return None;
+    }
+    // Preserve the integer coercer's arbitrary-length path before Value's numeric limit.
+    let candidates: &[&str] = if super::parsed_value::is_integer_literal(raw) {
+        &["integer", "number"]
+    } else {
+        match serde_json::from_str::<Value>(raw).ok()? {
+            Value::Null => &["null"],
+            Value::Bool(_) => &["boolean"],
+            Value::Number(_) => &["number"],
+            _ => &[],
+        }
+    };
+    candidates
+        .iter()
+        .copied()
+        .find(|candidate| schema_has_type(param, candidate))
+}
+
+/// Whether a parameter may be `null`: by its type, a union branch, or OpenAPI `nullable`.
+fn schema_permits_null(schema: &Value) -> bool {
+    schema_has_type(schema, "null") || schema.get("nullable").and_then(Value::as_bool) == Some(true)
 }
 
 fn schema_has_type(schema: &Value, expected: &str) -> bool {
@@ -651,7 +686,7 @@ fn parse_tool_call_block(
             let decoded = decode_xml_entities(raw_value);
 
             // Look up the expected type from the tool's parameter schema
-            let schema_type = get_param_schema_type(tools, &function_name, key);
+            let schema_type = get_param_schema_type(tools, &function_name, key, &decoded);
             let json_value = coerce_value(&decoded, schema_type);
 
             match argument_indices.get(key).copied() {
@@ -1214,6 +1249,86 @@ mod tests {
             );
             assert_eq!(args["untyped"], serde_json::json!([1, 2, 3]));
         }
+    }
+
+    fn parse_with_properties(properties: Value, args: &[(&str, &str)]) -> String {
+        let tools = vec![ToolDefinition {
+            name: "update".to_string(),
+            parameters: Some(serde_json::json!({"type": "object", "properties": properties})),
+            strict: None,
+        }];
+        let mut message = String::from("<tool_call>update");
+        for (key, value) in args {
+            message.push_str(&format!(
+                "<arg_key>{key}</arg_key><arg_value>{value}</arg_value>"
+            ));
+        }
+        message.push_str("</tool_call>");
+        let (calls, _) =
+            try_tool_call_parse_glm47(&message, &get_test_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 1);
+        calls[0].function.arguments.clone()
+    }
+
+    #[test]
+    fn test_union_without_string_types_value_by_what_it_spells() {
+        let arguments = parse_with_properties(
+            serde_json::json!({
+                "offset": {"anyOf": [{"type": "number"}, {"type": "null"}]},
+                "limit": {"anyOf": [{"type": "number"}, {"type": "null"}]},
+                "count": {"type": ["integer", "null"]},
+                "page": {"type": ["integer", "null"]},
+                "verbose": {"anyOf": [{"type": "boolean"}, {"type": "null"}]},
+                "depth": {"type": "integer", "nullable": true},
+                "ratio": {"anyOf": [{"type": "number"}, {"type": "null"}]}
+            }),
+            &[
+                ("offset", "40"),
+                ("limit", "null"),
+                ("count", "42"),
+                ("page", "null"),
+                ("verbose", "true"),
+                ("depth", "null"),
+                ("ratio", "bad"),
+            ],
+        );
+        assert_eq!(
+            arguments,
+            r#"{"offset":40,"limit":null,"count":42,"page":null,"verbose":true,"depth":null,"ratio":"bad"}"#
+        );
+    }
+
+    #[test]
+    fn test_nullable_string_that_spells_null_is_null() {
+        let arguments = parse_with_properties(
+            serde_json::json!({
+                "assignee": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "memo": {"type": ["string", "null"]},
+                "notes": {"type": "string", "nullable": true},
+                "units": {"anyOf": [
+                    {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                    {"type": "null"}
+                ]},
+                "padded": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "title": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "level": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+                "plain": {"type": "string"}
+            }),
+            &[
+                ("assignee", "null"),
+                ("memo", "null"),
+                ("notes", "null"),
+                ("units", "null"),
+                ("padded", " null\n"),
+                ("title", "null value"),
+                ("level", "5"),
+                ("plain", "null"),
+            ],
+        );
+        assert_eq!(
+            arguments,
+            r#"{"assignee":null,"memo":null,"notes":null,"units":null,"padded":null,"title":"null value","level":"5","plain":"null"}"#
+        );
     }
 
     #[test] // helper
