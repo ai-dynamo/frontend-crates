@@ -64,13 +64,13 @@ def test_lint_green_on_committed_corpus() -> None:
 
 def test_lint_fails_on_inkling_shaped_family(tmp_path) -> None:
     """A family with the PR #120 gap profile fails the lint: batch groups 6/8/30
-    absent, the entire stream-v2 corpus missing, and no `markers:` registration."""
+    absent, the entire legacy stream corpus missing, and no `markers:` registration."""
     root = _ensure_fixtures()
     fake_root = tmp_path / "fixtures"
     src_fam = root / "toolcalling/fixtures-batch-v1/inputs/hermes"
     dst_fam = fake_root / "toolcalling/fixtures-batch-v1/inputs/newfam"
     dst_fam.mkdir(parents=True)
-    (fake_root / "toolcalling/fixtures-stream-v2/inputs").mkdir(parents=True)
+    (fake_root / "toolcalling/fixtures-stream-v1/inputs").mkdir(parents=True)
     (fake_root / "reasoning/fixtures-v1/inputs").mkdir(parents=True)
     for path in src_fam.glob("TOOLCALLING.batch*.yaml"):
         data = yaml.safe_load(path.read_text())

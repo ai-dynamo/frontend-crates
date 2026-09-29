@@ -4,7 +4,7 @@
 """Re-capture a peer engine's parser output against a NEWER version and write
 changed-only version overlays, so every conformance tab can compare peer versions
 the way the batch tab does. ONE engine x corpus core, replacing the per-corpus
-capture_streamv2_versions.py.
+capture_streamv1_versions.py.
 
 Corpora (`--corpus`):
   batch      fixtures-batch-v1: vLLM/SGLang non-streaming `extract_tool_calls`
@@ -12,15 +12,15 @@ Corpora (`--corpus`):
              LOWEST `<impl>-<version>/` anchor's `expected.<impl>` {calls,
              normal_text} block. Writes changed-only top-level
              `fixtures-batch-v1/<impl>-<version>/<family>/TOOLCALLING.batch*.yaml`.
-  stream     fixtures-stream-v2: per-chunk streaming deltas. Container engines
+  stream     fixtures-stream-v1: per-chunk streaming deltas. Container engines
              (vllm_python/sglang_python) run capture.py in the engine container,
              diff each chunk against the lowest-version resolved anchor's
              per-chunk `expected.<impl>`/`normal_text.<impl>`, and write a
-             changed-only full-case dir `fixtures-stream-v2/<impl>-<version>/`.
+             changed-only full-case dir `fixtures-stream-v1/<impl>-<version>/`.
              vllm_rust runs the cargo probe over the
              shared `inputs/` cases, diffs whole cases against the lowest
              `vllm_rust-<version>/` anchor, and writes a full-chunk changed-case
-             dir `fixtures-stream-v2/vllm_rust-<version>/`.
+             dir `fixtures-stream-v1/vllm_rust-<version>/`.
   reasoning  reasoning/fixtures-v1: vLLM/SGLang reasoning parser over
              `inputs/<family>/REASONING.{batch,stream}.yaml`, diffed against the
              inputs' `expected.<impl>` {reasoning_text, normal_text} anchor.
@@ -483,7 +483,7 @@ REASONING = BlockCorpus(
 # stream corpus: per-chunk deltas. Container engines write a per-chunk overlay;
 # vllm_rust writes a full-chunk changed-case dir.
 # =========================================================================== #
-STREAM_ROOT_REL = "conformance/toolcalling/fixtures-stream-v2"
+STREAM_ROOT_REL = "conformance/toolcalling/fixtures-stream-v1"
 
 # gemma4 keeps a `vllm_rust` parser name in parser_families.yaml, but vLLM 0.25.0
 # turned it into a native unified parser not reachable through the tool::ToolParser
@@ -494,9 +494,9 @@ GEMMA4_UNAVAILABLE = (
 )
 
 
-# --- container engines (vllm_python / sglang_python): streamv2-overlay format --- #
+# --- container engines (vllm_python / sglang_python): streamv1-overlay format --- #
 def _ov_norm_deltas(deltas):
-    """Canonical per-chunk delta list for the streamv2-overlay format (raw dicts,
+    """Canonical per-chunk delta list for the streamv1-overlay format (raw dicts,
     keeping id): YAML and JSON load id/name/arguments the same way, so plain
     dict/list equality works once both sides are lists of dicts."""
     return [dict(d) for d in (deltas or []) if isinstance(d, dict)]
@@ -550,21 +550,21 @@ def _changed_stream_cases(anchor_doc, captured_cases, impl):
 
 def _run_stream_container(engine, args):
     """vLLM Python / SGLang Python stream capture -> changed-only per-chunk overlay
-    under fixtures-stream-v2/overlays/<impl>-<version>/."""
-    sv2_root = os.path.join(args.root, STREAM_ROOT_REL)
-    work = args.work or tempfile.mkdtemp(prefix="streamv2_ver_")
+    under fixtures-stream-v1/overlays/<impl>-<version>/."""
+    sv1_root = os.path.join(args.root, STREAM_ROOT_REL)
+    work = args.work or tempfile.mkdtemp(prefix="streamv1_ver_")
     os.makedirs(work, exist_ok=True)
     container = engine.container(args)
 
     # The anchor is the lowest-version-per-impl resolved tree: each chunk carries
     # per-impl `expected`/`normal_text` PLUS the shared delta_text the parser reads.
     staged = os.path.join(work, "anchor")
-    resolve_stream_fixtures.resolve(sv2_root, staged, [])
+    resolve_stream_fixtures.resolve(sv1_root, staged, [])
 
     families = [args.family] if args.family else sorted(engine.tc_map.keys())
     anchor_files = {}
     for family in families:
-        fs = sorted(glob.glob(os.path.join(staged, family, "TOOLCALLING.streamv2.*.yaml")))
+        fs = sorted(glob.glob(os.path.join(staged, family, "TOOLCALLING.streamv1.*.yaml")))
         if fs:
             anchor_files[family] = fs
 
@@ -600,9 +600,9 @@ def _run_stream_container(engine, args):
         n_errored += len(errored)
         if not changed_cases:
             continue
-        outdir = _version_outdir(sv2_root, engine.name, version, family)
+        outdir = _version_outdir(sv1_root, engine.name, version, family)
         out = {
-            "family": family, "mode": "streamv2",
+            "family": family, "mode": "streamv1",
             "captured_with": {engine.name: version},
             "cases": changed_cases,
         }
@@ -617,7 +617,7 @@ def _run_stream_container(engine, args):
     _report(engine.name, version, n_cases, n_files, families_touched, n_errored)
 
 
-# --- vllm_rust: full-chunk changed-case streamv2 dir --- #
+# --- vllm_rust: full-chunk changed-case streamv1 dir --- #
 def _clean_version(raw):
     """'v0.25.1 <sha>' -> '0.25.1' (dir name + captured_with stamp)."""
     return raw.split()[0].lstrip("v") if raw else raw
@@ -681,13 +681,13 @@ def _rust_captured_case_doc(cap):
 
 def _run_stream_rust(engine, args):
     """vLLM Rust cargo-probe stream capture -> full-chunk changed-case dir
-    fixtures-stream-v2/vllm_rust-<version>/ (diffed against the lowest vllm_rust anchor)."""
+    fixtures-stream-v1/vllm_rust-<version>/ (diffed against the lowest vllm_rust anchor)."""
     source = args.vllm_rust_source or os.environ.get("VLLM_RUST_SOURCE")
     if not source:
         raise SystemExit("--vllm-rust-source or VLLM_RUST_SOURCE is required for vllm_rust")
-    sv2 = os.path.join(args.root, STREAM_ROOT_REL)
-    inputs_root = os.path.join(sv2, "inputs")
-    anchor_root = _lowest_impl_dir(sv2, "vllm_rust")
+    sv1 = os.path.join(args.root, STREAM_ROOT_REL)
+    inputs_root = os.path.join(sv1, "inputs")
+    anchor_root = _lowest_impl_dir(sv1, "vllm_rust")
     work = args.work or tempfile.mkdtemp(prefix="vllm_rust_ver_")
     os.makedirs(work, exist_ok=True)
 
@@ -698,7 +698,7 @@ def _run_stream_rust(engine, args):
     jobs, job_meta = [], {}
     for family in families:
         parser = engine.tc_map[family]
-        for fp in sorted(glob.glob(os.path.join(inputs_root, family, "TOOLCALLING.streamv2.*.yaml"))):
+        for fp in sorted(glob.glob(os.path.join(inputs_root, family, "TOOLCALLING.streamv1.*.yaml"))):
             jobs.append({"src": fp, "parser": parser})
             job_meta[fp] = (family, os.path.basename(fp))
     if not jobs:
@@ -735,9 +735,9 @@ def _run_stream_rust(engine, args):
                                 else _rust_captured_case_doc(cap))
         if not changed:
             continue
-        outdir = _version_outdir(sv2, "vllm_rust", version, family)
+        outdir = _version_outdir(sv1, "vllm_rust", version, family)
         doc = {
-            "family": family, "mode": "streamv2",
+            "family": family, "mode": "streamv1",
             "captured_with": {"vllm_rust": version}, "cases": changed,
         }
         with open(os.path.join(outdir, base), "w") as f:

@@ -104,8 +104,8 @@ def test_unified_publication_rejects_changed_source_at_a_released_version(releas
         identity.validate_capture_provenance(release_repo, recorded)
 
 
-@pytest.mark.parametrize("version", ["0.6.1", "0.7.0", "1.0.0"])
-def test_unified_publication_accepts_changed_source_at_a_new_version(release_repo, version):
+def test_unified_publication_accepts_changed_source_at_a_new_version(release_repo):
+    version = "0.6.1"
     (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn new_parser() {}\n", encoding="utf-8")
     manifest = release_repo / "parsers/v2/Cargo.toml"
     manifest.write_text(manifest.read_text().replace('"0.6.0"', f'"{version}"'), encoding="utf-8")

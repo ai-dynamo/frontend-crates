@@ -132,12 +132,22 @@ def test_current_capture_guard_rejects_each_stale_dimension(tmp_path, dimension)
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
-def test_current_capture_guard_requires_explicit_tool_schemas(tmp_path):
-    current = _input("same")
-    current.pop("tools", None)
+@pytest.mark.parametrize("schema_type", ["string", ["string", "null"]])
+def test_current_capture_guard_accepts_the_executed_per_case_schema(tmp_path, schema_type):
+    current = _input("null") | {"tools": [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"city": {"type": schema_type}},
+    }}]}
     _write(tmp_path, "inputs", current)
     _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
-    with pytest.raises(ValueError, match="declare its executable tool schemas"):
+    assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
+
+
+def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
+    current = _input("same")
+    del current["tools"]
+    _write(tmp_path, "inputs", current)
+    _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
+    with pytest.raises(ValueError, match="executable tool schema"):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
@@ -227,13 +237,3 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
     assert capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"]) == [
         {"family": "deepseek_v41", "cases": {"UNIFIED.7-2": record}},
     ]
-
-
-def test_current_capture_binds_case_specific_tools(tmp_path):
-    custom = [{"name": "f", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}}}}]
-    current = _input("same") | {"tools": custom}
-    record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []}
-    directory = "dynamo_v2-0.7.0"
-    _write(tmp_path, "inputs", current)
-    _write(tmp_path, directory, record)
-    assert capture_stimulus.validate_current_capture(tmp_path / directory, [tmp_path / "inputs"]) == 1

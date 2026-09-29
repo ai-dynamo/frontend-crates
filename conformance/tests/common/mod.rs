@@ -11,6 +11,9 @@
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
+pub mod known_toolcalling_chunking;
+pub mod known_unified_divergences;
+
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -18,11 +21,22 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// Copy the schema file with historical harnesses: tool registration and argument
 /// typing are request inputs, not parser-version differences.
 pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {
-    parse_unified_tools(&unified_tool_schemas())
+    serde_json::from_value(unified_tool_schemas()).expect("Unified corpus tool schemas")
 }
 
-pub fn parse_unified_tools(schemas: &serde_json::Value) -> Vec<dynamo_parsers_v2::Tool> {
-    serde_json::from_value(schemas.clone()).expect("Unified case tool schemas")
+pub fn unified_tools_for_schemas(
+    schemas: Option<&serde_json::Value>,
+) -> Vec<dynamo_parsers_v2::Tool> {
+    match schemas {
+        Some(schemas) => {
+            serde_json::from_value(schemas.clone()).expect("case-specific Unified tool schemas")
+        }
+        None => unified_tools(),
+    }
+}
+
+pub fn unified_tool_schemas_for_case(schemas: Option<&serde_json::Value>) -> serde_json::Value {
+    schemas.cloned().unwrap_or_else(unified_tool_schemas)
 }
 
 pub fn unified_tool_schemas() -> serde_json::Value {
@@ -263,8 +277,8 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current GLM checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.1";
+/// Fold prior family captures through the current parser release checkpoint.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.7.4";
 
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
@@ -295,7 +309,7 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
 }
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
-/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
+/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
 /// readers fold them ascending so the latest capture wins per case.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, String);

@@ -10,11 +10,11 @@ parser output changes — the parity tests compare the live parsers against them
 Modes (any subset; default all):
   batch            fixtures-batch-v1/dynamo_v1-<v1 crate ver>/    (expected.dynamo_v1,
                    via the record_dynamo_batch bin — the v1 batch parser).
-  stream           fixtures-stream-v2/dynamo_v2-<crate version>/ (per-chunk
+  stream           fixtures-stream-v1/dynamo_v2-<crate version>/ (per-chunk
                    expected, via record_dynamo_stream — the v2 stream parser).
                    Both paths use their crate version. Other version dirs
                    remain as historical comparison candidates.
-  batch-on-stream  fixtures-batch-on-stream-v2/<family>/*.yaml    (the dynamo_v2
+  batch-on-stream  fixtures-batch-on-stream-v1/<family>/*.yaml    (the dynamo_v2
                    case blocks + captured_with stamp, via record_batch_via_stream —
                    the v2 stream parser fed each batch sample as one chunk).
 
@@ -201,7 +201,7 @@ def refresh_batch(v1_ver: str) -> None:
 
 
 def refresh_stream(v2_ver: str) -> None:
-    tree = ensure_tree("fixtures-stream-v2")
+    tree = ensure_tree("fixtures-stream-v1")
     inputs = tree / "inputs"
     # The current-version dir is (re)written in place; OLDER version dirs
     # (earlier 0.x v2 captures, the v1-major jail references) are capture
@@ -244,7 +244,7 @@ def refresh_stream(v2_ver: str) -> None:
             n_cases += len(cases_out)
             doc = {
                 "family": family,
-                "mode": src.get("mode", "streamv2"),
+                "mode": src.get("mode", "streamv1"),
                 "captured_with": {"dynamo_v2": v2_ver},
                 "cases": cases_out,
             }
@@ -256,7 +256,7 @@ def refresh_stream(v2_ver: str) -> None:
 
 
 def refresh_batch_on_stream(v2_ver: str) -> None:
-    tree = ensure_tree("fixtures-batch-on-stream-v2")
+    tree = ensure_tree("fixtures-batch-on-stream-v1")
     batch_inputs = ensure_tree("fixtures-batch-v1") / "inputs"
     for family in V2_FAMILIES:
         fam_dir = tree / family
