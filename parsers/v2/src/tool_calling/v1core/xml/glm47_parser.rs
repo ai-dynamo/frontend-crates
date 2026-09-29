@@ -441,8 +441,12 @@ fn get_param_schema_type<'a>(
     let param = props.get(param_name)?;
     // Prefer JSON null for a bare null when the schema permits it. The wire
     // spelling can also represent a string; keep string preference for other values.
-    if raw.trim() == "null" && schema_has_type(param, "null") {
-        return Some("null");
+    if raw.trim() == "null" {
+        return Some(if schema_permits_null(param) {
+            "null"
+        } else {
+            "string"
+        });
     }
     // Prefer string in unions because JSON-looking text is ambiguous.
     if schema_has_type(param, "string") {
@@ -474,6 +478,50 @@ fn get_param_schema_type<'a>(
         .iter()
         .copied()
         .find(|candidate| schema_has_type(param, candidate))
+}
+
+// Evaluate the constraints relevant to the JSON null value. Sibling keywords
+// intersect; oneOf requires exactly one matching branch. Other value types keep
+// the parser's existing coercion rules.
+fn schema_permits_null(schema: &Value) -> bool {
+    if let Some(allowed) = schema.as_bool() {
+        return allowed;
+    }
+    if let Some(ty) = schema.get("type") {
+        let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+        if !nullable
+            && ty.as_str() != Some("null")
+            && !ty
+                .as_array()
+                .is_some_and(|types| types.iter().any(|ty| ty == "null"))
+        {
+            return false;
+        }
+    }
+    if schema.get("const").is_some_and(|value| !value.is_null())
+        || schema
+            .get("enum")
+            .and_then(Value::as_array)
+            .is_some_and(|values| !values.iter().any(Value::is_null))
+    {
+        return false;
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+            let matches = branches
+                .iter()
+                .filter(|branch| schema_permits_null(branch))
+                .count();
+            if !match keyword {
+                "allOf" => matches == branches.len(),
+                "anyOf" => matches > 0,
+                _ => matches == 1,
+            } {
+                return false;
+            }
+        }
+    }
+    !schema.get("not").is_some_and(schema_permits_null)
 }
 
 fn schema_has_type(schema: &Value, expected: &str) -> bool {
@@ -737,6 +785,123 @@ mod tests {
                 serde_json::json!({"key": "value"})
             );
             assert_eq!(args["untyped"], serde_json::json!([1, 2, 3]));
+        }
+    }
+    #[test]
+    fn null_coercion_respects_full_schema_constraints() {
+        for (label, schema, expected) in [
+            (
+                "7-4",
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.anyof",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.oneof",
+                serde_json::json!({"oneOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.nullable",
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.const",
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-5",
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.union",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_anyof",
+                serde_json::json!({"type": "string", "anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_oneof",
+                serde_json::json!({"type": ["string", "null"], "oneOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.untyped_branch",
+                serde_json::json!({"type": "string", "anyOf": [{"minLength": 1}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.const",
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.enum",
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "allof_string",
+                serde_json::json!({"allOf": [{"type": ["string", "null"]}, {"type": "string"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_string",
+                serde_json::json!({"const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "enum_string",
+                serde_json::json!({"enum": ["null"]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_null",
+                serde_json::json!({"const": null}),
+                serde_json::json!(null),
+            ),
+            (
+                "enum_null",
+                serde_json::json!({"enum": [null]}),
+                serde_json::json!(null),
+            ),
+            (
+                "const_intersection",
+                serde_json::json!({"type": ["string", "null"], "const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "oneof_overlap",
+                serde_json::json!({"oneOf": [{"type": "null"}, {}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "not_null",
+                serde_json::json!({"type": ["string", "null"], "not": {"type": "null"}}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "get_weather".into(),
+                parameters: Some(serde_json::json!({"type":"object","properties":{"city":schema}})),
+            }];
+            let wire = "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>";
+            let (calls, _) =
+                try_tool_call_parse_glm47(wire, &get_test_config(), Some(&tools)).unwrap();
+            assert_eq!(calls.len(), 1, "{label}");
+            let args: serde_json::Value =
+                serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args["city"], expected, "{label}");
         }
     }
 }
