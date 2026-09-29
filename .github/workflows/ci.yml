@@ -167,7 +167,7 @@ jobs:
           cp conformance/CONFORMANCE_v2.html "$site/index.html"
           for relative in \
             toolcalling/fixtures-batch-v1/inputs \
-            toolcalling/fixtures-stream-v2/inputs \
+            toolcalling/fixtures-stream-v1/inputs \
             reasoning/fixtures-v1/inputs
           do
             test -d "$fixtures_root/$relative"
