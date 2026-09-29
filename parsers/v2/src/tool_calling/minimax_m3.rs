@@ -442,4 +442,41 @@ mod tests {
             serde_json::json!({"pagination": {"page": 2, "after": null}})
         );
     }
+    #[test]
+    fn literal_null_branch_does_not_erase_nested_integer_type() {
+        for union in ["anyOf", "oneOf"] {
+            for alternative in [
+                serde_json::json!({"enum":[null]}),
+                serde_json::json!({"const":null}),
+            ] {
+                let tools = vec![Tool {
+                    name: "list_notes".into(),
+                    description: None,
+                    strict: None,
+                    parameters: serde_json::json!({"properties":{"pagination":{union:[
+                        {"type":"object","properties":{"page":{"type":"integer"}}},alternative
+                    ]}}}),
+                }];
+                let input = concat!(
+                    "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"list_notes\">",
+                    "]<]minimax[>[<pagination>]<]minimax[>[<page>2]<]minimax[>[</page>",
+                    "]<]minimax[>[</pagination>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|c| std::str::from_utf8(c).unwrap())
+                        .collect();
+                    let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(out.calls.len(), 1);
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(&out.calls[0].arguments).unwrap(),
+                        serde_json::json!({"pagination":{"page":2}}),
+                        "{union}, {alternative}, width {width}"
+                    );
+                }
+            }
+        }
+    }
 }
