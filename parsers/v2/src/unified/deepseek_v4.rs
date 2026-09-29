@@ -9,9 +9,13 @@ use crate::tool_calling::traits::Tool;
 use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 /// Build DeepSeek V4's single DSML and reasoning parser.
-pub(crate) fn deepseek_v4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+pub(crate) fn deepseek_v4_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    deepseek_dsml_unified(false)
+}
+
+pub(crate) fn deepseek_dsml_unified(both_dialects: bool) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(ScannerUnified::new(
-        deepseek_v4_scanner(tools).with_reasoning(ReasoningSpec {
+        deepseek_v4_scanner(both_dialects).with_reasoning(ReasoningSpec {
             start: "<think>",
             end: "</think>",
             forced_start: false,

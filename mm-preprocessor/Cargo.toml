@@ -13,15 +13,15 @@ homepage.workspace = true
 repository.workspace = true
 keywords = ["llm", "multimodal", "vision", "preprocessing", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
-# Skeleton (design-review) stage: flips to publishable once the implementation
-# lands. release-plz mirrors this (publish = false, release = false).
+# Flips to publishable once the `fetch` helper lands. release-plz mirrors this
+# (publish = false, release = false).
 publish = false
 
 [features]
 default = ["parallel"]
 # Trusted-source compatibility helper (data:/base64/file/http), not an
-# untrusted URL security boundary. The implementation wires the deps:
-# `fetch = ["dep:ureq", "dep:base64"]`.
+# untrusted URL security boundary. Still a stub; its implementation wires the
+# deps: `fetch = ["dep:ureq", "dep:base64"]`.
 fetch = []
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop

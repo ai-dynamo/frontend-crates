@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Coverage for canonical Unified capture checkpoints."""
 
+import copy
 import sys
 from pathlib import Path
 
@@ -324,3 +325,35 @@ def test_schema_v3_rejects_input_changes_without_recapturing_prior_versions(tmp_
 
     with pytest.raises(ValueError, match="requires recapturing and updating every prior semantic version"):
         unified_history.sync_current_corpus(root, loose, complete_snapshot=True)
+
+
+def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    path = root / "families/gemma4/inputs_and_golden.yaml"
+    doc = unified_history.load_yaml(path)
+    template = doc["cases"]["text_only"]
+    doc["cases"] = {}
+    changes = {}
+    for owner, current, historical, value in (
+        ("arg_json_null", "UNIFIED.7-4", "UNIFIED.7-5", None),
+        ("arg_string_null", "UNIFIED.7-5", "UNIFIED.7-4", "null"),
+    ):
+        event = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}
+        case = copy.deepcopy(template)
+        case.update(scenario=owner, display_id=current, golden={"assembled": [event]})
+        doc["cases"][owner] = case
+        change = _change()
+        change["case_key"] = historical
+        change["observation"]["value"] = {"assembled": [event], "chunks": [{"expected": [event]}]}
+        changes[owner] = change
+    path.write_text(unified_history.dump_yaml(doc))
+    capture_path = _write_capture(root, "0.7.4", changes)
+    before = capture_path.read_bytes()
+    out = tmp_path / "view"
+    unified_history.materialize_store(root, out)
+    for label, value in (("7-4", None), ("7-5", "null")):
+        display = "UNIFIED." + label
+        capture = unified_history.load_yaml(out / "dynamo_v2-0.7.4/gemma4" / (display + ".yaml"))
+        assert capture["cases"][display]["assembled"][0]["arguments"]["city"] == value
+    assert capture_path.read_bytes() == before
