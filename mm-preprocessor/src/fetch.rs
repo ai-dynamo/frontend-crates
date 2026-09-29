@@ -4,8 +4,9 @@
 //! Planned compatibility helper for resolving trusted media sources to raw
 //! bytes. Parity anchor: `transformers.image_utils.load_image`.
 //!
-//! This module is a stub: its fetch functions always panic. The behavior
-//! described below is the intended contract for a future implementation.
+//! This module is a stub: its fetch functions always return
+//! [`MmError::Unsupported`](crate::MmError::Unsupported). The behavior described
+//! below is the intended contract for a future implementation.
 //!
 //! This module is not an API-request security boundary: source syntax includes
 //! local files, and this interface does not define a host allowlist or private
@@ -25,7 +26,7 @@
 pub const MAX_FETCH_BYTES: u64 = 64 << 20;
 
 /// Planned byte allowance shared by every source of one request. Charging is
-/// not implemented; the fetch functions currently panic.
+/// not implemented; the fetch functions currently return an error.
 #[derive(Debug)]
 pub struct ByteBudget(#[allow(dead_code)] std::sync::atomic::AtomicU64);
 
@@ -56,9 +57,10 @@ impl Default for FetchOptions {
 /// Do not call this directly on untrusted request URLs; see the module-level
 /// security note.
 ///
-/// # Panics
+/// # Errors
 ///
-/// This function is not implemented and always panics.
+/// Always returns [`MmError::Unsupported`](crate::MmError::Unsupported); not
+/// implemented yet.
 pub fn fetch_bytes(src: &str) -> crate::Result<Vec<u8>> {
     fetch_bytes_budgeted(src, &ByteBudget::new(MAX_FETCH_BYTES))
 }
@@ -66,25 +68,27 @@ pub fn fetch_bytes(src: &str) -> crate::Result<Vec<u8>> {
 /// [`fetch_bytes`] against a caller-owned allowance, for resolving several
 /// sources under one whole-request bound. [`MAX_FETCH_BYTES`] still caps each.
 ///
-/// # Panics
+/// # Errors
 ///
-/// This function is not implemented and always panics.
+/// Always returns [`MmError::Unsupported`](crate::MmError::Unsupported); not
+/// implemented yet.
 pub fn fetch_bytes_budgeted(src: &str, budget: &ByteBudget) -> crate::Result<Vec<u8>> {
     fetch_bytes_budgeted_with(src, budget, &FetchOptions::default())
 }
 
 /// [`fetch_bytes_budgeted`] with explicit [`FetchOptions`].
 ///
-/// # Panics
+/// # Errors
 ///
-/// This function is not implemented and always panics.
+/// Always returns [`MmError::Unsupported`](crate::MmError::Unsupported); not
+/// implemented yet.
 pub fn fetch_bytes_budgeted_with(
     src: &str,
     budget: &ByteBudget,
     opts: &FetchOptions,
 ) -> crate::Result<Vec<u8>> {
     let _ = (src, budget, opts);
-    todo!(
-        "source-precedence dispatch, chunked budget-charged reads, requests-parity proxy handling"
-    )
+    Err(crate::MmError::unsupported(
+        "fetch is not implemented yet; resolve media with your own fetcher",
+    ))
 }
