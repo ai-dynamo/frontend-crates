@@ -15,6 +15,7 @@ keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
+percent-encoding = "2.3.2"
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["raw_value"] }

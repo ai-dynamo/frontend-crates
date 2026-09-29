@@ -11,6 +11,7 @@ description = "Token-incremental tool-call streaming parsers for Dynamo"
 test-utils = []
 
 [dependencies]
+percent-encoding = "2.3.2"
 openai-harmony = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
