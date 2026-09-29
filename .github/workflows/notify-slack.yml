@@ -112,3 +112,6 @@ jobs:
           webhook: ${{ secrets.SLACK_FE_CRATES_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload-file-path: payload.json
+          # Default is false, which leaves the step green even when Slack rejects
+          # the post (e.g. a bad webhook value) — a silent failure. Fail instead.
+          errors: true
