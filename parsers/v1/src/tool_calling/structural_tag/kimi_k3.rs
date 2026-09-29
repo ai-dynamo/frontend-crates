@@ -9,7 +9,6 @@
 //! format so named and required tool choices can be constrained without
 //! changing what the K3 parser expects.
 
-use percent_encoding::percent_decode_str;
 use serde_json::{Map, Value};
 
 use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
@@ -70,6 +69,26 @@ fn bounded_string_regex(schema: &Map<String, Value>) -> Option<String> {
     Some(format!("{STRING_ATOM}{{{min_len},{max_len}}}"))
 }
 
+// URI percent-decoding precedes JSON Pointer's ~0/~1 unescaping.
+fn local_ref_target<'a>(root: &'a Value, reference: &str) -> Option<&'a Value> {
+    let pointer = reference.strip_prefix('#')?;
+    if !pointer.contains('%') {
+        return root.pointer(pointer);
+    }
+    let mut bytes = pointer.bytes();
+    let mut decoded = Vec::with_capacity(pointer.len());
+    while let Some(byte) = bytes.next() {
+        decoded.push(if byte == b'%' {
+            let high = char::from(bytes.next()?).to_digit(16)?;
+            let low = char::from(bytes.next()?).to_digit(16)?;
+            ((high << 4) | low) as u8
+        } else {
+            byte
+        });
+    }
+    root.pointer(std::str::from_utf8(&decoded).ok()?)
+}
+
 // Resolve before extracting a property's JSON grammar: local pointers belong
 // to the complete tool schema, not to the extracted argument schema.
 fn resolve_argument_schema(root: &Value, schema: &Value, depth: usize) -> Option<Value> {
@@ -115,9 +134,8 @@ fn resolve_argument_schema_inner(
         }) {
             return None; // Do not discard sibling validation constraints.
         }
-        let pointer = reference.as_str()?.strip_prefix('#')?;
-        let pointer = percent_decode_str(pointer).decode_utf8().ok()?;
-        return resolve_argument_schema_inner(root, root.pointer(&pointer)?, depth + 1, remaining);
+        let target = local_ref_target(root, reference.as_str()?)?;
+        return resolve_argument_schema_inner(root, target, depth + 1, remaining);
     }
     let mut resolved = object.clone();
     // Active references are inlined below; unused definitions need no new scope.
@@ -522,12 +540,22 @@ mod tests {
 
     #[test]
     fn percent_encoded_reference_retains_argument_type() {
-        let root = json!({
-            "$defs": {"Foo Bar": {"type": "integer"}},
-            "properties": {"value": {"$ref": "#/$defs/Foo%20Bar"}}
-        });
-        let resolved = resolve_argument_schema(&root, &root["properties"]["value"], 0).unwrap();
-        assert_eq!(resolved, json!({"type": "integer"}));
+        let root = json!({"$defs": {
+            "Foo Bar": {"type": "integer"},
+            "a/b~c": {"type": "integer"},
+            "café+": {"type": "integer"}
+        }});
+        for reference in [
+            "#/$defs/Foo%20Bar",
+            "#/$defs/a%7E1b%7E0c",
+            "#/$defs/caf%c3%a9+",
+        ] {
+            let resolved = resolve_argument_schema(&root, &json!({"$ref": reference}), 0).unwrap();
+            assert_eq!(resolved, json!({"type": "integer"}));
+        }
+        for reference in ["#/$defs/%FF", "#/$defs/%2", "#/$defs/%GG"] {
+            assert!(resolve_argument_schema(&root, &json!({"$ref": reference}), 0).is_none());
+        }
     }
 
     #[test]
