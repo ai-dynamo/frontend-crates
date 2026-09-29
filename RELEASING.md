@@ -19,9 +19,7 @@ Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`, `dynamo-t
    subject listing every crate whose version changed this run — e.g.
    `chore: release dynamo-protocols v1.4.0, dynamo-renderer v1.3.1` (with
    `Signed-off-by:` for DCO) — and pushes to `main`.
-4. `release-plz release` always runs (not gated on step 3 — a merge that only
-   manually pegged a version produces no bump commit but must still publish).
-   It publishes every release-plz-managed crate whose `Cargo.toml` version isn't on crates.io yet and creates the per-crate git tags; it's a no-op otherwise. GitHub Releases are disabled (`git_release_enable = false`); the per-crate `CHANGELOG.md` files plus the `*-v*` tags are the release record.
+4. `release-plz release` always runs (not gated on step 3 — a merge that only manually pegged a version produces no bump commit but must still publish). It publishes every release-plz-managed crate whose `Cargo.toml` version isn't on crates.io yet and creates the per-crate git tags; it's a no-op otherwise. GitHub Releases are disabled (`git_release_enable = false`); the per-crate `CHANGELOG.md` files plus the `*-v*` tags are the release record.
 5. The push from step 3 retriggers the workflow. A recursion guard on the
    `chore: release` commit message short-circuits the second run.
 
@@ -35,17 +33,19 @@ Note: a manual peg skips the auto-changelog; add a `CHANGELOG.md` entry in the s
 
 ## First release of `dynamo-mm-preprocessor`
 
-Cargo permits publication after the enabling PR merges. Release-plz remains disabled for this crate (`release = false`), so the release workflow can run without trying to create it. [crates.io trusted publishing](https://blog.rust-lang.org/2025/07/11/crates-io-development-update-2025-07/) requires a manual first release. An authorized publisher must publish 0.1.0 from a clean checkout at the exact merged `main` commit, using a short-lived API token that permits crate creation. Set `CARGO_REGISTRY_TOKEN` in the environment without adding it to the repository or command line, then run:
+Cargo permits publication after the enabling PR merges. Release-plz remains disabled for this crate (`release = false`), so the release workflow can run without trying to create it. [crates.io trusted publishing](https://blog.rust-lang.org/2025/07/11/crates-io-development-update-2025-07/) requires a manual first release. An authorized publisher must publish 0.1.0 from a clean checkout at the exact merged `main` commit, using a short-lived API token that permits crate creation. Set `CARGO_REGISTRY_TOKEN` in the environment without adding it to the repository or command line. The tag push needs a bypass of the "Disallow publication of tags except release managers" ruleset. After the publish, add the owners of the other crates with `cargo owner --add <login> dynamo-mm-preprocessor`. Then run:
 
 ```bash
 cargo publish -p dynamo-mm-preprocessor --dry-run --locked
 cargo publish -p dynamo-mm-preprocessor --locked
+# Confirm 0.1.0 on crates.io, configure the trusted publisher, and merge
+# the PR that removes `release = false`. Then tag the published commit:
 git tag -s -m "release dynamo-mm-preprocessor 0.1.0" \
-  dynamo-mm-preprocessor-v0.1.0 HEAD
+  dynamo-mm-preprocessor-v0.1.0 <published-sha>
 git push origin dynamo-mm-preprocessor-v0.1.0
 ```
 
-Confirm 0.1.0 is available on crates.io, then configure this crate's trusted publisher as described below. A separate follow-up PR removes its `release = false` override; subsequent releases are then automated. The tag is needed so the bump step can find the 0.1.0 baseline.
+Configure the trusted publisher as described below. A separate follow-up PR removes the `release = false` override; subsequent releases are then automated. The tag gives the bump step its 0.1.0 baseline, so push it last. The bump step does not read `release = false`: with the tag pushed and the override still set, the next push that edits the root `Cargo.toml` (every `chore: release` does) runs `release-plz update -p dynamo-mm-preprocessor`, which fails the release job for every crate.
 
 ## Bump policy
 
@@ -63,13 +63,7 @@ breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 | `feat!:` / `BREAKING CHANGE:`   | 2.0.0 (major)   |
 | `chore:`, `ci:`, `build:`, etc. | no bump         |
 
-`dynamo-parsers-v2` and, once automation is enabled, `dynamo-mm-preprocessor` are at `0.x`, where the minor slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking, `0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot
-and breaking changes bump the minor slot. Lifecycle note: v1
-(`dynamo-parsers`) is interim and will be removed outright once v2 reaches
-parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to
-keep moving while v1 stays quiet. Downstream exact pins like vLLM's
-`dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them —
-another reason auto-bumps stay scoped to crates whose own code changed.
+`dynamo-parsers-v2` and, once automation is enabled, `dynamo-mm-preprocessor` are at `0.x`, where the minor slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking, `0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot and breaking changes bump the minor slot. Lifecycle note: v1 (`dynamo-parsers`) is interim and will be removed outright once v2 reaches parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to keep moving while v1 stays quiet. Downstream exact pins like vLLM's `dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them — another reason auto-bumps stay scoped to crates whose own code changed.
 
 ### What `cargo-semver-checks` validates
 
