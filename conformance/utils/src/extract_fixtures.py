@@ -104,7 +104,7 @@ def fixtures_identity(shards, inactive=()):
 
     NOT the same thing as `snapshot`/`pin`: `pin` is a human-readable stamp
     that can stay fixed while the shards under it are re-pinned in place
-    (it happened once, to fixtures-batch-on-stream-v2 -- see the comment in
+    (it happened once, to fixtures-batch-on-stream-v1 -- see the comment in
     `main()`). Naming the cache directory by `pin` alone let two DIFFERENT
     shard-hash sets collide on one path; whichever extraction ran second
     called `shutil.rmtree()` on the directory a concurrent reader (a test in

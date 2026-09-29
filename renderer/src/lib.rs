@@ -24,7 +24,7 @@
 //    - Continuation - Detected on user turns, where we can return
 //      partial assistant responses without add_generation_prompt
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use minijinja::value::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -200,6 +200,11 @@ impl std::error::Error for PromptRenderError {}
 pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
+    /// Optional fast path for rendering without calling [`Self::messages`].
+    ///
+    /// Returning `Some` requires the same serialized messages, including all
+    /// transformations, as `messages()`. Adapters that rewrite messages must
+    /// return `None` unless this slice includes those same changes.
     fn typed_messages(&self) -> Option<&[dynamo_protocols::types::ChatCompletionRequestMessage]> {
         None
     }
@@ -245,9 +250,27 @@ pub trait OAIChatLikeRequest {
     }
 }
 
+/// Native renderers and normalization work on JSON, so avoid a MiniJinja
+/// round trip when the request exposes its typed messages.
+pub(crate) fn messages_to_json(req: &dyn OAIChatLikeRequest) -> Result<serde_json::Value> {
+    if let Some(messages) = req.typed_messages() {
+        serde_json::to_value(messages)
+    } else {
+        serde_json::to_value(req.messages())
+    }
+    .context("Failed to convert messages to JSON")
+}
+
 pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
+
+    /// Source message indices in rendered media order; `None` preserves arrival order.
+    /// An explicit order must be a permutation of all source-message indices.
+    /// Parts within each message retain their original order.
+    fn media_message_order(&self, _request: &dyn OAIChatLikeRequest) -> Option<Vec<usize>> {
+        None
+    }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)

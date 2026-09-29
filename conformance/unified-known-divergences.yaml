@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Expected Unified parser mismatches captured by the conformance corpus. Each
+# entry pins the exact output pair so another failure in the same case still
+# fails CI. Entries that stop diverging fail as stale and must be removed.
+# Schema: family -> case ID -> check -> note and exact observed output.
+
+glm47:
+  UNIFIED.arg_json_null.glm47:
+    golden:
+      note: The GLM parser returns the string "null" for a JSON-null literal; PR #287 records the behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(get_weather, {"city":"null"})'
+  UNIFIED.arg_json_null_anyof.glm47:
+    golden:
+      note: The GLM parser returns the string "null" for a JSON-null literal under anyOf; PR #287 records the behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(get_weather, {"city":"null"})'
+  UNIFIED.arg_json_null_const.glm47:
+    golden:
+      note: The GLM parser returns the string "null" for a JSON-null literal under const; PR #287 records the behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(get_weather, {"city":"null"})'
+  UNIFIED.arg_json_null_nullable.glm47:
+    golden:
+      note: The GLM parser returns the string "null" for a nullable JSON-null literal; PR #287 records the behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(get_weather, {"city":"null"})'
+  UNIFIED.arg_json_null_oneof.glm47:
+    golden:
+      note: The GLM parser returns the string "null" for a JSON-null literal under oneOf; PR #287 records the behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(get_weather, {"city":"null"})'
+  UNIFIED.arg_null_mixed_labels.glm47:
+    golden:
+      note: The GLM parser stringifies all three null-looking fields in the mixed request; PR #287 records the JSON-null behavior targeted by Michael Feil's PR #268.
+      actual: 'tool_call(set_labels, {"label":"null","note":"null","literal":"null"})'
+
+muse_glimmer:
+  UNIFIED.deepseek_v41_mixed_control_text_in_string.muse_glimmer:
+    golden:
+      note: Muse Glimmer does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
+      actual: >-
+        reasoning("quoted")  |  text(" <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>")
+
+qwen3:
+  UNIFIED.arg_json_null_nullable.qwen3:
+    golden:
+      note: Qwen3 drops nullable JSON null instead of preserving it; PR #287 records this current conformance failure.
+      actual: ""
+    chunk_invariance:
+      note: Qwen3 drops nullable JSON null at marker-aligned and smaller chunkings; PR #287 records this current conformance failure.
+      baseline: 'tool_call(get_weather, {"city":null})'
+      divergent: ""
+    stream_batch:
+      note: Qwen3 streaming drops nullable JSON null while parse_complete preserves it; PR #287 records this current conformance failure.
+      batch: 'tool_call(get_weather, {"city":null})'
+      stream: ""
+  UNIFIED.arg_string_null.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null; this is the behavior targeted by Michael Feil's PR #251.
+      actual: ""
+    chunk_invariance:
+      note: Qwen3's single-shot result is JSON null and chunked output is empty; this is the behavior targeted by PR #251.
+      baseline: 'tool_call(get_weather, {"city":null})'
+      divergent: ""
+    stream_batch:
+      note: Qwen3 streaming drops this schema-directed string-null call while parse_complete returns JSON null; this is the behavior targeted by Michael Feil's PR #251.
+      batch: 'tool_call(get_weather, {"city":null})'
+      stream: ""
+  UNIFIED.arg_string_null_const.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null under const; this is the behavior targeted by Michael Feil's PR #251.
+      actual: 'tool_call(get_weather, {"city":null})'
+  UNIFIED.arg_string_null_enum.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null under enum; this is the behavior targeted by Michael Feil's PR #251.
+      actual: ""
+    chunk_invariance:
+      note: Qwen3's single-shot result is JSON null and chunked output is empty; this is the behavior targeted by PR #251.
+      baseline: 'tool_call(get_weather, {"city":null})'
+      divergent: ""
+    stream_batch:
+      note: Qwen3 streaming drops this schema-directed string-null call while parse_complete returns JSON null; this is the behavior targeted by Michael Feil's PR #251.
+      batch: 'tool_call(get_weather, {"city":null})'
+      stream: ""
+  UNIFIED.arg_string_null_sibling_anyof.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null with sibling anyOf; this is the behavior targeted by Michael Feil's PR #251.
+      actual: ""
+    chunk_invariance:
+      note: Qwen3's single-shot result is JSON null and chunked output is empty; this is the behavior targeted by PR #251.
+      baseline: 'tool_call(get_weather, {"city":null})'
+      divergent: ""
+    stream_batch:
+      note: Qwen3 streaming drops this schema-directed string-null call while parse_complete returns JSON null; this is the behavior targeted by Michael Feil's PR #251.
+      batch: 'tool_call(get_weather, {"city":null})'
+      stream: ""
+  UNIFIED.arg_string_null_sibling_oneof.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null with sibling oneOf; this is the behavior targeted by Michael Feil's PR #251.
+      actual: 'tool_call(get_weather, {"city":null})'
+  UNIFIED.arg_string_null_union.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null under union; this is the behavior targeted by Michael Feil's PR #251.
+      actual: 'tool_call(get_weather, {"city":null})'
+  UNIFIED.arg_string_null_untyped_branch.qwen3:
+    golden:
+      note: Qwen3 converts schema-directed string "null" to JSON null through an untyped union branch; this is the behavior targeted by Michael Feil's PR #251.
+      actual: ""
+    chunk_invariance:
+      note: Qwen3's single-shot result is JSON null and chunked output is empty; this is the behavior targeted by PR #251.
+      baseline: 'tool_call(get_weather, {"city":null})'
+      divergent: ""
+    stream_batch:
+      note: Qwen3 streaming drops this schema-directed string-null call while parse_complete returns JSON null; this is the behavior targeted by Michael Feil's PR #251.
+      batch: 'tool_call(get_weather, {"city":null})'
+      stream: ""
+  UNIFIED.deepseek_v41_mixed_control_text_in_string.qwen3:
+    golden:
+      note: Qwen3 does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
+      actual: 'tool_call(f, {"x":"<think>quoted</think> <tool_call> </tool_call>"})'
