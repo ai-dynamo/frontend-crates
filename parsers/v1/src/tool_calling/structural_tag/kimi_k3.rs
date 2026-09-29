@@ -11,6 +11,7 @@
 
 use std::collections::HashSet;
 
+use anyhow::{Context, bail};
 use serde_json::{Map, Value};
 
 use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
@@ -347,8 +348,13 @@ fn has_unescaped_trailing_dollar(pattern: &str) -> bool {
         == 0
 }
 
-fn merge_compatible_all_of(schema: &Map<String, Value>) -> Option<Map<String, Value>> {
-    let options = schema.get("allOf")?.as_array()?;
+fn merge_compatible_all_of(
+    schema: &Map<String, Value>,
+) -> anyhow::Result<Option<Map<String, Value>>> {
+    let Some(options) = schema.get("allOf") else {
+        return Ok(None);
+    };
+    let options = options.as_array().context("allOf must be an array")?;
     let mut merged = schema.clone();
     merged.remove("allOf");
 
@@ -356,47 +362,66 @@ fn merge_compatible_all_of(schema: &Map<String, Value>) -> Option<Map<String, Va
         let option = match option {
             Value::Bool(true) => continue,
             Value::Object(option) => {
-                merge_compatible_all_of(option).unwrap_or_else(|| option.clone())
+                merge_compatible_all_of(option)?.unwrap_or_else(|| option.clone())
             }
-            _ => return None,
+            _ => bail!("cannot translate this allOf branch to XTML"),
         };
         for (key, value) in option {
             match merged.get_mut(&key) {
                 Some(existing) if *existing == value => {}
                 Some(existing) if key == "enum" => {
                     // The raw XTML string path can enumerate this intersection.
-                    // Leave other enum types on the existing fallback path.
-                    let allowed = value.as_array()?;
-                    let candidates = existing.as_array_mut()?;
+                    let allowed = value.as_array().context("enum must be an array")?;
+                    let candidates = existing.as_array_mut().context("enum must be an array")?;
                     if !allowed.iter().all(Value::is_string)
                         || !candidates.iter().all(Value::is_string)
                     {
-                        return None;
+                        bail!("cannot intersect non-string enums in an XTML allOf");
                     }
                     candidates.retain(|item| allowed.contains(item));
                 }
-                Some(_) => return None,
+                Some(existing) if key == "minLength" || key == "maxLength" => {
+                    let left = existing
+                        .as_u64()
+                        .context("string length must be a nonnegative integer")?;
+                    let right = value
+                        .as_u64()
+                        .context("string length must be a nonnegative integer")?;
+                    *existing = Value::from(if key == "minLength" {
+                        left.max(right)
+                    } else {
+                        left.min(right)
+                    });
+                }
+                Some(_) => bail!("cannot intersect allOf constraints for {key}"),
                 None => {
                     merged.insert(key, value);
                 }
             }
         }
     }
-    Some(merged)
+    Ok(Some(merged))
 }
 
-fn string_content_format(schema: &Value) -> Option<Format> {
+fn string_content_format(schema: &Value) -> anyhow::Result<Option<Format>> {
     let root = schema;
     let Some(schema) = schema.as_object() else {
-        return Some(Format::AnyText(AnyTextFormat {
+        return Ok(Some(Format::AnyText(AnyTextFormat {
             excludes: vec![CLOSE.to_string()],
-        }));
+        })));
     };
     // XTML string arguments contain raw text rather than a JSON string, so they
     // cannot use JsonSchemaFormat. Flatten compatible allOf branches before
     // translating their string constraints to raw-text formats.
-    let merged_schema = merge_compatible_all_of(schema);
+    let merged_schema = merge_compatible_all_of(schema)?;
     let schema = merged_schema.as_ref().unwrap_or(schema);
+    if let (Some(min), Some(max)) = (
+        schema.get("minLength").and_then(Value::as_u64),
+        schema.get("maxLength").and_then(Value::as_u64),
+    ) && min > max
+    {
+        return Ok(None);
+    }
 
     // Apply outer constraints to each union branch before choosing a raw XTML
     // string format. A top-level length regex alone would discard an inner enum.
@@ -411,16 +436,16 @@ fn string_content_format(schema: &Value) -> Option<Format> {
                 .map(|(key, value)| (key.clone(), value.clone()))
                 .collect(),
         );
-        let formats = options
-            .iter()
-            .filter(|option| {
-                schema_types(option, root, &HashSet::new()).contains(&JsonType::String)
-            })
-            .filter_map(|option| {
-                string_content_format(&serde_json::json!({"allOf": [common.clone(), option]}))
-            })
-            .collect::<Vec<_>>();
-        return (!formats.is_empty()).then(|| one_of(formats));
+        let mut formats = Vec::new();
+        for option in options {
+            if schema_types(option, root, &HashSet::new()).contains(&JsonType::String)
+                && let Some(format) =
+                    string_content_format(&serde_json::json!({"allOf": [common.clone(), option]}))?
+            {
+                formats.push(format);
+            }
+        }
+        return Ok((!formats.is_empty()).then(|| one_of(formats)));
     }
 
     let enum_values = schema
@@ -435,7 +460,7 @@ fn string_content_format(schema: &Value) -> Option<Format> {
         });
     if let Some(values) = enum_values {
         if values.is_empty() {
-            return None;
+            return Ok(None);
         }
         let pattern = schema.get("pattern").and_then(Value::as_str);
         let compiled_pattern = pattern.map(regex::Regex::new);
@@ -465,7 +490,7 @@ fn string_content_format(schema: &Value) -> Option<Format> {
                     })
                 })
                 .collect::<Vec<_>>();
-            return (!formats.is_empty()).then(|| one_of(formats));
+            return Ok((!formats.is_empty()).then(|| one_of(formats)));
         }
     }
 
@@ -494,28 +519,31 @@ fn string_content_format(schema: &Value) -> Option<Format> {
         } else {
             format!("{STRING_ATOM}*")
         };
-        return Some(Format::Regex(RegexFormat {
+        return Ok(Some(Format::Regex(RegexFormat {
             pattern: format!("{prefix}(?:{pattern}){suffix}"),
-        }));
+        })));
     }
 
     if let Some(pattern) = string_length_regex(schema) {
-        return Some(Format::Regex(RegexFormat { pattern }));
+        return Ok(Some(Format::Regex(RegexFormat { pattern })));
     }
 
-    Some(Format::AnyText(AnyTextFormat {
+    Ok(Some(Format::AnyText(AnyTextFormat {
         excludes: vec![CLOSE.to_string()],
-    }))
+    })))
 }
 
-fn resolved_root_parameters(root: &Value) -> Option<Value> {
-    let resolved = resolve_local_refs(root, root, &HashSet::new())?;
-    let object = resolved.as_object()?;
-    if object.contains_key("allOf") {
-        merge_compatible_all_of(object).map(Value::Object)
-    } else {
-        Some(resolved)
-    }
+fn resolved_root_parameters(root: &Value) -> anyhow::Result<Option<Value>> {
+    let Some(resolved) = resolve_local_refs(root, root, &HashSet::new()) else {
+        bail!("cannot resolve tool parameter references");
+    };
+    let Some(object) = resolved.as_object() else {
+        return Ok(None);
+    };
+    Ok(Some(match merge_compatible_all_of(object)? {
+        Some(merged) => Value::Object(merged),
+        None => resolved,
+    }))
 }
 
 fn permissive_argument_tag() -> TagFormat {
@@ -859,48 +887,52 @@ fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option
     Some(preserve_recursive_root_refs(Value::Object(narrowed), root))
 }
 
-fn argument_format(key: &str, schema: &Value, root: &Value) -> Option<Format> {
-    let alternatives = xtml_types(schema, root)
-        .into_iter()
-        .filter_map(|xtml_type| {
-            let content = if xtml_type == "string" {
-                string_content_format(&schema_for_xtml_type(schema, root, xtml_type)?)?
-            } else {
-                Format::JsonSchema(JsonSchemaFormat {
-                    json_schema: schema_for_xtml_type(schema, root, xtml_type)?,
-                    style: JsonSchemaStyle::Json,
-                })
+fn argument_format(key: &str, schema: &Value, root: &Value) -> anyhow::Result<Option<Format>> {
+    let mut alternatives = Vec::new();
+    for xtml_type in xtml_types(schema, root) {
+        let Some(schema) = schema_for_xtml_type(schema, root, xtml_type) else {
+            continue;
+        };
+        let content = if xtml_type == "string" {
+            let Some(content) = string_content_format(&schema)
+                .with_context(|| format!("cannot constrain argument {key}"))?
+            else {
+                continue;
             };
-            Some(Format::Tag(TagFormat {
-                begin: format!(
-                    "{OPEN}argument key=\"{}\" type=\"{xtml_type}\"{SEP}",
-                    escape_attr(key)
-                ),
-                content: Box::new(content),
-                end: ARGUMENT_CLOSE.to_string(),
-            }))
-        })
-        .collect::<Vec<_>>();
-
-    (!alternatives.is_empty()).then(|| one_of(alternatives))
+            content
+        } else {
+            Format::JsonSchema(JsonSchemaFormat {
+                json_schema: schema,
+                style: JsonSchemaStyle::Json,
+            })
+        };
+        alternatives.push(Format::Tag(TagFormat {
+            begin: format!(
+                "{OPEN}argument key=\"{}\" type=\"{xtml_type}\"{SEP}",
+                escape_attr(key)
+            ),
+            content: Box::new(content),
+            end: ARGUMENT_CLOSE.to_string(),
+        }));
+    }
+    Ok((!alternatives.is_empty()).then(|| one_of(alternatives)))
 }
 
 fn optional_arguments(
     properties: &Map<String, Value>,
     required_keys: &[&str],
     root: &Value,
-) -> Option<Format> {
-    let arguments = properties
-        .iter()
-        .filter(|(key, _)| !required_keys.contains(&key.as_str()))
-        .filter_map(|(key, schema)| {
-            matches!(schema, Value::Bool(_) | Value::Object(_))
-                .then(|| argument_format(key, schema, root))
-                .flatten()
-        })
-        .collect::<Vec<_>>();
-
-    (!arguments.is_empty()).then(|| star(one_of(arguments)))
+) -> anyhow::Result<Option<Format>> {
+    let mut arguments = Vec::new();
+    for (key, schema) in properties {
+        if !required_keys.contains(&key.as_str())
+            && matches!(schema, Value::Bool(_) | Value::Object(_))
+            && let Some(argument) = argument_format(key, schema, root)?
+        {
+            arguments.push(argument);
+        }
+    }
+    Ok((!arguments.is_empty()).then(|| star(one_of(arguments))))
 }
 
 fn canonical_required_arguments(
@@ -920,23 +952,25 @@ fn canonical_required_arguments(
     })
 }
 
-fn arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
+fn arguments_block(tool: &ToolDefinition, strict_schema: bool) -> anyhow::Result<Format> {
     if !super::builder::uses_declared_tool_schema(tool, strict_schema) {
-        return star(Format::Tag(permissive_argument_tag()));
+        return Ok(star(Format::Tag(permissive_argument_tag())));
     }
 
     let Some(root) = tool.parameters.as_ref() else {
-        return star(Format::Tag(permissive_argument_tag()));
+        return Ok(star(Format::Tag(permissive_argument_tag())));
     };
     let resolved_root = root
         .as_object()
         .filter(|object| object.contains_key("$ref") || object.contains_key("allOf"))
-        .and_then(|_| resolved_root_parameters(root));
+        .map(|_| resolved_root_parameters(root))
+        .transpose()?
+        .flatten();
     let Some(parameters) = resolved_root.as_ref().unwrap_or(root).as_object() else {
-        return star(Format::Tag(permissive_argument_tag()));
+        return Ok(star(Format::Tag(permissive_argument_tag())));
     };
     let Some(properties) = parameters.get("properties").and_then(Value::as_object) else {
-        return star(Format::Tag(permissive_argument_tag()));
+        return Ok(star(Format::Tag(permissive_argument_tag())));
     };
     let required = match parameters.get("required") {
         None => Vec::new(),
@@ -946,43 +980,42 @@ fn arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
                 .filter_map(Value::as_str)
                 .collect::<Vec<_>>()
         }
-        Some(_) => return star(Format::Tag(permissive_argument_tag())),
+        Some(_) => return Ok(star(Format::Tag(permissive_argument_tag()))),
     };
-    let optional_arguments = optional_arguments(properties, &required, root);
+    let optional_arguments = optional_arguments(properties, &required, root)?;
 
     if required.is_empty() {
-        return optional_arguments.unwrap_or_else(|| {
+        return Ok(optional_arguments.unwrap_or_else(|| {
             Format::ConstString(ConstStringFormat {
                 value: String::new(),
             })
-        });
+        }));
     }
 
     let mut arguments = Vec::with_capacity(required.len());
     for key in &required {
         let Some(schema) = properties.get(*key) else {
-            return star(Format::Tag(permissive_argument_tag()));
+            return Ok(star(Format::Tag(permissive_argument_tag())));
         };
         if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
-            return star(Format::Tag(permissive_argument_tag()));
+            return Ok(star(Format::Tag(permissive_argument_tag())));
         }
-        let Some(argument) = argument_format(key, schema, root) else {
-            return star(Format::Tag(permissive_argument_tag()));
-        };
+        let argument = argument_format(key, schema, root)?
+            .with_context(|| format!("required argument {key} has no representable values"))?;
         arguments.push(argument);
     }
-    canonical_required_arguments(arguments, optional_arguments)
+    Ok(canonical_required_arguments(arguments, optional_arguments))
 }
 
 fn build_auto_structural_tag(
     tools: Vec<&ToolDefinition>,
     ctx: &ToolCallFormatBuildContext<'_>,
-) -> StructuralTag {
+) -> anyhow::Result<StructuralTag> {
     let strict_schema = ctx.strict_schema();
     let call_tags: Vec<_> = tools
         .into_iter()
         .map(|tool| call_tag(tool, strict_schema))
-        .collect();
+        .collect::<anyhow::Result<_>>()?;
     let parallel_tool_calls = !ctx.stop_after_first();
     let calls = if parallel_tool_calls {
         Format::TagsWithSeparator(TagsWithSeparatorFormat {
@@ -1029,12 +1062,12 @@ fn build_auto_structural_tag(
     } else {
         suffix
     };
-    StructuralTag { format }
+    Ok(StructuralTag { format })
 }
 
-fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
+fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> anyhow::Result<TagFormat> {
     let begin = format!("{OPEN}call tool=\"{}\" index=\"", escape_attr(&tool.name));
-    TagFormat {
+    Ok(TagFormat {
         begin,
         content: Box::new(Format::Sequence(SequenceFormat {
             elements: vec![
@@ -1044,11 +1077,12 @@ fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
                 Format::ConstString(ConstStringFormat {
                     value: format!("\"{SEP}"),
                 }),
-                arguments_block(tool, strict_schema),
+                arguments_block(tool, strict_schema)
+                    .with_context(|| format!("cannot constrain tool {}", tool.name))?,
             ],
         })),
         end: CALL_CLOSE.to_string(),
-    }
+    })
 }
 
 /// Build the format-style xgrammar tag for K3's response + tools channels.
@@ -1060,7 +1094,7 @@ pub(crate) fn build_kimi_k3(
         return Ok(None);
     }
     if matches!(ctx.tool_choice, crate::tool_calling::ToolChoice::Auto) {
-        return Ok(Some(build_auto_structural_tag(tools, ctx)));
+        return Ok(Some(build_auto_structural_tag(tools, ctx)?));
     }
 
     // Moonshot's named-tool contract returns the selected call with no
@@ -1090,7 +1124,7 @@ pub(crate) fn build_kimi_k3(
         tags: tools
             .into_iter()
             .map(|tool| call_tag(tool, ctx.strict_schema()))
-            .collect(),
+            .collect::<anyhow::Result<_>>()?,
         separator: String::new(),
         at_least_one: true,
         stop_after_first: ctx.stop_after_first(),
@@ -1122,7 +1156,9 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::tool_calling::structural_tag::builder::StructuralTagSchemaMode;
+    use crate::tool_calling::structural_tag::builder::{
+        StructuralTagBuilder, StructuralTagSchemaMode,
+    };
     use crate::tool_calling::{ToolChoice, ToolDefinition};
 
     fn tools() -> Vec<ToolDefinition> {
@@ -1412,10 +1448,13 @@ mod tests {
 
     #[test]
     fn string_content_enforces_min_length_without_a_maximum() {
-        let value = serde_json::to_value(string_content_format(&json!({
-            "type": "string",
-            "minLength": 2
-        })))
+        let value = serde_json::to_value(
+            string_content_format(&json!({
+                "type": "string",
+                "minLength": 2
+            }))
+            .unwrap(),
+        )
         .unwrap();
 
         assert_eq!(value["type"], "regex");
@@ -1424,12 +1463,15 @@ mod tests {
 
     #[test]
     fn string_content_uses_xgrammar_pattern_precedence_over_length_bounds() {
-        let value = serde_json::to_value(string_content_format(&json!({
-            "type": "string",
-            "pattern": "^item-[0-9]+$",
-            "minLength": 6,
-            "maxLength": 12
-        })))
+        let value = serde_json::to_value(
+            string_content_format(&json!({
+                "type": "string",
+                "pattern": "^item-[0-9]+$",
+                "minLength": 6,
+                "maxLength": 12
+            }))
+            .unwrap(),
+        )
         .unwrap();
 
         assert_eq!(value["type"], "regex");
@@ -1441,10 +1483,13 @@ mod tests {
         assert!(!has_unescaped_trailing_dollar(r"^price\$"));
         assert!(has_unescaped_trailing_dollar(r"^path\\$"));
 
-        let value = serde_json::to_value(string_content_format(&json!({
-            "type": "string",
-            "pattern": r"^price\$"
-        })))
+        let value = serde_json::to_value(
+            string_content_format(&json!({
+                "type": "string",
+                "pattern": r"^price\$"
+            }))
+            .unwrap(),
+        )
         .unwrap();
 
         assert_eq!(value["type"], "regex");
@@ -1458,19 +1503,25 @@ mod tests {
                 {"type": "string", "enum": ["safe", "other"]},
                 {"enum": ["safe", "third"]}
             ]
-        }));
+        }))
+        .unwrap();
         let value = serde_json::to_value(format).unwrap();
         assert_eq!(value["type"], "const_string");
         assert_eq!(value["value"], "safe");
     }
 
     #[test]
-    fn string_outer_length_keeps_any_of_enum_restrictions() {
+    fn string_outer_bounds_intersect_any_of_enum_restrictions() {
         let format = string_content_format(&json!({
             "type": "string",
-            "minLength": 1,
-            "anyOf": [{"enum": ["safe"]}, {"enum": ["other"]}]
-        }));
+            "minLength": 2,
+            "maxLength": 6,
+            "anyOf": [
+                {"minLength": 3, "maxLength": 4, "enum": ["a", "safe", "longer"]},
+                {"enum": ["other"]}
+            ]
+        }))
+        .unwrap();
         let value = serde_json::to_value(format).unwrap();
         assert_eq!(value["type"], "or");
         let values = value["elements"].as_array().unwrap();
@@ -1480,12 +1531,70 @@ mod tests {
     }
 
     #[test]
+    fn impossible_required_argument_errors_for_every_tool_choice() {
+        let mut tools = vec![ToolDefinition {
+            name: "test".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {"value": {"type": "string", "enum": ["a"], "minLength": 2}},
+                "required": ["value"]
+            })),
+            strict: None,
+        }];
+        for choice in [
+            ToolChoice::Auto,
+            ToolChoice::Required,
+            ToolChoice::Named("test".into()),
+        ] {
+            let error = StructuralTagBuilder::KimiK3
+                .build_tool_call_format(&context(&choice, &tools))
+                .unwrap_err();
+            let message = format!("{error:#}");
+            assert!(
+                message.contains("test") && message.contains("value"),
+                "{message}"
+            );
+        }
+        tools[0].strict = Some(false);
+        assert!(
+            StructuralTagBuilder::KimiK3
+                .build_tool_call_format(&context(&ToolChoice::Auto, &tools))
+                .unwrap()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn unsupported_optional_intersection_returns_an_error() {
+        let tools = vec![ToolDefinition {
+            name: "test".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {"value": {"allOf": [
+                    {"type": "string", "pattern": "^s"},
+                    {"pattern": "e$"}
+                ]}}
+            })),
+            strict: None,
+        }];
+        assert!(
+            StructuralTagBuilder::KimiK3
+                .build_tool_call_format(&context(&ToolChoice::Auto, &tools))
+                .is_err()
+        );
+    }
+
+    #[test]
     fn impossible_optional_string_enum_does_not_emit_empty_or() {
         let root = json!({
             "type": "object",
             "properties": {"value": {"type": "string", "enum": ["a"], "minLength": 2}}
         });
-        assert!(argument_format("value", &root["properties"]["value"], &root).is_none());
+        assert!(
+            argument_format("value", &root["properties"]["value"], &root)
+                .unwrap()
+                .is_none()
+        );
         let tools = vec![ToolDefinition {
             name: "optional".to_string(),
             parameters: Some(root),
@@ -1879,7 +1988,7 @@ mod tests {
             ]
         });
         let narrowed = schema_for_xtml_type(&schema, &schema, "string").unwrap();
-        let format = serde_json::to_value(string_content_format(&narrowed)).unwrap();
+        let format = serde_json::to_value(string_content_format(&narrowed).unwrap()).unwrap();
 
         assert_eq!(format["type"], "const_string");
         assert_eq!(format["value"], "safe");
@@ -1894,7 +2003,7 @@ mod tests {
             ]
         });
         let narrowed = schema_for_xtml_type(&schema, &schema, "string").unwrap();
-        let format = serde_json::to_value(string_content_format(&narrowed)).unwrap();
+        let format = serde_json::to_value(string_content_format(&narrowed).unwrap()).unwrap();
 
         assert_eq!(format["type"], "const_string");
         assert_eq!(format["value"], "code-42");
