@@ -276,7 +276,7 @@ Three layers, all pinned to bitwise-equality:
 
 ## 5. Roadmap
 
-The published crate implements and golden-tests the image pipeline end to end
+The crate implements and golden-tests the image pipeline end to end
 for `models::qwen_vl`. What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;

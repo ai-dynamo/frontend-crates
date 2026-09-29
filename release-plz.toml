@@ -47,6 +47,13 @@ name = "dynamo-parsers-v2-py"
 publish = false
 release = false
 
+# The crate is publishable by Cargo, but its first 0.1.0 release needs a
+# manual crates.io publish. Enable release-plz in a follow-up PR after the
+# package and matching git tag exist.
+[[package]]
+name = "dynamo-mm-preprocessor"
+release = false
+
 [changelog]
 header = """# Changelog
 
