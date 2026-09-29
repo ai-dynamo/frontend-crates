@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from null_cases import NULL_VARIANTS
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -43,7 +44,9 @@ UNIFIED_TAX = {
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
-    # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
+    "deepseek_v41_mixed_control_text_in_string": (7, "3"),
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    "arg_null_mixed_labels": (7, "4.mixed_labels"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
@@ -200,6 +203,7 @@ LEGACY_CASE_LABELS = {
     "5.a": "truncated_tool_eof", "5.b": "tool_no_close", "5.c": "orphan_close_after_prose",
     "6.a": "empty_args",
     "7.a": "arg_unicode", "7.b": "arg_marker_in_string",
+    "qwen-1": "arg_json_null",
     "8.a": "text_before_tool", "8.b": "trailing_text_after_tool", "8.c": "text_sandwich",
     "8.d": "text_between_calls", "8.e": "narrated_calls",
     "10.a": "reason_only", "10.b": "reason_then_content", "10.c": "two_reason_spans",
