@@ -19,8 +19,8 @@
 //! No fallback to whitespace/punctuation — better to not cache than risk corruption.
 //!
 //! Storage and eviction are delegated to a weighted [`moka`] `sync::Cache` (W-TinyLFU):
-//! entries are keyed by the blake3 digest of `input[0..boundary]` and weighed by their
-//! resident token-vector bytes, so the byte budget is enforced — and recency/frequency
+//! entries are keyed by the blake3 digest of a namespace and `input[0..boundary]`,
+//! weighed by their resident token-vector bytes, so the byte budget is enforced — and recency/frequency
 //! tracked — by moka rather than by hand.
 
 use std::{
@@ -46,7 +46,78 @@ type Blake3Hash = [u8; 32];
 type PrefixHasher = BuildHasherDefault<FxHasher>;
 
 /// Weighted W-TinyLFU cache mapping a prefix's blake3 digest to its cumulative tokens.
-type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
+type PrefixCache = Cache<Blake3Hash, CachedPrefix, PrefixHasher>;
+
+#[derive(Clone)]
+struct CachedPrefix {
+    namespace: Blake3Hash,
+    tokens: Arc<[TokenIdType]>,
+}
+
+/// Shared storage and eviction budget for any number of cached tokenizers.
+///
+/// Clones share the same entries and capacity. The budget counts token-ID payloads,
+/// excluding keys, metadata, and tokenizer objects. Moka enforces it on a best-effort
+/// basis through deferred maintenance; it is not a process-memory limit.
+#[derive(Clone)]
+pub struct SharedTokenizerCache {
+    cache: PrefixCache,
+}
+
+/// Storage statistics after pending maintenance. Concurrent writes can change them.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SharedTokenizerCacheStats {
+    pub entries: usize,
+    pub memory_bytes: usize,
+}
+
+impl SharedTokenizerCache {
+    pub fn new(max_memory_bytes: usize) -> Self {
+        Self {
+            cache: Cache::builder()
+                .max_capacity(max_memory_bytes as u64)
+                .weigher(|_key: &Blake3Hash, entry: &CachedPrefix| -> u32 {
+                    size_of_val(entry.tokens.as_ref()).min(u32::MAX as usize) as u32
+                })
+                .support_invalidation_closures()
+                .build_with_hasher(PrefixHasher::default()),
+        }
+    }
+
+    /// Combined token-ID byte budget for all namespaces.
+    pub fn max_memory_bytes(&self) -> usize {
+        self.cache.policy().max_capacity().expect("capacity is set") as usize
+    }
+
+    /// Combined storage usage for all namespaces.
+    pub fn stats(&self) -> SharedTokenizerCacheStats {
+        self.cache.run_pending_tasks();
+        SharedTokenizerCacheStats {
+            entries: self.cache.entry_count() as usize,
+            memory_bytes: self.cache.weighted_size() as usize,
+        }
+    }
+
+    fn namespace_stats(&self, namespace: &Blake3Hash) -> SharedTokenizerCacheStats {
+        self.cache.run_pending_tasks();
+        let mut stats = SharedTokenizerCacheStats::default();
+        for (_, entry) in &self.cache {
+            if &entry.namespace == namespace {
+                stats.entries += 1;
+                stats.memory_bytes += size_of_val(entry.tokens.as_ref()).min(u32::MAX as usize);
+            }
+        }
+        stats
+    }
+}
+
+fn namespace_hasher(namespace: &[u8]) -> blake3::Hasher {
+    let mut hasher = blake3::Hasher::new();
+    // Frame the namespace so its end cannot be confused with the prefix's start.
+    hasher.update(&(namespace.len() as u64).to_le_bytes());
+    hasher.update(namespace);
+    hasher
+}
 
 /// Request-local lookup result. The deepest digest can differ from the matched key.
 pub(super) struct PrefixMatch {
@@ -64,10 +135,10 @@ pub(super) enum PrefixLookup {
 
 /// Hash sorted boundary prefixes incrementally.
 fn hash_prefixes<'a>(
+    mut hasher: blake3::Hasher,
     input: &'a str,
     boundaries: &'a [usize],
 ) -> impl Iterator<Item = (usize, Blake3Hash)> + 'a {
-    let mut hasher = blake3::Hasher::new();
     let mut last_pos = 0;
     boundaries.iter().map(move |&boundary_pos| {
         hasher.update(&input.as_bytes()[last_pos..boundary_pos]);
@@ -159,8 +230,9 @@ pub type CacheEventFn = Arc<dyn Fn() + Send + Sync>;
 /// [`moka`] cache that owns storage, recency/frequency tracking, and eviction. Hit/miss
 /// counts (our notion of a *prefix* hit) are tracked separately for metrics.
 pub struct L1Cache {
-    /// Prefix entries keyed by the blake3 digest of `input[0..boundary]`.
-    cache: PrefixCache,
+    cache: SharedTokenizerCache,
+    namespace: Vec<u8>,
+    namespace_hash: Blake3Hash,
     /// Aho-Corasick automaton over the special tokens, built once at construction (`None`
     /// when there are no special tokens). Lets boundary detection be a single pass.
     matcher: Option<AhoCorasick>,
@@ -173,18 +245,17 @@ pub struct L1Cache {
 impl L1Cache {
     /// `special_tokens` is the atomic special-token set whose boundaries the cache splits
     /// at; an empty set leaves L1 inert (no boundaries, no entries).
-    pub fn new(max_memory: usize, mut special_tokens: Vec<String>) -> Self {
-        special_tokens.retain(|token| !token.is_empty());
+    pub fn new(max_memory: usize, special_tokens: Vec<String>) -> Self {
+        Self::new_with_cache(SharedTokenizerCache::new(max_memory), special_tokens, b"")
+    }
 
-        // Capacity is the byte budget; each entry weighs its resident token-vector bytes
-        // (the prefix text is hashed and discarded, never stored). moka's W-TinyLFU policy
-        // admits/evicts to keep the weighted size within budget.
-        let cache = Cache::builder()
-            .max_capacity(max_memory as u64)
-            .weigher(|_k: &Blake3Hash, tokens: &Arc<[TokenIdType]>| -> u32 {
-                size_of_val(tokens.as_ref()).min(u32::MAX as usize) as u32
-            })
-            .build_with_hasher(PrefixHasher::default());
+    /// Use shared storage. Equal namespaces must describe identical tokenizer behavior.
+    pub fn new_with_cache(
+        cache: SharedTokenizerCache,
+        mut special_tokens: Vec<String>,
+        namespace: &[u8],
+    ) -> Self {
+        special_tokens.retain(|token| !token.is_empty());
 
         // Build the boundary automaton once; `None` when there are no special tokens.
         let matcher = (!special_tokens.is_empty()).then(|| {
@@ -194,12 +265,34 @@ impl L1Cache {
 
         Self {
             cache,
+            namespace: namespace.to_vec(),
+            namespace_hash: *namespace_hasher(namespace).finalize().as_bytes(),
             matcher,
             hits: AtomicU64::new(0),
             misses: AtomicU64::new(0),
             on_hit: None,
             on_miss: None,
         }
+    }
+
+    fn hasher(&self) -> blake3::Hasher {
+        namespace_hasher(&self.namespace)
+    }
+
+    fn hash_prefix(&self, prefix: &[u8]) -> Blake3Hash {
+        let mut hasher = self.hasher();
+        hasher.update(prefix);
+        *hasher.finalize().as_bytes()
+    }
+
+    fn insert(&self, hash: Blake3Hash, tokens: Arc<[TokenIdType]>) {
+        self.cache.cache.insert(
+            hash,
+            CachedPrefix {
+                namespace: self.namespace_hash,
+                tokens,
+            },
+        );
     }
 
     /// Install hit/miss callbacks. Replaces any previously-set observers.
@@ -246,10 +339,10 @@ impl L1Cache {
             return PrefixLookup::Miss(Vec::new());
         }
 
-        let prefix_hashes: Vec<_> = hash_prefixes(input, &boundaries).collect();
+        let prefix_hashes: Vec<_> = hash_prefixes(self.hasher(), input, &boundaries).collect();
 
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
-            if let Some(tokens) = self.cache.get(&hash_bytes) {
+            if let Some(entry) = self.cache.cache.get(&hash_bytes) {
                 self.hits.fetch_add(1, Ordering::Relaxed);
                 if let Some(cb) = &self.on_hit {
                     cb();
@@ -258,7 +351,7 @@ impl L1Cache {
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
                 return PrefixLookup::Hit(PrefixMatch {
-                    tokens,
+                    tokens: entry.tokens,
                     prefix_len: boundary_pos,
                     deepest_boundary,
                     deepest_hash: Some(deepest_hash),
@@ -289,7 +382,11 @@ impl L1Cache {
         if boundaries.is_empty() {
             return Ok(());
         }
-        self.populate_boundaries(input, hash_prefixes(input, &boundaries), tokenizer)?;
+        self.populate_boundaries(
+            input,
+            hash_prefixes(self.hasher(), input, &boundaries),
+            tokenizer,
+        )?;
         Ok(())
     }
 
@@ -307,7 +404,11 @@ impl L1Cache {
         tokenizer: &E,
     ) -> anyhow::Result<Vec<TokenIdType>> {
         let boundaries = self.boundaries(input);
-        self.populate_and_encode_with_hashes(input, hash_prefixes(input, &boundaries), tokenizer)
+        self.populate_and_encode_with_hashes(
+            input,
+            hash_prefixes(self.hasher(), input, &boundaries),
+            tokenizer,
+        )
     }
 
     /// Populate a miss using sorted boundary hashes, then encode the tail.
@@ -339,7 +440,7 @@ impl L1Cache {
         tokenizer: &E,
     ) -> anyhow::Result<(Vec<TokenIdType>, usize)> {
         #[cfg(debug_assertions)]
-        let mut validation_hasher = blake3::Hasher::new();
+        let mut validation_hasher = self.hasher();
         let mut running_tokens: Vec<TokenIdType> = Vec::new();
         let mut last_pos = 0;
 
@@ -357,7 +458,7 @@ impl L1Cache {
             running_tokens.extend_from_slice(seg.token_ids());
 
             let prefix_tokens: Arc<[TokenIdType]> = running_tokens.as_slice().into();
-            self.cache.insert(hash_bytes, prefix_tokens);
+            self.insert(hash_bytes, prefix_tokens);
 
             last_pos = boundary_pos;
         }
@@ -437,29 +538,22 @@ impl L1Cache {
         cumulative.extend_from_slice(&prefix_tokens);
         cumulative.extend_from_slice(seg_a.token_ids());
 
-        let hash_bytes = deepest_hash.unwrap_or_else(|| {
-            let mut hasher = blake3::Hasher::new();
-            hasher.update(&input.as_bytes()[..deepest]);
-            *hasher.finalize().as_bytes()
-        });
-        debug_assert_eq!(
-            hash_bytes,
-            *blake3::hash(&input.as_bytes()[..deepest]).as_bytes()
-        );
+        let hash_bytes =
+            deepest_hash.unwrap_or_else(|| self.hash_prefix(&input.as_bytes()[..deepest]));
+        debug_assert_eq!(hash_bytes, self.hash_prefix(&input.as_bytes()[..deepest]));
 
         // Copy only the populated prefix, excluding capacity reserved for the tail.
         let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
-        self.cache.insert(hash_bytes, tokens);
+        self.insert(hash_bytes, tokens);
 
         cumulative.extend_from_slice(seg_b.token_ids());
         Ok(cumulative)
     }
 
-    /// Number of live entries. Flushes moka's deferred maintenance first so the count is
-    /// exact rather than lagging behind pending inserts/evictions.
+    /// Number of live entries in this namespace. Scans shared storage after maintenance;
+    /// concurrent writes can change the result.
     pub fn len(&self) -> usize {
-        self.cache.run_pending_tasks();
-        self.cache.entry_count() as usize
+        self.cache.namespace_stats(&self.namespace_hash).entries
     }
 
     pub fn is_empty(&self) -> bool {
@@ -467,8 +561,7 @@ impl L1Cache {
     }
 
     pub fn stats(&self) -> L1CacheStats {
-        // Flush moka's deferred maintenance so entry_count / weighted_size are accurate.
-        self.cache.run_pending_tasks();
+        let storage = self.cache.namespace_stats(&self.namespace_hash);
         let hits = self.hits.load(Ordering::Relaxed);
         let misses = self.misses.load(Ordering::Relaxed);
         let total_requests = hits + misses;
@@ -476,8 +569,8 @@ impl L1Cache {
         L1CacheStats {
             hits,
             misses,
-            entries: self.cache.entry_count() as usize,
-            memory_bytes: self.cache.weighted_size() as usize,
+            entries: storage.entries,
+            memory_bytes: storage.memory_bytes,
             hit_rate: if total_requests > 0 {
                 hits as f64 / total_requests as f64
             } else {
@@ -487,8 +580,12 @@ impl L1Cache {
     }
 
     pub fn clear(&self) {
-        self.cache.invalidate_all();
-        self.cache.run_pending_tasks();
+        let namespace = self.namespace_hash;
+        self.cache
+            .cache
+            .invalidate_entries_if(move |_, entry| entry.namespace == namespace)
+            .expect("invalidation closures are enabled");
+        self.cache.cache.run_pending_tasks();
         self.hits.store(0, Ordering::Relaxed);
         self.misses.store(0, Ordering::Relaxed);
     }
@@ -865,11 +962,11 @@ mod tests {
             assert!(deepest_boundary > prefix_len);
             assert_eq!(
                 matched.deepest_hash,
-                Some(*blake3::hash(&turns[1].as_bytes()[..deepest_boundary]).as_bytes())
+                Some(cache.hash_prefix(&turns[1].as_bytes()[..deepest_boundary]))
             );
             assert_ne!(
                 matched.deepest_hash,
-                Some(*blake3::hash(&turns[1].as_bytes()[..prefix_len]).as_bytes())
+                Some(cache.hash_prefix(&turns[1].as_bytes()[..prefix_len]))
             );
             let entries_before = cache.stats().entries;
 
@@ -1065,10 +1162,14 @@ mod tests {
 
                 let mut expected_bytes = 0;
                 for &boundary in &boundaries {
-                    let hash = *blake3::hash(&input.as_bytes()[..boundary]).as_bytes();
-                    let saved = cache.cache.get(&hash).expect("every prefix is cached");
+                    let hash = cache.hash_prefix(&input.as_bytes()[..boundary]);
+                    let saved = cache
+                        .cache
+                        .cache
+                        .get(&hash)
+                        .expect("every prefix is cached");
                     let expected = tok.encode(&input[..boundary]).unwrap();
-                    assert_eq!(&*saved, expected.token_ids());
+                    assert_eq!(&*saved.tokens, expected.token_ids());
                     expected_bytes += size_of_val(expected.token_ids());
                 }
                 let stats = cache.stats();
@@ -1132,10 +1233,10 @@ mod tests {
                 assert_eq!(error.to_string(), "suffix failed");
                 assert_eq!(cache.len(), fail_at);
                 for (index, &boundary) in boundaries.iter().enumerate() {
-                    let hash = *blake3::hash(&input.as_bytes()[..boundary]).as_bytes();
-                    let saved = cache.cache.get(&hash);
+                    let hash = cache.hash_prefix(&input.as_bytes()[..boundary]);
+                    let saved = cache.cache.cache.get(&hash);
                     if index < fail_at {
-                        assert_eq!(&*saved.unwrap(), vec![1; index + 1]);
+                        assert_eq!(&*saved.unwrap().tokens, vec![1; index + 1]);
                     } else {
                         assert!(saved.is_none());
                     }

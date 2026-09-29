@@ -131,10 +131,34 @@ let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024)
     .expect("tokenizer must support prefix caching");
 ```
 
-Entries are evicted by approximate LRU once `max_memory_bytes` is exceeded. The
-cache lives as long as the `CachedTokenizer` instance. Use `.with_observer(...)`
+Entries are admitted and evicted by Moka's W-TinyLFU policy. The byte budget counts
+token-ID payloads, excluding cache metadata and tokenizer objects. Eviction is
+deferred, so this is not a strict process-memory limit. A private cache lives as
+long as its `CachedTokenizer` instance. Use `.with_observer(...)`
 to push request-level hit/miss events into your metrics. Use
 `.with_token_observer(...)` to receive exact cached and uncached token counts
 after each successful encode while L1 is active. Partial hits report both
 categories, so consumers can increment `cached_tokens_total` and
 `uncached_tokens_total` counters and derive a token-level reuse ratio.
+
+### Share one capacity budget across tokenizers
+
+Construct one `SharedTokenizerCache::new(max_memory_bytes)` and pass clones to
+`CachedTokenizer::new_with_cache(inner, specials, shared_cache, namespace)`.
+Clones share storage, admission, and eviction across all namespaces.
+
+The namespace is a byte string chosen by the caller. Include the model identity,
+tokenizer file checksums, actual backend, and any encoding options that affect
+token IDs. Equal namespaces must describe identical tokenizer behavior. The
+cache hashes the length-delimited namespace before the text prefix; keys remain
+32-byte BLAKE3 digests. A namespace is not a reserved share of the capacity.
+
+Entries survive a tokenizer wrapper being dropped while the shared storage remains
+alive. Recreating a wrapper with the same namespace can reuse those entries.
+`clear_cache()` clears that namespace across all wrappers and resets only the
+calling wrapper's counters. It preserves entries in other namespaces.
+
+`cache_stats()` reports wrapper-local hits and misses, plus namespace-wide entry
+count and token bytes. Namespace storage statistics scan the shared cache on demand;
+they can change under concurrent writes. `SharedTokenizerCache::stats()` reports
+the combined entry count and token bytes after pending maintenance.

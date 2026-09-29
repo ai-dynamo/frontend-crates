@@ -62,7 +62,9 @@ mod l1;
 use std::sync::Arc;
 
 use l1::PrefixLookup;
-pub use l1::{CacheEventFn, L1Cache, L1CacheStats};
+pub use l1::{
+    CacheEventFn, L1Cache, L1CacheStats, SharedTokenizerCache, SharedTokenizerCacheStats,
+};
 
 use crate::{
     EncodeSegment, Encoding, Result, TokenIdType,
@@ -115,8 +117,33 @@ impl CachedTokenizer {
     /// safely wrapped in the prefix cache.
     pub fn new(
         inner: Arc<dyn Tokenizer>,
-        mut special_tokens: Vec<String>,
+        special_tokens: Vec<String>,
         max_memory_bytes: usize,
+    ) -> Result<Self> {
+        Self::new_with_cache(
+            inner,
+            special_tokens,
+            SharedTokenizerCache::new(max_memory_bytes),
+            b"",
+        )
+    }
+
+    /// Construct a tokenizer using shared storage and a caller-supplied namespace.
+    ///
+    /// Equal namespaces share entries and must describe identical tokenizer behavior,
+    /// including tokenizer files, backend, and encoding options. Different namespaces
+    /// compete for the same byte budget but cannot reuse each other's token IDs.
+    /// Entries survive this wrapper being dropped while the shared cache remains alive.
+    /// The eligibility checks are the same as [`Self::new`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the inner tokenizer's compatibility error if prefix caching is unsafe.
+    pub fn new_with_cache(
+        inner: Arc<dyn Tokenizer>,
+        mut special_tokens: Vec<String>,
+        shared_cache: SharedTokenizerCache,
+        namespace: &[u8],
     ) -> Result<Self> {
         inner.validate_prefix_cache()?;
         special_tokens.retain(|token| !token.is_empty());
@@ -145,7 +172,7 @@ impl CachedTokenizer {
         };
         Ok(Self {
             inner,
-            l1: L1Cache::new(max_memory_bytes, cache_tokens),
+            l1: L1Cache::new_with_cache(shared_cache, cache_tokens, namespace),
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
@@ -193,12 +220,14 @@ impl CachedTokenizer {
         }
     }
 
-    /// Snapshot of L1 cache statistics (cumulative hits/misses/entries/memory).
+    /// Wrapper-local hits/misses and namespace-wide entries/token bytes.
+    /// Storage statistics scan the shared cache and can change under concurrent writes.
     pub fn cache_stats(&self) -> L1CacheStats {
         self.l1.stats()
     }
 
-    /// Clear all cached entries and reset counters.
+    /// Clear this namespace's entries and reset this wrapper's counters.
+    /// Other wrappers using the same namespace also lose these entries.
     pub fn clear_cache(&self) {
         self.l1.clear();
     }
