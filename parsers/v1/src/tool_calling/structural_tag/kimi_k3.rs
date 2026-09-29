@@ -933,19 +933,33 @@ fn narrow_resolved_schema(
     Some(narrowed)
 }
 
-fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option<Value> {
+fn schema_for_xtml_type(
+    schema: &Value,
+    root: &Value,
+    xtml_type: &str,
+) -> anyhow::Result<Option<Value>> {
     let Some(resolved) = resolve_local_refs(schema, root, &HashSet::new()) else {
-        // Keep an explicitly typed schema intact when scoped references or
+        // Raw strings cannot delegate unresolved references to JsonSchemaFormat.
+        if xtml_type == "string" {
+            bail!("cannot resolve references for raw XTML string");
+        }
+        // Keep an explicitly typed JSON schema intact when scoped references or
         // bounded expansion prevent safe inlining.
-        let original = schema
+        let Some(original) = schema
             .as_object()
-            .filter(|schema| !schema.contains_key("$ref"))?;
-        let declared_type = original
+            .filter(|schema| !schema.contains_key("$ref"))
+        else {
+            return Ok(None);
+        };
+        let Some(declared_type) = original
             .get("type")
             .and_then(Value::as_str)
-            .and_then(JsonType::from_name)?;
+            .and_then(JsonType::from_name)
+        else {
+            return Ok(None);
+        };
         if declared_type.xtml_name() != xtml_type {
-            return None;
+            return Ok(None);
         }
         let mut original = original.clone();
         if let Some(root) = root.as_object() {
@@ -957,7 +971,7 @@ fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option
                 }
             }
         }
-        return Some(Value::Object(original));
+        return Ok(Some(Value::Object(original)));
     };
     let mut json_types = schema_types(&resolved, &resolved, &HashSet::new())
         .into_iter()
@@ -966,7 +980,9 @@ fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option
     if json_types.contains(&JsonType::Number) {
         json_types.retain(|json_type| *json_type != JsonType::Integer);
     }
-    let mut narrowed = narrow_resolved_schema(resolved, root, &json_types)?;
+    let Some(mut narrowed) = narrow_resolved_schema(resolved, root, &json_types) else {
+        return Ok(None);
+    };
     if let Some(root) = root.as_object() {
         for key in ["$defs", "definitions"] {
             if let Some(value) = root.get(key) {
@@ -976,13 +992,18 @@ fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option
             }
         }
     }
-    Some(preserve_recursive_root_refs(Value::Object(narrowed), root))
+    Ok(Some(preserve_recursive_root_refs(
+        Value::Object(narrowed),
+        root,
+    )))
 }
 
 fn argument_format(key: &str, schema: &Value, root: &Value) -> anyhow::Result<Option<Format>> {
     let mut alternatives = Vec::new();
     for xtml_type in xtml_types(schema, root) {
-        let Some(schema) = schema_for_xtml_type(schema, root, xtml_type) else {
+        let Some(schema) = schema_for_xtml_type(schema, root, xtml_type)
+            .with_context(|| format!("cannot constrain argument {key}"))?
+        else {
             continue;
         };
         let content = if xtml_type == "string" {
@@ -1140,21 +1161,7 @@ fn build_auto_structural_tag(
             optional(Format::Tag(tools_tag)),
         ],
     });
-    let format = if ctx.starts_in_reasoning {
-        Format::Sequence(SequenceFormat {
-            elements: vec![
-                Format::Tag(TagFormat {
-                    begin: String::new(),
-                    content: Box::new(Format::AnyText(AnyTextFormat { excludes: vec![] })),
-                    end: THINK_CLOSE.to_string(),
-                }),
-                suffix,
-            ],
-        })
-    } else {
-        suffix
-    };
-    Ok(StructuralTag { format })
+    Ok(StructuralTag { format: suffix })
 }
 
 fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> anyhow::Result<TagFormat> {
@@ -1867,6 +1874,7 @@ mod tests {
             "additionalProperties": false
         });
         let schema = schema_for_xtml_type(&root["properties"]["value"], &root, "object")
+            .unwrap()
             .expect("object argument schema");
         assert_eq!(
             schema["properties"]["parent"]["properties"]["value"]["properties"]["parent"]["$ref"],
@@ -1892,7 +1900,9 @@ mod tests {
                 }
             }
         });
-        let schema = schema_for_xtml_type(&root["properties"]["node"], &root, "object").unwrap();
+        let schema = schema_for_xtml_type(&root["properties"]["node"], &root, "object")
+            .unwrap()
+            .unwrap();
         let reference = schema["properties"]["next"]["properties"]["next"]["$ref"]
             .as_str()
             .unwrap();
@@ -1956,7 +1966,9 @@ mod tests {
                 "id": {"$ref": "#/$defs/caf%C3%A9%20name"}
             }
         });
-        let schema = schema_for_xtml_type(&root["properties"]["id"], &root, "number").unwrap();
+        let schema = schema_for_xtml_type(&root["properties"]["id"], &root, "number")
+            .unwrap()
+            .unwrap();
 
         assert_eq!(schema["type"], "integer");
         assert_eq!(schema["minimum"], 1);
@@ -2041,11 +2053,59 @@ mod tests {
                 }
             }
         });
-        let schema = schema_for_xtml_type(&root["properties"]["data"], &root, "object").unwrap();
+        let schema = schema_for_xtml_type(&root["properties"]["data"], &root, "object")
+            .unwrap()
+            .unwrap();
 
         assert_eq!(schema["type"], "object");
         assert_eq!(schema["properties"]["item"]["$ref"], "#/$defs/step_0");
         assert_eq!(schema["$defs"], root["$defs"]);
+    }
+
+    #[test]
+    fn unresolved_string_references_return_errors() {
+        let mut definitions = Map::new();
+        for index in 0..MAX_SCHEMA_REF_DEPTH {
+            definitions.insert(
+                format!("step_{index}"),
+                json!({"$ref": format!("#/$defs/step_{}", index + 1)}),
+            );
+        }
+        definitions.insert(
+            format!("step_{MAX_SCHEMA_REF_DEPTH}"),
+            json!({"type": "string", "enum": ["safe"]}),
+        );
+        let schemas = [
+            json!({"type": "string", "allOf": [{"$ref": "#/$defs/step_0"}]}),
+            json!({
+                "type": "string",
+                "$id": "urn:example:scoped",
+                "$defs": {"allowed": {"type": "string", "enum": ["safe"]}},
+                "allOf": [{"$ref": "#/$defs/allowed"}]
+            }),
+        ];
+        for schema in schemas {
+            for required in [json!([]), json!(["value"])] {
+                let tools = vec![ToolDefinition {
+                    name: "test".into(),
+                    parameters: Some(json!({
+                        "type": "object",
+                        "$defs": definitions,
+                        "properties": {"value": schema},
+                        "required": required
+                    })),
+                    strict: None,
+                }];
+                let error = StructuralTagBuilder::KimiK3
+                    .build_tool_call_format(&context(&ToolChoice::Auto, &tools))
+                    .unwrap_err();
+                let message = format!("{error:#}");
+                assert!(
+                    message.contains("value") && message.contains("string"),
+                    "{message}"
+                );
+            }
+        }
     }
 
     #[test]
@@ -2105,7 +2165,9 @@ mod tests {
             "type": ["integer", "null"],
             "enum": [1.0, null]
         });
-        let narrowed = schema_for_xtml_type(&schema, &schema, "number").unwrap();
+        let narrowed = schema_for_xtml_type(&schema, &schema, "number")
+            .unwrap()
+            .unwrap();
 
         assert_eq!(narrowed["type"], "integer");
         assert_eq!(narrowed["enum"], json!([1.0]));
@@ -2119,7 +2181,9 @@ mod tests {
                 {"type": "null"}
             ]
         });
-        let narrowed = schema_for_xtml_type(&schema, &schema, "number").unwrap();
+        let narrowed = schema_for_xtml_type(&schema, &schema, "number")
+            .unwrap()
+            .unwrap();
         let options = narrowed["anyOf"].as_array().unwrap();
 
         assert_eq!(narrowed["type"], "integer");
@@ -2217,7 +2281,9 @@ mod tests {
                 {"enum": ["safe"]}
             ]
         });
-        let narrowed = schema_for_xtml_type(&schema, &schema, "string").unwrap();
+        let narrowed = schema_for_xtml_type(&schema, &schema, "string")
+            .unwrap()
+            .unwrap();
         let format = serde_json::to_value(string_content_format(&narrowed).unwrap()).unwrap();
 
         assert_eq!(format["type"], "const_string");
@@ -2232,7 +2298,9 @@ mod tests {
                 {"minLength": 3, "pattern": "^code-[0-9]+$"}
             ]
         });
-        let narrowed = schema_for_xtml_type(&schema, &schema, "string").unwrap();
+        let narrowed = schema_for_xtml_type(&schema, &schema, "string")
+            .unwrap()
+            .unwrap();
         let format = serde_json::to_value(string_content_format(&narrowed).unwrap()).unwrap();
 
         assert_eq!(format["type"], "const_string");
@@ -2393,7 +2461,7 @@ mod tests {
     }
 
     #[test]
-    fn auto_thinking_closes_reasoning_before_the_triggered_tools_suffix() {
+    fn auto_thinking_has_one_reasoning_prefix() {
         let tools = tools();
         let choice = ToolChoice::Auto;
         let ctx = ToolCallFormatBuildContext {
@@ -2403,12 +2471,19 @@ mod tests {
             schema_mode: StructuralTagSchemaMode::Auto,
             starts_in_reasoning: true,
         };
-        let value = serde_json::to_value(build_kimi_k3(&ctx).unwrap().unwrap()).unwrap();
+        let value = StructuralTagBuilder::KimiK3
+            .build_tool_call_format(&ctx)
+            .unwrap()
+            .unwrap();
 
         assert_eq!(value["format"]["type"], "sequence");
         assert_eq!(value["format"]["elements"][0]["type"], "tag");
         assert_eq!(value["format"]["elements"][0]["end"], THINK_CLOSE);
         assert_eq!(value["format"]["elements"][1]["type"], "sequence");
+        assert_eq!(
+            value["format"]["elements"][1]["elements"][0]["type"],
+            "any_text"
+        );
     }
 
     #[test]
