@@ -155,10 +155,13 @@ cache hashes the length-delimited namespace before the text prefix; keys remain
 
 Entries survive a tokenizer wrapper being dropped while the shared storage remains
 alive. Recreating a wrapper with the same namespace can reuse those entries.
-`clear_cache()` clears that namespace across all wrappers and resets only the
-calling wrapper's counters. It preserves entries in other namespaces.
+Entries leave through normal eviction or when the shared storage is dropped.
+The boundary list must contain actual atomic special tokens recognized by the inner
+tokenizer. Arbitrary strings are not safe cache boundaries.
 
 `cache_stats()` reports wrapper-local hits and misses, plus namespace-wide entry
 count and token bytes. Namespace storage statistics scan the shared cache on demand;
-they can change under concurrent writes. `SharedTokenizerCache::stats()` reports
-the combined entry count and token bytes after pending maintenance.
+they can change under concurrent writes. Private caches use Moka's totals directly.
+Wrappers disabled by the cache eligibility checks report zero statistics.
+`SharedTokenizerCache::stats()` reports the combined entry count and token bytes
+after pending maintenance.

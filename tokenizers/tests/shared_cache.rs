@@ -52,7 +52,7 @@ fn cached(cache: &SharedTokenizerCache, namespace: &[u8], offset: u32) -> Cached
 }
 
 #[test]
-fn shared_entries_survive_reload_and_clear_only_their_namespace() {
+fn shared_entries_survive_reload_with_isolated_namespaces_and_statistics() {
     let storage = SharedTokenizerCache::new(1024 * 1024);
     let input = "<s>hello</s>tail";
     let a = cached(&storage, b"model-a", 0);
@@ -83,15 +83,35 @@ fn shared_entries_survive_reload_and_clear_only_their_namespace() {
         a_stats.memory_bytes + b_stats.memory_bytes
     );
 
-    a.clear_cache();
-    assert_eq!(a.cache_stats().entries, 0);
-    assert_eq!(a.cache_stats().hits, 0);
-    assert_eq!(storage.stats().entries, b_stats.entries);
-    assert_eq!(storage.stats().memory_bytes, b_stats.memory_bytes);
-    b.encode(input).unwrap();
-    assert_eq!(b.cache_stats().hits, 1);
-    a.encode(input).unwrap();
-    assert_eq!(a.cache_stats().misses, 1);
+    let a_l1 = L1Cache::new_with_cache(storage.clone(), specials(), b"model-a");
+    assert!(!a_l1.is_empty());
+    assert_eq!(a_l1.len(), a_stats.entries);
+    let unused = L1Cache::new_with_cache(storage.clone(), specials(), b"unused");
+    assert!(unused.is_empty());
+    assert_eq!(unused.len(), 0);
+
+    // Disabled wrappers must not report another wrapper's namespace usage.
+    for boundaries in [vec![], vec!["<s>".into(), "<s>x".into()]] {
+        let disabled = CachedTokenizer::new_with_cache(
+            Arc::new(ByteTokenizer(0)),
+            boundaries,
+            storage.clone(),
+            b"model-a",
+        )
+        .unwrap();
+        disabled.encode(input).unwrap();
+        let stats = disabled.cache_stats();
+        assert_eq!((stats.entries, stats.memory_bytes), (0, 0));
+        assert_eq!((stats.hits, stats.misses, stats.hit_rate), (0, 0, 0.0));
+    }
+    assert_eq!(storage.stats(), total);
+
+    let private =
+        CachedTokenizer::new(Arc::new(ByteTokenizer(0)), specials(), 1024 * 1024).unwrap();
+    private.encode(input).unwrap();
+    let stats = private.cache_stats();
+    assert_eq!(stats.entries, a_stats.entries);
+    assert_eq!(stats.memory_bytes, a_stats.memory_bytes);
 }
 
 #[test]

@@ -54,6 +54,12 @@ struct CachedPrefix {
     tokens: Arc<[TokenIdType]>,
 }
 
+impl CachedPrefix {
+    fn weight(&self) -> u32 {
+        size_of_val(self.tokens.as_ref()).min(u32::MAX as usize) as u32
+    }
+}
+
 /// Shared storage and eviction budget for any number of cached tokenizers.
 ///
 /// Clones share the same entries and capacity. The budget counts token-ID payloads,
@@ -76,10 +82,7 @@ impl SharedTokenizerCache {
         Self {
             cache: Cache::builder()
                 .max_capacity(max_memory_bytes as u64)
-                .weigher(|_key: &Blake3Hash, entry: &CachedPrefix| -> u32 {
-                    size_of_val(entry.tokens.as_ref()).min(u32::MAX as usize) as u32
-                })
-                .support_invalidation_closures()
+                .weigher(|_key: &Blake3Hash, entry: &CachedPrefix| entry.weight())
                 .build_with_hasher(PrefixHasher::default()),
         }
     }
@@ -104,7 +107,7 @@ impl SharedTokenizerCache {
         for (_, entry) in &self.cache {
             if &entry.namespace == namespace {
                 stats.entries += 1;
-                stats.memory_bytes += size_of_val(entry.tokens.as_ref()).min(u32::MAX as usize);
+                stats.memory_bytes += entry.weight() as usize;
             }
         }
         stats
@@ -231,6 +234,7 @@ pub type CacheEventFn = Arc<dyn Fn() + Send + Sync>;
 /// counts (our notion of a *prefix* hit) are tracked separately for metrics.
 pub struct L1Cache {
     cache: SharedTokenizerCache,
+    shared: bool,
     namespace: Vec<u8>,
     namespace_hash: Blake3Hash,
     /// Aho-Corasick automaton over the special tokens, built once at construction (`None`
@@ -246,7 +250,10 @@ impl L1Cache {
     /// `special_tokens` is the atomic special-token set whose boundaries the cache splits
     /// at; an empty set leaves L1 inert (no boundaries, no entries).
     pub fn new(max_memory: usize, special_tokens: Vec<String>) -> Self {
-        Self::new_with_cache(SharedTokenizerCache::new(max_memory), special_tokens, b"")
+        Self {
+            shared: false,
+            ..Self::new_with_cache(SharedTokenizerCache::new(max_memory), special_tokens, b"")
+        }
     }
 
     /// Use shared storage. Equal namespaces must describe identical tokenizer behavior.
@@ -265,6 +272,7 @@ impl L1Cache {
 
         Self {
             cache,
+            shared: true,
             namespace: namespace.to_vec(),
             namespace_hash: *namespace_hasher(namespace).finalize().as_bytes(),
             matcher,
@@ -550,18 +558,34 @@ impl L1Cache {
         Ok(cumulative)
     }
 
-    /// Number of live entries in this namespace. Scans shared storage after maintenance;
-    /// concurrent writes can change the result.
+    fn storage_stats(&self) -> SharedTokenizerCacheStats {
+        if self.shared {
+            self.cache.namespace_stats(&self.namespace_hash)
+        } else {
+            self.cache.stats()
+        }
+    }
+
+    /// Number of live entries. Shared caches scan this namespace after maintenance;
+    /// private caches use Moka's entry count. Concurrent writes can change the result.
     pub fn len(&self) -> usize {
-        self.cache.namespace_stats(&self.namespace_hash).entries
+        self.storage_stats().entries
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        if !self.shared {
+            return self.len() == 0;
+        }
+        self.cache.cache.run_pending_tasks();
+        !self
+            .cache
+            .cache
+            .iter()
+            .any(|(_, entry)| entry.namespace == self.namespace_hash)
     }
 
     pub fn stats(&self) -> L1CacheStats {
-        let storage = self.cache.namespace_stats(&self.namespace_hash);
+        let storage = self.storage_stats();
         let hits = self.hits.load(Ordering::Relaxed);
         let misses = self.misses.load(Ordering::Relaxed);
         let total_requests = hits + misses;
@@ -578,20 +602,9 @@ impl L1Cache {
             },
         }
     }
-
-    pub fn clear(&self) {
-        let namespace = self.namespace_hash;
-        self.cache
-            .cache
-            .invalidate_entries_if(move |_, entry| entry.namespace == namespace)
-            .expect("invalidation closures are enabled");
-        self.cache.cache.run_pending_tasks();
-        self.hits.store(0, Ordering::Relaxed);
-        self.misses.store(0, Ordering::Relaxed);
-    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct L1CacheStats {
     pub hits: u64,
     pub misses: u64,
@@ -626,6 +639,25 @@ mod tests {
             max_memory,
             SPECIALS.iter().map(|s| (*s).to_string()).collect(),
         )
+    }
+
+    #[test]
+    fn prefix_hash_length_delimits_the_namespace() {
+        let storage = SharedTokenizerCache::new(1024);
+        let mut hashes = Vec::new();
+        for (namespace, prefix) in [("", "abc"), ("a", "bc"), ("ab", "c")] {
+            let cache = L1Cache::new_with_cache(storage.clone(), vec![], namespace.as_bytes());
+            let bytes = [
+                (namespace.len() as u64).to_le_bytes().as_slice(),
+                namespace.as_bytes(),
+                prefix.as_bytes(),
+            ]
+            .concat();
+            let expected = *blake3::hash(&bytes).as_bytes();
+            assert_eq!(cache.hash_prefix(prefix.as_bytes()), expected);
+            assert!(!hashes.contains(&expected));
+            hashes.push(expected);
+        }
     }
 
     #[test]
