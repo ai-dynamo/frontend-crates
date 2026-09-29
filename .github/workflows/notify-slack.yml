@@ -28,9 +28,12 @@ concurrency:
 jobs:
   notify:
     # `!= 'success'` rather than `== 'failure'` so a `startup_failure` — a
-    # malformed workflow landing on main — is reported too.
+    # malformed workflow landing on main — is reported too. The head-repository
+    # check matters if ci.yml ever gains a `pull_request` trigger: a fork's own
+    # branch named `main` would otherwise pass the `head_branch` check.
     if: >-
       github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.head_repository.full_name == github.repository &&
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.conclusion != 'success' &&
         github.event.workflow_run.conclusion != 'cancelled' &&
@@ -56,6 +59,12 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
         run: |
           set -euo pipefail
+
+          # A dispatched `run_id` is interpolated into an API path; allow digits only.
+          if ! [[ "${RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "::error::run_id must be a numeric workflow run ID, got '${RUN_ID}'."
+            exit 1
+          fi
 
           api() {
             # --fail + --retry-all-errors: ride out transient 5xx / secondary rate
@@ -95,11 +104,15 @@ jobs:
             --arg server "${GITHUB_SERVER_URL}" \
             --arg failed "${failed}" \
             --slurpfile run "${run_json}" \
-            '$run[0] as $r
+            '# The commit title is contributor-controlled. Escape Slack control
+             # characters so a title cannot inject `<!channel>` pings or
+             # disguised links.
+             def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+             $run[0] as $r
              | { text: (
                  ":alert: *\($repo) — `\($r.head_branch)` CI failure*\n"
                  + "workflow `\($r.name)` · attempt \($r.run_attempt) · "
-                 + "<\($server)/\($repo)/commit/\($r.head_sha)|`\($r.head_sha[0:7])`> \($r.display_title)\n"
+                 + "<\($server)/\($repo)/commit/\($r.head_sha)|`\($r.head_sha[0:7])`> \($r.display_title | esc)\n"
                  + "<\($r.html_url)|Run summary>\n"
                  + $failed
                ) }' >payload.json
