@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Record the Dynamo v1 streaming tool-call JAIL output over the streamv2 chunk
+//! Record the Dynamo v1 streaming tool-call JAIL output over the streamv1 chunk
 //! corpus, for the "Dynamo Rust v1 3.0.0 (stream)" conformance candidate.
 //!
 //! The v1 streaming path has no token-incremental parser; instead it buffers
@@ -13,11 +13,11 @@
 //! JSON in (one family per invocation; `tools` carries the case's schemas so the
 //! jail's batch parse coerces argument types):
 //!   {"family": "hermes",
-//!    "cases": {"TOOLCALLING.streamv2.1.a": {"chunks": ["delta1", ...],
+//!    "cases": {"TOOLCALLING.streamv1.1.a": {"chunks": ["delta1", ...],
 //!                                           "tools": [{"name", "parameters"?, "strict"?}]}}}
 //! JSON out (per output chunk the jail emits — it coalesces, so the count differs
 //! from the input; downstream assembles by concatenating per index):
-//!   {"TOOLCALLING.streamv2.1.a": [{"deltas": [{"index", "id"?, "name"?, "arguments"?}], "normal_text"}]}
+//!   {"TOOLCALLING.streamv1.1.a": [{"deltas": [{"index", "id"?, "name"?, "arguments"?}], "normal_text"}]}
 //!
 //! Usage: cargo run -p dynamo-parsers --bin record_dynamo_jail_stream -- <input.json>
 

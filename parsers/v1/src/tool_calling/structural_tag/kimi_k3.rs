@@ -38,6 +38,8 @@ const MESSAGE_CLOSE: &str = "<|close|>message<|sep|>";
 
 const STRING_ATOM: &str = r"(?:[^<]|<[^|])";
 const CALL_INDEX_PATTERN: &str = "[1-9][0-9]*";
+const MAX_SCHEMA_REF_DEPTH: usize = 16;
+const MAX_SCHEMA_NODES: usize = 4096;
 
 fn escape_attr(value: &str) -> String {
     value.replace('&', "&amp;").replace('"', "&quot;")
@@ -155,18 +157,55 @@ impl JsonType {
 }
 
 fn resolve_local_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
-    if reference == "#" {
-        return matches!(root, Value::Bool(_) | Value::Object(_)).then_some(root);
-    }
-    let mut value = root;
-    for raw_part in reference.strip_prefix("#/")?.split('/') {
-        let part = raw_part.replace("~1", "/").replace("~0", "~");
-        value = value.get(&part)?;
-    }
+    // URI percent-decoding precedes JSON Pointer's ~0/~1 unescaping.
+    let pointer = reference.strip_prefix('#')?;
+    let decoded;
+    let pointer = if pointer.contains('%') {
+        let mut bytes = pointer.bytes();
+        let mut result = Vec::with_capacity(pointer.len());
+        while let Some(byte) = bytes.next() {
+            result.push(if byte == b'%' {
+                let high = char::from(bytes.next()?).to_digit(16)?;
+                let low = char::from(bytes.next()?).to_digit(16)?;
+                ((high << 4) | low) as u8
+            } else {
+                byte
+            });
+        }
+        decoded = String::from_utf8(result).ok()?;
+        &decoded
+    } else {
+        pointer
+    };
+    let value = root.pointer(pointer)?;
     matches!(value, Value::Bool(_) | Value::Object(_)).then_some(value)
 }
 
 fn schema_types(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Vec<JsonType> {
+    let mut remaining = MAX_SCHEMA_NODES;
+    schema_types_inner(schema, root, seen_refs, 0, &mut remaining)
+}
+
+fn has_unsupported_ref_scope(schema: &Map<String, Value>) -> bool {
+    ["$id", "$dynamicRef", "$recursiveRef"]
+        .iter()
+        .any(|key| schema.contains_key(*key))
+}
+
+fn schema_types_inner(
+    schema: &Value,
+    root: &Value,
+    seen_refs: &HashSet<String>,
+    depth: usize,
+    remaining: &mut usize,
+) -> Vec<JsonType> {
+    let Some(next) = (*remaining).checked_sub(1) else {
+        return JSON_TYPES.to_vec();
+    };
+    *remaining = next;
+    if depth >= MAX_SCHEMA_REF_DEPTH {
+        return JSON_TYPES.to_vec();
+    }
     if let Some(allowed) = schema.as_bool() {
         return if allowed {
             JSON_TYPES.to_vec()
@@ -178,13 +217,14 @@ fn schema_types(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Ve
         return JSON_TYPES.to_vec();
     };
 
-    if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+    if !has_unsupported_ref_scope(schema)
+        && let Some(reference) = schema.get("$ref").and_then(Value::as_str)
         && !seen_refs.contains(reference)
         && let Some(target) = resolve_local_ref(reference, root)
     {
         let mut nested_seen = seen_refs.clone();
         nested_seen.insert(reference.to_string());
-        return schema_types(target, root, &nested_seen);
+        return schema_types_inner(target, root, &nested_seen, depth + 1, remaining);
     }
 
     if let Some(schema_type) = schema.get("type") {
@@ -213,7 +253,7 @@ fn schema_types(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Ve
             let option_types: HashSet<_> = options
                 .iter()
                 .filter(|option| matches!(option, Value::Bool(_) | Value::Object(_)))
-                .flat_map(|option| schema_types(option, root, seen_refs))
+                .flat_map(|option| schema_types_inner(option, root, seen_refs, depth, remaining))
                 .collect();
             return JSON_TYPES
                 .into_iter()
@@ -228,7 +268,7 @@ fn schema_types(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Ve
             .iter()
             .filter(|option| matches!(option, Value::Bool(_) | Value::Object(_)))
             .map(|option| {
-                schema_types(option, root, seen_refs)
+                schema_types_inner(option, root, seen_refs, depth, remaining)
                     .into_iter()
                     .collect::<HashSet<_>>()
             })
@@ -563,14 +603,21 @@ fn permissive_argument_tag() -> TagFormat {
     }
 }
 
-fn resolve_schema_map(value: &Value, root: &Value, seen_refs: &HashSet<String>) -> Option<Value> {
+fn resolve_schema_map(
+    value: &Value,
+    root: &Value,
+    seen_refs: &HashSet<String>,
+    depth: usize,
+    remaining: &mut usize,
+) -> Option<Value> {
     let Some(values) = value.as_object() else {
         return Some(value.clone());
     };
     values
         .iter()
         .map(|(key, value)| {
-            resolve_local_refs(value, root, seen_refs).map(|value| (key.clone(), value))
+            resolve_local_refs_inner(value, root, seen_refs, depth, remaining)
+                .map(|value| (key.clone(), value))
         })
         .collect::<Option<Map<_, _>>>()
         .map(Value::Object)
@@ -723,12 +770,14 @@ fn resolve_schema_keyword(
     value: &Value,
     root: &Value,
     seen_refs: &HashSet<String>,
+    depth: usize,
+    remaining: &mut usize,
 ) -> Option<Value> {
     if SCHEMA_MAP_KEYWORDS.contains(&key) {
-        return resolve_schema_map(value, root, seen_refs);
+        return resolve_schema_map(value, root, seen_refs, depth, remaining);
     }
     if SCHEMA_VALUE_KEYWORDS.contains(&key) {
-        return resolve_local_refs(value, root, seen_refs);
+        return resolve_local_refs_inner(value, root, seen_refs, depth, remaining);
     }
     if SCHEMA_ARRAY_KEYWORDS.contains(&key) {
         let Some(values) = value.as_array() else {
@@ -736,7 +785,7 @@ fn resolve_schema_keyword(
         };
         return values
             .iter()
-            .map(|value| resolve_local_refs(value, root, seen_refs))
+            .map(|value| resolve_local_refs_inner(value, root, seen_refs, depth, remaining))
             .collect::<Option<Vec<_>>>()
             .map(Value::Array);
     }
@@ -747,13 +796,31 @@ fn resolve_schema_keyword(
 }
 
 fn resolve_local_refs(schema: &Value, root: &Value, seen_refs: &HashSet<String>) -> Option<Value> {
+    let mut remaining = MAX_SCHEMA_NODES;
+    resolve_local_refs_inner(schema, root, seen_refs, 0, &mut remaining)
+}
+
+fn resolve_local_refs_inner(
+    schema: &Value,
+    root: &Value,
+    seen_refs: &HashSet<String>,
+    depth: usize,
+    remaining: &mut usize,
+) -> Option<Value> {
+    *remaining = (*remaining).checked_sub(1)?;
+    if depth >= MAX_SCHEMA_REF_DEPTH {
+        return None;
+    }
     match schema {
         Value::Array(values) => values
             .iter()
-            .map(|value| resolve_local_refs(value, root, seen_refs))
+            .map(|value| resolve_local_refs_inner(value, root, seen_refs, depth, remaining))
             .collect::<Option<Vec<_>>>()
             .map(Value::Array),
         Value::Object(object) => {
+            if has_unsupported_ref_scope(object) {
+                return None;
+            }
             if let Some(reference) = object.get("$ref").and_then(Value::as_str) {
                 if seen_refs.contains(reference) {
                     return Some(schema.clone());
@@ -761,12 +828,13 @@ fn resolve_local_refs(schema: &Value, root: &Value, seen_refs: &HashSet<String>)
                 let target = resolve_local_ref(reference, root)?;
                 let mut nested_seen = seen_refs.clone();
                 nested_seen.insert(reference.to_string());
-                let resolved = resolve_local_refs(target, root, &nested_seen)?;
+                let resolved =
+                    resolve_local_refs_inner(target, root, &nested_seen, depth + 1, remaining)?;
                 let siblings = object
                     .iter()
                     .filter(|(key, _)| key.as_str() != "$ref")
                     .map(|(key, value)| {
-                        resolve_schema_keyword(key, value, root, seen_refs)
+                        resolve_schema_keyword(key, value, root, seen_refs, depth, remaining)
                             .map(|value| (key.clone(), value))
                     })
                     .collect::<Option<Map<_, _>>>()?;
@@ -781,7 +849,7 @@ fn resolve_local_refs(schema: &Value, root: &Value, seen_refs: &HashSet<String>)
             object
                 .iter()
                 .map(|(key, value)| {
-                    resolve_schema_keyword(key, value, root, seen_refs)
+                    resolve_schema_keyword(key, value, root, seen_refs, depth, remaining)
                         .map(|value| (key.clone(), value))
                 })
                 .collect::<Option<Map<_, _>>>()
@@ -866,7 +934,31 @@ fn narrow_resolved_schema(
 }
 
 fn schema_for_xtml_type(schema: &Value, root: &Value, xtml_type: &str) -> Option<Value> {
-    let resolved = resolve_local_refs(schema, root, &HashSet::new())?;
+    let Some(resolved) = resolve_local_refs(schema, root, &HashSet::new()) else {
+        // Keep an explicitly typed schema intact when scoped references or
+        // bounded expansion prevent safe inlining.
+        let original = schema
+            .as_object()
+            .filter(|schema| !schema.contains_key("$ref"))?;
+        let declared_type = original
+            .get("type")
+            .and_then(Value::as_str)
+            .and_then(JsonType::from_name)?;
+        if declared_type.xtml_name() != xtml_type {
+            return None;
+        }
+        let mut original = original.clone();
+        if let Some(root) = root.as_object() {
+            for key in ["$defs", "definitions"] {
+                if let Some(value) = root.get(key) {
+                    original
+                        .entry(key.to_string())
+                        .or_insert_with(|| value.clone());
+                }
+            }
+        }
+        return Some(Value::Object(original));
+    };
     let mut json_types = schema_types(&resolved, &resolved, &HashSet::new())
         .into_iter()
         .filter(|json_type| json_type.xtml_name() == xtml_type)
@@ -1098,8 +1190,7 @@ pub(crate) fn build_kimi_k3(
     }
 
     // Moonshot's named-tool contract returns the selected call with no
-    // assistant content. Keeping the response channel itself is required by
-    // K3's XTML wire format, but leaving its body as `any_text` lets the model
+    // assistant content. Leaving the response body as `any_text` lets the model
     // put a second, generic `<tool_call>...</tool_call>` representation there
     // before emitting the structurally constrained XTML call. Restrict only
     // named choice; auto/required may legitimately include response text.
@@ -1108,17 +1199,22 @@ pub(crate) fn build_kimi_k3(
             value: String::new(),
         })
     } else {
-        Format::AnyText(AnyTextFormat { excludes: vec![] })
+        // Reserve XTML controls for channel transitions so a direct tools
+        // channel cannot be swallowed as response text (which masks EOS).
+        Format::AnyText(AnyTextFormat {
+            excludes: vec![OPEN.to_string(), CLOSE.to_string()],
+        })
     };
+    // Native output may skip the response channel or go straight from its
+    // body to tools, so both response markers are optional.
     let response = vec![
         optional(Format::ConstString(ConstStringFormat {
             value: RESPONSE_OPEN.to_string(),
         })),
-        Format::Tag(TagFormat {
-            begin: String::new(),
-            content: Box::new(response_content),
-            end: RESPONSE_CLOSE.to_string(),
-        }),
+        response_content,
+        optional(Format::ConstString(ConstStringFormat {
+            value: RESPONSE_CLOSE.to_string(),
+        })),
     ];
     let calls = Format::TagsWithSeparator(TagsWithSeparatorFormat {
         tags: tools
@@ -1209,7 +1305,7 @@ mod tests {
 
         assert_eq!(value["type"], "structural_tag");
         assert_eq!(value["format"]["type"], "sequence");
-        let tools_tag = &value["format"]["elements"][2];
+        let tools_tag = &value["format"]["elements"][3];
         assert_eq!(tools_tag["begin"], TOOLS_OPEN);
         let calls = tools_tag["content"]["tags"].as_array().unwrap();
         assert_eq!(calls.len(), 1);
@@ -1233,22 +1329,21 @@ mod tests {
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
 
-        let response_body = &value["format"]["elements"][1]["content"];
+        let response_body = &value["format"]["elements"][1];
         assert_eq!(response_body["type"], "const_string");
         assert_eq!(response_body["value"], "");
     }
 
     #[test]
-    fn required_choice_keeps_the_existing_response_body() {
+    fn required_choice_response_text_reserves_xtml_controls() {
         let tools = tools();
         let choice = ToolChoice::Required;
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let response_body = &value["format"]["elements"][1]["content"];
-
+        let response_body = &value["format"]["elements"][1];
         assert_eq!(response_body["type"], "any_text");
-        assert_eq!(response_body["excludes"], json!([]));
+        assert_eq!(response_body["excludes"], json!([OPEN, CLOSE]));
     }
 
     #[test]
@@ -1258,7 +1353,7 @@ mod tests {
         let named_value =
             serde_json::to_value(build_kimi_k3(&context(&named, &tools)).unwrap().unwrap())
                 .unwrap();
-        assert_eq!(named_value["format"]["elements"][2]["type"], "tag");
+        assert_eq!(named_value["format"]["elements"][3]["type"], "tag");
 
         let auto = ToolChoice::Auto;
         let auto_value =
@@ -1819,6 +1914,141 @@ mod tests {
     }
 
     #[test]
+    fn array_index_reference_keeps_the_argument_constraint() {
+        let root = json!({
+            "type": "object",
+            "properties": {
+                "operations": {
+                    "items": {
+                        "anyOf": [
+                            {"type": "null"},
+                            {"properties": {"kind": {"type": "integer", "enum": [7]}}}
+                        ]
+                    }
+                },
+                "marker": {"$ref": "#/properties/operations/items/anyOf/1/properties/kind"}
+            }
+        });
+        let format = serde_json::to_value(
+            argument_format("marker", &root["properties"]["marker"], &root)
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+
+        assert!(
+            format["begin"]
+                .as_str()
+                .unwrap()
+                .contains("type=\"number\"")
+        );
+        assert_eq!(format["content"]["json_schema"]["enum"], json!([7]));
+    }
+
+    #[test]
+    fn percent_encoded_reference_keeps_the_argument_constraint() {
+        let root = json!({
+            "$defs": {
+                "café name": {"type": "integer", "minimum": 1},
+                "a/b~c": {"type": "boolean"}
+            },
+            "properties": {
+                "id": {"$ref": "#/$defs/caf%C3%A9%20name"}
+            }
+        });
+        let schema = schema_for_xtml_type(&root["properties"]["id"], &root, "number").unwrap();
+
+        assert_eq!(schema["type"], "integer");
+        assert_eq!(schema["minimum"], 1);
+        assert_eq!(
+            resolve_local_ref("#/$defs/a%7E1b%7E0c", &root),
+            Some(&root["$defs"]["a/b~c"])
+        );
+        for malformed in ["#/$defs/%FF", "#/$defs/%2", "#/$defs/%GG"] {
+            assert!(resolve_local_ref(malformed, &root).is_none());
+        }
+    }
+
+    #[test]
+    fn scoped_reference_keeps_the_original_typed_schema() {
+        let root = json!({
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "$id": "nested",
+                    "$defs": {"item": {"type": "integer"}},
+                    "properties": {"item": {"$ref": "#/$defs/item"}}
+                }
+            }
+        });
+        let format = serde_json::to_value(
+            argument_format("data", &root["properties"]["data"], &root)
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+
+        assert!(
+            format["begin"]
+                .as_str()
+                .unwrap()
+                .contains("type=\"object\"")
+        );
+        assert_eq!(format["content"]["json_schema"], root["properties"]["data"]);
+    }
+
+    #[test]
+    fn expansion_limit_keeps_the_original_typed_schema() {
+        let mut properties = Map::new();
+        for index in 0..MAX_SCHEMA_NODES {
+            properties.insert(format!("item_{index}"), json!({"type": "integer"}));
+        }
+        let schema = json!({"type": "object", "properties": properties});
+        let format =
+            serde_json::to_value(argument_format("data", &schema, &schema).unwrap().unwrap())
+                .unwrap();
+
+        assert!(
+            format["begin"]
+                .as_str()
+                .unwrap()
+                .contains("type=\"object\"")
+        );
+        assert_eq!(format["content"]["json_schema"], schema);
+    }
+
+    #[test]
+    fn reference_depth_limit_keeps_the_original_typed_schema() {
+        let mut definitions = Map::new();
+        for index in 0..MAX_SCHEMA_REF_DEPTH {
+            definitions.insert(
+                format!("step_{index}"),
+                json!({"$ref": format!("#/$defs/step_{}", index + 1)}),
+            );
+        }
+        definitions.insert(
+            format!("step_{MAX_SCHEMA_REF_DEPTH}"),
+            json!({"type": "integer"}),
+        );
+        let root = json!({
+            "$defs": definitions,
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "properties": {"item": {"$ref": "#/$defs/step_0"}}
+                }
+            }
+        });
+        let schema = schema_for_xtml_type(&root["properties"]["data"], &root, "object").unwrap();
+
+        assert_eq!(schema["type"], "object");
+        assert_eq!(schema["properties"]["item"]["$ref"], "#/$defs/step_0");
+        assert_eq!(schema["$defs"], root["$defs"]);
+    }
+
+    #[test]
     fn auto_union_narrowing_preserves_value_constraints() {
         let tools = vec![ToolDefinition {
             name: "choose".to_string(),
@@ -2188,7 +2418,7 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let call = &value["format"]["elements"][2]["content"]["tags"][0];
+        let call = &value["format"]["elements"][3]["content"]["tags"][0];
         let arguments = &call["content"]["elements"][2];
 
         assert_eq!(call["content"]["elements"][0]["pattern"], "[1-9][0-9]*");
@@ -2218,7 +2448,7 @@ mod tests {
         let value =
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
-        let call = &value["format"]["elements"][2]["content"]["tags"][0];
+        let call = &value["format"]["elements"][3]["content"]["tags"][0];
         let arguments = &call["content"]["elements"][2];
 
         assert_eq!(arguments["type"], "star");
@@ -2243,7 +2473,7 @@ mod tests {
         let value = serde_json::to_value(build_kimi_k3(&ctx).unwrap().unwrap()).unwrap();
 
         assert_eq!(
-            value["format"]["elements"][2]["content"]["stop_after_first"],
+            value["format"]["elements"][3]["content"]["stop_after_first"],
             true
         );
     }

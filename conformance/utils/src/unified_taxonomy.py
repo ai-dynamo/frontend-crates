@@ -4,7 +4,7 @@
 (UNIFIED.<group>-<sub>) and the per-group axis labels. Shared by the fixture
 exploder (names case files by number) and the conformance generator (renders the
 group labels), so the numbering can't drift between them.
-Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv2.N) as
+Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv1.N) as
 tool-only unified cases (UNIFIED subsumes STREAM). Group 10 is the reasoning axis
 (REASONING.*). Group 11 is unique to unified: reasoning<->tool interleaving that
 neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express.
@@ -23,28 +23,31 @@ import re
 import yaml
 
 import markers
+from null_cases import NULL_VARIANTS
 
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "1"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
-    # Group 2 — Multiple calls (streamv2.2)
+    # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
-    # Group 3 — No call (streamv2.3)
+    # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
     "tool_block_never_closed_then_text": (4, "1"),
     "tool_markup_only_emits_nothing": (4, "2"),
 
-    # Group 5 — Truncation / recovery (streamv2.5)
+    # Group 5 — Truncation / recovery (streamv1.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
-    # Group 6 — Empty body (streamv2.6)
+    # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
-    # Group 7 — Argument fidelity (streamv2.7)
+    # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
-    # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
-    # Group 8 — Content / narration position (streamv2.8)
+    "deepseek_v41_mixed_control_text_in_string": (7, "3"),
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    "arg_null_mixed_labels": (7, "4.mixed_labels"),
+    # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
     "narrated_calls": (8, "5"),
@@ -124,6 +127,7 @@ UNIFIED_TAX = {
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
+    "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -151,6 +155,7 @@ UNIFIED_GROUP_LABEL = {
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
     "gemma": "Gemma 4 guided call-prefix boundaries",
+    "glm5": "GLM 5 argument-marker boundaries",
     "kimi": "Kimi K3 XTML",
     "muse": "Muse-specific",
 }
@@ -198,6 +203,7 @@ LEGACY_CASE_LABELS = {
     "5.a": "truncated_tool_eof", "5.b": "tool_no_close", "5.c": "orphan_close_after_prose",
     "6.a": "empty_args",
     "7.a": "arg_unicode", "7.b": "arg_marker_in_string",
+    "qwen-1": "arg_json_null",
     "8.a": "text_before_tool", "8.b": "trailing_text_after_tool", "8.c": "text_sandwich",
     "8.d": "text_between_calls", "8.e": "narrated_calls",
     "10.a": "reason_only", "10.b": "reason_then_content", "10.c": "two_reason_spans",

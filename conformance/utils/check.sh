@@ -85,6 +85,7 @@ run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
   # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
   \cp -f "$out" "$UTILS/CONFORMITY.html"
   run_coverage
+  python3 "$TOOLS/validate_legacy_convention.py"
   # The WHOLE tests/ dir, not a hand-maintained file list: the old list named three
   # files, so the resolver-fold, render-invariant and colorize tests never ran in CI
   # and a new test file was gated only by remembering to add it here. The browser

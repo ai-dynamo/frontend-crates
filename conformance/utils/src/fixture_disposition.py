@@ -41,6 +41,14 @@ def capture_layer_sort_key(label: str) -> tuple[str, int]:
     return (match[1], int(match[2])) if match else (label, 0)
 
 
+def canonical_toolcalling_case_key(case_id: str) -> str:
+    """Align displayed null cases without rewriting immutable stream archives."""
+    return {
+        "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
+        "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
+    }.get(case_id, case_id)
+
+
 def historical_unified_case_key(family: str, key: str) -> str:
     """Read historical archive IDs through the scenario-owned taxonomy aliases."""
     label = key.removeprefix("UNIFIED.")

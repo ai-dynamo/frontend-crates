@@ -328,6 +328,31 @@ pub(crate) trait InvokeBoundary: Send {
     /// Restore request/channel context after a retained candidate is rebased.
     fn set_guided_context(&mut self, _context: GuidedInvokePrefixContext) {}
 
+    /// Whether the outer block is also the invoke consumed by the emitter.
+    fn block_is_invoke(&self) -> bool {
+        false
+    }
+
+    /// Locate an opener-less invoke owned by this family.
+    fn bare_invoke_start(&self, _text: &str) -> Option<usize> {
+        None
+    }
+
+    /// Hold back an undecidable suffix of an opener-less invoke.
+    fn bare_invoke_holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    /// Whether a syntactically located opener-less invoke is safe to recover.
+    fn accepts_bare_invoke(&self, _invoke: &str) -> bool {
+        true
+    }
+
+    /// Whether a bare invoke may finish from a family-owned saved closer at EOF.
+    fn bare_invoke_uses_eof_boundary(&self) -> bool {
+        false
+    }
+
     fn owns_guided_prefix(&self) -> bool {
         false
     }
@@ -405,6 +430,8 @@ pub(crate) struct WrappedBlockSpec {
     /// Block closers, matched earliest-first.
     pub block_ends: Vec<String>,
     /// Invoke opener (prefix form is fine — it only anchors scanning).
+    /// Inner invoke opener. For grammars where the block itself is the invoke,
+    /// this is set to the block opener and the scanner derives the block-is-invoke shape.
     pub invoke_start: String,
     /// Invoke closer; an invoke is parsed only once this has streamed.
     pub invoke_end: String,
@@ -877,20 +904,47 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.invoke_boundary_len = 0;
     }
 
+    fn block_is_invoke(&self) -> bool {
+        self.invoke_boundary
+            .as_ref()
+            .is_some_and(|boundary| boundary.block_is_invoke())
+    }
+
     /// Find the next real invoke opener, applying the family hook when present.
     fn find_invoke_start(&self, text: &str) -> Option<usize> {
+        if self.block_is_invoke() && self.in_block {
+            return Some(0);
+        }
+        if self.block_is_invoke() {
+            let boundary = self
+                .invoke_boundary
+                .as_ref()
+                .expect("block-is-invoke requires a family boundary");
+            return boundary
+                .bare_invoke_start(text)
+                .filter(|&start| boundary.accepts_bare_invoke(&text[start..]));
+        }
+        let invoke_start = &self.spec.invoke_start;
         let Some(boundary) = self.invoke_boundary.as_ref() else {
-            return text.find(self.spec.invoke_start.as_str());
+            return text.find(invoke_start.as_str());
         };
         let mut cursor = 0;
-        while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
+        while let Some(relative) = text[cursor..].find(invoke_start.as_str()) {
             let at = cursor + relative;
             if boundary.opens(text, at) {
                 return Some(at);
             }
-            cursor = at + self.spec.invoke_start.len();
+            cursor = at + invoke_start.len();
         }
         None
+    }
+
+    fn active_invoke_start(&self) -> Option<usize> {
+        if self.block_is_invoke() {
+            Some(0)
+        } else {
+            self.find_invoke_start(&self.buffer)
+        }
     }
 
     /// Offset just past the closer of the invoke beginning at byte zero.
@@ -976,10 +1030,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .as_ref()
             .map(|boundary| boundary.holdback(&self.buffer))
             .unwrap_or_default();
+        let bare = self
+            .invoke_boundary
+            .as_ref()
+            .map(|boundary| boundary.bare_invoke_holdback(&self.buffer))
+            .unwrap_or_default();
         regular
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
+            .max(bare)
     }
 
     /// Retain a complete reasoning opener while its optional role label is only
@@ -1109,10 +1169,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
 
             if self.in_block {
-                let invoke_start = self.find_invoke_start(&self.buffer);
+                let invoke_start = self.active_invoke_start();
 
                 // Close the block once no more complete invokes precede its end.
-                if let Some((end_pos, end_len)) = find_first(&self.buffer, &self.spec.block_ends) {
+                if !self.block_is_invoke()
+                    && let Some((end_pos, end_len)) =
+                        find_first(&self.buffer, &self.spec.block_ends)
+                {
                     let invoke_before_end = invoke_start.is_some_and(|start| start < end_pos);
                     if !invoke_before_end {
                         // Complete block fully closed: drop its markup and resume
@@ -1367,7 +1430,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // only after a real closer arrives. Passing `flush` here used
                     // to combine missing-start and missing-end recovery and turn
                     // narrated syntax into a dispatched call.
-                    let Some(end) = self.invoke_end_at(false) else {
+                    let use_eof_boundary = flush
+                        && self
+                            .invoke_boundary
+                            .as_ref()
+                            .is_some_and(|boundary| boundary.bare_invoke_uses_eof_boundary());
+                    let Some(end) = self.invoke_end_at(use_eof_boundary) else {
                         if !flush
                             && let Some(delta) = self
                                 .emitter

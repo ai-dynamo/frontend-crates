@@ -72,6 +72,83 @@ pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
     Ok(parameters.join("\n"))
 }
 
+enum OrderMessage<'a> {
+    Assistant(Option<Vec<&'a str>>),
+    User { has_task: bool },
+    Tool(&'a str),
+    Boundary,
+}
+
+// Both raw encoding and typed media collection use this order. Boundaries end
+// the sortable group but retain call ranks, matching the reference encoder.
+fn message_order<'a>(messages: impl Iterator<Item = OrderMessage<'a>>) -> Vec<usize> {
+    let mut order = Vec::new();
+    let mut calls = std::collections::HashMap::new();
+    let mut slots = Vec::new();
+    let mut group_has_task = false;
+    fn flush(order: &mut [usize], slots: &mut Vec<(usize, usize)>) {
+        let mut sorted = slots.clone();
+        sorted.sort_by_key(|&(_, rank)| rank);
+        for ((target, _), (source, _)) in slots.drain(..).zip(sorted) {
+            order[target] = source;
+        }
+    }
+    for (index, message) in messages.enumerate() {
+        order.push(index);
+        match message {
+            OrderMessage::Tool(id) => slots.push((index, *calls.get(id).unwrap_or(&0))),
+            OrderMessage::User { has_task } => {
+                // A task stays on the merged group until the next user starts a new one.
+                if group_has_task {
+                    flush(&mut order, &mut slots);
+                }
+                group_has_task = has_task;
+            }
+            boundary => {
+                flush(&mut order, &mut slots);
+                group_has_task = false;
+                if let OrderMessage::Assistant(Some(ids)) = boundary {
+                    calls.clear();
+                    for (rank, id) in ids.into_iter().enumerate() {
+                        if !id.is_empty() {
+                            calls.insert(id, rank);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    flush(&mut order, &mut slots);
+    order
+}
+
+fn raw_message_order(messages: &[Value]) -> Vec<usize> {
+    message_order(
+        messages
+            .iter()
+            .map(|message| match message["role"].as_str() {
+                Some("assistant") => {
+                    OrderMessage::Assistant(message["tool_calls"].as_array().map(|calls| {
+                        calls
+                            .iter()
+                            .map(|call| {
+                                call["id"]
+                                    .as_str()
+                                    .or_else(|| call["function"]["id"].as_str())
+                                    .unwrap_or("")
+                            })
+                            .collect()
+                    }))
+                }
+                Some("user") => OrderMessage::User {
+                    has_task: !message["task"].is_null(),
+                },
+                Some("tool") => OrderMessage::Tool(message["tool_call_id"].as_str().unwrap_or("")),
+                _ => OrderMessage::Boundary,
+            }),
+    )
+}
+
 fn normalize_content(messages: &mut [Value]) -> Result<()> {
     for message in messages {
         for field in ["tools", "tool_calls"] {
@@ -162,6 +239,13 @@ pub fn encode_messages(
     );
     let mut messages = messages.to_vec();
     normalize_content(&mut messages)?;
+    if messages.iter().any(|message| message["role"] == "tool") {
+        let order = raw_message_order(&messages);
+        messages = order
+            .into_iter()
+            .map(|index| std::mem::take(&mut messages[index]))
+            .collect();
+    }
     encode_messages_with_encoding(
         &messages,
         thinking_mode,
@@ -179,6 +263,39 @@ pub struct DeepSeekV41Formatter;
 impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     fn supports_add_generation_prompt(&self) -> bool {
         false
+    }
+
+    fn media_message_order(&self, request: &dyn crate::OAIChatLikeRequest) -> Option<Vec<usize>> {
+        use dynamo_protocols::types::ChatCompletionRequestMessage as Message;
+        let Some(messages) = request.typed_messages() else {
+            // Custom requests may expose only the same raw view used by render.
+            // Invalid raw messages are rejected by render before media collection.
+            let messages = serde_json::to_value(request.messages()).ok()?;
+            let messages = messages.as_array()?;
+            return messages
+                .iter()
+                .any(|message| message["role"] == "tool")
+                .then(|| raw_message_order(messages));
+        };
+        if !messages
+            .iter()
+            .any(|message| matches!(message, Message::Tool(_)))
+        {
+            return None;
+        }
+        Some(message_order(messages.iter().map(|message| {
+            match message {
+                Message::Assistant(assistant) => OrderMessage::Assistant(
+                    assistant
+                        .tool_calls
+                        .as_ref()
+                        .map(|calls| calls.iter().map(|call| call.id.as_str()).collect()),
+                ),
+                Message::User(_) => OrderMessage::User { has_task: false },
+                Message::Tool(tool) => OrderMessage::Tool(tool.tool_call_id.as_str()),
+                _ => OrderMessage::Boundary,
+            }
+        })))
     }
 
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
