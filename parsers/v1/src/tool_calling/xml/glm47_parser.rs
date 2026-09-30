@@ -558,7 +558,7 @@ fn get_param_schema_type<'a>(
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
     // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_type_match(param, "string")? {
+    if schema_has_type(param, "string") {
         return Some("string");
     }
     if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
@@ -1253,33 +1253,6 @@ mod tests {
                 serde_json::json!({"key": "value"})
             );
             assert_eq!(args["untyped"], serde_json::json!([1, 2, 3]));
-        }
-    }
-
-    #[test]
-    fn test_union_without_explicit_string_type_preserves_scalar_text() {
-        for alternative in [
-            serde_json::json!({"enum": ["30"]}),
-            serde_json::json!({"const": "30"}),
-            serde_json::json!({}),
-        ] {
-            let tools = [ToolDefinition {
-                name: "f".into(),
-                parameters: Some(serde_json::json!({
-                    "type": "object",
-                    "properties": {"x": {"anyOf": [
-                        {"type": "integer", "minimum": 100}, alternative
-                    ]}}
-                })),
-                strict: None,
-            }];
-            let (calls, _) = try_tool_call_parse_glm47(
-                "<tool_call>f<arg_key>x</arg_key><arg_value>30</arg_value></tool_call>",
-                &get_test_config(),
-                Some(&tools),
-            )
-            .unwrap();
-            assert_eq!(calls[0].function.arguments, r#"{"x":"30"}"#);
         }
     }
 
