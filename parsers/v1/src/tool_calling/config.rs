@@ -841,7 +841,7 @@ impl ToolCallConfig {
         // Reference: https://huggingface.co/zai-org/GLM-4.7/blob/main/chat_template.jinja
         Self {
             parser_config: ParserConfig::Glm47(Glm47ParserConfig::default()),
-            structural_tag_builder: None,
+            structural_tag_builder: Some(StructuralTagBuilder::Glm47),
         }
     }
 
