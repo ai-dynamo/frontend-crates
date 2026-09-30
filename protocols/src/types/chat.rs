@@ -450,7 +450,7 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestUserMessageContentPart {
             _ if !part.fields.contains_key(&part.kind) => {
                 return Err(D::Error::custom(
                     "content requires its matching payload field",
-                ))
+                ));
             }
             _ => {}
         }
@@ -2083,11 +2083,12 @@ mod tests {
             {
                 let part: ChatCompletionRequestMessageContentPartImage =
                     part.deserialize().unwrap();
-                assert!(part
-                    .image_url
-                    .as_ref()
-                    .map(|image| image.url.as_str())
-                    .is_some());
+                assert!(
+                    part.image_url
+                        .as_ref()
+                        .map(|image| image.url.as_str())
+                        .is_some()
+                );
                 assert_eq!(part.uuid.as_deref(), Some("image-1"));
             }
             _ => panic!("parts[1] should be image_url"),
