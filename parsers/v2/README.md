@@ -330,3 +330,23 @@ expected:
 ```
 
 Do not keep inferred Python exception markers after reasoning moves to v2. The YAML should say exactly which parser failed and with what message.
+
+## Opt-in Kimi K3 argument streaming
+
+`unified::kimi_k3::kimi_k3_streaming_unified(&tools)` accepts the same
+native XTML channels as `kimi_k3`, but emits tool names at the call header
+and argument fragments as decoded input chunks arrive. String values are
+JSON-escaped incrementally; typed and raw JSON values stream without waiting
+for the closing value or call marker. Concatenate `ToolCallDelta.arguments`
+by `tool_index`; individual deltas need not be complete JSON. Call IDs are
+available when the first delta is emitted, and `complete` remains false
+until the native boundary owner validates the call.
+
+The native parser retains the call buffer for final validation. Potential
+structural marker suffixes wait for enough lookahead to distinguish them from
+literal argument data. Duplicate keys or invalid typed JSON that would require
+rewriting emitted bytes produce an error; unfinished calls can fail after
+partial output has been committed. Consume committed `parse_into` events
+explicitly on errors. The default buffered K3 parser retains its existing
+recovery behavior. Guided output retains the shared guided parser's policies.
+The consumer owns interpretation and execution of partial argument values.

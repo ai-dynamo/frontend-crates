@@ -856,9 +856,185 @@ impl InvokeBoundary for KimiK3CallBoundary {
     }
 }
 
+/// Incremental output cursor over the native parser's call buffer. The existing
+/// boundary owner still validates and closes the call; this cursor only projects
+/// bytes that cannot be changed by later chunks.
+struct StreamingCall {
+    tool_index: usize,
+    cursor: usize,
+    emitted: String,
+    state: StreamingValue,
+    fields: std::collections::HashSet<String>,
+    json_in_string: bool,
+    json_escaped: bool,
+}
+
+#[derive(Clone, Copy)]
+enum StreamingValue {
+    Field,
+    String,
+    Json,
+    RawJson,
+}
+
+impl StreamingCall {
+    fn new(tool_index: usize, cursor: usize) -> Self {
+        Self {
+            tool_index,
+            cursor,
+            emitted: String::new(),
+            state: StreamingValue::Field,
+            fields: std::collections::HashSet::new(),
+            json_in_string: false,
+            json_escaped: false,
+        }
+    }
+
+    fn emit(&mut self, text: String, output: &mut UnifiedParserOutput) {
+        if text.is_empty() {
+            return;
+        }
+        self.emitted.push_str(&text);
+        output.push_call(ToolCallDelta {
+            tool_index: self.tool_index,
+            name: None,
+            arguments: text,
+            complete: false,
+        });
+    }
+
+    fn advance(&mut self, buffer: &str, output: &mut UnifiedParserOutput) -> anyhow::Result<()> {
+        loop {
+            if self.cursor == buffer.len() {
+                return Ok(());
+            }
+            if matches!(self.state, StreamingValue::Field) {
+                let rest = &buffer[self.cursor..];
+                self.cursor += rest.len() - rest.trim_start().len();
+                let rest = &buffer[self.cursor..];
+                if let Some((_, len)) = parse_tag_header(rest, JSON_OPEN) {
+                    self.cursor += len;
+                    self.state = StreamingValue::RawJson;
+                    continue;
+                }
+                let Some((attrs, len)) = parse_tag_header(rest, ARG_OPEN) else {
+                    return Ok(());
+                };
+                let key = attr_value(&attrs, "key").unwrap_or_default();
+                anyhow::ensure!(
+                    self.fields.insert(key.to_string()),
+                    "duplicate streaming Kimi K3 argument key"
+                );
+                let string = attr_value(&attrs, "type").unwrap_or("string") == "string";
+                let prefix = if self.emitted.is_empty() { "{" } else { "," };
+                let key = serde_json::to_string(key)?;
+                self.emit(
+                    format!("{prefix}{key}:{}", if string { "\"" } else { "" }),
+                    output,
+                );
+                self.cursor += len;
+                self.state = if string {
+                    StreamingValue::String
+                } else {
+                    StreamingValue::Json
+                };
+                continue;
+            }
+
+            let raw_json = matches!(self.state, StreamingValue::RawJson);
+            let string = matches!(self.state, StreamingValue::String);
+            let close = if raw_json { JSON_CLOSE } else { ARG_CLOSE };
+            let start = self.cursor;
+            let mut projected = String::new();
+            let mut closed = false;
+            while self.cursor < buffer.len() {
+                let rest = &buffer[self.cursor..];
+                if string || !self.json_in_string {
+                    if let Some(len) = close.prefix_len(rest) {
+                        if raw_json {
+                            break; // The native boundary owner will validate the object.
+                        }
+                        let tail = rest[len..].trim_start();
+                        // A close is structural only when followed by another complete
+                        // argument header. At call closure the authoritative owner
+                        // supplies the remaining validated JSON instead.
+                        if parse_tag_header(tail, ARG_OPEN).is_some() {
+                            self.cursor += len;
+                            closed = true;
+                            break;
+                        }
+                        if tail.is_empty()
+                            || ARG_OPEN.variants().any(|marker| marker.starts_with(tail))
+                            || ARG_OPEN.prefix_len(tail).is_some()
+                            || CALL_CLOSE
+                                .variants()
+                                .any(|marker| marker.starts_with(tail) || tail.starts_with(marker))
+                            || TOOLS_CLOSE.prefix_len(tail).is_some()
+                            || MESSAGE_CLOSE.prefix_len(tail).is_some()
+                            || tail.starts_with(END_OF_MSG)
+                        {
+                            break;
+                        }
+                        // A marker followed by ordinary data is literal string data.
+                    } else if close.variants().any(|marker| marker.starts_with(rest)) {
+                        break;
+                    }
+                }
+                let ch = rest.chars().next().expect("non-empty value suffix");
+                self.cursor += ch.len_utf8();
+                if !string {
+                    if self.json_in_string {
+                        projected.push(ch);
+                        if self.json_escaped {
+                            self.json_escaped = false;
+                        } else if ch == '\\' {
+                            self.json_escaped = true;
+                        } else if ch == '"' {
+                            self.json_in_string = false;
+                        }
+                    } else if ch == '"' {
+                        self.json_in_string = true;
+                        projected.push(ch);
+                    } else if !ch.is_whitespace() {
+                        projected.push(ch);
+                    }
+                }
+            }
+            if string {
+                let end = if closed {
+                    // The delimiter follows the literal value bytes we just visited.
+                    let rest = &buffer[start..self.cursor];
+                    close
+                        .variants()
+                        .find_map(|marker| rest.strip_suffix(marker))
+                        .expect("closed argument has a closing marker")
+                } else {
+                    &buffer[start..self.cursor]
+                };
+                let encoded = serde_json::to_string(end)?;
+                projected.push_str(&encoded[1..encoded.len() - 1]);
+                if closed {
+                    projected.push('"');
+                }
+            }
+            self.emit(projected, output);
+            if closed {
+                self.state = StreamingValue::Field;
+                self.json_in_string = false;
+                self.json_escaped = false;
+                continue;
+            }
+            return Ok(());
+        }
+    }
+}
+
 /// K3-owned native state. [`GuidedRouted`] adds the shared guided-JSON mode.
 pub(crate) struct KimiK3Native {
     buffer: String,
+    stream_arguments: bool,
+    streaming_call: Option<StreamingCall>,
+    streaming_error: Option<anyhow::Error>,
     mode: Mode,
     active_call: Option<ActiveCall>,
     call_header_scan: Option<KimiK3HeaderScan>,
@@ -873,6 +1049,9 @@ impl KimiK3Native {
     fn new() -> Self {
         Self {
             buffer: String::new(),
+            stream_arguments: false,
+            streaming_call: None,
+            streaming_error: None,
             mode: Mode::Idle,
             active_call: None,
             call_header_scan: None,
@@ -897,7 +1076,7 @@ impl KimiK3Native {
                     false
                 }
             };
-            if !progressed {
+            if !progressed || self.streaming_error.is_some() {
                 break;
             }
         }
@@ -1068,6 +1247,10 @@ impl KimiK3Native {
                 self.complete_call(body_end, body_end, output);
                 true
             }
+            CallBoundary::Resync { .. } if self.streaming_call.is_some() => {
+                self.streaming_error = Some(anyhow::anyhow!("malformed streaming Kimi K3 call"));
+                false
+            }
             CallBoundary::Resync { at } => {
                 tracing::warn!(
                     why = "kimi_k3_resynchronized_after_incomplete_call",
@@ -1081,7 +1264,18 @@ impl KimiK3Native {
                 self.mode = Mode::Tools;
                 true
             }
-            CallBoundary::Pending if !flush => false,
+            CallBoundary::Pending if !flush => {
+                if let Some(call) = &mut self.streaming_call
+                    && let Err(error) = call.advance(&self.buffer, output)
+                {
+                    self.streaming_error = Some(error);
+                }
+                false
+            }
+            CallBoundary::Pending | CallBoundary::Malformed if self.streaming_call.is_some() => {
+                self.streaming_error = Some(anyhow::anyhow!("incomplete streaming Kimi K3 call"));
+                false
+            }
             CallBoundary::Pending | CallBoundary::Malformed => {
                 tracing::warn!(
                     why = "kimi_k3_incomplete_call",
@@ -1099,10 +1293,16 @@ impl KimiK3Native {
 
     fn complete_call(
         &mut self,
-        _body_end: usize,
+        body_end: usize,
         consumed: usize,
         output: &mut UnifiedParserOutput,
     ) {
+        if let Some(streaming) = &mut self.streaming_call
+            && let Err(error) = streaming.advance(&self.buffer[..body_end], output)
+        {
+            self.streaming_error = Some(error);
+            return;
+        }
         let arguments = self.call_boundary.take_arguments();
         self.buffer.drain(..consumed);
         self.call_boundary.reset();
@@ -1130,6 +1330,21 @@ impl KimiK3Native {
             return;
         };
 
+        if let Some(streaming) = self.streaming_call.take() {
+            if !arguments.starts_with(&streaming.emitted) {
+                self.streaming_error = Some(anyhow::anyhow!(
+                    "streaming Kimi K3 arguments cannot be revised after emission"
+                ));
+                return;
+            }
+            output.push_call(ToolCallDelta {
+                tool_index: streaming.tool_index,
+                name: None,
+                arguments: arguments[streaming.emitted.len()..].to_string(),
+                complete: true,
+            });
+            return;
+        }
         let tool_index = self.next_tool_index;
         self.next_tool_index += 1;
         self.call_ids.push(call.id);
@@ -1145,7 +1360,7 @@ impl KimiK3Native {
         &mut self,
         return_mode: Mode,
         flush: bool,
-        _output: &mut UnifiedParserOutput,
+        output: &mut UnifiedParserOutput,
     ) -> bool {
         let Some(open_len) = CALL_OPEN.prefix_len(&self.buffer) else {
             self.call_header_scan = None;
@@ -1165,7 +1380,7 @@ impl KimiK3Native {
                 );
                 if let Some((_, consumed)) = parse_attrs_prefix(&self.buffer[open_len..]) {
                     self.buffer.drain(..open_len + consumed);
-                    self.emit_safe(true, IDLE_MARKERS, _output, |output, text| {
+                    self.emit_safe(true, IDLE_MARKERS, output, |output, text| {
                         output.push_text(text)
                     });
                 } else {
@@ -1200,6 +1415,19 @@ impl KimiK3Native {
             return_mode,
         });
         self.call_boundary.begin(header_end + sep_len, self.mode);
+        if self.stream_arguments && !self.active_call.as_ref().unwrap().name.is_empty() {
+            let call = self.active_call.as_ref().unwrap();
+            let tool_index = self.next_tool_index;
+            self.next_tool_index += 1;
+            self.call_ids.push(call.id.clone());
+            output.push_call(ToolCallDelta {
+                tool_index,
+                name: Some(call.name.clone()),
+                arguments: String::new(),
+                complete: false,
+            });
+            self.streaming_call = Some(StreamingCall::new(tool_index, header_end + sep_len));
+        }
         true
     }
 
@@ -1332,6 +1560,8 @@ impl KimiK3Native {
     }
 
     fn reset_state(&mut self) {
+        self.streaming_call = None;
+        self.streaming_error = None;
         self.mode = Mode::Idle;
         self.active_call = None;
         self.call_header_scan = None;
@@ -1400,11 +1630,17 @@ impl NativeUnified for KimiK3Native {
     fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> anyhow::Result<()> {
         self.buffer.push_str(delta);
         self.drain(false, output);
+        if let Some(error) = self.streaming_error.take() {
+            return Err(error);
+        }
         Ok(())
     }
 
     fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> anyhow::Result<()> {
         self.drain(true, output);
+        if let Some(error) = self.streaming_error.take() {
+            return Err(error);
+        }
         match self.mode {
             Mode::Idle | Mode::Response => output.push_text(std::mem::take(&mut self.buffer)),
             Mode::Reasoning => output.push_reasoning(std::mem::take(&mut self.buffer)),
@@ -1428,6 +1664,21 @@ impl NativeUnified for KimiK3Native {
 /// Build a native and guided Kimi K3 parser for one request stream.
 pub(crate) fn kimi_k3_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(KimiK3Native::new()))
+}
+
+/// Build an opt-in K3 parser that emits native argument fragments before call closure.
+///
+/// String fragments are JSON-escaped as they arrive; typed JSON is compacted
+/// incrementally. Fragments may be incomplete JSON and must be joined by call
+/// index. Malformed/truncated calls can fail after earlier deltas were committed;
+/// emitted bytes cannot be withdrawn or converted to recovery text. Duplicate
+/// keys and invalid typed JSON that require rewriting earlier output fail.
+/// Guided JSON continues to use the shared guided parser and its selected policy.
+/// Execution and interpretation of partial values belong to the consumer.
+pub fn kimi_k3_streaming_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    let mut native = KimiK3Native::new();
+    native.stream_arguments = true;
+    Box::new(GuidedRouted::new(native))
 }
 
 const GUIDED_COMPETITORS: &[&str] = &[
@@ -2025,6 +2276,250 @@ mod tests {
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
         UnifiedToolOutputMode, assemble,
     };
+
+    fn streaming_events(
+        chunks: &[&str],
+    ) -> (Vec<crate::UnifiedParserEvent>, Box<dyn UnifiedParser>) {
+        let mut parser = kimi_k3_streaming_unified(&[]);
+        let mut events = Vec::new();
+        for chunk in chunks {
+            events.extend(parser.push(chunk).unwrap());
+        }
+        events.extend(parser.finish().unwrap().events);
+        (events, parser)
+    }
+
+    #[test]
+    fn streaming_bash_emits_each_value_chunk_before_any_closing_marker() {
+        let mut parser = kimi_k3_streaming_unified(&[]);
+        let header = concat!(
+            "<|open|>tools<|sep|><|open|>call tool=\"bash\" index=\"3\"<|sep|>",
+            "<|open|>argument key=\"command\" type=\"string\"<|sep|>"
+        );
+        let mut events = parser.push(header).unwrap();
+        assert_eq!(parser.tool_call_id(0), Some("bash:2"));
+        for chunk in ["printf ", "\"héllo 🌍\"", "\\n", "\n", "echo done"] {
+            let output = parser.push(chunk).unwrap();
+            let emitted: String = output
+                .iter()
+                .filter_map(|event| match event {
+                    crate::UnifiedParserEvent::ToolCall(call) => {
+                        assert!(!call.complete);
+                        Some(call.arguments.as_str())
+                    }
+                    _ => None,
+                })
+                .collect();
+            let encoded = serde_json::to_string(chunk).unwrap();
+            assert_eq!(emitted, encoded[1..encoded.len() - 1], "chunk {chunk:?}");
+            events.extend(output);
+        }
+        events.extend(
+            parser
+                .push("<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>")
+                .unwrap(),
+        );
+        events.extend(parser.finish().unwrap().events);
+        assert_eq!(
+            assemble(&events),
+            vec![UnifiedEvent::ToolCall {
+                name: "bash".into(),
+                arguments: serde_json::json!({"command": "printf \"héllo 🌍\"\\n\necho done"}),
+            }]
+        );
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| matches!(event,
+            crate::UnifiedParserEvent::ToolCall(call) if call.complete))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn streaming_native_matches_buffered_at_every_utf8_split() {
+        let bodies = [
+            "".to_string(),
+            arg("command", "string", "echo \"héllo 🌍\"\n\\path\t\r\u{0001}"),
+            format!("{}{}{}{}", arg("n", "number", "1.25e+2"), arg("ok", "boolean", "true"), arg("none", "null", "null"), arg("a", "array", "[1, {\"x\": \" spaced \", \"t\": \"<|close|>argument<|sep|>\"}]")),
+            arg("command", "string", "a<|close|>argument<|sep|>b<|open|>call tool=\"literal\"<|sep|>c"),
+            arg("command", "string", "a<|close|>argument<|sep|><|close|>call<|sep|>literal"),
+            arg("command", "string", "a<|close|>argument<|sep|>"),
+            "<|open|>json<|sep|>{ \"command\": \"echo \\\"hi\\\"\", \"array\": [1, 2] }<|close|>json<|sep|>".to_string(),
+        ];
+        for body in bodies {
+            let input = format!(
+                "{}private{}{}{}{}{}answer{}",
+                THINK_OPEN.canonical,
+                THINK_CLOSE.canonical,
+                TOOLS_OPEN.canonical,
+                call("bash", "1", &body),
+                TOOLS_CLOSE.canonical,
+                RESPONSE_OPEN.canonical,
+                RESPONSE_CLOSE.canonical
+            );
+            let mut reference = kimi_k3_unified(&[]);
+            let mut expected = reference.push(&input).unwrap();
+            expected.extend(reference.finish().unwrap().events);
+            for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+                let (events, parser) = streaming_events(&[&input[..split], &input[split..]]);
+                assert_eq!(
+                    assemble(&events),
+                    assemble(&expected),
+                    "body {body:?}, split {split}"
+                );
+                assert_eq!(parser.tool_call_id(0), Some("bash:0"));
+            }
+            let chunks: Vec<_> = input
+                .char_indices()
+                .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                .collect();
+            assert_eq!(assemble(&streaming_events(&chunks).0), assemble(&expected));
+            let spaced = input
+                .replace("<|open|>", "<|open|> ")
+                .replace("<|close|>", "<|close|> ")
+                .replace("<|sep|>", " <|sep|>");
+            let mut reference = kimi_k3_unified(&[]);
+            let mut expected = reference.push(&spaced).unwrap();
+            expected.extend(reference.finish().unwrap().events);
+            let chunks: Vec<_> = spaced
+                .char_indices()
+                .map(|(at, ch)| &spaced[at..at + ch.len_utf8()])
+                .collect();
+            assert_eq!(assemble(&streaming_events(&chunks).0), assemble(&expected));
+        }
+    }
+
+    #[test]
+    fn streaming_long_bash_releases_every_chunk_without_reparsing_the_body() {
+        let mut native = KimiK3Native::new();
+        native.stream_arguments = true;
+        let mut output = UnifiedParserOutput::default();
+        native
+            .push_native(
+                concat!(
+                    "<|open|>tools<|sep|><|open|>call tool=\"bash\" index=\"1\"<|sep|>",
+                    "<|open|>argument key=\"command\" type=\"string\"<|sep|>"
+                ),
+                &mut output,
+            )
+            .unwrap();
+        let chunk = "echo \"hello 🌍\"\n".repeat(256);
+        let encoded = serde_json::to_string(&chunk).unwrap();
+        for _ in 0..128 {
+            output.events.clear();
+            native.push_native(&chunk, &mut output).unwrap();
+            assert_eq!(
+                output.events,
+                vec![crate::UnifiedParserEvent::ToolCall(ToolCallDelta {
+                    tool_index: 0,
+                    name: None,
+                    arguments: encoded[1..encoded.len() - 1].to_string(),
+                    complete: false,
+                })]
+            );
+            assert_eq!(native.call_boundary.body_parse_count, 0);
+        }
+        output.events.clear();
+        native
+            .push_native(
+                "<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+                &mut output,
+            )
+            .unwrap();
+        assert!(output.events.iter().any(|event| matches!(event,
+            crate::UnifiedParserEvent::ToolCall(call) if call.complete)));
+    }
+
+    #[test]
+    fn streaming_nested_json_and_raw_json_emit_before_value_closure() {
+        for (open, first, second) in [
+            (
+                "<|open|>argument key=\"items\" type=\"array\"<|sep|>",
+                "[1, ",
+                "{\"x\": 2",
+            ),
+            ("<|open|>json<|sep|>", "{ \"command\": \"echo ", "hi"),
+        ] {
+            let mut parser = kimi_k3_streaming_unified(&[]);
+            parser
+                .push(&format!(
+                    "{}<|open|>call tool=\"bash\" index=\"1\"<|sep|>{open}",
+                    TOOLS_OPEN.canonical
+                ))
+                .unwrap();
+            for chunk in [first, second] {
+                let events = parser.push(chunk).unwrap();
+                assert!(events.iter().any(|event| matches!(event,
+                    crate::UnifiedParserEvent::ToolCall(call) if !call.arguments.is_empty() && !call.complete)));
+            }
+        }
+    }
+
+    #[test]
+    fn streaming_errors_preserve_committed_fragments_and_do_not_complete() {
+        let prefix = format!(
+            "{}<|open|>call tool=\"bash\" index=\"1\"<|sep|>",
+            TOOLS_OPEN.canonical
+        );
+        let invalid = format!(
+            "{prefix}{}{}{}",
+            arg("n", "number", "oops"),
+            CALL_CLOSE.canonical,
+            TOOLS_CLOSE.canonical
+        );
+        let duplicate = format!(
+            "{prefix}{}{}{}{}",
+            arg("x", "string", "a"),
+            arg("x", "string", "b"),
+            CALL_CLOSE.canonical,
+            TOOLS_CLOSE.canonical
+        );
+        for input in [invalid, duplicate] {
+            for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+                let mut parser = kimi_k3_streaming_unified(&[]);
+                let mut output = UnifiedParserOutput::default();
+                let result = parser
+                    .parse_into(&input[..split], &mut output)
+                    .and_then(|()| parser.parse_into(&input[split..], &mut output));
+                assert!(result.is_err(), "split {split}, {input}");
+                assert!(
+                    output
+                        .events
+                        .iter()
+                        .any(|event| matches!(event, crate::UnifiedParserEvent::ToolCall(_)))
+                );
+                assert!(!output.events.iter().any(|event| matches!(event,
+                    crate::UnifiedParserEvent::ToolCall(call) if call.complete)));
+            }
+        }
+        let mut parser = kimi_k3_streaming_unified(&[]);
+        let events = parser
+            .push(&format!(
+                "{prefix}<|open|>argument key=\"command\" type=\"string\"<|sep|>echo partial"
+            ))
+            .unwrap();
+        assert!(events.iter().any(|event| matches!(event, crate::UnifiedParserEvent::ToolCall(call) if call.arguments.contains("echo partial"))));
+        assert!(parser.finish().is_err());
+        parser.reset();
+        let events = parser
+            .push(&format!(
+                "{}{}{}",
+                TOOLS_OPEN.canonical,
+                call("bash", "2", &arg("command", "string", "done")),
+                TOOLS_CLOSE.canonical
+            ))
+            .unwrap();
+        assert_eq!(
+            assemble(&events),
+            vec![UnifiedEvent::ToolCall {
+                name: "bash".into(),
+                arguments: serde_json::json!({"command": "done"})
+            }]
+        );
+        assert_eq!(parser.tool_call_id(0), Some("bash:1"));
+    }
 
     const SEP: &str = "<|sep|>";
 
