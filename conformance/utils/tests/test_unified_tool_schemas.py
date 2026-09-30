@@ -18,32 +18,7 @@ from unified_tools import unified_tools
 
 
 def _assert_value(value, schema):
-    # This corpus declares only these JSON Schema keywords; fail on additions so
-    # a new constraint cannot silently bypass this producer-side check.
-    assert schema.keys() <= {"type", "properties", "items"}, schema
-    kinds = schema["type"]
-    if isinstance(kinds, str):
-        kinds = [kinds]
-    matches = {
-        "object": isinstance(value, dict),
-        "array": isinstance(value, list),
-        "number": type(value) in (int, float),
-        # JSON Schema integers include numbers with a zero fractional part.
-        "integer": type(value) is int or (type(value) is float and value.is_integer()),
-        "string": isinstance(value, str),
-        "boolean": type(value) is bool,
-        "null": value is None,
-    }
-    assert isinstance(kinds, list) and kinds, schema
-    assert all(isinstance(kind, str) and kind in matches for kind in kinds), schema
-    assert any(matches[kind] for kind in kinds), value
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if key in schema["properties"]:
-                _assert_value(item, schema["properties"][key])
-    elif isinstance(value, list):
-        for item in value:
-            _assert_value(item, schema["items"])
+    assert matches_schema(value, schema), (value, schema)
 
 
 @pytest.mark.parametrize("kind, valid, invalid", [
@@ -84,6 +59,26 @@ def test_schema_guard_null_type():
 def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, schema):
     with pytest.raises(AssertionError):
         _assert_value(value, schema)
+
+
+@pytest.mark.parametrize("schema, valid, invalid", [
+    ({"anyOf": [{"type": "string"}, {"type": "null"}]}, ["text", None], [1, False, []]),
+    ({"oneOf": [{"type": "integer"}, {"type": "null"}]}, [2, 2.0, None], [1.5, True, "2"]),
+    ({"oneOf": [{"type": "number"}, {"type": "integer"}]}, [1.5], [2, 2.0, None]),
+    ({"const": None}, [None], ["null", 0, False]),
+    ({"enum": [None, "text"]}, [None, "text"], ["other", 0, False]),
+    ({"type": "integer", "nullable": True}, [2, None], [1.5, True, "2"]),
+    ({"type": "string", "nullable": False}, ["text"], [None, 2]),
+    ({"type": ["string", "null"], "minLength": 2}, ["ok", None], ["", "x", 2]),
+])
+def test_schema_guard_corpus_keywords(schema, valid, invalid):
+    # Exercise the same nested argument path as authored tool calls.
+    tool_schema = {"type": "object", "properties": {"value": schema}}
+    for value in valid:
+        _assert_value({"value": value}, tool_schema)
+    for value in invalid:
+        with pytest.raises(AssertionError):
+            _assert_value({"value": value}, tool_schema)
 
 
 def _assert_golden_schemas(cases, tools):
