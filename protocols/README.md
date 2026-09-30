@@ -20,3 +20,23 @@ A few fields extend the upstream `async-openai` schema:
 - `mm_processor_kwargs` on chat-completion requests (vLLM multimodal)
 - `continuous_usage_stats` on chat stream options
 - `FunctionCall.arguments` accepts both string and object forms
+
+## Extensible chat content
+
+User and tool content parts use `Text` or `Multimodal`. A multimodal part stores
+its wire tag and all fields except `type` as JSON, preserving sibling fields
+such as `uuid`. Existing image, video, and audio schemas retain their validation;
+unfamiliar tags require a matching payload field:
+
+```json
+{"type":"chemistry","chemistry":{"atoms":["C","O"]}}
+```
+
+The protocol preserves arbitrary JSON values without interpreting them. A
+consumer chooses whether to use built-in media processing or forward the
+payload to a registered backend processor. Adding a modality does not require
+changing this crate. Duplicate fields in content objects are rejected.
+
+This replaces modality-specific Rust enum variants and therefore requires a
+coordinated breaking release for consumers that pattern-match those variants.
+The HTTP representations of existing media content remain compatible.
