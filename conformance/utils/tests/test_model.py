@@ -383,6 +383,11 @@ def test_batch_mixed_grep_preserves_null_coercion_history(model_v2: dict) -> Non
     columns = {column["sub"]: column for column in tab["columns"]}
     assert sub in columns
     assert columns[sub]["group_key"] == "args"
+    assert columns[sub]["label"] == "7-4"
+    assert sub not in {column["label"] for column in tab["columns"]}
+    glossary_labels = {label for group in tab["glossary"] for label, _ in group["rows"]}
+    assert "7-4" in glossary_labels
+    assert sub not in glossary_labels
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
     assert candidates["golden"]["parse_mode"] == "batch"
     assert {"9.2.0", "9.2.1"} <= _peer_versions("toolcalling/fixtures-batch-v1")["dynamo_v1"]
