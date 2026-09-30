@@ -205,10 +205,11 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
 /// key); keys absent from the source order are appended in object order
 /// (defensive; normally empty). Non-object payloads pass through untouched.
 pub(crate) fn reorder_arguments(arguments: &str, source_names: &[String]) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
+    // Only reorder keys. Parsing values through Value would round large/fractional
+    // JSON numbers that the coercer deliberately preserved as raw text.
+    let Ok(obj) = serde_json::from_str::<
+        std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
+    >(arguments) else {
         return arguments.to_string();
     };
     let mut parts: Vec<String> = Vec::new();
@@ -224,7 +225,7 @@ pub(crate) fn reorder_arguments(arguments: &str, source_names: &[String]) -> Str
             ));
         }
     }
-    for (key, val) in obj {
+    for (key, val) in &obj {
         if !seen.contains(key.as_str()) {
             parts.push(format!(
                 "{}:{}",
