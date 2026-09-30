@@ -47,6 +47,13 @@ name = "dynamo-parsers-v2-py"
 publish = false
 release = false
 
+# The crate is publishable by Cargo, but its first 0.1.0 release needs a
+# manual crates.io publish. Enable release-plz in a follow-up PR once 0.1.0
+# is on crates.io, and push the matching git tag only after that PR merges.
+[[package]]
+name = "dynamo-mm-preprocessor"
+release = false
+
 [changelog]
 header = """# Changelog
 
@@ -84,11 +91,3 @@ commit_parsers = [
     { message = "^build", skip = true },
     { message = "^test", skip = true },
 ]
-
-# `dynamo-mm-preprocessor` still stubs the `fetch` helper — its implementation
-# flips the crate to publishable; until then both flags mirror the crate's
-# `publish = false`.
-[[package]]
-name = "dynamo-mm-preprocessor"
-publish = false
-release = false

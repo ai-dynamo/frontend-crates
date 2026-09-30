@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # KNOWN chunking divergences: cases where the v2 streaming parser's assembled
-# output depends on where the input stream is split. Consumed ONLY by
-# conformance/tests/sweep_toolcalling_stream.rs, which requires the parser to
-# produce the single-shot result at EVERY chunking.
+# output depends on where the input stream is split. The split sweep requires the
+# parser to match the single-shot result at EVERY chunking; the interleave lane
+# skips its recorded-output oracle for allow-listed cases under BoundarySplit,
+# because that schedule changes the captured chunking.
 #
 # Policy (same as known-divergences.yaml):
 # - An entry needs a note explaining WHICH side is wrong and why; empty notes
@@ -16,11 +17,10 @@
 #   bug, never sanctioned behavior. Notes name the defective side and the
 #   planned fix.
 #
-# Schema: family -> case id -> note.
+# Schema: family -> case id -> exact normalized chunked (`got`) and single-shot
+# (`want`) outputs, plus raw `original` and `split` outputs for the interleave
+# consumer, which compares argument strings.
 
-# Empty on purpose — an explicit `{}` because the loader deserializes this file into a
-# map and a comments-only document reads as null.
-#
 # The last entry (glm47 TOOLCALLING.streamv1.5.h) was deleted when the streamv1 inputs
 # were normalized across families. It documented a real single-shot bug: on
 # `I will check that. </tool_call> ok` the single-shot parse read the prose word `that.`
@@ -29,4 +29,79 @@
 # the sweep now (correctly) reports the entry as STALE. The parser was not fixed — if
 # that recovery path is tightened later, add a case that reproduces it rather than
 # relying on this one.
-{}
+qwen3_coder:
+  TOOLCALLING.streamv1.7-4.nullable:
+    note: The Qwen3 Coder stream parser drops this nullable JSON-null tool call when chunked. PR #287 adds this case to expose the existing null-schema parser gap; remove this entry when the parser preserves the call at every chunking.
+    got:
+      calls: []
+      normal_text: ""
+    want:
+      calls: [[get_weather, {city: null}]]
+      normal_text: ""
+    raw:
+      original:
+        calls: []
+        normal_text: ""
+      split:
+        calls: []
+        normal_text: ""
+  TOOLCALLING.streamv1.7-5:
+    note: The Qwen3 Coder stream parser drops this schema-directed string-null tool call when chunked. PR #287 adds this case to expose the existing null-schema parser gap; remove this entry when the parser preserves the call at every chunking.
+    got:
+      calls: []
+      normal_text: ""
+    want:
+      calls: [[get_weather, {city: null}]]
+      normal_text: ""
+    raw:
+      original:
+        calls: []
+        normal_text: ""
+      split:
+        calls: []
+        normal_text: ""
+  TOOLCALLING.streamv1.7-5.enum:
+    note: The Qwen3 Coder stream parser drops this schema-directed string-null tool call when chunked. PR #287 adds this case to expose the existing null-schema parser gap; remove this entry when the parser preserves the call at every chunking.
+    got:
+      calls: []
+      normal_text: ""
+    want:
+      calls: [[get_weather, {city: null}]]
+      normal_text: ""
+    raw:
+      original:
+        calls: []
+        normal_text: ""
+      split:
+        calls: []
+        normal_text: ""
+  TOOLCALLING.streamv1.7-5.sibling_anyof:
+    note: The Qwen3 Coder stream parser drops this schema-directed string-null tool call when chunked. PR #287 adds this case to expose the existing null-schema parser gap; remove this entry when the parser preserves the call at every chunking.
+    got:
+      calls: []
+      normal_text: ""
+    want:
+      calls: [[get_weather, {city: null}]]
+      normal_text: ""
+    raw:
+      original:
+        calls: []
+        normal_text: ""
+      split:
+        calls: []
+        normal_text: ""
+  TOOLCALLING.streamv1.7-5.untyped_branch:
+    note: The Qwen3 Coder stream parser drops this schema-directed string-null tool call when chunked. PR #287 adds this case to expose the existing null-schema parser gap; remove this entry when the parser preserves the call at every chunking.
+    got:
+      calls: []
+      normal_text: ""
+    want:
+      calls: [[get_weather, {city: null}]]
+      normal_text: ""
+    raw:
+      original:
+        calls: []
+        normal_text: ""
+      split:
+        calls: []
+        normal_text: ""

@@ -132,11 +132,22 @@ def test_current_capture_guard_rejects_each_stale_dimension(tmp_path, dimension)
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
-def test_current_capture_guard_rejects_tools_when_input_and_capture_agree_on_stale_schema(tmp_path):
-    current = _input("same")
+@pytest.mark.parametrize("schema_type", ["string", ["string", "null"]])
+def test_current_capture_guard_accepts_the_executed_per_case_schema(tmp_path, schema_type):
+    current = _input("null") | {"tools": [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"city": {"type": schema_type}},
+    }}]}
     _write(tmp_path, "inputs", current)
     _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
-    with pytest.raises(ValueError, match="executable shared schema"):
+    assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
+
+
+def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
+    current = _input("same")
+    del current["tools"]
+    _write(tmp_path, "inputs", current)
+    _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
+    with pytest.raises(ValueError, match="executable tool schema"):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 

@@ -4,6 +4,21 @@
 use dynamo_renderer::{OAIPromptFormatter, deepseek::v41::DeepSeekV41Formatter};
 use serde_json::{Value, json};
 
+#[test]
+fn public_encoder_rejects_invalid_effort_before_normalization() {
+    use dynamo_renderer::deepseek::{common::ThinkingMode, v41::encode_messages};
+
+    // Invalid content would fail normalization; effort must be rejected first.
+    let invalid = vec![json!({"role": "user", "content": 42})];
+    for effort in [0, 101] {
+        let error = encode_messages(&invalid, ThinkingMode::Thinking, true, effort).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "DeepSeek V4.1 reasoning effort must be within 1–100"
+        );
+    }
+}
+
 struct Request {
     request: dynamo_protocols::types::CreateChatCompletionRequest,
     args: Option<std::collections::HashMap<String, Value>>,

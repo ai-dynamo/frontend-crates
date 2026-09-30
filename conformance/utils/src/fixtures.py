@@ -16,6 +16,8 @@ from pathlib import Path
 
 import yaml
 
+from null_cases import null_group
+from fixture_disposition import canonical_toolcalling_case_key
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
@@ -296,6 +298,8 @@ BATCH_SUB_CASE_GROUPS = [
             "7.d",
             "7.e",
             "7.f",
+            "7-4",
+            "7-5",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -376,21 +380,21 @@ def _natural_sub_sort_key(sub: str) -> tuple[int, str]:
 
 def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
     """Sort known cases by semantic display group, future cases naturally last."""
-    display_order = _display_order(mode).get(sub)
+    display_order = _display_order(mode).get(null_group(sub) or sub)
     if display_order is not None:
         group_idx, sub_idx = display_order
-        return (0, group_idx, sub_idx, "")
+        return (0, group_idx, sub_idx, sub)
     num, suffix = _natural_sub_sort_key(sub)
     return (1, num, 0, suffix)
 
 
 def _subcase_band_class(mode: str, sub: str) -> str:
-    group_idx = _group_index_by_sub(mode).get(sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
+    group_idx = _group_index_by_sub(mode).get(null_group(sub) or sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
     return f"case-band-{group_idx % 2}"
 
 
 def _subcase_group_key(mode: str, sub: str) -> str:
-    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(sub, "other")
+    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(null_group(sub) or sub, "other")
 
 
 def _discover_sub_cases(mode: str, cases: dict) -> list[str]:
@@ -532,6 +536,7 @@ def load_all_cases(
         for impl, ver in (doc.get("captured_with") or {}).items():
             captured_with.setdefault(_canonical_impl_key(str(impl)), str(ver))
         for cid, case in doc["cases"].items():
+            cid = canonical_toolcalling_case_key(cid)
             case["__family"] = family
             sub = cid.replace(f"TOOLCALLING.{mode}.", "")
             case["__fixture_path"] = rel
@@ -545,6 +550,8 @@ def load_all_cases(
                 case["expected"] = _derive_stream_expected(case)
             elif isinstance(case.get("expected"), dict):
                 case["expected"] = _normalize_impl_mapping(case["expected"])
+            if (family, sub) in cases:
+                raise ValueError(f"duplicate case after ID normalization: {family}/{cid}")
             cases[(family, sub)] = case
     _CAPTURED_WITH_BY_MODE[mode] = captured_with
     if mode == "streamv1":
@@ -604,12 +611,14 @@ def _derive_stream_expected(case: dict) -> dict:
             for chunk in chunks
             if isinstance(chunk, dict)
         )
-        if impl == "vllm_rust" and not has_chunk_data:
-            derived[impl] = {"unavailable": VLLM_RUST_UNAVAILABLE}
+        if not has_chunk_data:
+            derived[impl] = {"unavailable": (
+                VLLM_RUST_UNAVAILABLE if impl == "vllm_rust"
+                else "No recorded capture for this case."
+            )}
             continue
-        # impl is not in `unavailable` → it was run for this case. Always emit a
-        # {calls, normal_text} block, even if empty (emitting zero calls is a real
-        # result that may diverge from another impl, not a "not applicable").
+        # An explicit empty chunk is a recorded zero-call result; an absent
+        # implementation is unrecorded and must not become a successful empty output.
         names: dict[int, str] = {}
         args: dict[int, str] = {}
         order: list[int] = []

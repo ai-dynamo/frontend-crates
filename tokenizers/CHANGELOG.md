@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.9.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.9.1...dynamo-tokenizers-v1.9.2) - 2026-09-29
+
+### Performance
+
+- *(tokenizers)* Retain only prompt context in decode streams ([#281](https://github.com/ai-dynamo/frontend-crates/pull/281))
+
 ## [1.9.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.9.0...dynamo-tokenizers-v1.9.1) - 2026-09-22
 
 ### Performance

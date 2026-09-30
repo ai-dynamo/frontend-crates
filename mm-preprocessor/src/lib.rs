@@ -11,8 +11,8 @@
 //! over pre-resolved. The crate also carries what routers and engines must
 //! agree on: token accounting and content-hash identity
 //! ([`content_hash_bytes`], [`content_hash_canonical_image`]). The
-//! feature-gated `fetch` module is an optional trusted-source compatibility
-//! helper. Request orchestration — concurrency, caps, URL security policy,
+//! feature-gated `fetch` module exposes signatures only and currently returns
+//! [`MmError::Unsupported`]. Request orchestration — concurrency, caps, URL security policy,
 //! failure policy, packing — stays in the consumer's driver, as on the Python
 //! path; the README maps the boundary.
 //!

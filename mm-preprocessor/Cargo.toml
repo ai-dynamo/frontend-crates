@@ -13,9 +13,6 @@ homepage.workspace = true
 repository.workspace = true
 keywords = ["llm", "multimodal", "vision", "preprocessing", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
-# Flips to publishable once the `fetch` helper lands. release-plz mirrors this
-# (publish = false, release = false).
-publish = false
 
 [features]
 default = ["parallel"]

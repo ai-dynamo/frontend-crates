@@ -32,7 +32,7 @@ boot: locate model configs ────────►│  registry::spec_from_m
                                     │  pre-resolved spec) ─► build_processor
                                     │           ─► Box<dyn MmFamilyProcessor>
 per request:                        │
-image sources, caps ───────────────►│  fetch::fetch_bytes         ─► raw bytes
+image sources, caps ───────────────►│  fetch::fetch_bytes (stub)  ─► raw bytes
       ├─ supplied mm_hashes ───────►│  use unchanged
       ├─ bytes, no supplied hash ──►│  content_hash_bytes
       └─ bytes ────────────────────►│  image::decode::decode_rgb
@@ -55,7 +55,7 @@ router                              │   dynamo-mm-preprocessor (this crate)
 boot: locate model configs ────────►│  registry::spec_from_model_dir
                                     │    ─► build_processor ─► Box<dyn MmFamilyProcessor>
 per request                         │
-   image_url ──────────────────────►│  fetch::fetch_bytes         ─► raw bytes
+   image_url ──────────────────────►│  fetch::fetch_bytes (stub)  ─► raw bytes
       ├─ decoded image ────────────►│  content_hash_canonical_image
                                     │                           ─► cache-affinity key
       └─ bytes ────────────────────►│  image::decode::dimensions  ─► (h, w), header-only
@@ -72,7 +72,7 @@ prompt length (token costs)         │
 | `registry` | family selection from a typed/JSON spec, or resolved straight from the HF config files (the `AutoProcessor` entry) |
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
-| `fetch` *(feature)* | optional trusted-source compatibility helper (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets); not for untrusted request URLs |
+| `fetch` *(feature, stub)* | planned trusted-source compatibility helper (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets); currently returns `MmError::Unsupported`; not for untrusted request URLs |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -133,7 +133,7 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 | boot, per model | `registry::spec_from_model_dir` | config dir (hub download is the router's concern) → `ProcessorSpec`; `Err` = model unsupported |
 | boot, per model | `registry::build_processor` | `ProcessorSpec` → `Box<dyn MmFamilyProcessor>` |
 | per media part | consumer's protected fetcher | untrusted media source → raw bytes |
-| per trusted media part | `fetch::fetch_bytes` *(feature `fetch`)* | trusted media source → raw bytes; optional compatibility path |
+| per trusted media part | `fetch::fetch_bytes` *(feature `fetch`, stub)* | trusted media source → raw bytes once implemented; currently returns `MmError::Unsupported` |
 | per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
 | per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
@@ -276,11 +276,12 @@ Three layers, all pinned to bitwise-equality:
 
 ## 5. Roadmap
 
-The pipeline is implemented and golden-tested end to end for
-`models::qwen_vl`. What remains:
+The crate implements and golden-tests the image pipeline end to end
+for `models::qwen_vl`. What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
-   its implementation flips the crate to publishable.
+   the feature currently exposes signatures only, and every call returns
+   `MmError::Unsupported`.
 2. **Family coverage** — GLM and Kimi are the validated candidates after
    `models::qwen_vl`.
 
