@@ -20,21 +20,69 @@ def _assert_value(value, schema):
     # This corpus declares only these JSON Schema keywords; fail on additions so
     # a new constraint cannot silently bypass this producer-side check.
     assert schema.keys() <= {"type", "properties", "items"}, schema
-    kind = schema["type"]
-    if kind == "object":
-        assert isinstance(value, dict), value
+    kinds = schema["type"]
+    if isinstance(kinds, str):
+        kinds = [kinds]
+    matches = {
+        "object": isinstance(value, dict),
+        "array": isinstance(value, list),
+        "number": type(value) in (int, float),
+        # JSON Schema integers include numbers with a zero fractional part.
+        "integer": type(value) is int or (type(value) is float and value.is_integer()),
+        "string": isinstance(value, str),
+        "boolean": type(value) is bool,
+        "null": value is None,
+    }
+    assert isinstance(kinds, list) and kinds, schema
+    assert all(isinstance(kind, str) and kind in matches for kind in kinds), schema
+    assert any(matches[kind] for kind in kinds), value
+    if isinstance(value, dict):
         for key, item in value.items():
             if key in schema["properties"]:
                 _assert_value(item, schema["properties"][key])
-    elif kind == "array":
-        assert isinstance(value, list), value
+    elif isinstance(value, list):
         for item in value:
             _assert_value(item, schema["items"])
-    elif kind == "number":
-        assert type(value) in (int, float), value
-    else:
-        assert kind == "string", schema
-        assert isinstance(value, str), value
+
+
+@pytest.mark.parametrize("kind, valid, invalid", [
+    ("integer", [0, -2, 3, 2.0], [True, False, 1.5, "2", [], {}]),
+    ("number", [0, -2, 1.5], [True, False, "2", [], {}]),
+    ("string", ["", "text"], [0, 1.5, True, [], {}]),
+    ("boolean", [True, False], [0, 1, "true", [], {}]),
+    ("object", [{}, {"x": 2}], [0, "", True, []]),
+    ("array", [[], [2, None]], [0, "", True, {}]),
+])
+@pytest.mark.parametrize("nullable", [False, True])
+def test_schema_guard_valid_and_invalid_values(kind, valid, invalid, nullable):
+    schema = {"type": [kind, "null"] if nullable else kind}
+    if kind == "object":
+        schema["properties"] = {"x": {"type": "integer"}}
+    elif kind == "array":
+        schema["items"] = {"type": ["integer", "null"]}
+    for value in valid + ([None] if nullable else []):
+        _assert_value(value, schema)
+    for value in invalid + ([] if nullable else [None]):
+        with pytest.raises(AssertionError):
+            _assert_value(value, schema)
+
+
+def test_schema_guard_null_type():
+    _assert_value(None, {"type": "null"})
+    for value in (False, 0, "", [], {}):
+        with pytest.raises(AssertionError):
+            _assert_value(value, {"type": "null"})
+
+
+@pytest.mark.parametrize("value, schema", [
+    ({"x": True}, {"type": ["null", "object"], "properties": {"x": {"type": "integer"}}}),
+    ([1.5], {"type": ["null", "array"], "items": {"type": "integer"}}),
+    (None, {"type": ["null", "unsupported"]}),
+    (None, {"type": ["null", "integer"], "minimum": 0}),
+])
+def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, schema):
+    with pytest.raises(AssertionError):
+        _assert_value(value, schema)
 
 
 def _assert_golden_schemas(cases, tools):
