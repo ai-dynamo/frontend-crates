@@ -304,19 +304,231 @@ pub struct ImageUrl {
     pub uuid: Option<Uuid>,
 }
 
-/// Tool message content part with media observation support.
-///
-/// OpenAI's schema currently limits tool content parts to text, but
-/// OpenAI-compatible multimodal backends also accept image, video, and audio
-/// observations returned by tools.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(tag = "type")]
-#[serde(rename_all = "snake_case")]
-pub enum ChatCompletionRequestToolMessageContentPart {
+/// Non-text content with an extensible wire tag. Fields retain the complete
+/// content object except `type`, including processor payload and cache identity.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MultimodalContentPart {
+    pub kind: String,
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}
+
+impl MultimodalContentPart {
+    pub fn is_builtin_kind(kind: &str) -> bool {
+        matches!(
+            kind,
+            "image_url" | "video_url" | "audio_url" | "input_audio"
+        )
+    }
+
+    pub fn deserialize<T: serde::de::DeserializeOwned>(&self) -> Result<T, serde_json::Error> {
+        T::deserialize(&self.fields)
+    }
+}
+
+/// User and tool content share the same modality-neutral representation.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChatCompletionRequestUserMessageContentPart {
     Text(ChatCompletionRequestMessageContentPartText),
-    ImageUrl(ChatCompletionRequestMessageContentPartImage),
-    VideoUrl(ChatCompletionRequestMessageContentPartVideo),
-    AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    Multimodal(MultimodalContentPart),
+}
+
+pub type ChatCompletionRequestToolMessageContentPart = ChatCompletionRequestUserMessageContentPart;
+
+// Content objects must retain the duplicate-field rejection of typed serde
+// structs, including nested built-in media objects.
+struct ContentValue(serde_json::Value);
+
+impl<'de> Deserialize<'de> for ContentValue {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = serde_json::Value;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("JSON content")
+            }
+            fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<Self::Value, E> {
+                Ok(v.into())
+            }
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                Ok(v.into())
+            }
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                Ok(v.into())
+            }
+            fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<Self::Value, E> {
+                serde_json::Number::from_f64(v)
+                    .map(serde_json::Value::Number)
+                    .ok_or_else(|| E::custom("non-finite JSON number"))
+            }
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(v.into())
+            }
+            fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(v.into())
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Ok(serde_json::Value::Null)
+            }
+            fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Ok(serde_json::Value::Null)
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut values = Vec::new();
+                while let Some(ContentValue(value)) = seq.next_element()? {
+                    values.push(value);
+                }
+                Ok(values.into())
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                use serde::de::Error;
+                let mut fields = serde_json::Map::new();
+                while let Some(key) = map.next_key::<String>()? {
+                    if fields.contains_key(&key) {
+                        return Err(A::Error::custom(format!("duplicate field `{key}`")));
+                    }
+                    let ContentValue(value) = map.next_value()?;
+                    fields.insert(key, value);
+                }
+                Ok(fields.into())
+            }
+        }
+        deserializer.deserialize_any(Visitor).map(Self)
+    }
+}
+
+impl<'de> Deserialize<'de> for ChatCompletionRequestUserMessageContentPart {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let ContentValue(value) = ContentValue::deserialize(deserializer)?;
+        let serde_json::Value::Object(mut fields) = value else {
+            return Err(D::Error::custom("content part must be an object"));
+        };
+        let kind = fields
+            .remove("type")
+            .and_then(|v| v.as_str().map(str::to_owned))
+            .filter(|s| !s.is_empty() && s != "type")
+            .ok_or_else(|| D::Error::custom("content type must be a non-empty string"))?;
+        if kind == "text" {
+            return serde_json::from_value(serde_json::Value::Object(fields))
+                .map(Self::Text)
+                .map_err(D::Error::custom);
+        }
+        let mut part = MultimodalContentPart { kind, fields };
+        // Keep validation for established API shapes at the protocol boundary.
+        match part.kind.as_str() {
+            "image_url" => {
+                let media = part
+                    .deserialize::<ChatCompletionRequestMessageContentPartImage>()
+                    .map_err(D::Error::custom)?;
+                part.fields
+                    .insert("image_url".into(), serde_json::json!(media.image_url));
+            }
+            "video_url" => {
+                let media = part
+                    .deserialize::<ChatCompletionRequestMessageContentPartVideo>()
+                    .map_err(D::Error::custom)?;
+                part.fields
+                    .insert("video_url".into(), serde_json::json!(media.video_url));
+            }
+            "audio_url" => {
+                let media = part
+                    .deserialize::<ChatCompletionRequestMessageContentPartAudioUrl>()
+                    .map_err(D::Error::custom)?;
+                part.fields
+                    .insert("audio_url".into(), serde_json::json!(media.audio_url));
+            }
+            "input_audio" => {
+                part.deserialize::<ChatCompletionRequestMessageContentPartAudio>()
+                    .map_err(D::Error::custom)?;
+            }
+            _ if !part.fields.contains_key(&part.kind) => {
+                return Err(D::Error::custom(
+                    "content requires its matching payload field",
+                ));
+            }
+            _ => {}
+        }
+        Ok(Self::Multimodal(part))
+    }
+}
+
+impl Serialize for ChatCompletionRequestUserMessageContentPart {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        match self {
+            Self::Text(text) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "text")?;
+                map.serialize_entry("text", &text.text)?;
+                map.end()
+            }
+            Self::Multimodal(part) => {
+                let mut map = serializer.serialize_map(Some(part.fields.len() + 1))?;
+                map.serialize_entry("type", &part.kind)?;
+                for (key, value) in &part.fields {
+                    if key != "type" {
+                        map.serialize_entry(key, value)?;
+                    }
+                }
+                map.end()
+            }
+        }
+    }
+}
+
+impl ChatCompletionRequestUserMessageContentPart {
+    // Source-compatible constructors for callers using the established API types.
+    #[allow(non_snake_case)]
+    pub fn ImageUrl(value: ChatCompletionRequestMessageContentPartImage) -> Self {
+        let mut fields = serde_json::Map::new();
+        fields.insert("image_url".into(), serde_json::json!(value.image_url));
+        if let Some(uuid) = value.uuid {
+            fields.insert("uuid".into(), uuid.into());
+        }
+        Self::Multimodal(MultimodalContentPart {
+            kind: "image_url".into(),
+            fields,
+        })
+    }
+    #[allow(non_snake_case)]
+    pub fn VideoUrl(value: ChatCompletionRequestMessageContentPartVideo) -> Self {
+        let mut fields = serde_json::Map::new();
+        fields.insert("video_url".into(), serde_json::json!(value.video_url));
+        if let Some(uuid) = value.uuid {
+            fields.insert("uuid".into(), uuid.into());
+        }
+        Self::Multimodal(MultimodalContentPart {
+            kind: "video_url".into(),
+            fields,
+        })
+    }
+    #[allow(non_snake_case)]
+    pub fn AudioUrl(value: ChatCompletionRequestMessageContentPartAudioUrl) -> Self {
+        let mut fields = serde_json::Map::new();
+        fields.insert("audio_url".into(), serde_json::json!(value.audio_url));
+        if let Some(uuid) = value.uuid {
+            fields.insert("uuid".into(), uuid.into());
+        }
+        Self::Multimodal(MultimodalContentPart {
+            kind: "audio_url".into(),
+            fields,
+        })
+    }
+    #[allow(non_snake_case)]
+    pub fn InputAudio(value: ChatCompletionRequestMessageContentPartAudio) -> Self {
+        let mut fields = serde_json::Map::new();
+        fields.insert("input_audio".into(), serde_json::json!(value.input_audio));
+        Self::Multimodal(MultimodalContentPart {
+            kind: "input_audio".into(),
+            fields,
+        })
+    }
 }
 
 /// Tool message content, extended to preserve media observations.
@@ -671,22 +883,6 @@ impl From<Vec<ChatCompletionRequestUserMessageContentPart>>
     fn from(value: Vec<ChatCompletionRequestUserMessageContentPart>) -> Self {
         Self::Array(value)
     }
-}
-
-/// User message content part with video and audio URL support.
-///
-/// Extends upstream `ChatCompletionRequestUserMessageContentPart` with:
-/// - `VideoUrl`: video input for multimodal models
-/// - `AudioUrl`: audio URL input (distinct from base64 InputAudio)
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(tag = "type")]
-#[serde(rename_all = "snake_case")]
-pub enum ChatCompletionRequestUserMessageContentPart {
-    Text(ChatCompletionRequestMessageContentPartText),
-    ImageUrl(ChatCompletionRequestMessageContentPartImage),
-    VideoUrl(ChatCompletionRequestMessageContentPartVideo),
-    AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
-    InputAudio(ChatCompletionRequestMessageContentPartAudio),
 }
 
 /// System message with dynamic tool metadata support.
@@ -1638,7 +1834,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert_eq!(part.uuid.as_deref(), Some("image-123"));
                 assert_eq!(
                     part.image_url.as_ref().map(|image| image.url.as_str()),
@@ -1658,7 +1858,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert!(part.image_url.is_none());
                 assert_eq!(part.uuid.as_deref(), Some("sku-1234-a"));
             }
@@ -1693,7 +1897,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert!(part.image_url.is_none());
                 assert!(part.uuid.is_none());
             }
@@ -1745,7 +1953,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert_eq!(part.uuid.as_deref(), Some("img-ac3921de680bb217"));
             }
             _ => panic!("expected image_url part"),
@@ -1812,7 +2024,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::VideoUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "video_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartVideo =
+                    part.deserialize().unwrap();
                 assert!(part.video_url.is_none());
                 assert_eq!(part.uuid.as_deref(), Some("video-cache-key"));
             }
@@ -1829,7 +2045,11 @@ mod tests {
         }));
 
         match part {
-            ChatCompletionRequestUserMessageContentPart::AudioUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "audio_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartAudioUrl =
+                    part.deserialize().unwrap();
                 assert!(part.audio_url.is_none());
                 assert_eq!(part.uuid.as_deref(), Some("audio-cache-key"));
             }
@@ -1858,7 +2078,11 @@ mod tests {
 
         assert_eq!(parts.len(), 3);
         match &parts[1] {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert!(
                     part.image_url
                         .as_ref()
@@ -1870,7 +2094,11 @@ mod tests {
             _ => panic!("parts[1] should be image_url"),
         }
         match &parts[2] {
-            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+            ChatCompletionRequestUserMessageContentPart::Multimodal(part)
+                if part.kind == "image_url" =>
+            {
+                let part: ChatCompletionRequestMessageContentPartImage =
+                    part.deserialize().unwrap();
                 assert!(part.image_url.is_none());
                 assert_eq!(part.uuid.as_deref(), Some("image-1"));
             }
@@ -1914,16 +2142,16 @@ mod tests {
             panic!("expected array content");
         };
         assert!(matches!(
-            parts[1],
-            ChatCompletionRequestToolMessageContentPart::ImageUrl(_)
+            &parts[1],
+            ChatCompletionRequestToolMessageContentPart::Multimodal(part) if part.kind == "image_url"
         ));
         assert!(matches!(
-            parts[2],
-            ChatCompletionRequestToolMessageContentPart::VideoUrl(_)
+            &parts[2],
+            ChatCompletionRequestToolMessageContentPart::Multimodal(part) if part.kind == "video_url"
         ));
         assert!(matches!(
-            parts[3],
-            ChatCompletionRequestToolMessageContentPart::AudioUrl(_)
+            &parts[3],
+            ChatCompletionRequestToolMessageContentPart::Multimodal(part) if part.kind == "audio_url"
         ));
     }
 
@@ -2655,6 +2883,58 @@ mod tests {
             );
             assert!(message.name.is_none());
             assert!(message.tools.is_none());
+        }
+    }
+}
+
+#[cfg(test)]
+mod generic_content_tests {
+    use super::*;
+
+    #[test]
+    fn arbitrary_modalities_round_trip_with_sibling_fields() {
+        for payload in [
+            serde_json::json!({"atoms": ["C", "O"]}),
+            serde_json::json!([1, 2]),
+            serde_json::json!(null),
+            serde_json::json!(42),
+        ] {
+            let value =
+                serde_json::json!({"type":"chemistry", "chemistry":payload, "uuid":"sample"});
+            let part: ChatCompletionRequestUserMessageContentPart =
+                serde_json::from_value(value.clone()).unwrap();
+            assert!(
+                matches!(&part, ChatCompletionRequestUserMessageContentPart::Multimodal(p) if p.kind == "chemistry")
+            );
+            assert_eq!(serde_json::to_value(&part).unwrap(), value);
+            let tool: ChatCompletionRequestToolMessageContentPart =
+                serde_json::from_value(value.clone()).unwrap();
+            assert_eq!(serde_json::to_value(tool).unwrap(), value);
+        }
+    }
+
+    #[test]
+    fn custom_image_descriptor_is_not_an_image_url() {
+        let value = serde_json::json!({"type":"image", "image":{"shape":[49,3136], "url":"opaque-to-dynamo"}});
+        let part: ChatCompletionRequestUserMessageContentPart =
+            serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(serde_json::to_value(part).unwrap(), value);
+    }
+
+    #[test]
+    fn invalid_builtin_and_custom_shapes_are_rejected() {
+        for value in [
+            serde_json::json!({"type":"image_url", "image_url":{"url":"invalid-url"}}),
+            serde_json::json!({"type":"input_audio", "input_audio":{"data":"...", "format":"invalid"}}),
+            serde_json::json!({"type":"text", "text":42}),
+            serde_json::json!({"type":"chemistry", "wrong":{}}),
+            serde_json::json!({"type":"type", "payload":{}}),
+            serde_json::json!({"type":42}),
+        ] {
+            assert!(
+                serde_json::from_value::<ChatCompletionRequestUserMessageContentPart>(value)
+                    .is_err()
+            );
         }
     }
 }
