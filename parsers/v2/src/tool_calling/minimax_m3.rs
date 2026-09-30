@@ -211,6 +211,35 @@ mod tests {
     }
 
     #[test]
+    fn null_constraints_survive_every_chunk_boundary() {
+        let input = concat!(
+            "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">",
+            "]<]minimax[>[<location>null]<]minimax[>[</location>",
+            "]<]minimax[>[</invoke>]<]minimax[>[</tool_call>",
+        );
+        for (schema, expected) in [
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"const": null}]}),
+                "{\"location\":null}",
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [{"type": "null"}, {"type": "string"}]}),
+                "{\"location\":\"null\"}",
+            ),
+        ] {
+            let mut tools = weather_tools();
+            tools[0].parameters["properties"]["location"] = schema;
+            for split in 0..=input.len() {
+                let output =
+                    parse_chunks(&tools, &[&input[..split], &input[split..]]).coalesce_calls();
+                assert_eq!(output.calls.len(), 1, "split {split}");
+                assert_eq!(output.calls[0].arguments, expected, "split {split}");
+                assert!(output.calls[0].complete);
+            }
+        }
+    }
+
+    #[test]
     fn emits_complete_call_on_close() {
         let out = parse_chunks(
             &weather_tools(),

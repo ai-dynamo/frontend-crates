@@ -608,18 +608,46 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     Value::String(value)
 }
 
-// Reports whether the schema allows a JSON null, so the literal string "null"
-// may be coerced. An explicit `null` type, `nullable: true`, or a `null` member
-// of an `anyOf`/`oneOf` permits it; so does a schema with no `type` (and no
-// `anyOf`/`oneOf`), which is unconstrained. An explicit `string` type does not.
+// Test null against every sibling constraint before coercing the literal text.
 fn schema_permits_null(schema: &Value) -> bool {
-    if schema_has_type(Some(schema), "null") {
-        return true;
+    if let Some(allowed) = schema.as_bool() {
+        return allowed;
     }
-    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
-        return true;
+    if let Some(ty) = schema.get("type") {
+        let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+        if !nullable
+            && ty.as_str() != Some("null")
+            && !ty
+                .as_array()
+                .is_some_and(|types| types.iter().any(|ty| ty == "null"))
+        {
+            return false;
+        }
     }
-    schema.get("type").is_none() && schema.get("anyOf").is_none() && schema.get("oneOf").is_none()
+    if schema.get("const").is_some_and(|value| !value.is_null())
+        || schema
+            .get("enum")
+            .and_then(Value::as_array)
+            .is_some_and(|values| !values.iter().any(Value::is_null))
+    {
+        return false;
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+            let matches = branches
+                .iter()
+                .filter(|branch| schema_permits_null(branch))
+                .count();
+            if !match keyword {
+                "allOf" => matches == branches.len(),
+                "anyOf" => matches > 0,
+                _ => matches == 1,
+            } {
+                return false;
+            }
+        }
+    }
+    !schema.get("not").is_some_and(schema_permits_null)
 }
 
 // Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
@@ -684,6 +712,43 @@ fn html_unescape(s: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn null_coercion_intersects_schema_constraints() {
+        for (schema, expected) in [
+            (
+                json!({"anyOf": [{"type": "string"}, {"const": null}]}),
+                json!(null),
+            ),
+            (
+                json!({"type": "string", "anyOf": [{"type": "string"}, {"type": "null"}]}),
+                json!("null"),
+            ),
+            (
+                json!({"type": "string", "oneOf": [{"type": "string"}, {"type": "null"}]}),
+                json!("null"),
+            ),
+            (
+                json!({"type": "string", "anyOf": [{}, {"type": "integer"}]}),
+                json!("null"),
+            ),
+            (json!({"enum": ["null"]}), json!("null")),
+            (json!({"const": "null"}), json!("null")),
+            (
+                json!({"allOf": [{"type": ["string", "null"]}, {"type": "string"}]}),
+                json!("null"),
+            ),
+            (json!({"oneOf": [{}, {"type": "null"}]}), json!("null")),
+            (json!({"not": {"type": "null"}}), json!("null")),
+            (json!(false), json!("null")),
+        ] {
+            assert_eq!(
+                convert_scalar_value("null", Some(&schema)),
+                expected,
+                "{schema}"
+            );
+        }
+    }
 
     // Namespace token emitted before every M3 tag; keeps the test inputs readable.
     const TOK: &str = "]<]minimax[>[";
