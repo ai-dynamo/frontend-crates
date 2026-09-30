@@ -334,6 +334,7 @@ splits along four type-handling axes:
 - **`TOOLCALLING.batch.7.f`** Numeric precision edges. Integer-like number
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
+- **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.
 
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 

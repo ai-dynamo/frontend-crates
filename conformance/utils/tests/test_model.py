@@ -377,6 +377,41 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert "intersection" in rendered[0]
 
 
+def test_batch_mixed_grep_preserves_null_coercion_history(model_v2: dict) -> None:
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    sub = "7-4.mixed_grep"
+    columns = {column["sub"]: column for column in tab["columns"]}
+    assert sub in columns
+    assert columns[sub]["group_key"] == "args"
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
+    assert candidates["golden"]["parse_mode"] == "batch"
+    assert {"9.2.0", "9.2.1"} <= _peer_versions("toolcalling/fixtures-batch-v1")["dynamo_v1"]
+    reference = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    cell = row["cells"][sub]
+    assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
+    assert cell_state(cell, reference)[0] == "green"
+    tip = cell["tooltip"]
+    blocks = {candidate["key"]: candidate["block"] for candidate in tip["candidates"]}
+    assert blocks["golden"]["calls"] == [{"name": "grep", "arguments": {"pattern": "null", "path": None}}]
+    for key, pattern, state in (
+        ("dynamo_v1-b-9-2-0", None, "red"),
+        ("dynamo_v1-b-9-2-1", "null", "green"),
+    ):
+        assert cell_state(cell, candidates[key])[0] == state
+        assert blocks[key]["calls"] == [{"name": "grep", "arguments": {"pattern": pattern, "path": None}}]
+        assert blocks[key]["normal_text"] == ""
+    assert tip["input"]["kind"] == "text"
+    for name in ("pattern", "path"):
+        assert f"]<]minimax[>[<{name}>null]<]minimax[>[</{name}>" in tip["input"]["text"]
+    assert all(term in tip["description"] for term in ("strict: true", "schema", "string pattern", "nullable path", "anyOf"))
+    for row in tab["rows"]:
+        if row.get("family") and row["family"] != "minimax_m3":
+            cell = row["cells"][sub]
+            assert cell_state(cell, reference)[0] == "na", row["family"]
+            assert cell["tooltip"]["na_note"], row["family"]
+
+
 @pytest.mark.parametrize("changed_field,value,missing_family", [
     (None, None, None), ("starting_state", "Reasoning", None),
     ("tool_output_mode", "GuidedJson", None), ("named_tool", "get_weather", None),

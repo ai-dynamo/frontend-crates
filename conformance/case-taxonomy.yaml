@@ -94,6 +94,7 @@ suites:
           d: {desc: Nested object + array values, required: true}
           e: {desc: Large / deep argument payload, required: true}
           f: {desc: Numeric precision edge preserves integer-like literal, required: true}
+          "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
       "8":
         title: Narration around calls
         required: true
