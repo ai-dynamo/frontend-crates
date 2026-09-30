@@ -285,12 +285,7 @@ fn bare_recovery_surrounding_text(
 /// Parse a single tool call block
 /// Format: `<tool_call><function=name><parameter=key>value</parameter>...</function></tool_call>`
 ///
-/// Crate-visible so a streaming scanner that has ALREADY delimited exactly one
-/// invoke can type it directly. Routing such an invoke back through
-/// `try_tool_call_parse_xml` re-runs block discovery, which splits the block at
-/// the FIRST `</tool_call>` — truncating any argument value that legitimately
-/// contains that marker as data (`I7`).
-pub fn parse_tool_call_block(
+fn parse_tool_call_block(
     block: &str,
     config: &XmlParserConfig,
     tools: Option<&[ToolDefinition]>,
@@ -378,6 +373,53 @@ pub fn parse_tool_call_block(
     }
 
     Ok(results)
+}
+
+/// Type one Qwen invoke whose boundaries the shared scanner already owns.
+/// Parameter values are literal text with one optional framing newline at each
+/// end, as in Qwen's reference parser. Do not rediscover the function closer
+/// with a regex: the same bytes can occur inside a parameter value.
+pub fn parse_qwen_invoke(
+    invoke: &str,
+    tools: &[ToolDefinition],
+) -> anyhow::Result<Option<ToolCallResponse>> {
+    let Some(rest) = invoke.strip_prefix("<function=") else {
+        return Ok(None);
+    };
+    let Some((name, body)) = rest.split_once('>') else {
+        return Ok(None);
+    };
+    let name = strip_quotes(name.trim());
+    if name.is_empty() {
+        return Ok(None);
+    }
+    let Some(body) = body.strip_suffix("</function>") else {
+        return Ok(None);
+    };
+    let parameters_re = Regex::new(&build_block_pattern("<parameter=", "</parameter>", false))?;
+    let config = get_arguments_config(name, Some(tools));
+    let mut parameters: HashMap<String, ParsedValue> = HashMap::new();
+    for parameter in parameters_re.captures_iter(body) {
+        let key = strip_quotes(parameter.get(1).unwrap().as_str().trim());
+        if key.is_empty() {
+            continue;
+        }
+        let raw = parameter.get(2).unwrap().as_str();
+        let raw = raw.strip_prefix('\n').unwrap_or(raw);
+        let raw = raw.strip_suffix('\n').unwrap_or(raw);
+        parameters.insert(
+            key.into(),
+            convert_prepared_param_value(raw.to_owned(), key, &config, name),
+        );
+    }
+    Ok(Some(ToolCallResponse {
+        id: format!("call-{}", Uuid::new_v4()),
+        tp: ToolCallType::Function,
+        function: CalledFunction {
+            name: name.into(),
+            arguments: serde_json::to_string(&parameters)?,
+        },
+    }))
 }
 
 /// Extract argument configuration for a function from the tool definitions.
@@ -507,9 +549,20 @@ fn convert_param_value(
     param_config: &HashMap<String, Value>,
     func_name: &str,
 ) -> ParsedValue {
-    // HTML unescape and trim
-    let param_value = html_unescape(param_value.trim());
+    convert_prepared_param_value(
+        html_unescape(param_value.trim()),
+        param_name,
+        param_config,
+        func_name,
+    )
+}
 
+fn convert_prepared_param_value(
+    param_value: String,
+    param_name: &str,
+    param_config: &HashMap<String, Value>,
+    func_name: &str,
+) -> ParsedValue {
     // Handle null
     if param_value.to_lowercase() == "null" {
         return Value::Null.into();

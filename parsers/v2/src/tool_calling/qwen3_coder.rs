@@ -11,18 +11,18 @@
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
 //! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
 //! per-block value typing is delegated to the vendored batch XML parser via
-//! `parse_tool_call_block`, so a streamed call matches exactly what the batch
-//! parser produces. Arguments are re-serialized in the
+//! `parse_qwen_invoke`, which retains Qwen literal parameter text while reusing
+//! schema-directed value typing. Arguments are re-serialized in the
 //! source parameter order because the v1 parser builds them from a `HashMap`
 //! whose key order is non-deterministic; streaming fixtures store the arguments
 //! as an exact JSON string, so order has to be pinned to the model-emitted
 //! order (the order vLLM's Rust parser also preserves).
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    marker_prefix_suffix_len, reorder_arguments,
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
+    WrappedBlockScanner, WrappedBlockSpec, marker_prefix_suffix_len, reorder_arguments,
 };
-use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, parse_tool_call_block};
+use crate::tool_calling::v1core::{ToolDefinition, parse_qwen_invoke};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use std::collections::HashSet;
@@ -54,14 +54,87 @@ fn spec() -> WrappedBlockSpec {
         drop_invoke_crossing_block_end: false,
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
+            Box::new(QwenInvokeBoundary::default())
+        })),
         ..Default::default()
+    }
+}
+
+/// Cursor for the shared scanner's active invoke. Only a parameter closer
+/// releases ownership of a value; function and tool markers inside it are data.
+#[derive(Default)]
+struct QwenInvokeBoundary {
+    cursor: usize,
+    in_parameter: bool,
+    parameter_value_start: usize,
+}
+
+impl InvokeBoundary for QwenInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        loop {
+            let tail = &candidate[self.cursor..];
+            if self.in_parameter {
+                if let Some(end) = tail.find("</parameter>") {
+                    self.cursor += end + "</parameter>".len();
+                    self.in_parameter = false;
+                } else {
+                    if flush {
+                        return candidate[self.parameter_value_start..]
+                            .find(FUNCTION_END)
+                            .map(|at| self.parameter_value_start + at + FUNCTION_END.len());
+                    }
+                    self.cursor =
+                        candidate.len() - marker_prefix_suffix_len(tail, ["</parameter>"]);
+                    return None;
+                }
+            } else {
+                let parameter = tail.find(PARAMETER_START);
+                let close = tail.find(FUNCTION_END);
+                if let Some(close) = close
+                    && parameter.is_none_or(|parameter| close < parameter)
+                {
+                    return Some(self.cursor + close + FUNCTION_END.len());
+                }
+                if let Some(parameter) = parameter {
+                    self.cursor += parameter;
+                    let Some(header_end) = candidate[self.cursor..].find('>') else {
+                        return None;
+                    };
+                    self.cursor += header_end + 1;
+                    self.in_parameter = true;
+                    self.parameter_value_start = self.cursor;
+                } else {
+                    self.cursor = candidate.len()
+                        - marker_prefix_suffix_len(tail, [PARAMETER_START, FUNCTION_END]);
+                    return None;
+                }
+            }
+        }
+    }
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+    fn reset(&mut self) {
+        *self = Self::default();
     }
 }
 
 /// Value-typing hook: types one complete `<function=...></function>` block and
 /// re-orders the arguments to source order.
 pub(crate) struct Qwen3Emitter {
-    config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
     partial: Option<PartialStringArgument>,
 }
@@ -81,8 +154,8 @@ struct PartialStringArgument {
 
 struct ActiveStringParameter {
     value_cursor: usize,
-    pending_entity: String,
-    trailing_whitespace: String,
+    at_start: bool,
+    pending_newline: bool,
     started: bool,
     opener_pending: String,
 }
@@ -124,16 +197,17 @@ impl InvokeEmitter for Qwen3Emitter {
             if let Some(active) = partial.active.as_mut() {
                 let value = &invoke[active.value_cursor..];
                 let close = value.find("</parameter>");
-                let safe_end =
-                    close.unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value));
-                let decoded = decode_streamable_xml_text(
-                    &value[..safe_end],
-                    &mut active.pending_entity,
-                    close.is_some(),
-                );
-                active.value_cursor += safe_end;
+                // A function closer without a parameter closer is ambiguous until
+                // EOF. Retain it for legacy missing-parameter-close recovery; a
+                // later parameter closer confirms the bytes are literal data.
+                let safe_end = close.unwrap_or_else(|| {
+                    value
+                        .find(FUNCTION_END)
+                        .unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value))
+                });
                 let mut fragment = String::new();
-                append_trimmed_string_fragment(active, &decoded, &mut fragment);
+                append_literal_string_fragment(active, &value[..safe_end], &mut fragment);
+                active.value_cursor += safe_end;
                 if active.started && !active.opener_pending.is_empty() {
                     arguments.push_str(&active.opener_pending);
                     active.opener_pending.clear();
@@ -209,8 +283,8 @@ impl InvokeEmitter for Qwen3Emitter {
             opener.push_str(":\"");
             partial.active = Some(ActiveStringParameter {
                 value_cursor: value_start,
-                pending_entity: String::new(),
-                trailing_whitespace: String::new(),
+                at_start: true,
+                pending_newline: false,
                 started: false,
                 opener_pending: opener,
             });
@@ -234,15 +308,7 @@ impl InvokeEmitter for Qwen3Emitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        // Type this ONE invoke directly. Wrapping it back in `<tool_call>` and
-        // re-entering `try_tool_call_parse_xml` made the batch parser re-run
-        // block discovery, which cuts the block at the FIRST `</tool_call>` —
-        // so a parameter value that legitimately contains that marker was
-        // truncated (`<parameter=cmd>git log </tool_call> --oneline</parameter>`
-        // typed as `git log </tool_call>`). The scanner has already delimited
-        // the invoke, so re-discovering its bounds could only corrupt them.
-        let calls = parse_tool_call_block(invoke, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
+        let Some(call) = parse_qwen_invoke(invoke, &self.tools)? else {
             return Ok(None);
         };
         let arguments =
@@ -309,87 +375,43 @@ pub(crate) fn qwen3_scanner(tools: &[Tool]) -> WrappedBlockScanner<Qwen3Emitter>
     WrappedBlockScanner::new(
         spec(),
         Qwen3Emitter {
-            config: XmlParserConfig::default(),
             tools: tools.iter().map(ToolDefinition::from).collect(),
             partial: None,
         },
     )
 }
 
-fn append_trimmed_string_fragment(
+/// Drop only the framing newlines. Hold the last newline until another byte
+/// proves it belongs to the value, preserving all spaces and entity spellings.
+fn append_literal_string_fragment(
     active: &mut ActiveStringParameter,
-    decoded: &str,
+    raw: &str,
     output: &mut String,
 ) {
-    let decoded = if active.started {
-        decoded
-    } else {
-        decoded.trim_start()
-    };
-    let content_end = decoded.trim_end().len();
-    if content_end == 0 {
-        if active.started {
-            active.trailing_whitespace.push_str(decoded);
-        }
+    if raw.is_empty() {
         return;
     }
-    let mut fragment = std::mem::take(&mut active.trailing_whitespace);
-    fragment.push_str(&decoded[..content_end]);
+    let raw = if active.at_start {
+        active.at_start = false;
+        raw.strip_prefix('\n').unwrap_or(raw)
+    } else {
+        raw
+    };
+    if raw.is_empty() {
+        return;
+    }
+    let mut fragment = String::new();
+    if active.pending_newline {
+        fragment.push('\n');
+    }
+    active.pending_newline = raw.ends_with('\n');
+    fragment.push_str(if active.pending_newline {
+        &raw[..raw.len() - 1]
+    } else {
+        raw
+    });
     output.push_str(&json_string_fragment(&fragment));
-    active.started = true;
-    if content_end < decoded.len() {
-        active.trailing_whitespace.push_str(&decoded[content_end..]);
-    }
-}
-
-/// Decode only complete entities while retaining a bounded ambiguous suffix.
-fn decode_streamable_xml_text(raw: &str, pending: &mut String, flush: bool) -> String {
-    const ENTITIES: [(&str, &str); 9] = [
-        ("&amp;quot;", "\""),
-        ("&amp;#x27;", "'"),
-        ("&amp;#39;", "'"),
-        ("&lt;", "<"),
-        ("&gt;", ">"),
-        ("&amp;", "&"),
-        ("&quot;", "\""),
-        ("&#x27;", "'"),
-        ("&#39;", "'"),
-    ];
-    pending.push_str(raw);
-    let mut decoded = String::new();
-    let mut cursor = 0;
-    while cursor < pending.len() {
-        let rest = &pending[cursor..];
-        if rest.starts_with('&') {
-            if let Some((entity, replacement)) =
-                ENTITIES.iter().find(|(entity, _)| rest.starts_with(entity))
-            {
-                if !flush
-                    && ENTITIES
-                        .iter()
-                        .any(|(longer, _)| longer.len() > entity.len() && longer.starts_with(rest))
-                {
-                    break;
-                }
-                decoded.push_str(replacement);
-                cursor += entity.len();
-                continue;
-            }
-            if !flush && ENTITIES.iter().any(|(entity, _)| entity.starts_with(rest)) {
-                break;
-            }
-        }
-        let next_entity = rest
-            .char_indices()
-            .skip(1)
-            .find(|(_, character)| *character == '&')
-            .map(|(at, _)| at)
-            .unwrap_or(rest.len());
-        decoded.push_str(&rest[..next_entity]);
-        cursor += next_entity;
-    }
-    pending.drain(..cursor);
-    decoded
+    active.started |= !fragment.is_empty();
 }
 
 fn json_string_fragment(text: &str) -> String {
@@ -397,8 +419,7 @@ fn json_string_fragment(text: &str) -> String {
     encoded[1..encoded.len() - 1].to_string()
 }
 
-/// Keep a native function-close prefix out of an open parameter value without
-/// exposing it to the shared guided-decoding marker vocabulary.
+/// Hold split parameter and function closers until ownership is known.
 fn qwen_partial_suffix_len(value: &str) -> usize {
     marker_prefix_suffix_len(value, ["</parameter>", FUNCTION_END])
 }
@@ -455,7 +476,11 @@ fn source_parameter_order(function: &str) -> Vec<String> {
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + header_end + 1;
+        let value_start = start + header_end + 1;
+        let Some(close) = function[value_start..].find("</parameter>") else {
+            break;
+        };
+        cursor = value_start + close + "</parameter>".len();
     }
     names
 }
@@ -502,6 +527,31 @@ mod tests {
     }
 
     #[test]
+    fn missing_parameter_close_recovers_at_eof_at_every_split() {
+        let input = "<tool_call>\n<function=get_weather>\n<parameter=location>\nNYC\n</function>\n</tool_call>";
+        for split in 0..=input.len() {
+            let output = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]])
+                .coalesce_calls();
+            assert_eq!(output.calls.len(), 1, "split {split}");
+            assert_eq!(
+                output.calls[0].arguments, r#"{"location":"NYC"}"#,
+                "split {split}"
+            );
+        }
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(at, c)| &input[at..at + c.len_utf8()])
+            .collect();
+        assert_eq!(
+            parse_chunks(&weather_tools(), &chunks)
+                .coalesce_calls()
+                .calls[0]
+                .arguments,
+            r#"{"location":"NYC"}"#
+        );
+    }
+
+    #[test]
     fn emits_complete_call_on_close() {
         let out = parse_chunks(
             &weather_tools(),
@@ -517,8 +567,8 @@ mod tests {
         assert_eq!(out.calls.len(), 1);
         assert_eq!(out.calls[0].tool_index, 0);
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
-        assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+        // Spaces belong to the string; only optional framing newlines are removed.
+        assert_eq!(out.calls[0].arguments, r#"{"location":" NYC "}"#);
     }
 
     #[test]
@@ -831,7 +881,7 @@ mod tests {
     }
 
     #[test]
-    fn defers_html_entities_until_complete_typing() {
+    fn streams_entity_spellings_as_literal_text() {
         let input = "<tool_call><function=get_weather><parameter=location>BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM</parameter></function></tool_call>";
         let entity = input.find('&').unwrap();
         let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
@@ -855,7 +905,7 @@ mod tests {
             .iter()
             .map(|call| call.arguments.as_str())
             .collect();
-        assert!(emitted_before_close.contains("&-LONG-TAIL-THAT-MUST-STREAM"));
+        assert!(emitted_before_close.contains("&amp;-LONG-TAIL-THAT-MUST-STREAM"));
 
         before_entity.append(parser.push(&input[close..]).expect("close"));
         before_entity.append(parser.finish().expect("finish"));
@@ -866,12 +916,12 @@ mod tests {
                 .into_iter()
                 .map(|call| call.arguments)
                 .collect::<String>(),
-            r#"{"location":"BEGIN-&-LONG-TAIL-THAT-MUST-STREAM"}"#
+            r#"{"location":"BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM"}"#
         );
     }
 
     #[test]
-    fn longer_entity_prefix_waits_for_disambiguation() {
+    fn entity_spellings_are_chunk_invariant() {
         let input = "<tool_call><function=get_weather><parameter=location>&amp;quot;tail</parameter></function></tool_call>";
         let split = input.find("&amp;").unwrap() + "&amp;".len();
         let baseline = parse_chunks(&weather_tools(), &[input]).coalesce_calls();

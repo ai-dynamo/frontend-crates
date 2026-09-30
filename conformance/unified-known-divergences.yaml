@@ -112,7 +112,3 @@ qwen3:
       note: Qwen3 streaming drops this schema-directed string-null call while parse_complete returns JSON null; this is the behavior targeted by Michael Feil's PR #251.
       batch: 'tool_call(get_weather, {"city":null})'
       stream: ""
-  UNIFIED.deepseek_v41_mixed_control_text_in_string.qwen3:
-    golden:
-      note: Qwen3 does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
-      actual: 'tool_call(f, {"x":"<think>quoted</think> <tool_call> </tool_call>"})'
