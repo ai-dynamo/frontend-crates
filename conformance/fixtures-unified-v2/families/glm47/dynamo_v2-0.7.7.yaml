@@ -1,0 +1,187 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.7
+    git_commit: 67ed13c0a5d468714b7ff0ed7d49b6f8dd917979
+    source_sha256: ba9d15ffd57262c46b4e84071ae9751f591a4e458b0f98bf3699775f1bb04d87
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: e0bd137d2ba081c157c71cdabb937e66ecb427219323267b53233a1645e8582e
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4.anyof
+    stimulus:
+      ref: current
+      semantic_sha256: eccac08560e92e7f65b30f294c5bc3322d014adf96b982adef66664f35a2efff
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4.const
+    stimulus:
+      ref: current
+      semantic_sha256: c404aa59a3efee0e018e00744443b4dfba4eeca1ac5667d9c798082326918aac
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4.nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 379e97a02c3f2db0b30e5b36bce0c2d7ac5fecd903bc49e8feb786147da856b6
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4.oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 73c36b22ca48a1be302a7e657b1cf97ea8d29d3111fd26946788132d0287b6b3
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
+metadata_changes: {}
+document_overrides: {}

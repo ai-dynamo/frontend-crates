@@ -482,19 +482,74 @@ impl StackItem {
             return Some(item_schema);
         }
 
-        let schema = self.schema.as_ref()?;
-        if let Some(child_schema) = schema
-            .get("properties")
-            .and_then(|properties| properties.get(tag))
-        {
-            return Some(child_schema.clone());
-        }
-
-        schema
-            .get("additionalProperties")
-            .filter(|additional| additional.is_object())
-            .cloned()
+        self.schema
+            .as_ref()
+            .and_then(|schema| schema_for_object_child(schema, tag))
     }
+}
+
+// Conservatively reject branches that cannot describe the object identified by XML.
+// Object-valued literals and unknown constraints remain possible, preserving ambiguity.
+fn schema_may_describe_object(schema: &Value) -> bool {
+    if schema == &Value::Bool(false) {
+        return false;
+    }
+    if let Some(ty) = schema.get("type") {
+        let object = ty.as_str() == Some("object")
+            || ty
+                .as_array()
+                .is_some_and(|types| types.iter().any(|ty| ty == "object"));
+        if !object {
+            return false;
+        }
+    }
+    if schema.get("const").is_some_and(|value| !value.is_object())
+        || schema
+            .get("enum")
+            .and_then(Value::as_array)
+            .is_some_and(|values| !values.iter().any(Value::is_object))
+    {
+        return false;
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+            let possible = if keyword == "allOf" {
+                branches.iter().all(schema_may_describe_object)
+            } else {
+                branches.iter().any(schema_may_describe_object)
+            };
+            if !possible {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+// Nested XML identifies an object, but does not select among object variants.
+// Follow a union only when exactly one branch can describe that object.
+fn schema_for_object_child(schema: &Value, tag: &str) -> Option<Value> {
+    if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+        return Some(child.clone());
+    }
+    if let Some(additional) = schema
+        .get("additionalProperties")
+        .filter(|value| value.is_object())
+    {
+        return Some(additional.clone());
+    }
+    let branches = match (schema.get("anyOf"), schema.get("oneOf")) {
+        (Some(branches), None) | (None, Some(branches)) => branches.as_array()?,
+        _ => return None,
+    };
+    let mut objects = branches
+        .iter()
+        .filter(|branch| schema_may_describe_object(branch));
+    let object = objects.next()?;
+    if objects.next().is_some() {
+        return None;
+    }
+    schema_for_object_child(object, tag)
 }
 
 // Looks up the selected tool's parameter schema so parsed strings can be type-coerced.
@@ -509,7 +564,12 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
                 return Map::new();
             };
             if let Some(properties) = params.get("properties").and_then(Value::as_object) {
-                return properties.clone();
+                return properties
+                    .iter()
+                    .map(|(name, schema)| {
+                        (name.clone(), resolve_parameter_ref(schema, params).clone())
+                    })
+                    .collect();
             }
             if let Some(params_obj) = params.as_object() {
                 return params_obj.clone();
@@ -522,17 +582,52 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
     Map::new()
 }
 
+// Resolve local references on a parameter before selecting its XML value type.
+// Leave unknown references and cycles untouched; do not discard sibling constraints.
+fn resolve_parameter_ref<'a>(schema: &'a Value, root: &'a Value) -> &'a Value {
+    let mut current = schema;
+    let mut visited = Vec::new();
+    while let Some(reference) = current.get("$ref").and_then(Value::as_str) {
+        if current.as_object().is_some_and(|object| {
+            object.keys().any(|key| {
+                !matches!(
+                    key.as_str(),
+                    "$ref" | "title" | "description" | "default" | "examples" | "$comment"
+                )
+            })
+        }) || visited.contains(&reference)
+        {
+            return schema;
+        }
+        let Some(target) = reference
+            .strip_prefix('#')
+            .and_then(|pointer| root.pointer(pointer))
+        else {
+            return schema;
+        };
+        visited.push(reference);
+        current = target;
+    }
+    current
+}
+
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
 fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     let value = html_unescape(raw);
     let trimmed = value.trim();
-    if trimmed.eq_ignore_ascii_case("null") {
-        return Value::Null;
-    }
 
+    // Without a schema, preserve the literal text instead of inventing a type.
     let Some(schema) = schema else {
         return Value::String(value);
     };
+
+    if trimmed.eq_ignore_ascii_case("null") {
+        return if schema_permits_null(schema) {
+            Value::Null
+        } else {
+            Value::String(value)
+        };
+    }
 
     if schema_has_type(Some(schema), "string") || schema_has_type(Some(schema), "enum") {
         return Value::String(value);
@@ -587,6 +682,50 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     }
 
     Value::String(value)
+}
+
+// Evaluate the constraints relevant to the JSON null value. Sibling keywords
+// intersect; oneOf requires exactly one matching branch. Other value types keep
+// the parser's existing coercion rules.
+fn schema_permits_null(schema: &Value) -> bool {
+    if let Some(allowed) = schema.as_bool() {
+        return allowed;
+    }
+    if let Some(ty) = schema.get("type") {
+        let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+        if !nullable
+            && ty.as_str() != Some("null")
+            && !ty
+                .as_array()
+                .is_some_and(|types| types.iter().any(|ty| ty == "null"))
+        {
+            return false;
+        }
+    }
+    if schema.get("const").is_some_and(|value| !value.is_null())
+        || schema
+            .get("enum")
+            .and_then(Value::as_array)
+            .is_some_and(|values| !values.iter().any(Value::is_null))
+    {
+        return false;
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+            let matches = branches
+                .iter()
+                .filter(|branch| schema_permits_null(branch))
+                .count();
+            if !match keyword {
+                "allOf" => matches == branches.len(),
+                "anyOf" => matches > 0,
+                _ => matches == 1,
+            } {
+                return false;
+            }
+        }
+    }
+    !schema.get("not").is_some_and(schema_permits_null)
 }
 
 // Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
@@ -663,6 +802,34 @@ mod tests {
             call.function.name.clone(),
             serde_json::from_str(&call.function.arguments).expect("valid JSON arguments"),
         )
+    }
+
+    #[test]
+    fn literal_grep_pattern_null_stays_string_while_nullable_fields_become_null() {
+        let tools = vec![ToolDefinition {
+            name: "grep".into(),
+            parameters: Some(serde_json::json!({
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "path": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                }
+            })),
+            strict: Some(true),
+        }];
+        let input = concat!(
+            "]<]minimax[>[<tool_call>",
+            "]<]minimax[>[<invoke name=\"grep\">",
+            "]<]minimax[>[<pattern>null]<]minimax[>[</pattern>",
+            "]<]minimax[>[<path>null]<]minimax[>[</path>",
+            "]<]minimax[>[</invoke>",
+            "]<]minimax[>[</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_minimax_m3(input, &MiniMaxM3ParserConfig::default(), Some(&tools))
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let (_, args) = call_name_and_args(&calls[0]);
+        assert_eq!(args, serde_json::json!({"pattern": "null", "path": null}));
     }
 
     #[test]
@@ -778,5 +945,234 @@ NS|</tool_call>"#;
         assert_eq!(name, "create_order");
         assert_eq!(args["shipping"]["city"], "Singapore");
         assert_eq!(args["shipping"]["zip"], 18956);
+    }
+    #[test]
+    fn null_coercion_respects_full_schema_constraints() {
+        for (label, schema, expected) in [
+            (
+                "7-4",
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.anyof",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.oneof",
+                serde_json::json!({"oneOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.nullable",
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.const",
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-5",
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.union",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_anyof",
+                serde_json::json!({"type": "string", "anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_oneof",
+                serde_json::json!({"type": ["string", "null"], "oneOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.untyped_branch",
+                serde_json::json!({"type": "string", "anyOf": [{"minLength": 1}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.const",
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.enum",
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "allof_string",
+                serde_json::json!({"allOf": [{"type": ["string", "null"]}, {"type": "string"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_string",
+                serde_json::json!({"const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "enum_string",
+                serde_json::json!({"enum": ["null"]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_null",
+                serde_json::json!({"const": null}),
+                serde_json::json!(null),
+            ),
+            (
+                "enum_null",
+                serde_json::json!({"enum": [null]}),
+                serde_json::json!(null),
+            ),
+            (
+                "const_intersection",
+                serde_json::json!({"type": ["string", "null"], "const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "oneof_overlap",
+                serde_json::json!({"oneOf": [{"type": "null"}, {}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "not_null",
+                serde_json::json!({"type": ["string", "null"], "not": {"type": "null"}}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "get_weather".into(),
+                parameters: Some(serde_json::json!({"type":"object","properties":{"city":schema}})),
+                strict: None,
+            }];
+            let wire = "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<city>null]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>";
+            let (calls, _) = try_tool_call_parse_minimax_m3(
+                wire,
+                &MiniMaxM3ParserConfig::default(),
+                Some(&tools),
+            )
+            .unwrap();
+            assert_eq!(calls.len(), 1, "{label}");
+            let args: serde_json::Value =
+                serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args["city"], expected, "{label}");
+        }
+    }
+
+    #[test]
+    fn nested_union_object_types_and_ambiguity() {
+        let tok = "]<]minimax[>[";
+        let config = MiniMaxM3ParserConfig::default();
+        // MOD2-167: nullable pagination and the object branch of the stress schema.
+        for union in ["anyOf", "oneOf"] {
+            let schema = serde_json::json!({union: [
+                {"type":"object","properties":{"page":{"type":"integer","minimum":1},"per_page":{"type":"integer","minimum":1,"maximum":100}}},
+                {"type":"null"}
+            ]});
+            let raw = format!("{tok}<page>2{tok}</page>{tok}<per_page>25{tok}</per_page>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(schema), &config),
+                serde_json::json!({"page":2,"per_page":25})
+            );
+            let object = serde_json::json!({"type":"object","properties":{"enabled":{"type":"boolean"},"mode":{"type":"string","enum":["one","two","three","four"]}},"required":["enabled"]});
+            let schema = serde_json::json!({union:[{"type":"string"},{"type":"array","items":{"type":"string"},"maxItems":20},object]});
+            let raw = format!("{tok}<enabled>true{tok}</enabled>{tok}<mode>one{tok}</mode>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(schema), &config),
+                serde_json::json!({"enabled":true,"mode":"one"})
+            );
+            // Literal-only and composed non-object branches cannot make the object ambiguous.
+            for alternative in [
+                serde_json::json!({"enum": [null]}),
+                serde_json::json!({"const": null}),
+                serde_json::json!({"enum": [null, "text", 2, []]}),
+                serde_json::json!({"type": ["object", "null"], "const": null}),
+                serde_json::json!({"allOf": [{"enum": [null]}, {}]}),
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::json!(false),
+            ] {
+                let schema = serde_json::json!({union: [
+                    {"type":"object","properties":{"page":{"type":"integer"}}}, alternative
+                ]});
+                let raw = format!("{tok}<page>2{tok}</page>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&raw, Some(schema), &config),
+                    serde_json::json!({"page":2}),
+                    "{union}: {alternative}"
+                );
+            }
+            for alternative in [
+                serde_json::json!({"type":"object"}),
+                serde_json::json!({"enum":[null, {"value":"2"}]}),
+                serde_json::json!({"const":{"value":"2"}}),
+                serde_json::json!(true),
+                serde_json::json!({}),
+                serde_json::json!({"type":"object","properties":{"value":{"type":"string"}}}),
+            ] {
+                let schema = serde_json::json!({union:[{"type":"object","properties":{"value":{"type":"integer"}}}, alternative]});
+                let raw = format!("{tok}<value>2{tok}</value>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&raw, Some(schema), &config),
+                    serde_json::json!({"value":"2"})
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn local_ref_object_argument_accepts_json_text() {
+        let parameters = serde_json::json!({
+            "$defs": {"Payload": {"type": "object"}},
+            "properties": {"data": {"$ref": "#/$defs/Payload"}}
+        });
+        let tools = vec![ToolDefinition {
+            name: "capture".into(),
+            parameters: Some(parameters),
+            strict: Some(true),
+        }];
+        let raw = "]<]minimax[>[<data>{\"input\":\"Alex\"}]<]minimax[>[</data>";
+        let actual = parse_parameters(
+            "capture",
+            raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            serde_json::json!({"data":{"input":"Alex"}})
+        );
+    }
+
+    #[test]
+    fn parameter_refs_handle_chains_escaped_names_and_unknown_targets() {
+        let root = serde_json::json!({"$defs":{
+            "alias":{"$ref":"#/$defs/a~1b~0c"},
+            "a/b~c":{"type":"object"},
+            "cycle":{"$ref":"#/$defs/cycle"}
+        }});
+        let chain = serde_json::json!({"$ref":"#/$defs/alias","description":"value"});
+        assert_eq!(
+            resolve_parameter_ref(&chain, &root),
+            &serde_json::json!({"type":"object"})
+        );
+        for schema in [
+            serde_json::json!({"$ref":"#/$defs/missing"}),
+            serde_json::json!({"$ref":"https://example.test/schema"}),
+            serde_json::json!({"$ref":"#/$defs/cycle"}),
+            serde_json::json!({"$ref":"#/$defs/alias","type":"string"}),
+        ] {
+            assert_eq!(resolve_parameter_ref(&schema, &root), &schema);
+        }
     }
 }

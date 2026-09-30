@@ -6,7 +6,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use num_traits::ToPrimitive;
 use regex::Regex;
 use serde_json::Value;
 use uuid::Uuid;
@@ -475,9 +474,6 @@ fn get_arguments_config(
 ///
 /// **Special cases:**
 /// ```text
-/// Input:  param_value="null", param_type=<any>
-/// Output: Value::Null  // Handled before type checking
-///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
 /// Output: Value::String("<tag>")  // HTML entities are unescaped
 ///
@@ -510,8 +506,13 @@ fn convert_param_value(
     // HTML unescape and trim
     let param_value = html_unescape(param_value.trim());
 
-    // Handle null
-    if param_value.to_lowercase() == "null" {
+    if param_value.eq_ignore_ascii_case("null") {
+        if param_config.get(param_name).is_some_and(|schema| {
+            let allowed = collect_allowed_types(schema);
+            allowed.contains(&SchemaType::String) && !allowed.contains(&SchemaType::Null)
+        }) {
+            return Value::String(param_value).into();
+        }
         return Value::Null.into();
     }
 
@@ -588,55 +589,9 @@ fn convert_param_value(
             }
         }
 
-        // Float/Number types: Parse integer-looking tokens before f64 to avoid
-        // precision loss above f64's exact integer range.
-        // Matches: "number", "num", "float", "float32", "float64", "double", etc.
-        // Note: Whole numbers (e.g., 42.0) are stored as integers for better JSON compatibility
-        // when they fit in i64. Larger finite whole numbers must not be cast with `as i64`,
-        // which saturates to i64::MIN/MAX and corrupts model-emitted arguments.
+        // Preserve valid JSON number text without a floating-point roundtrip.
         t if t.starts_with("num") || t.starts_with("float") => {
-            if is_integer_literal(&param_value) {
-                if let Ok(int_val) = param_value.parse::<i64>() {
-                    Value::Number(int_val.into()).into()
-                } else if let Some(raw) = raw_number_literal(&param_value) {
-                    raw
-                } else {
-                    Value::String(param_value).into()
-                }
-            } else {
-                match param_value.parse::<f64>() {
-                    Ok(float_val) => {
-                        if float_val.fract() == 0.0 && float_val.is_finite() {
-                            if let Some(int_val) = float_val.to_i64() {
-                                Value::Number(int_val.into()).into()
-                            } else if let Some(raw) = raw_number_literal(&param_value) {
-                                raw
-                            } else {
-                                Value::String(param_value).into()
-                            }
-                        } else if let Some(num) = serde_json::Number::from_f64(float_val) {
-                            Value::Number(num).into()
-                        } else {
-                            tracing::warn!(
-                                "Parsed value '{}' of parameter '{}' is not a valid float in tool '{}', degenerating to string.",
-                                param_value,
-                                param_name,
-                                func_name
-                            );
-                            Value::String(param_value).into()
-                        }
-                    }
-                    Err(_) => {
-                        tracing::warn!(
-                            "Parsed value '{}' of parameter '{}' is not a float in tool '{}', degenerating to string.",
-                            param_value,
-                            param_name,
-                            func_name
-                        );
-                        Value::String(param_value).into()
-                    }
-                }
-            }
+            coerce_number_value(&param_value).unwrap_or_else(|| Value::String(param_value).into())
         }
 
         // Boolean types: Only "true" or "false" (case-insensitive) are valid.
@@ -753,14 +708,14 @@ fn categorize_type(name: &str) -> Option<SchemaType> {
 }
 
 /// Collect the set of types a (possibly union) schema allows, walking
-/// `type` (string or array), `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
+/// `type`, `const`/`enum`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
 fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
-    let mut out = HashSet::new();
-    collect_allowed_types_into(schema, &mut out);
-    out
+    collect_type_constraints(schema).unwrap_or_default()
 }
 
-fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
+// None is an absent type constraint, not an empty intersection.
+fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
+    let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
             if let Some(cat) = categorize_type(name) {
@@ -774,19 +729,47 @@ fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
             }
         }
     }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(options) = schema.get(key).and_then(Value::as_array) {
-            for option in options {
-                collect_allowed_types_into(option, out);
-            }
-        }
+    if out.contains(&SchemaType::Number) {
+        out.insert(SchemaType::Integer);
     }
     if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
         out.insert(SchemaType::Null);
     }
+    let mut constraints = Vec::new();
+    if !out.is_empty() {
+        constraints.push(out);
+    }
+    if let Some(value) = schema.get("const") {
+        constraints.push(literal_type_constraints(value));
+    }
+    if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+        constraints.push(values.iter().flat_map(literal_type_constraints).collect());
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            let branches = options.iter().map(collect_type_constraints);
+            if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
+                constraints.push(alternatives.into_iter().flatten().collect());
+            }
+        }
+    }
+    constraints.into_iter().reduce(|mut left, right| {
+        left.retain(|ty| right.contains(ty));
+        left
+    })
 }
 
-/// The category a parsed JSON value belongs to (integers report as `Integer`).
+// A float-backed schema literal has already passed through f64: an integral-looking
+// value may have originated as a large fraction. Retain the number alternative.
+// Explicit integer types still intersect this set and exclude fractional arguments.
+fn literal_type_constraints(value: &Value) -> HashSet<SchemaType> {
+    match value_category(value) {
+        SchemaType::Number => HashSet::from([SchemaType::Integer, SchemaType::Number]),
+        category => HashSet::from([category]),
+    }
+}
+
+/// The storage category, without inferring mathematical integrality from f64.
 fn value_category(v: &Value) -> SchemaType {
     match v {
         Value::String(_) => SchemaType::String,
@@ -810,6 +793,68 @@ fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
     allowed.contains(&cat) || (cat == SchemaType::Integer && allowed.contains(&SchemaType::Number))
 }
 
+fn coerce_number_value(value: &str) -> Option<ParsedValue> {
+    if let Some(integer) = coerce_integral_number(value) {
+        return Some(integer);
+    }
+    if value.starts_with(|ch: char| ch == '-' || ch.is_ascii_digit())
+        && let Some(number) = raw_number_literal(value)
+    {
+        return Some(number);
+    }
+    // Preserve the historical acceptance of non-JSON spellings such as +1 or .5.
+    value
+        .parse::<f64>()
+        .ok()
+        .and_then(serde_json::Number::from_f64)
+        .map(|number| Value::Number(number).into())
+}
+
+// JSON Schema integers include decimal/exponent spellings with no fractional part.
+// Work on digits so large integers and near-integers are never rounded through f64.
+fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
+    if is_integer_literal(value) {
+        return coerce_integer_literal(value);
+    }
+    let raw = raw_number_literal(value)?;
+    let unsigned = value.strip_prefix('-').unwrap_or(value);
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => (mantissa, exponent.parse::<i64>().ok()?),
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    if whole.is_empty()
+        || !whole
+            .bytes()
+            .chain(fraction.bytes())
+            .all(|b| b.is_ascii_digit())
+    {
+        return None;
+    }
+    let digits = format!("{whole}{fraction}");
+    let significant = digits.trim_start_matches('0').trim_end_matches('0');
+    if significant.is_empty() {
+        return Some(Value::Number(0.into()).into());
+    }
+    let trailing = digits.len() - digits.trim_end_matches('0').len();
+    let zeros = exponent
+        .checked_sub(i64::try_from(fraction.len()).ok()?)?
+        .checked_add(i64::try_from(trailing).ok()?)?;
+    if zeros < 0 {
+        return None;
+    }
+    // Keep very large numbers in their original exact JSON spelling rather than
+    // allocating an exponent-sized string. Twenty digits cover i64/u64 values.
+    if zeros > 20 || significant.len() > 20 - zeros as usize {
+        return Some(raw);
+    }
+    let sign = if value.starts_with('-') { "-" } else { "" };
+    coerce_integer_literal(&format!(
+        "{sign}{significant}{}",
+        "0".repeat(zeros as usize)
+    ))
+}
+
 /// Coerce a raw XML value to one of the types a union schema allows. Tries
 /// structured (object/array) parsing only when the union permits it, then
 /// integer, number, and boolean, and finally falls back to a string. A value
@@ -831,29 +876,15 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
     }
 
     if allowed.contains(&SchemaType::Integer)
-        && is_integer_literal(value)
-        && let Some(coerced) = coerce_integer_literal(value)
+        && let Some(coerced) = coerce_integral_number(value)
     {
         return coerced;
     }
 
-    if allowed.contains(&SchemaType::Number) {
-        if is_integer_literal(value)
-            && let Some(coerced) = coerce_integer_literal(value)
-        {
-            return coerced;
-        }
-        if let Ok(f) = value.parse::<f64>() {
-            if f.fract() == 0.0
-                && f.is_finite()
-                && let Some(i) = f.to_i64()
-            {
-                return Value::Number(i.into()).into();
-            }
-            if let Some(num) = serde_json::Number::from_f64(f) {
-                return Value::Number(num).into();
-            }
-        }
+    if allowed.contains(&SchemaType::Number)
+        && let Some(number) = coerce_number_value(value)
+    {
+        return number;
     }
 
     if allowed.contains(&SchemaType::Boolean) {
@@ -1066,6 +1097,16 @@ mod coderabbit_fix_tests {
     // Finding 3: union schemas coerce only to an allowed alternative.
     #[test]
     fn union_schema_coerces_to_allowed_type_only() {
+        let cfg = one_param(
+            "x",
+            json!({"type": ["number", "null"], "anyOf": [{"type": "integer"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(
+            ser(&convert_param_value("1.25", "x", &cfg, "f")),
+            "\"1.25\""
+        );
+
         // anyOf [string, null] + "42": stays a string (was the JSON number 42).
         let cfg = one_param(
             "x",
@@ -1149,5 +1190,21 @@ mod coderabbit_fix_tests {
         let content = content.unwrap();
         assert!(content.contains("Intro"), "prefix kept: {content:?}");
         assert!(content.contains("mid"), "trailing kept: {content:?}");
+    }
+}
+
+#[cfg(test)]
+mod integral_number_tests {
+    use super::coerce_integral_number;
+
+    #[test]
+    fn large_integral_numbers_keep_their_exact_spelling_without_expansion() {
+        for raw in ["123456789012345678901234567890.0", "1e100000"] {
+            let value = coerce_integral_number(raw).expect("integral JSON number");
+            assert_eq!(serde_json::to_string(&value).unwrap(), raw);
+        }
+        for raw in ["42.0000000000000001", "1e-400", "true", "\"42\""] {
+            assert!(coerce_integral_number(raw).is_none(), "{raw}");
+        }
     }
 }

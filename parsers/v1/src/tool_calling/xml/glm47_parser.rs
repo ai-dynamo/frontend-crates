@@ -551,41 +551,187 @@ fn get_param_schema_type<'a>(
     tools: Option<&'a [ToolDefinition]>,
     function_name: &str,
     param_name: &str,
+    raw: &str,
 ) -> Option<&'a str> {
     let tool = tools?.iter().find(|t| t.name == function_name)?;
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
+    // Prefer JSON null for a bare null when the schema permits it. The wire
+    // spelling can also represent a string; keep string preference for other values.
+    if raw.trim() == "null" {
+        return Some(if schema_permits_null(schema, param, 0, &mut 1024) {
+            "null"
+        } else {
+            "string"
+        });
+    }
     // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_has_type(param, "string") {
+    if schema_has_type(schema, param, "string", 0) {
         return Some("string");
     }
-    param.get("type")?.as_str()
+    param
+        .get("type")
+        .and_then(Value::as_str)
+        .or_else(|| resolve_schema_ref(schema, param, 0)?.get("type")?.as_str())
 }
 
-fn schema_has_type(schema: &Value, expected: &str) -> bool {
-    if let Some(schema_type) = schema.get("type") {
-        if schema_type.as_str() == Some(expected) {
-            return true;
-        }
-        if schema_type
-            .as_array()
-            .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected)))
-        {
-            return true;
+// Evaluate the constraints relevant to the JSON null value. Sibling keywords
+// intersect; oneOf requires exactly one matching branch. Other value types keep
+// the parser's existing coercion rules.
+fn schema_permits_null(root: &Value, schema: &Value, depth: usize, remaining: &mut usize) -> bool {
+    let Some(next) = remaining.checked_sub(1) else {
+        return false;
+    };
+    *remaining = next;
+    if depth >= 16 {
+        return false;
+    }
+    if let Some(reference) = schema.get("$ref") {
+        let Some(target) = reference
+            .as_str()
+            .and_then(|reference| local_ref_target(root, reference))
+        else {
+            return false;
+        };
+        if !schema_permits_null(root, target, depth + 1, remaining) {
+            return false;
         }
     }
-
-    ["anyOf", "oneOf", "allOf"].iter().any(|key| {
-        schema
-            .get(key)
+    if let Some(allowed) = schema.as_bool() {
+        return allowed;
+    }
+    if let Some(ty) = schema.get("type") {
+        let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+        if !nullable
+            && ty.as_str() != Some("null")
+            && !ty
+                .as_array()
+                .is_some_and(|types| types.iter().any(|ty| ty == "null"))
+        {
+            return false;
+        }
+    }
+    if schema.get("const").is_some_and(|value| !value.is_null())
+        || schema
+            .get("enum")
             .and_then(Value::as_array)
-            .is_some_and(|options| {
-                options
-                    .iter()
-                    .any(|option| schema_has_type(option, expected))
-            })
-    })
+            .is_some_and(|values| !values.iter().any(Value::is_null))
+    {
+        return false;
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+            let matches = branches
+                .iter()
+                .filter(|branch| schema_permits_null(root, branch, depth + 1, remaining))
+                .count();
+            if !match keyword {
+                "allOf" => matches == branches.len(),
+                "anyOf" => matches > 0,
+                _ => matches == 1,
+            } {
+                return false;
+            }
+        }
+    }
+    !schema
+        .get("not")
+        .is_some_and(|branch| schema_permits_null(root, branch, depth + 1, remaining))
+}
+
+fn resolve_schema_ref<'a>(root: &'a Value, schema: &'a Value, depth: usize) -> Option<&'a Value> {
+    if depth >= 16 {
+        return None;
+    }
+    let Some(reference) = schema.get("$ref").and_then(Value::as_str) else {
+        return Some(schema);
+    };
+    resolve_schema_ref(root, local_ref_target(root, reference)?, depth + 1)
+}
+
+// URI percent-decoding precedes JSON Pointer's ~0/~1 unescaping.
+fn local_ref_target<'a>(root: &'a Value, reference: &str) -> Option<&'a Value> {
+    let pointer = reference.strip_prefix('#')?;
+    if !pointer.contains('%') {
+        return root.pointer(pointer);
+    }
+    let mut bytes = pointer.bytes();
+    let mut decoded = Vec::with_capacity(pointer.len());
+    while let Some(byte) = bytes.next() {
+        decoded.push(if byte == b'%' {
+            let high = char::from(bytes.next()?).to_digit(16)?;
+            let low = char::from(bytes.next()?).to_digit(16)?;
+            ((high << 4) | low) as u8
+        } else {
+            byte
+        });
+    }
+    root.pointer(std::str::from_utf8(&decoded).ok()?)
+}
+
+fn schema_has_type(root: &Value, schema: &Value, expected: &str, depth: usize) -> bool {
+    let mut remaining = 1024;
+    let matched = schema_type_match(root, schema, expected, depth, &mut remaining);
+    remaining > 0 && matched == Some(true)
+}
+
+// None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
+fn schema_type_match(
+    root: &Value,
+    schema: &Value,
+    expected: &str,
+    depth: usize,
+    remaining: &mut usize,
+) -> Option<bool> {
+    // A branching reference cycle can expand exponentially even at bounded depth.
+    *remaining = remaining.checked_sub(1)?;
+    // Local references are common in strict tool schemas. Limit traversal so a
+    // cyclic definition cannot recurse indefinitely while deciding a type hint.
+    if depth >= 16 {
+        return None;
+    }
+    let reference_hint = schema
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|reference| local_ref_target(root, reference))
+        .and_then(|target| schema_type_match(root, target, expected, depth + 1, remaining));
+    let matches = |ty: &Value| {
+        ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
+    };
+    let mut hint = schema.get("type").map(|ty| {
+        ty.as_array()
+            .map_or_else(|| matches(ty), |types| types.iter().any(matches))
+    });
+    // Modern JSON Schema applies $ref siblings as additional constraints.
+    hint = match (hint, reference_hint) {
+        (Some(left), Some(right)) => Some(left && right),
+        (left, right) => left.or(right),
+    };
+    for keyword in ["anyOf", "oneOf", "allOf"] {
+        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
+            continue;
+        };
+        let branches = options
+            .iter()
+            .map(|option| schema_type_match(root, option, expected, depth + 1, remaining));
+        let branch_hint = if keyword == "allOf" {
+            branches.flatten().reduce(|left, right| left && right)
+        } else {
+            branches
+                .reduce(|left, right| match (left, right) {
+                    (Some(true), _) | (_, Some(true)) => Some(true),
+                    (Some(false), Some(false)) => Some(false),
+                    _ => None,
+                })
+                .flatten()
+        };
+        hint = match (hint, branch_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
+    hint
 }
 
 /// Parse a single GLM-4.7 tool call block
@@ -651,7 +797,7 @@ fn parse_tool_call_block(
             let decoded = decode_xml_entities(raw_value);
 
             // Look up the expected type from the tool's parameter schema
-            let schema_type = get_param_schema_type(tools, &function_name, key);
+            let schema_type = get_param_schema_type(tools, &function_name, key, &decoded);
             let json_value = coerce_value(&decoded, schema_type);
 
             match argument_indices.get(key).copied() {
@@ -688,6 +834,118 @@ mod tests {
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn nullable_string_union_preserves_json_null() {
+        let tools = vec![ToolDefinition {
+            name: "set_labels".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "label": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                    "note": {"type": ["string", "null"]},
+                    "literal": {"type": "string"}
+                }
+            })),
+            strict: None,
+        }];
+        let message = concat!(
+            "<tool_call>set_labels",
+            "<arg_key>label</arg_key><arg_value>null</arg_value>",
+            "<arg_key>note</arg_key><arg_value>null</arg_value>",
+            "<arg_key>literal</arg_key><arg_value>null</arg_value>",
+            "</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_glm47(message, &get_test_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 1);
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(
+            args,
+            serde_json::json!({"label": null, "note": null, "literal": "null"})
+        );
+    }
+
+    #[test]
+    fn branching_reference_cycles_exhaust_a_shared_budget() {
+        let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
+        let schema = serde_json::json!({
+            "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
+            "properties": {"value": reference}
+        });
+        let mut remaining = 64;
+        assert_eq!(
+            schema_type_match(
+                &schema,
+                &schema["properties"]["value"],
+                "string",
+                0,
+                &mut remaining
+            ),
+            None
+        );
+        assert_eq!(remaining, 0);
+    }
+
+    #[test]
+    fn referenced_types_intersect_siblings_and_bound_cycles() {
+        let schema = serde_json::json!({
+            "$defs": {
+                "Scalar": {"type": ["string", "integer"]},
+                "postal code": {"type": "integer"},
+                "café+": {"type": "integer"},
+                "a/b~c": {"type": "integer"},
+                "Text": {"type": "string"},
+                "nullable text": {"type": ["string", "null"]},
+                "Loop": {"$ref": "#/$defs/Loop"}
+            },
+            "properties": {
+                "narrow": {"$ref": "#/$defs/Scalar", "type": "integer"},
+                "encoded": {"$ref": "#/$defs/postal%20code"},
+                "utf8": {"$ref": "#/$defs/caf%c3%a9+"},
+                "invalid_utf8": {"$ref": "#/$defs/%FF"},
+                "incomplete": {"$ref": "#/$defs/%2"},
+                "invalid_hex": {"$ref": "#/$defs/%GG"},
+                "escaped": {"$ref": "#/$defs/a%7E1b%7E0c"},
+                "cycle": {"$ref": "#/$defs/Loop"},
+                "typed_cycle": {"$ref": "#/$defs/Loop", "type": "integer"},
+                "payload": {"$ref": "#/$defs/Text"},
+                "nullable_ref": {"oneOf": [{"$ref": "#/$defs/Text"}, {"type": "null"}]},
+                "encoded_nullable": {"$ref": "#/$defs/nullable%20text"},
+                "narrow_nullable": {"$ref": "#/$defs/nullable%20text", "type": "string"}
+            }
+        });
+        for (field, raw, expected) in [
+            ("narrow", "42", serde_json::json!(42)),
+            ("payload", "null", serde_json::json!("null")),
+            ("nullable_ref", "null", serde_json::json!(null)),
+            ("encoded_nullable", "null", serde_json::json!(null)),
+            ("narrow_nullable", "null", serde_json::json!("null")),
+            ("cycle", "null", serde_json::json!("null")),
+            ("encoded", "42", serde_json::json!(42)),
+            ("utf8", "42", serde_json::json!(42)),
+            ("invalid_utf8", "42", serde_json::json!("42")),
+            ("incomplete", "42", serde_json::json!("42")),
+            ("invalid_hex", "42", serde_json::json!("42")),
+            ("escaped", "42", serde_json::json!(42)),
+            ("cycle", "42", serde_json::json!("42")),
+            ("typed_cycle", "42", serde_json::json!(42)),
+            ("payload", "{\"x\":1}", serde_json::json!("{\"x\":1}")),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "capture_payload".into(),
+                strict: None,
+                parameters: Some(schema.clone()),
+            }];
+            let input = format!(
+                "<tool_call>capture_payload<arg_key>{field}</arg_key><arg_value>{raw}</arg_value></tool_call>"
+            );
+            let (calls, _) =
+                try_tool_call_parse_glm47(&input, &get_test_config(), Some(&tools)).unwrap();
+            let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args[field], expected, "{field}");
+        }
     }
 
     #[test] // helper
@@ -1353,5 +1611,123 @@ mod tests {
             serde_json::from_str(&calls[1].function.arguments).unwrap();
         assert_eq!(args0.get("location").unwrap().as_str().unwrap(), "NYC");
         assert_eq!(args1.get("location").unwrap().as_str().unwrap(), "LA");
+    }
+    #[test]
+    fn null_coercion_respects_full_schema_constraints() {
+        for (label, schema, expected) in [
+            (
+                "7-4",
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.anyof",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.oneof",
+                serde_json::json!({"oneOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.nullable",
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-4.const",
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::json!(null),
+            ),
+            (
+                "7-5",
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.union",
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_anyof",
+                serde_json::json!({"type": "string", "anyOf": [{"type": "string"}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.sibling_oneof",
+                serde_json::json!({"type": ["string", "null"], "oneOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.untyped_branch",
+                serde_json::json!({"type": "string", "anyOf": [{"minLength": 1}, {"type": "null"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.const",
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "7-5.enum",
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "allof_string",
+                serde_json::json!({"allOf": [{"type": ["string", "null"]}, {"type": "string"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_string",
+                serde_json::json!({"const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "enum_string",
+                serde_json::json!({"enum": ["null"]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "const_null",
+                serde_json::json!({"const": null}),
+                serde_json::json!(null),
+            ),
+            (
+                "enum_null",
+                serde_json::json!({"enum": [null]}),
+                serde_json::json!(null),
+            ),
+            (
+                "const_intersection",
+                serde_json::json!({"type": ["string", "null"], "const": "null"}),
+                serde_json::json!("null"),
+            ),
+            (
+                "oneof_overlap",
+                serde_json::json!({"oneOf": [{"type": "null"}, {}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                "not_null",
+                serde_json::json!({"type": ["string", "null"], "not": {"type": "null"}}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "get_weather".into(),
+                parameters: Some(serde_json::json!({"type":"object","properties":{"city":schema}})),
+                strict: None,
+            }];
+            let wire = "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>";
+            let (calls, _) =
+                try_tool_call_parse_glm47(wire, &get_test_config(), Some(&tools)).unwrap();
+            assert_eq!(calls.len(), 1, "{label}");
+            let args: serde_json::Value =
+                serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args["city"], expected, "{label}");
+        }
     }
 }
