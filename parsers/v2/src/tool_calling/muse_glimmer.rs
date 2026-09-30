@@ -84,6 +84,29 @@ fn parameter_re() -> &'static Regex {
     })
 }
 
+/// Find a control marker outside ATEM parameter values. An open parameter
+/// owns its bytes until its closer arrives, including framed channel headers.
+fn outside_parameter(text: &str, marker: &str) -> Option<usize> {
+    static OPEN: OnceLock<Regex> = OnceLock::new();
+    let open =
+        OPEN.get_or_init(|| Regex::new(r#"<atem:parameter\b[^>]*?\bname="[^"]+"[^>]*?>"#).unwrap());
+    const CLOSE: &str = "</atem:parameter>";
+    let mut cursor = 0;
+    loop {
+        let tail = &text[cursor..];
+        let at = tail.find(marker)?;
+        let Some(parameter) = open.find(tail) else {
+            return Some(cursor + at);
+        };
+        if at < parameter.end() {
+            return Some(cursor + at);
+        }
+        let value_start = cursor + parameter.end();
+        let end = text[value_start..].find(CLOSE)?;
+        cursor = value_start + end + CLOSE.len();
+    }
+}
+
 /// The channel the scanner is currently inside.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
@@ -851,13 +874,21 @@ impl MuseChannelScanner {
         self.reasoning_join_armed = false;
     }
 
+    fn body_marker(&self, marker: &str) -> Option<usize> {
+        if self.state == State::InToolChannel {
+            outside_parameter(&self.buffer, marker)
+        } else {
+            self.buffer.find(marker)
+        }
+    }
+
     /// Byte offset where the OPEN body ends, ignoring the bare-header recovery
     /// (which applies to reasoning only): the earliest terminator or framed
     /// header, else the buffer end.
     fn tool_body_limit(&self) -> usize {
         [EOM, EOT, START]
             .iter()
-            .filter_map(|m| self.buffer.find(m))
+            .filter_map(|m| outside_parameter(&self.buffer, m))
             .min()
             .unwrap_or(self.buffer.len())
     }
@@ -869,7 +900,7 @@ impl MuseChannelScanner {
         let body = &self.buffer[..limit];
         let open = invoke_open_re().captures(body)?;
         let whole = open.get(0).expect("regex match has group 0");
-        let close = body[whole.end()..].find(INVOKE_CLOSE)?;
+        let close = outside_parameter(&body[whole.end()..], INVOKE_CLOSE)?;
         Some((whole.start(), whole.end() + close + INVOKE_CLOSE.len()))
     }
 
@@ -910,11 +941,11 @@ impl MuseChannelScanner {
 
             let terminator = [EOM, EOT]
                 .iter()
-                .filter_map(|t| self.buffer.find(t).map(|p| (p, t.len())))
+                .filter_map(|t| self.body_marker(t).map(|p| (p, t.len())))
                 .min_by_key(|(p, _)| *p);
-            // Framed headers cut any body; bare headers cut only a reasoning body
+            // Framed headers outside parameters cut a body; bare headers cut only reasoning
             // (missing-`<|eom|>` recovery).
-            let start_pos = self.buffer.find(START);
+            let start_pos = self.body_marker(START);
             let bare_pos = if self.state == State::InReasoning {
                 bare_header_pos(&self.buffer, self.last_body_char)
             } else {

@@ -32,13 +32,6 @@ glm47:
       note: The GLM parser stringifies all three null-looking fields in the mixed request; PR #287 records the JSON-null behavior targeted by Michael Feil's PR #268.
       actual: 'tool_call(set_labels, {"label":"null","note":"null","literal":"null"})'
 
-muse_glimmer:
-  UNIFIED.deepseek_v41_mixed_control_text_in_string.muse_glimmer:
-    golden:
-      note: Muse Glimmer does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
-      actual: >-
-        reasoning("quoted")  |  text(" <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>")
-
 qwen3:
   UNIFIED.arg_json_null_nullable.qwen3:
     golden:
