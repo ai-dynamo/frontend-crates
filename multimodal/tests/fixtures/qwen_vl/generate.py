@@ -17,7 +17,7 @@ reproduce HF's `pixel_values` byte for byte, so the two fixtures describe the
 same pipeline. Run with a Python environment holding transformers, torch,
 torchvision, Pillow, numpy and blake3:
 
-    python mm-preprocessor/tests/fixtures/qwen_vl/generate.py [case ...]
+    python multimodal/tests/fixtures/qwen_vl/generate.py [case ...]
 """
 
 import json
@@ -189,7 +189,7 @@ def generate(case_dir):
         hashes=hashes,
         mrope_delta=int(delta.reshape(-1)[0]),
         provenance={
-            "generator": "mm-preprocessor/tests/fixtures/qwen_vl/generate.py",
+            "generator": "multimodal/tests/fixtures/qwen_vl/generate.py",
             "transformers": transformers.__version__,
             "torch": torch.__version__,
             "torchvision": torchvision.__version__,

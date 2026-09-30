@@ -13,7 +13,7 @@
 
 #![cfg(target_os = "linux")]
 
-use dynamo_mm_preprocessor::image::resize::{Resample, resize_rgb};
+use dynamo_multimodal::image::resize::{Resample, resize_rgb};
 
 fn thread_names() -> Vec<String> {
     std::fs::read_dir("/proc/self/task")
