@@ -131,7 +131,7 @@ fn shared_misses_and_partial_hits_match_uncached_encoding() {
     for extend in [false, true] {
         let storage = SharedTokenizerCache::new(1024 * 1024);
         let tokenizer =
-            CachedTokenizer::new_with_cache(raw.clone(), specials(), storage.clone(), b"parity")
+            CachedTokenizer::new_with_cache(raw.clone(), specials(), storage, b"parity")
                 .unwrap()
                 .with_extend(extend);
         for input in turns {
@@ -142,19 +142,19 @@ fn shared_misses_and_partial_hits_match_uncached_encoding() {
         }
         assert_eq!(tokenizer.cache_stats().misses, 1);
         assert_eq!(tokenizer.cache_stats().hits, 2);
-
-        // Public L1 entry points compute their own hashes, including on extension.
-        let l1 = L1Cache::new_with_cache(storage, specials(), b"public-l1");
-        l1.insert_at_boundaries(turns[0], raw.as_ref()).unwrap();
-        let (tokens, offset, deepest) = l1.longest_prefix_match(turns[1]).unwrap();
-        assert_eq!(
-            l1.extend_after_match(turns[1], tokens, offset, deepest, raw.as_ref())
-                .unwrap(),
-            raw.encode(turns[1]).unwrap().token_ids()
-        );
-        let (_, offset, _) = l1.longest_prefix_match(turns[1]).unwrap();
-        assert_eq!(offset, deepest);
     }
+
+    let storage = SharedTokenizerCache::new(1024 * 1024);
+    let l1 = L1Cache::new_with_cache(storage, specials(), b"public-l1");
+    l1.insert_at_boundaries(turns[0], raw.as_ref()).unwrap();
+    let (tokens, offset, deepest) = l1.longest_prefix_match(turns[1]).unwrap();
+    assert_eq!(
+        l1.extend_after_match(turns[1], tokens, offset, deepest, raw.as_ref())
+            .unwrap(),
+        raw.encode(turns[1]).unwrap().token_ids()
+    );
+    let (_, offset, _) = l1.longest_prefix_match(turns[1]).unwrap();
+    assert_eq!(offset, deepest);
 }
 
 #[test]
