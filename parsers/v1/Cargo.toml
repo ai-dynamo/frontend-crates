@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-parsers"
 readme = "README.md"
-version = "9.2.3"
+version = "9.2.4"
 edition.workspace = true
 description = "Reasoning and tool-calling parsers for OpenAI-compatible inference output."
 authors.workspace = true
@@ -27,6 +27,7 @@ openai-harmony.workspace = true
 ruff-python-ast.workspace = true
 ruff-python-parser.workspace = true
 num-traits.workspace = true
+percent-encoding.workspace = true
 
 # Streaming tool-call jail (ported from dynamo lib/llm). The jail wraps the
 # streaming parsers, so it needs the OpenAI chat stream protocol types plus the

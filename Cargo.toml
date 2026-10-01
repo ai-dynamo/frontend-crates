@@ -36,7 +36,7 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "9.2.3" }
+dynamo-parsers = { path = "parsers/v1", version = "9.2.4" }
 dynamo-protocols = { path = "protocols", version = "6.1.0" }
 dynamo-renderer = { path = "renderer", version = "6.0.0" }
 dynamo-tokenizers = { path = "tokenizers", version = "2.0.0" }
@@ -58,6 +58,7 @@ minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
 openai-harmony = "0.0.8"
+percent-encoding = "2.3"
 pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
 regex = "1"

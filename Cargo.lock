@@ -1155,7 +1155,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "9.2.3"
+version = "9.2.4"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1164,6 +1164,7 @@ dependencies = [
  "futures",
  "num-traits",
  "openai-harmony",
+ "percent-encoding",
  "regex",
  "rstest",
  "rustpython-ruff_python_ast",
@@ -1177,11 +1178,12 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "anyhow",
  "num-traits",
  "openai-harmony",
+ "percent-encoding",
  "regex",
  "serde",
  "serde_json",

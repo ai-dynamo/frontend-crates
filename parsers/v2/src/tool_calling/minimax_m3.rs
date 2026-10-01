@@ -489,4 +489,47 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn nested_and_encoded_refs_preserve_types_across_chunk_boundaries() {
+        let tools = vec![Tool {
+            name: "create_order".into(),
+            description: None,
+            strict: None,
+            parameters: serde_json::json!({
+                "$defs": {
+                    "postal code": {"type": "integer"},
+                    "Address": {"type": "object", "properties": {
+                        "zip": {"$ref": "#/$defs/postal%20code"},
+                        "primary": {"$ref": "#/$defs/Flag"}
+                    }},
+                    "Flag": {"type": "boolean"}
+                },
+                "properties": {"shipping": {"$ref": "#/$defs/Address"}}
+            }),
+        }];
+        let input = concat!(
+            "Preparing. ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"create_order\">",
+            "]<]minimax[>[<shipping>]<]minimax[>[<zip>18956]<]minimax[>[</zip>",
+            "]<]minimax[>[<primary>true]<]minimax[>[</primary>]<]minimax[>[</shipping>",
+            "]<]minimax[>[</invoke>]<]minimax[>[</tool_call> Done."
+        );
+        for width in [1, 7, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let out = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(out.normal_text, "Preparing.  Done.");
+            assert_eq!(out.calls.len(), 1);
+            assert_eq!(out.calls[0].name.as_deref(), Some("create_order"));
+            assert!(out.calls[0].complete);
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&out.calls[0].arguments).unwrap(),
+                serde_json::json!({"shipping": {"zip": 18956, "primary": true}}),
+                "width {width}"
+            );
+        }
+    }
 }

@@ -349,6 +349,12 @@ The optional nested-union cases below exercise request tool schemas against nati
 - **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
 - **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
 
+The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases.
+
+- **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
+- **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
+- **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type.
+
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
 Model emits narration text before / after / between tool-call blocks.
