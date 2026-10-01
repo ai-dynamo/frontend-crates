@@ -515,6 +515,10 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
         "arg_string_null_ref": {"glm47"},
+        "glm_ref_object": {"glm47"},
+        "glm_ref_encoded_targets": {"glm47"},
+        "glm_ref_json_looking_strings": {"glm47"},
+        "glm_ref_scalar_types": {"glm47"},
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
@@ -570,6 +574,51 @@ def test_glm_reference_goldens_use_the_tool_parameters_root(scenario: str, value
     _assert_input_carries_events("glm47", scenario, case)
     parameters["$defs"]["City"] = {"type": "integer"}
     assert not matches_schema({"city": value}, parameters)
+
+
+@pytest.mark.parametrize("scenario,label,arguments,references", [
+    ("glm_ref_object", "7-9", {"payload": {"x": 1}},
+     {"payload": "#/$defs/Payload"}),
+    ("glm_ref_encoded_targets", "7-11", {"space": 42, "utf8_plus": 42, "pointer": 42},
+     {"space": "#/$defs/postal%20code", "utf8_plus": "#/$defs/caf%c3%a9+",
+      "pointer": "#/$defs/a%7E1b%7E0c"}),
+    ("glm_ref_json_looking_strings", "7-12",
+     {"object_text": '{"x":1}', "array_text": '[1,2]',
+      "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+     {key: "#/$defs/Text" for key in ("object_text", "array_text", "quoted_text")}),
+    ("glm_ref_scalar_types", "7-13", {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
+     {"count": "#/$defs/Integer", "ratio": "#/$defs/Number",
+      "flag": "#/$defs/Boolean", "narrowed": "#/$defs/Scalar"}),
+])
+def test_glm_type_reference_goldens_keep_raw_refs_and_schema_valid_arguments(
+    scenario: str, label: str, arguments: dict, references: dict[str, str],
+) -> None:
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    parameters = case["tools"][0]["parameters"]
+    assert numbered_id(scenario) == f"UNIFIED.{label}"
+    for key, reference in references.items():
+        assert parameters["properties"][key] == (
+            {"$ref": reference, "type": "integer"} if key == "narrowed" else {"$ref": reference}
+        )
+    assert case["golden"] == [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}]
+    assert matches_schema(arguments, parameters)
+    _assert_input_carries_events("glm47", scenario, case)
+
+
+@pytest.mark.parametrize("scenario,key,value", [
+    ("glm_ref_object", "payload", '{"x":1}'),
+    ("glm_ref_encoded_targets", "pointer", "42"),
+    ("glm_ref_json_looking_strings", "quoted_text", "hello"),
+    ("glm_ref_scalar_types", "narrowed", "42"),
+])
+def test_glm_reference_input_oracle_rejects_changed_golden_values(
+    scenario: str, key: str, value: object,
+) -> None:
+    case = json.loads(json.dumps(build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]))
+    _assert_input_carries_events("glm47", scenario, case)
+    case["golden"][0]["arguments"][key] = value
+    with pytest.raises(AssertionError, match="input call differs from golden"):
+        _assert_input_carries_events("glm47", scenario, case)
 
 
 def test_reference_oracle_preserves_chained_targets_and_sibling_constraints() -> None:
@@ -679,21 +728,21 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v4": 93,
             "deepseek_v41": 93,
             "gemma4": 95,
-            "glm47": 96,
+            "glm47": 100,
             "kimi_k2": 93,
             "kimi_k3": 101,
             "muse_glimmer": 94,
             "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 758
+    assert sum(per_family.values()) == 762
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 108
+    assert len(UNIFIED_TAX) == 112
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1076,7 +1125,7 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
     assert _native_input_calls("kimi_k2", raw) == []
 
 
-def _assert_input_carries_events(family, scenario, case):
+def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
@@ -1093,8 +1142,17 @@ def _assert_input_carries_events(family, scenario, case):
                 properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    if value == "null" and family in {"qwen3", "glm47"} and matches_schema(None, schema, parameters):
+                    if family not in {"qwen3", "glm47"} or not isinstance(value, str):
+                        continue
+                    if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
+                    elif not matches_schema(value, schema, parameters):
+                        try:
+                            decoded = json.loads(value)
+                        except json.JSONDecodeError:
+                            continue
+                        if matches_schema(decoded, schema, parameters):
+                            candidate["arguments"][key] = decoded
         else:
             candidates = []
             for value in _json_values(raw):

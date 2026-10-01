@@ -1111,6 +1111,46 @@ def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
             assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
 
 
+@pytest.mark.parametrize("scenario,sub,arguments", [
+    ("glm_ref_object", "7-9", {"payload": {"x": 1}}),
+    ("glm_ref_encoded_targets", "7-11", {"space": 42, "utf8_plus": 42, "pointer": 42}),
+    ("glm_ref_json_looking_strings", "7-12",
+     {"object_text": '{"x":1}', "array_text": '[1,2]',
+      "quoted_text": '"hello"', "inline_text": '{"x":1}'}),
+    ("glm_ref_scalar_types", "7-13", {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42}),
+])
+def test_glm_type_references_have_typed_current_batch_and_unified_captures(
+    model_v2: dict, scenario: str, sub: str, arguments: dict,
+) -> None:
+    calls = [{"name": "capture_payload", "arguments": arguments}]
+    batch = _tab(model_v2, "tab-toolcalling-batch")
+    row = next(row for row in batch["rows"] if row.get("family") == "glm47")
+    cell = leaf_cells(row)[sub]
+    assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
+    assert next(column for column in batch["columns"] if column["sub"] == sub)["group_key"] == "args"
+    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+    latest = [next(candidate for candidate in batch["candidates"]
+                   if candidate["key"].startswith(implementation) and candidate["parse_mode"] == mode)
+              for implementation, mode in (("dynamo_v1", "batch"), ("dynamo_v2", "stream"))]
+    assert latest[1]["version"] == dynamo_v2_label(REPO)
+    for candidate in latest:
+        block = blocks[candidate["key"]]
+        assert block["calls"] == calls
+        assert block["normal_text"] == ""
+        assert cell_state(cell, candidate)[0] == "green"
+
+    unified = _tab(model_v2, "tab-unified")
+    row = next(row for row in unified["rows"] if row.get("family") == "glm47")
+    cell = leaf_cells(row)[scenario]
+    assert cell["case_id"] == f"UNIFIED.{sub}"
+    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+    events = [{"kind": "tool_call", **call} for call in calls]
+    assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
+    assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+    assert all(other["cells"][scenario]["status"] == "na"
+               for other in unified["rows"] if other.get("family") and other["family"] != "glm47")
+
+
 def test_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
