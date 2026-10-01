@@ -180,6 +180,30 @@ minimax_m3:
     stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.5.g:
     stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.7-4.const:
+    stream_vs_batch: >-
+      Known v2 defect: an anyOf branch with const: null and no type is ignored,
+      returning the string "null". The v1 batch parser correctly returns JSON
+      null. These fixtures cover the v1 fix in PR #269; the v2 correction is a
+      separate follow-up.
+  TOOLCALLING.batch.7-5.sibling_anyof:
+    stream_vs_batch: &svb-minimax-null-intersection >-
+      Known v2 defect: null is accepted by one part of the schema even though
+      another constraint excludes it, returning JSON null instead of "null".
+      The v1 batch parser preserves the string under the full schema.
+      These fixtures cover the v1 fix in PR #269; v2 needs a separate follow-up.
+  TOOLCALLING.batch.7-5.sibling_oneof:
+    stream_vs_batch: *svb-minimax-null-intersection
+  TOOLCALLING.batch.7-5.untyped_branch:
+    stream_vs_batch: *svb-minimax-null-intersection
+  TOOLCALLING.batch.7-5.untyped_const:
+    stream_vs_batch: &svb-minimax-null-value-constraint >-
+      Known v2 defect: when const or enum has no accompanying type, the parser
+      coerces to JSON null even when only the string "null" satisfies the constraint.
+      The v1 batch parser preserves that string. These fixtures cover the v1
+      fix in PR #269; the v2 correction is a separate follow-up.
+  TOOLCALLING.batch.7-5.untyped_enum:
+    stream_vs_batch: *svb-minimax-null-value-constraint
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.c:

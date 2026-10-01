@@ -1741,7 +1741,6 @@ def _tab_label(
 import model as _model  # noqa: E402  (schema + serialization; leaf module)
 
 _MODE_PAREN_RE = re.compile(r"\(([^)]*)\)\s*$")
-_LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
 
 
 def _cand_engine_group(key: str) -> str:
@@ -1764,7 +1763,7 @@ def _parse_mode_of_label(label: str) -> str | None:
 
 
 def _version_of_label(label: str) -> str | None:
-    m = _LABEL_VERSION_RE.search(label)
+    m = _CANDIDATE_VERSION_RE.search(label)
     return m.group(1) if m else None
 
 
@@ -3034,13 +3033,14 @@ def build_combined_model(output_path: Path | None = None,
     }
     legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
     for tab in tabs:
-        if tab["id"] == "tab-toolcalling-streamv1" and any(
+        if tab["id"] in {"tab-toolcalling-batch", "tab-toolcalling-streamv1"} and any(
             "golden" in (cell.get("cmp") or {})
             for row in tab["rows"] for cell in row["cells"].values()
         ):
             tab["candidates"].append({"key": "golden", "impl": "golden", "label": "GOLDEN (oracle)",
                                       "label_html": "GOLDEN (oracle)", "default_bucket": "B",
-                                      "version": None, "parse_mode": "stream"})
+                                      "version": None,
+                                      "parse_mode": "batch" if tab["mode"] == "batch" else "stream"})
         group_null_variants(tab)
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
                              legend_html=legend_html)

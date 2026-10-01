@@ -404,4 +404,132 @@ mod tests {
                 < merged.calls[0].arguments.find("\"config\"").unwrap()
         );
     }
+
+    #[test]
+    fn nested_union_child_values_follow_payload_shape() {
+        let tools = vec![Tool {
+            name: "list_notes".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "properties": {"pagination": {"anyOf": [
+                    {"type": "object", "properties": {
+                        "page": {"type": "integer"},
+                        "mode": {"anyOf": [{"type": "string"}, {"type": "object"}]},
+                        "after": {"type": ["object", "null"]},
+                        "config": {"type": "object", "properties": {"enabled": {"type": "boolean"}}}
+                    }},
+                    {"type": "null"}
+                ]}}
+            }),
+            strict: Some(true),
+        }];
+        let input = concat!(
+            "]<]minimax[>[<tool_call>",
+            "]<]minimax[>[<invoke name=\"list_notes\">",
+            "]<]minimax[>[<pagination>",
+            "]<]minimax[>[<page>2]<]minimax[>[</page>",
+            "]<]minimax[>[<mode>one]<]minimax[>[</mode>",
+            "]<]minimax[>[<after>null]<]minimax[>[</after>",
+            "]<]minimax[>[<config>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[</config>",
+            "]<]minimax[>[</pagination>",
+            "]<]minimax[>[</invoke>",
+            "]<]minimax[>[</tool_call>"
+        );
+        for width in [1, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let merged = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(merged.calls.len(), 1);
+            let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
+            assert_eq!(
+                args,
+                serde_json::json!({"pagination": {"page": 2, "mode": "one", "after": null, "config": {"enabled": true}}}),
+                "width {width}"
+            );
+        }
+    }
+
+    #[test]
+    fn literal_null_branch_does_not_erase_nested_integer_type() {
+        for union in ["anyOf", "oneOf"] {
+            for alternative in [
+                serde_json::json!({"enum":[null]}),
+                serde_json::json!({"const":null}),
+            ] {
+                let tools = vec![Tool {
+                    name: "list_notes".into(),
+                    description: None,
+                    strict: None,
+                    parameters: serde_json::json!({"properties":{"pagination":{union:[
+                        {"type":"object","properties":{"page":{"type":"integer"}}},alternative
+                    ]}}}),
+                }];
+                let input = concat!(
+                    "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"list_notes\">",
+                    "]<]minimax[>[<pagination>]<]minimax[>[<page>2]<]minimax[>[</page>",
+                    "]<]minimax[>[</pagination>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|c| std::str::from_utf8(c).unwrap())
+                        .collect();
+                    let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(out.calls.len(), 1);
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(&out.calls[0].arguments).unwrap(),
+                        serde_json::json!({"pagination":{"page":2}}),
+                        "{union}, {alternative}, width {width}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nested_and_encoded_refs_preserve_types_across_chunk_boundaries() {
+        let tools = vec![Tool {
+            name: "create_order".into(),
+            description: None,
+            strict: None,
+            parameters: serde_json::json!({
+                "$defs": {
+                    "postal code": {"type": "integer"},
+                    "Address": {"type": "object", "properties": {
+                        "zip": {"$ref": "#/$defs/postal%20code"},
+                        "primary": {"$ref": "#/$defs/Flag"}
+                    }},
+                    "Flag": {"type": "boolean"}
+                },
+                "properties": {"shipping": {"$ref": "#/$defs/Address"}}
+            }),
+        }];
+        let input = concat!(
+            "Preparing. ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"create_order\">",
+            "]<]minimax[>[<shipping>]<]minimax[>[<zip>18956]<]minimax[>[</zip>",
+            "]<]minimax[>[<primary>true]<]minimax[>[</primary>]<]minimax[>[</shipping>",
+            "]<]minimax[>[</invoke>]<]minimax[>[</tool_call> Done."
+        );
+        for width in [1, 7, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let out = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(out.normal_text, "Preparing.  Done.");
+            assert_eq!(out.calls.len(), 1);
+            assert_eq!(out.calls[0].name.as_deref(), Some("create_order"));
+            assert!(out.calls[0].complete);
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&out.calls[0].arguments).unwrap(),
+                serde_json::json!({"shipping": {"zip": 18956, "primary": true}}),
+                "width {width}"
+            );
+        }
+    }
 }
