@@ -4044,6 +4044,83 @@ fahrenheit
             .collect()
     }
 
+    /// The DeepSeek encoder renders `content + "\n\n" + <DSML block>`. The
+    /// separator must not reach the client as content: a client that echoes the
+    /// assistant message back would re-render it as "\n\n\n\n", so the next
+    /// prompt stops matching the generated tokens (and the prefix cache) there.
+    /// Chunks follow the model's tokenization, where ".\n\n" is one token.
+    #[tokio::test]
+    async fn test_dsml_block_separator_is_not_content() {
+        let call = "\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\n</｜DSML｜invoke>\n";
+        let cases = [
+            (
+                "deepseek_v4",
+                "tool_calls",
+                vec!["\n\n", "<", "｜DSML｜", "tool_calls>"],
+                "",
+            ),
+            (
+                "deepseek_v4",
+                "tool_calls",
+                vec!["I will", " check", ".\n\n", "<", "｜DSML｜tool_calls>"],
+                "I will check.",
+            ),
+            (
+                "deepseek_v4",
+                "tool_calls",
+                vec!["I will check.\n\n\n\n", "<｜DSML｜tool_calls>"],
+                "I will check.\n\n",
+            ),
+            (
+                "deepseek_v3_2",
+                "function_calls",
+                vec!["I will check.\n\n", "<｜DSML｜function_calls>"],
+                "I will check.",
+            ),
+        ];
+        for (parser, block, chunks, expected) in cases {
+            let label = format!("{parser} {chunks:?}");
+            let end = format!("{call}</｜DSML｜{block}>");
+            let input_chunks: Vec<_> = chunks
+                .into_iter()
+                .chain([end.as_str()])
+                .map(|chunk| test_utils::create_mock_response_chunk(chunk.to_string(), 0))
+                .collect();
+            let jail = JailedStream::builder().tool_call_parser(parser).build();
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter(input_chunks))
+                .collect()
+                .await;
+            assert_eq!(
+                tool_call_names(&results),
+                vec!["get_weather".to_string()],
+                "{label}"
+            );
+            assert_eq!(
+                test_utils::reconstruct_content(&results),
+                expected,
+                "{label}"
+            );
+        }
+
+        // A separator that is not followed by a tool call is ordinary content.
+        let input_chunks = ["First.\n\n", "Second."]
+            .into_iter()
+            .map(|chunk| test_utils::create_mock_response_chunk(chunk.to_string(), 0));
+        let jail = JailedStream::builder()
+            .tool_call_parser("deepseek_v4")
+            .build();
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(input_chunks))
+            .collect()
+            .await;
+        assert!(tool_call_names(&results).is_empty());
+        assert_eq!(
+            test_utils::reconstruct_content(&results),
+            "First.\n\nSecond."
+        );
+    }
+
     fn assert_content_omits_markers(
         label: &str,
         results: &[Annotated<CreateChatCompletionStreamResponse>],
