@@ -335,6 +335,26 @@ splits along four type-handling axes:
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
 
+The optional null-coercion variants below appear under the visible batch columns `7-4` and `7-5`. Each variant keeps its own fixture ID, input, and recorded result; the mixed-field probe is referenced under both columns.
+
+- **`TOOLCALLING.batch.7-4`** The request tool schema permits JSON null. Bare parameter text `null` becomes JSON `null`. Variants cover a nullable type array (base), `.anyof`, `.oneof`, `.nullable`, and an anyOf const-null branch (`.const`).
+- **`TOOLCALLING.batch.7-5`** The request tool schema excludes JSON null for the tested value, so bare parameter text `null` remains string `"null"`. Variants cover a string type (base), a non-nullable `.union`, intersecting `.sibling_anyof` and `.sibling_oneof` constraints, `.untyped_branch`, an anyOf string-const branch (`.const`), and a typed `.enum`.
+- **`TOOLCALLING.batch.7-5.untyped_const`** Direct `const: "null"` without a `type` still requires the literal string `"null"`.
+- **`TOOLCALLING.batch.7-5.untyped_enum`** Direct `enum: ["null"]` without a `type` still requires the literal string `"null"`.
+- **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.
+
+The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
+
+- **`TOOLCALLING.batch.7-6`** Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
+- **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
+- **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
+
+The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases.
+
+- **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
+- **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
+- **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type.
+
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
 Model emits narration text before / after / between tool-call blocks.

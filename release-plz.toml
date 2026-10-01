@@ -51,7 +51,7 @@ release = false
 # manual crates.io publish. Enable release-plz in a follow-up PR once 0.1.0
 # is on crates.io, and push the matching git tag only after that PR merges.
 [[package]]
-name = "dynamo-mm-preprocessor"
+name = "dynamo-multimodal"
 release = false
 
 [changelog]

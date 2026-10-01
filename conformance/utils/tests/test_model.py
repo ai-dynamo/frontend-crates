@@ -22,6 +22,7 @@ import json
 import re
 import subprocess
 import sys
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -377,6 +378,237 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert "intersection" in rendered[0]
 
 
+def test_batch_null_groups_preserve_coercion_history(model_v2: dict) -> None:
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    mixed = "7-4.mixed_grep"
+    nullable = {"7-4", "7-4.anyof", "7-4.oneof", "7-4.nullable", "7-4.const"}
+    strings = {
+        "7-5", "7-5.union", "7-5.sibling_anyof", "7-5.sibling_oneof",
+        "7-5.untyped_branch", "7-5.const", "7-5.enum", "7-5.untyped_const", "7-5.untyped_enum",
+    }
+    columns = {column["sub"]: column for column in tab["columns"]}
+    assert {column["label"] for column in tab["columns"]
+            if column["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert all(columns[sub]["group_key"] == "args" for sub in ("7-4", "7-5"))
+    assert mixed not in columns
+    glossary_labels = {label for group in tab["glossary"] for label, _ in group["rows"]}
+    assert {label for label in glossary_labels if label.startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
+    assert candidates["golden"]["parse_mode"] == "batch"
+    assert {"9.2.0", "9.2.1"} <= _peer_versions("toolcalling/fixtures-batch-v1")["dynamo_v1"]
+    reference = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
+    baseline = candidates["dynamo_v1-b-9-2-0"]
+    fixed = candidates["dynamo_v1-b-9-2-1"]
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    leaves = {sub: cell for sub, cell in leaf_cells(row).items() if sub.startswith(("7-4", "7-5"))}
+    assert set(leaves) == nullable | strings | {mixed}
+    for parent, members in (("7-4", nullable | {mixed}), ("7-5", strings | {mixed})):
+        cell = row["cells"][parent]
+        assert {leaf["sub"] for leaf in cell["variants"]} == members
+        assert len(cell["variants"]) == len(members)
+        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green"
+        assert cell_state(cell, baseline)[0] == "red"
+    for sub, cell in leaves.items():
+        assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
+        arguments = {"pattern": "null", "path": None} if sub == mixed else {"city": None if sub in nullable else "null"}
+        name = "grep" if sub == mixed else "get_weather"
+        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+        for key in ("golden", fixed["key"]):
+            assert blocks[key]["calls"] == [{"name": name, "arguments": arguments}], sub
+            assert blocks[key]["normal_text"] == "", sub
+        old_arguments = {"pattern": None, "path": None} if sub == mixed else {"city": None}
+        assert blocks[baseline["key"]]["calls"] == [{"name": name, "arguments": old_arguments}], sub
+        assert blocks[baseline["key"]]["normal_text"] == "", sub
+        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green", sub
+        assert cell_state(cell, baseline)[0] == ("green" if sub in nullable else "red"), sub
+    tip = leaves[mixed]["tooltip"]
+    assert tip["input"]["kind"] == "text"
+    for name in ("pattern", "path"):
+        assert f"]<]minimax[>[<{name}>null]<]minimax[>[</{name}>" in tip["input"]["text"]
+    assert all(term in tip["description"] for term in ("strict: true", "schema", "string pattern", "nullable path", "anyOf"))
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    tips = [tip, row["cells"]["7.f"]["tooltip"]]
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    for expected, markup in zip(tips, json.loads(result.stdout)):
+        left = re.search(r'<td class="cin">(.*?)</td>', markup, re.S)
+        assert left is not None
+        text = unescape(re.sub(r"<[^>]+>", "", left.group(1)))
+        assert text == f"input_text='{expected['input']['text']}'"
+        assert "<th>input</th>" in markup
+        right = re.search(rf'<td data-cand="{fixed["key"]}"[^>]*>(.*?)</td>', markup, re.S)
+        assert right is not None
+        output = unescape(re.sub(r"<[^>]+>", "", right.group(1)))
+        block = next(candidate["block"] for candidate in expected["candidates"] if candidate["key"] == fixed["key"])
+        assert f"normal_text='{block['normal_text']}'" in output
+        assert "calls=" in output
+        if expected is tip:
+            assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
+    for row in tab["rows"]:
+        if row.get("family") and row["family"] != "minimax_m3":
+            for sub in ("7-4", "7-5"):
+                cell = row["cells"][sub]
+                assert cell_state(cell, reference)[0] == "na", row["family"]
+                assert cell["tooltip"]["na_note"], row["family"]
+
+
+@pytest.mark.parametrize("mode,baseline_key,fixed_key", [
+    ("batch", "dynamo_v1-b-9-2-1", "dynamo_v1-b-9-2-2"),
+    ("streamv1", "dynamo_v2-0-7-4", "dynamo_v2-0-7-5"),
+])
+def test_minimax_nested_union_fixtures_preserve_history_and_input(
+    model_v2: dict, mode: str, baseline_key: str, fixed_key: str,
+) -> None:
+    tab = _tab(model_v2, f"tab-toolcalling-{mode}")
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
+    columns = {column["sub"]: column for column in tab["columns"]}
+    expected = {
+        "7-6": {
+            **{f"pagination_{union}": {
+                "page": 2, "per_page": 25, "after": None, "mode": "one",
+                "cursor": None, "config": {"enabled": True},
+            } for union in ("anyof", "oneof")},
+            **{f"options_{union}": {"enabled": True, "mode": "one"}
+               for union in ("anyof", "oneof")},
+        },
+        "7-7": {f"{union}_{literal}": {"page": 2}
+                for union in ("anyof", "oneof") for literal in ("const", "enum")},
+        "7-8": {f"{union}_ambiguous": {"value": "2"} for union in ("anyof", "oneof")},
+    }
+    tips = []
+    for sub, arguments in expected.items():
+        cell = row["cells"][sub]
+        assert cell["case_id"] == f"TOOLCALLING.{mode}.{sub}"
+        assert columns[sub]["label"] == sub
+        assert columns[sub]["group_key"] == "args"
+        assert cell_state(cell, candidates[fixed_key])[0] == "green", sub
+        assert cell_state(cell, candidates[baseline_key])[0] == ("green" if sub == "7-8" else "red"), sub
+        tip = cell["tooltip"]
+        blocks = {candidate["key"]: candidate["block"] for candidate in tip["candidates"]}
+        for key in ("golden", fixed_key):
+            assert blocks[key]["calls"] == [{"name": "list_notes", "arguments": arguments}], sub
+            assert blocks[key]["normal_text"] == "", sub
+        baseline = blocks[baseline_key]["calls"][0]["arguments"]
+        if sub == "7-6":
+            assert baseline["pagination_anyof"]["page"] == "2"
+            assert baseline["options_oneof"]["enabled"] == "true"
+        elif sub == "7-7":
+            assert all(value["page"] == "2" for value in baseline.values())
+        else:
+            assert baseline == arguments
+        batch_path = _cache_root() / "toolcalling/fixtures-batch-v1/inputs/minimax_m3" / f"TOOLCALLING.batch.{sub}.yaml"
+        raw_input = yaml.safe_load(batch_path.read_text())["cases"][f"TOOLCALLING.batch.{sub}"]["model_text"]
+        stimulus = tip["input"]
+        assert stimulus["kind"] == ("text" if mode == "batch" else "chunks")
+        assert (stimulus["text"] if mode == "batch" else
+                "".join(chunk["delta_text"] for chunk in stimulus["chunks"])) == raw_input
+        tips.append(tip)
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    for tip, markup in zip(tips, json.loads(result.stdout)):
+        left = [unescape(re.sub(r"<[^>]+>", "", match))
+                for match in re.findall(r'<td class="cin">(.*?)</td>', markup, re.S)]
+        if mode == "batch":
+            assert len(left) == 1
+            assert left[0] == f"input_text='{tip['input']['text']}'"
+            assert "<th>input</th>" in markup
+            right = re.search(rf'<td data-cand="{fixed_key}"[^>]*>(.*?)</td>', markup, re.S)
+            assert right is not None
+            output = unescape(re.sub(r"<[^>]+>", "", right.group(1)))
+            block = next(candidate["block"] for candidate in tip["candidates"] if candidate["key"] == fixed_key)
+            assert f"normal_text='{block['normal_text']}'" in output
+            assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
+        else:
+            chunks = tip["input"]["chunks"]
+            assert len(left) == len(chunks) + 1
+            assert all(chunk["delta_text"] in text for chunk, text in zip(chunks, left))
+            golden = next(candidate["block"] for candidate in tip["candidates"] if candidate["key"] == "golden")
+            assert "Golden output" in left[-1]
+            assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
+
+
+@pytest.mark.parametrize("parent", ["7-4", "7-5"])
+def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    variants = row["cells"][parent]["tooltip"]["variants"]
+    assert len(variants) > 1
+    script = r"""
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const context = {};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  function implOf('),
+  source.indexOf('  // Parsers with limited family coverage')), context);
+const variants = JSON.parse(fs.readFileSync(0, 'utf8'));
+function grid(variant) {
+  const rows = [0, 1].map(() => {
+    const columns = variant.candidates.filter(c => c.key !== 'golden').map((c, order) => {
+      const classes = new Set();
+      return {key: c.key, getAttribute: name => ({'data-cand': c.key, 'data-cand-order': order})[name],
+        classList: {toggle(name, on) {if (on) classes.add(name); else classes.delete(name);},
+          contains: name => classes.has(name)}};
+    });
+    return {columns, querySelectorAll: () => columns.slice(),
+      appendChild(column) {columns.splice(columns.indexOf(column), 1); columns.push(column);}};
+  });
+  return {rows, querySelectorAll: selector => selector === 'tr' ? rows : rows.flatMap(r => r.columns)};
+}
+const fixed = 'dynamo_v1-b-9-2-1', old = 'dynamo_v1-b-9-2-0';
+for (const portalled of [false, true]) {
+  const grids = variants.map(grid);
+  const tip = {querySelector: () => grids[0],
+    querySelectorAll: selector => selector === '.cand' ? [] : grids};
+  const cell = {_ttip: portalled ? tip : null, querySelector: () => portalled ? null : tip};
+  for (const [base, selected] of [[fixed, [fixed]], [old, [old, fixed]],
+      [fixed, [fixed, old]], [old, [old]], [null, []]]) {
+    context.toggleCands(cell, new Set(selected), base);
+    for (const table of grids) {
+      for (const row of table.rows) {
+        assert.deepEqual(row.columns.filter(c => !c.classList.contains('col-hidden')).map(c => c.key), selected);
+        assert.deepEqual(row.columns.filter(c => c.classList.contains('col-ref')).map(c => c.key), base ? [base] : []);
+      }
+    }
+  }
+}
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance.js")],
+        input=json.dumps(variants), text=True, capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.parametrize("changed_field,value,missing_family", [
     (None, None, None), ("starting_state", "Reasoning", None),
     ("tool_output_mode", "GuidedJson", None), ("named_tool", "get_weather", None),
@@ -543,6 +775,17 @@ def test_unified_source_selection_inherits_previous_family_capture(
 ])
 def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mode, want):
     assert table._full_label(impl, version, mode) == want
+
+
+def test_tc_source_capture_versions_survive_label_parsing():
+    impl = "dynamo_v2"
+    versions = ["0.7.0+source.0abc123", "0.6.1"]
+    items = [
+        {"key": f"{impl}-{version}", "label": table._full_label(impl, version, "stream")}
+        for version in reversed(versions)
+    ]
+    candidates = table._candidate_model(table._sort_candidates(items))
+    assert [candidate["version"] for candidate in candidates] == versions
 
 
 def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
@@ -903,7 +1146,18 @@ def test_stream_null_columns_match_unified_numbers(model_v2):
         assert row["cells"][label]["case_id"] == "TOOLCALLING.streamv1." + label
 
 
-@pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5"])
+@pytest.mark.parametrize("mode", ["batch", "streamv1"])
+def test_numbered_cases_keep_argument_group_and_natural_fallback_order(mode: str) -> None:
+    cases = {("minimax_m3", sub): {} for sub in (
+        "13-10", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
+    )}
+    assert table.fixtures._discover_sub_cases(mode, cases) == [
+        "7.a", "7-5", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
+    ]
+    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8"))
+
+
+@pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5", "7-6", "7-7", "7-8"])
 @pytest.mark.parametrize("mode", ["batch", "stream", "streamv1"])
 def test_case_description_readers_accept_numbered_suffixes(tmp_path, monkeypatch, suffix, mode):
     doc = tmp_path / "descriptions.data"
