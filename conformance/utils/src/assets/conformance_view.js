@@ -401,8 +401,7 @@
     if (!allCands.length) { return ''; }
     var input = m.input || { kind: null };
     var family = input.family;
-    // Golden is the fixed reference: render its output at the bottom of the INPUT column,
-    // not as a selectable column. Every engine is measured against it.
+    // Golden is the fixed comparison reference, not a selectable engine.
     var golden = null;
     var cands = allCands.filter(function (c) {
       if (c.key === 'golden') { golden = c; return false; }
@@ -434,28 +433,24 @@
         body += row + '</tr>';
       });
     }
-    // Assembled row: keep text input above the GOLDEN output (the reference);
-    // chunked input is already shown in the preceding rows.
-    var inputCell = golden
+    // Text input stands alone; other popups retain their golden reference.
+    var showGolden = golden && input.kind !== 'text';
+    var inputCell = showGolden
       ? outputBlock(golden.block, family, ctx).replace(/\n/g, '<br>')
         + '<br><br><span class="golden-out-cap">Golden output</span>'
       : (body ? 'assembled' : inputTextCell(input, ctx));
-    if (golden && input.kind === 'text') {
-      inputCell = inputTextCell(input, ctx) + '<br><br>' + inputCell;
-    }
     var fin = '<tr class="ttip-final"><td class="cin">' + inputCell + '</td>';
     cands.forEach(function (c, ci) {
       // Red when this candidate's assembled output DIVERGES from the golden oracle
       // (its verdict, classified against golden, is anything but MATCH) — the same
-      // "red = doesn't match golden" rule the matrix cell uses. golden itself is the
-      // input-column reference and never appears here, so it is never flagged.
+      // "red = doesn't match golden" rule the matrix cell uses.
       var diverges = c.block && c.block.verdict && c.block.verdict !== 'MATCH';
       fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
         + (diverges ? ' class="cand-diverge"' : '') + '>'
         + outputBlock(c.block, family, ctx, goldenKinds).replace(/\n/g, '<br>') + '</td>';
     });
     fin += '</tr>';
-    var inputHdr = golden ? 'input / golden output' : 'input';
+    var inputHdr = showGolden ? 'input / golden output' : 'input';
     // The table carries class `ttip-chunks` — conformance.js keys the popup grid on it.
     return '<table class="ttip-chunks"><thead><tr><th>' + escapeHtml(inputHdr) + '</th>' + header
       + '</tr></thead><tbody>' + body + fin + '</tbody></table>';
@@ -611,7 +606,7 @@
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
-    // Golden is the oracle shown in the input column, not a selectable engine. Make it the
+    // Golden is the fixed oracle, not a selectable engine. Make it the
     // hidden comparison base ONLY when no engine is the default Reference — otherwise an
     // engine (Dynamo on the Unified tab) is the starred REF and golden is just the fixed
     // NΔ baseline (cmp.golden). A golden REF would color every cell green (it never diverges

@@ -447,10 +447,16 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
         left = re.search(r'<td class="cin">(.*?)</td>', markup, re.S)
         assert left is not None
         text = unescape(re.sub(r"<[^>]+>", "", left.group(1)))
-        assert f"input_text='{expected['input']['text']}'" in text
-        assert ("Golden output" in text) == (expected is tip)
+        assert text == f"input_text='{expected['input']['text']}'"
+        assert "<th>input</th>" in markup
+        right = re.search(rf'<td data-cand="{fixed["key"]}"[^>]*>(.*?)</td>', markup, re.S)
+        assert right is not None
+        output = unescape(re.sub(r"<[^>]+>", "", right.group(1)))
+        block = next(candidate["block"] for candidate in expected["candidates"] if candidate["key"] == fixed["key"])
+        assert f"normal_text='{block['normal_text']}'" in output
+        assert "calls=" in output
         if expected is tip:
-            assert '"pattern":"null","path":null' in text
+            assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
     for row in tab["rows"]:
         if row.get("family") and row["family"] != "minimax_m3":
             for sub in ("7-4", "7-5"):
@@ -532,14 +538,21 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
                 for match in re.findall(r'<td class="cin">(.*?)</td>', markup, re.S)]
         if mode == "batch":
             assert len(left) == 1
-            assert f"input_text='{tip['input']['text']}'" in left[0]
+            assert left[0] == f"input_text='{tip['input']['text']}'"
+            assert "<th>input</th>" in markup
+            right = re.search(rf'<td data-cand="{fixed_key}"[^>]*>(.*?)</td>', markup, re.S)
+            assert right is not None
+            output = unescape(re.sub(r"<[^>]+>", "", right.group(1)))
+            block = next(candidate["block"] for candidate in tip["candidates"] if candidate["key"] == fixed_key)
+            assert f"normal_text='{block['normal_text']}'" in output
+            assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
         else:
             chunks = tip["input"]["chunks"]
             assert len(left) == len(chunks) + 1
             assert all(chunk["delta_text"] in text for chunk, text in zip(chunks, left))
-        golden = next(candidate["block"] for candidate in tip["candidates"] if candidate["key"] == "golden")
-        assert "Golden output" in left[-1]
-        assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
+            golden = next(candidate["block"] for candidate in tip["candidates"] if candidate["key"] == "golden")
+            assert "Golden output" in left[-1]
+            assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
 
 
 @pytest.mark.parametrize("parent", ["7-4", "7-5"])
