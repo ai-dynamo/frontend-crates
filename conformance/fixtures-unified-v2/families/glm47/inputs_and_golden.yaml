@@ -6682,3 +6682,89 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  arg_json_null_ref:
+    lifecycle: active
+    scenario: arg_json_null_ref
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.ref
+    historical_ids: []
+    request:
+      input: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type:
+              - string
+              - 'null'
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>
+      - delta_text: city
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'null'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.ref
+    historical_ids: []
+    request:
+      input: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>
+      - delta_text: city
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'null'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'

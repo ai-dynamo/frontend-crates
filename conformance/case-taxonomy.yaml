@@ -96,6 +96,10 @@ suites:
           f: {desc: Numeric precision edge preserves integer-like literal, required: true}
           "4": {desc: Nullable string schema converts literal null text to JSON null, required: false}
           "5": {desc: Non-nullable string schema preserves literal null text as a string, required: false}
+          "4.inline": {desc: Inline nullable string schema converts literal null text to JSON null, required: false}
+          "5.inline": {desc: Inline string-only schema preserves literal null text as a string, required: false}
+          "4.ref": {desc: Local schema reference permits JSON null, required: false}
+          "5.ref": {desc: Local schema reference requires the literal null text to remain a string, required: false}
           "4.anyof": {desc: "The request tool schema declares `city` as `string | null` using anyOf.", required: false}
           "4.oneof": {desc: "The request tool schema declares `city` as `string | null` using oneOf.", required: false}
           "4.nullable": {desc: "The request tool schema declares `city` as string with nullable: true.", required: false}

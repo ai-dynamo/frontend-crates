@@ -513,6 +513,8 @@ def test_scenario_families_matches_declared_scope():
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
+        "arg_json_null_ref": {"glm47"},
+        "arg_string_null_ref": {"glm47"},
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
@@ -555,6 +557,35 @@ def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
     assert case["golden"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
     _assert_input_carries_events(family, scenario, case)
     assert "schema" in case["description"]
+
+
+@pytest.mark.parametrize("scenario,value", [("arg_json_null_ref", None), ("arg_string_null_ref", "null")])
+def test_glm_reference_goldens_use_the_tool_parameters_root(scenario: str, value: object) -> None:
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    case["tools"] = json.loads(json.dumps(case["tools"]))
+    parameters = case["tools"][0]["parameters"]
+    assert parameters["properties"]["city"] == {"$ref": "#/$defs/City"}
+    assert case["golden"][0]["arguments"] == {"city": value}
+    assert matches_schema({"city": value}, parameters)
+    _assert_input_carries_events("glm47", scenario, case)
+    parameters["$defs"]["City"] = {"type": "integer"}
+    assert not matches_schema({"city": value}, parameters)
+
+
+def test_reference_oracle_preserves_chained_targets_and_sibling_constraints() -> None:
+    parameters = {"$defs": {"City/Type": {"type": ["string", "null"]},
+                            "Alias": {"$ref": "#/$defs/City~1Type"}},
+                  "properties": {"city": {"$ref": "#/$defs/Alias", "type": "string"}}}
+    assert matches_schema({"city": "null"}, parameters)
+    assert not matches_schema({"city": None}, parameters)
+
+
+@pytest.mark.parametrize("reference", ["https://example.com/schema", "#/$defs/missing", "#/$defs/Loop"])
+def test_reference_oracle_rejects_unresolved_or_cyclic_targets(reference: str) -> None:
+    parameters = {"$defs": {"Loop": {"$ref": "#/$defs/Loop"}},
+                  "properties": {"city": {"$ref": reference}}}
+    with pytest.raises(AssertionError):
+        matches_schema({"city": None}, parameters)
 
 
 @pytest.mark.parametrize("family", FAMILIES)
@@ -648,21 +679,21 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v4": 93,
             "deepseek_v41": 93,
             "gemma4": 95,
-            "glm47": 94,
+            "glm47": 96,
             "kimi_k2": 93,
             "kimi_k3": 101,
             "muse_glimmer": 94,
             "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 756
+    assert sum(per_family.values()) == 758
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 106
+    assert len(UNIFIED_TAX) == 108
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1058,10 +1089,11 @@ def _assert_input_carries_events(family, scenario, case):
                 )
                 if tool_schema is None:
                     continue
-                properties = tool_schema.get("parameters", {}).get("properties", {})
+                parameters = tool_schema.get("parameters", {})
+                properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    if value == "null" and family in {"qwen3", "glm47"} and matches_schema(None, schema):
+                    if value == "null" and family in {"qwen3", "glm47"} and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
         else:
             candidates = []

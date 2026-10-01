@@ -386,6 +386,8 @@ def test_batch_null_groups_preserve_coercion_history(model_v2: dict) -> None:
         "7-5", "7-5.union", "7-5.sibling_anyof", "7-5.sibling_oneof",
         "7-5.untyped_branch", "7-5.const", "7-5.enum", "7-5.untyped_const", "7-5.untyped_enum",
     }
+    glm_nullable = {"7-4.inline", "7-4.ref"}
+    glm_strings = {"7-5.inline", "7-5.ref"}
     columns = {column["sub"]: column for column in tab["columns"]}
     assert {column["label"] for column in tab["columns"]
             if column["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
@@ -458,11 +460,20 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
         if expected is tip:
             assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
     for row in tab["rows"]:
-        if row.get("family") and row["family"] != "minimax_m3":
+        if row.get("family") and row["family"] not in {"minimax_m3", "glm47"}:
             for sub in ("7-4", "7-5"):
                 cell = row["cells"][sub]
                 assert cell_state(cell, reference)[0] == "na", row["family"]
                 assert cell["tooltip"]["na_note"], row["family"]
+    glm = next(row for row in tab["rows"] if row.get("family") == "glm47")
+    glm_leaves = leaf_cells(glm)
+    for sub in glm_nullable | glm_strings:
+        cell = glm_leaves[sub]
+        assert cell["tooltip"]["input"]["kind"] == "text"
+        assert cell_state(cell, reference)[0] == "green", sub
+        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+        expected = [{"name": "get_weather", "arguments": {"city": None if sub in glm_nullable else "null"}}]
+        assert blocks["golden"]["calls"] == blocks[reference["key"]]["calls"] == expected
 
 
 @pytest.mark.parametrize("mode,baseline_key,fixed_key", [
@@ -1221,7 +1232,7 @@ process.stdout.write(JSON.stringify(results));
 
 
 @pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
-def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2, tab_id):
+def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, tab_id: str) -> None:
     tab = _tab(model_v2, tab_id)
     assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
@@ -1232,11 +1243,12 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2, tab_id)
         if row.get("family") not in families:
             continue
         mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
+        refs = tab_id == "tab-unified" and row["family"] == "glm47"
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            assert len(cell["variants"]) == count + int(mixed)
+            assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
             if tab_id.endswith("streamv1"):

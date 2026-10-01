@@ -339,6 +339,10 @@ The optional null-coercion variants below appear under the visible batch columns
 
 - **`TOOLCALLING.batch.7-4`** The request tool schema permits JSON null. Bare parameter text `null` becomes JSON `null`. Variants cover a nullable type array (base), `.anyof`, `.oneof`, `.nullable`, and an anyOf const-null branch (`.const`).
 - **`TOOLCALLING.batch.7-5`** The request tool schema excludes JSON null for the tested value, so bare parameter text `null` remains string `"null"`. Variants cover a string type (base), a non-nullable `.union`, intersecting `.sibling_anyof` and `.sibling_oneof` constraints, `.untyped_branch`, an anyOf string-const branch (`.const`), and a typed `.enum`.
+- **`TOOLCALLING.batch.7-4.inline`** GLM inline-schema control for PR #268: a nullable string type array converts bare `null` to JSON null.
+- **`TOOLCALLING.batch.7-5.inline`** GLM inline-schema control for PR #268: a string-only type preserves bare `null` as string `"null"`.
+- **`TOOLCALLING.batch.7-4.ref`** GLM regression for PR #268: the parameter uses an unresolved local `$ref` to a nullable string definition in the tool parameters root. Bare `null` must become JSON null after consulting that definition.
+- **`TOOLCALLING.batch.7-5.ref`** GLM regression for PR #268: the parameter uses an unresolved local `$ref` to a string-only definition in the tool parameters root. Bare `null` must remain string `"null"`; absence of an inline `type` does not permit JSON null.
 - **`TOOLCALLING.batch.7-5.untyped_const`** Direct `const: "null"` without a `type` still requires the literal string `"null"`.
 - **`TOOLCALLING.batch.7-5.untyped_enum`** Direct `enum: ["null"]` without a `type` still requires the literal string `"null"`.
 - **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.

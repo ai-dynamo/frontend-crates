@@ -1920,6 +1920,32 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
+# GLM's XML values have no native type marker. Keep these references unresolved
+# in the request so the parser must consult definitions on the parameters root.
+EDGE += [
+    (
+        scenario,
+        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
+                         'the tool parameters root; the referenced definition controls null coercion.'),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            _NULL_TEXT_INPUTS["glm47"],
+            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "get_weather", "parameters": {
+            "type": "object", "$defs": {"City": schema},
+            "properties": {"city": {"$ref": "#/$defs/City"}},
+        }}]},
+    )
+    for scenario, label, schema, value in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    )
+]
+
 EDGE.append((
     "arg_null_mixed_labels",
     'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
