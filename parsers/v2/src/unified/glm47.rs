@@ -87,6 +87,22 @@ mod tests {
             "$defs": {"Text": {"type": "string"}, "Scalar": {"type": ["string", "integer"]}},
             "properties": {"data": {"$ref": "#/$defs/Text"}, "count": {"$ref": "#/$defs/Scalar", "type": "integer"}}
         });
+        let integrated = serde_json::json!({
+            "type": "object",
+            "$defs": {
+                "Text": {"type": "string"},
+                "Scalar": {"type": ["string", "integer"]},
+                "Numbers": {"type": ["integer", "number"]},
+                "Nullable": {"type": ["string", "null"]}
+            },
+            "properties": {
+                "data": {"$ref": "#/$defs/Text"},
+                "count": {"$ref": "#/$defs/Scalar", "allOf": [{"type": "integer"}]},
+                "fraction": {"$ref": "#/$defs/Numbers"},
+                "optional": {"$ref": "#/$defs/Nullable"},
+                "literal_null": {"$ref": "#/$defs/Text"}
+            }
+        });
         for (name, schema, body, expected) in [
             (
                 "authenticate_first_name",
@@ -100,6 +116,12 @@ mod tests {
                 "<arg_key>data</arg_key><arg_value>{\"x\":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value>",
                 serde_json::json!({"data":"{\"x\":1}","count":42}),
             ),
+            (
+                "capture_payload",
+                integrated,
+                "<arg_key>data</arg_key><arg_value>{\"x\":\"café\"}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value><arg_key>fraction</arg_key><arg_value>3.5</arg_value><arg_key>optional</arg_key><arg_value>null</arg_value><arg_key>literal_null</arg_key><arg_value>null</arg_value>",
+                serde_json::json!({"data":"{\"x\":\"café\"}","count":42,"fraction":3.5,"optional":null,"literal_null":"null"}),
+            ),
         ] {
             let tools = vec![Tool {
                 name: name.into(),
@@ -110,7 +132,7 @@ mod tests {
             let input = format!("<tool_call>{name}{body}</tool_call>");
             let expected_events = vec![UnifiedEvent::ToolCall {
                 name: name.into(),
-                arguments: expected.clone(),
+                arguments: expected,
             }];
             for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
                 assert_eq!(parse(&tools, &input, Some(split)), expected_events);

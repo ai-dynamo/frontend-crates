@@ -499,13 +499,13 @@ fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<boo
     }
 }
 
-fn has_unsupported_null_ref_scope(schema: &Value) -> bool {
+fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
     ["$id", "$dynamicRef", "$recursiveRef"]
         .iter()
         .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())
 }
 
-fn resolve_null_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
+fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
     // URI percent-decoding precedes JSON Pointer's ~0/~1 decoding.
     let pointer = reference.strip_prefix('#')?;
     let decoded;
@@ -535,7 +535,7 @@ fn resolve_null_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a V
     // A nested $id changes the reference scope. Do not jump through it while
     // resolving a fragment against the original tool-parameter document.
     for (end, _) in pointer.char_indices().filter(|(_, ch)| *ch == '/').skip(1) {
-        if has_unsupported_null_ref_scope(root.pointer(&pointer[..end])?) {
+        if has_unsupported_schema_ref_scope(root.pointer(&pointer[..end])?) {
             return None;
         }
     }
@@ -567,7 +567,7 @@ fn schema_null_match<'a>(
     if let Some(reference) = schema.get("$ref") {
         let target = reference
             .as_str()
-            .and_then(|reference| resolve_null_schema_ref(reference, root));
+            .and_then(|reference| resolve_local_schema_ref(reference, root));
         permits = if let Some(target) = target
             && ref_depth < MAX_NULL_SCHEMA_REF_DEPTH
             && !active_refs
@@ -652,13 +652,17 @@ fn schema_type_match(
     *remaining = remaining.checked_sub(1)?;
     // Local references are common in strict tool schemas. Limit traversal so a
     // cyclic definition cannot recurse indefinitely while deciding a type hint.
-    if depth >= 16 {
+    if depth > 16
+        || schema.get("$dynamicRef").is_some()
+        || schema.get("$recursiveRef").is_some()
+        || (schema.get("$id").is_some() && !std::ptr::eq(schema, root))
+    {
         return None;
     }
     let reference_hint = schema
         .get("$ref")
         .and_then(Value::as_str)
-        .and_then(|reference| resolve_null_schema_ref(reference, root))
+        .and_then(|reference| resolve_local_schema_ref(reference, root))
         .and_then(|target| schema_type_match(root, target, expected, depth + 1, remaining));
     let matches = |ty: &Value| {
         ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
@@ -678,7 +682,7 @@ fn schema_type_match(
         };
         let branches = options
             .iter()
-            .map(|option| schema_type_match(root, option, expected, depth + 1, remaining));
+            .map(|option| schema_type_match(root, option, expected, depth, remaining));
         let branch_hint = if keyword == "allOf" {
             branches.flatten().reduce(|left, right| left && right)
         } else {
@@ -817,6 +821,52 @@ mod tests {
     }
 
     #[test]
+    fn inline_unions_preserve_string_hints_within_node_budget() {
+        let mut parameter = serde_json::json!({"type": "string"});
+        for keyword in ["anyOf", "oneOf", "allOf"].into_iter().cycle().take(16) {
+            parameter = serde_json::json!({keyword: [parameter]});
+        }
+        let tools = vec![ToolDefinition {
+            name: "set_label".into(),
+            parameters: Some(null_ref_parameters(parameter)),
+        }];
+        let wire = "<tool_call>set_label<arg_key>label</arg_key><arg_value>{\"x\":1}</arg_value></tool_call>";
+        let (calls, _) = try_tool_call_parse_glm47(wire, &get_test_config(), Some(&tools)).unwrap();
+        let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(arguments["label"], serde_json::json!("{\"x\":1}"));
+    }
+
+    #[test]
+    fn type_hints_bound_reference_depth() {
+        for (references, expected) in [(16, serde_json::json!(42)), (17, serde_json::json!("42"))] {
+            let mut definitions = serde_json::Map::new();
+            for index in 0..references {
+                definitions.insert(
+                    format!("step_{index}"),
+                    if index + 1 == references {
+                        serde_json::json!({"type": "integer"})
+                    } else {
+                        serde_json::json!({"$ref": format!("#/$defs/step_{}", index + 1)})
+                    },
+                );
+            }
+            let tools = vec![ToolDefinition {
+                name: "set_label".into(),
+                parameters: Some(serde_json::json!({
+                    "type": "object", "properties": {"label": {"$ref": "#/$defs/step_0"}},
+                    "$defs": definitions
+                })),
+            }];
+            let wire =
+                "<tool_call>set_label<arg_key>label</arg_key><arg_value>42</arg_value></tool_call>";
+            let (calls, _) =
+                try_tool_call_parse_glm47(wire, &get_test_config(), Some(&tools)).unwrap();
+            let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(arguments["label"], expected, "{references} references");
+        }
+    }
+
+    #[test]
     fn branching_reference_cycles_exhaust_a_shared_budget() {
         let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
         let schema = serde_json::json!({
@@ -846,6 +896,18 @@ mod tests {
                 "café+": {"type": "integer"},
                 "a/b~c": {"type": "integer"},
                 "Text": {"type": "string"},
+                "Nullable": {"type": ["string", "null"]},
+                "Numbers": {"type": ["integer", "number"]},
+                "NumbersReverse": {"type": ["number", "integer"]},
+                "NumberOrBoolean": {"anyOf": [{"type": "number"}, {"type": "boolean"}]},
+                "Alias": {"$ref": "#/$defs/postal%20code"},
+                "Scoped": {
+                    "$id": "https://example.com/scoped",
+                    "$defs": {"postal code": {"type": "string"}},
+                    "$ref": "#/$defs/postal%20code"
+                },
+                "Dynamic": {"$dynamicRef": "#/$defs/postal%20code"},
+                "Recursive": {"$recursiveRef": "#"},
                 "Loop": {"$ref": "#/$defs/Loop"}
             },
             "properties": {
@@ -858,7 +920,17 @@ mod tests {
                 "escaped": {"$ref": "#/$defs/a%7E1b%7E0c"},
                 "cycle": {"$ref": "#/$defs/Loop"},
                 "typed_cycle": {"$ref": "#/$defs/Loop", "type": "integer"},
-                "payload": {"$ref": "#/$defs/Text"}
+                "payload": {"$ref": "#/$defs/Text"},
+                "nullable": {"$ref": "#/$defs/Nullable"},
+                "literal_null": {"$ref": "#/$defs/Text"},
+                "integer_first": {"$ref": "#/$defs/Numbers"},
+                "number_first": {"$ref": "#/$defs/NumbersReverse"},
+                "bool_union": {"$ref": "#/$defs/NumberOrBoolean"},
+                "allof_narrow": {"$ref": "#/$defs/Scalar", "allOf": [{"type": "integer"}]},
+                "chain": {"$ref": "#/$defs/Alias"},
+                "scoped": {"$ref": "#/$defs/Scoped"},
+                "dynamic": {"$ref": "#/$defs/Dynamic"},
+                "recursive": {"$ref": "#/$defs/Recursive"}
             }
         });
         for (field, raw, expected) in [
@@ -872,6 +944,16 @@ mod tests {
             ("cycle", "42", serde_json::json!("42")),
             ("typed_cycle", "42", serde_json::json!(42)),
             ("payload", "{\"x\":1}", serde_json::json!("{\"x\":1}")),
+            ("nullable", "null", serde_json::json!(null)),
+            ("literal_null", "null", serde_json::json!("null")),
+            ("integer_first", "3.5", serde_json::json!(3.5)),
+            ("number_first", "42", serde_json::json!(42)),
+            ("bool_union", "true", serde_json::json!(true)),
+            ("allof_narrow", "42", serde_json::json!(42)),
+            ("chain", "42", serde_json::json!(42)),
+            ("scoped", "42", serde_json::json!("42")),
+            ("dynamic", "42", serde_json::json!("42")),
+            ("recursive", "42", serde_json::json!("42")),
         ] {
             let tools = vec![ToolDefinition {
                 name: "capture_payload".into(),
