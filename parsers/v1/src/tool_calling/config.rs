@@ -182,6 +182,13 @@ impl XmlParserConfig {
     }
 }
 
+/// Separator the DeepSeek V3.2/V4 encoders insert between assistant content and
+/// the DSML tool-call block. It is template framing, not content: the reference
+/// parser consumes it with the block, and re-rendering a message whose content
+/// still ends with it doubles it, so the re-rendered history no longer matches
+/// the generated tokens.
+pub const DSML_BLOCK_SEPARATOR: &str = "\n\n";
+
 /// Configuration for DSML-style tool call parser (DeepSeek V3.2+)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DsmlParserConfig {
@@ -457,6 +464,10 @@ impl ParserConfig {
             ParserConfig::Typescript => vec![],
             ParserConfig::Dsml(config) => {
                 vec![
+                    // The DeepSeek encoder renders `content + "\n\n" + block`, so the
+                    // separator belongs to the block. Matching it here makes the stream
+                    // jail hold it instead of emitting it as content.
+                    format!("{DSML_BLOCK_SEPARATOR}{}", config.block_start),
                     config.block_start.clone(),
                     config.invoke_start_prefix.clone(),
                 ]
