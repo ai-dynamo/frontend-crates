@@ -406,7 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn nullable_nested_object_members_follow_union_schema() {
+    fn nested_union_child_values_follow_payload_shape() {
         let tools = vec![Tool {
             name: "list_notes".into(),
             description: None,
@@ -414,34 +414,44 @@ mod tests {
                 "properties": {"pagination": {"anyOf": [
                     {"type": "object", "properties": {
                         "page": {"type": "integer"},
-                        "after": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                        "mode": {"anyOf": [{"type": "string"}, {"type": "object"}]},
+                        "after": {"type": ["object", "null"]},
+                        "config": {"type": "object", "properties": {"enabled": {"type": "boolean"}}}
                     }},
                     {"type": "null"}
                 ]}}
             }),
             strict: Some(true),
         }];
-        let out = parse_chunks(
-            &tools,
-            &[concat!(
-                "]<]minimax[>[<tool_call>",
-                "]<]minimax[>[<invoke name=\"list_notes\">",
-                "]<]minimax[>[<pagination>",
-                "]<]minimax[>[<page>2]<]minimax[>[</page>",
-                "]<]minimax[>[<after>null]<]minimax[>[</after>",
-                "]<]minimax[>[</pagination>",
-                "]<]minimax[>[</invoke>",
-                "]<]minimax[>[</tool_call>"
-            )],
+        let input = concat!(
+            "]<]minimax[>[<tool_call>",
+            "]<]minimax[>[<invoke name=\"list_notes\">",
+            "]<]minimax[>[<pagination>",
+            "]<]minimax[>[<page>2]<]minimax[>[</page>",
+            "]<]minimax[>[<mode>one]<]minimax[>[</mode>",
+            "]<]minimax[>[<after>null]<]minimax[>[</after>",
+            "]<]minimax[>[<config>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[</config>",
+            "]<]minimax[>[</pagination>",
+            "]<]minimax[>[</invoke>",
+            "]<]minimax[>[</tool_call>"
         );
-        let merged = out.coalesce_calls();
-        assert_eq!(merged.calls.len(), 1);
-        let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
-        assert_eq!(
-            args,
-            serde_json::json!({"pagination": {"page": 2, "after": null}})
-        );
+        for width in [1, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let merged = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(merged.calls.len(), 1);
+            let args: serde_json::Value = serde_json::from_str(&merged.calls[0].arguments).unwrap();
+            assert_eq!(
+                args,
+                serde_json::json!({"pagination": {"page": 2, "mode": "one", "after": null, "config": {"enabled": true}}}),
+                "width {width}"
+            );
+        }
     }
+
     #[test]
     fn literal_null_branch_does_not_erase_nested_integer_type() {
         for union in ["anyOf", "oneOf"] {

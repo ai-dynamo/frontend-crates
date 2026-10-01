@@ -109,6 +109,9 @@ suites:
           "5.untyped_const": {desc: 'The request tool schema has const: "null" without a type; JSON null is excluded.', required: false}
           "5.untyped_enum": {desc: 'The request tool schema has enum: ["null"] without a type; JSON null is excluded.', required: false}
           "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
+          "6": {desc: Nested members retain declared types through a unique object union branch, required: false}
+          "7": {desc: Null-only const and enum alternatives do not make an object union ambiguous, required: false}
+          "8": {desc: Ambiguous object union branches preserve the existing string fallback, required: false}
       "8":
         title: Narration around calls
         required: true
@@ -237,6 +240,9 @@ suites:
           "5.enum": {desc: "The request tool schema requires string alongside an enum containing string \"null\" and JSON null; the type excludes JSON null.", required: false}
           "4.mixed_labels": {desc: Mixed nullable label and note with a literal string field, required: false}
           "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
+          "6": {desc: Nested members retain declared types through a unique object union branch, required: false}
+          "7": {desc: Null-only const and enum alternatives do not make an object union ambiguous, required: false}
+          "8": {desc: Ambiguous object union branches preserve the existing string fallback, required: false}
       "8":
         title: Narration around calls
         required: true

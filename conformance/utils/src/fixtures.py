@@ -300,6 +300,9 @@ BATCH_SUB_CASE_GROUPS = [
             "7.f",
             "7-4",
             "7-5",
+            "7-6",
+            "7-7",
+            "7-8",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -372,10 +375,11 @@ def _group_by_sub(mode: str) -> dict[str, str]:
     return {sub: label for label, subs in SUB_CASE_GROUPS_BY_MODE[mode] for sub in subs}
 
 
-def _natural_sub_sort_key(sub: str) -> tuple[int, str]:
-    """`8.a` → (8, 'a'); `9` → (9, '')."""
-    parts = sub.split(".")
-    return (int(parts[0]), parts[1] if len(parts) > 1 else "")
+def _natural_sub_sort_key(sub: str) -> tuple[int, int, str]:
+    """Order historical `8.a` and numeric `8-2` / `8-10` suffixes naturally."""
+    parent, _, suffix = sub.partition(".")
+    group, _, number = parent.partition("-")
+    return (int(group), int(number) if number else 0, suffix)
 
 
 def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
@@ -384,8 +388,8 @@ def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
     if display_order is not None:
         group_idx, sub_idx = display_order
         return (0, group_idx, sub_idx, sub)
-    num, suffix = _natural_sub_sort_key(sub)
-    return (1, num, 0, suffix)
+    num, number, suffix = _natural_sub_sort_key(sub)
+    return (1, num, number, suffix)
 
 
 def _subcase_band_class(mode: str, sub: str) -> str:

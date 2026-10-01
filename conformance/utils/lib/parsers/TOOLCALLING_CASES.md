@@ -343,6 +343,12 @@ The optional null-coercion variants below appear under the visible batch columns
 - **`TOOLCALLING.batch.7-5.untyped_enum`** Direct `enum: ["null"]` without a `type` still requires the literal string `"null"`.
 - **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.
 
+The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
+
+- **`TOOLCALLING.batch.7-6`** Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
+- **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
+- **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
+
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
 Model emits narration text before / after / between tool-call blocks.

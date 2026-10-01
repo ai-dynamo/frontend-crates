@@ -366,8 +366,6 @@ fn parse_nested_minimax_xml(
                     .is_some_and(|next| next.starts_with("<item>"))
             {
                 Some(StackValue::Array(Vec::new()))
-            } else if schema_has_type(child_schema.as_ref(), "object") {
-                Some(StackValue::Object(Map::new()))
             } else {
                 None
             };
@@ -1032,6 +1030,31 @@ NS|</tool_call>"#;
             let args: serde_json::Value =
                 serde_json::from_str(&calls[0].function.arguments).unwrap();
             assert_eq!(args["city"], expected, "{label}");
+        }
+    }
+
+    #[test]
+    fn nested_union_child_values_preserve_scalar_and_object_shapes() {
+        let tok = "]<]minimax[>[";
+        let config = MiniMaxM3ParserConfig::default();
+        for union in ["anyOf", "oneOf"] {
+            let schema = serde_json::json!({union: [
+                {"type": "object", "properties": {
+                    "mode": {"anyOf": [{"type": "string"}, {"type": "object"}]},
+                    "after": {"type": ["object", "null"]},
+                    "config": {"type": "object", "properties": {"enabled": {"type": "boolean"}}}
+                }},
+                {"type": "null"}
+            ]});
+            let raw = format!(
+                "{tok}<mode>one{tok}</mode>{tok}<after>null{tok}</after>\
+                 {tok}<config>{tok}<enabled>true{tok}</enabled>{tok}</config>"
+            );
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(schema), &config),
+                serde_json::json!({"mode": "one", "after": null, "config": {"enabled": true}}),
+                "{union}"
+            );
         }
     }
 
