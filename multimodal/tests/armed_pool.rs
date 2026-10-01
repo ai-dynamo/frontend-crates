@@ -6,7 +6,7 @@
 
 #![cfg(all(feature = "parallel", target_os = "linux"))]
 
-use dynamo_mm_preprocessor::{MmError, execution};
+use dynamo_multimodal::{MmError, execution};
 
 #[test]
 fn init_pool_arms_fanout_and_pins_the_thread_count() {

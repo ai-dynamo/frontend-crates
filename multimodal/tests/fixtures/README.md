@@ -26,7 +26,7 @@ To regenerate expected decode outputs from the committed inputs:
 from pathlib import Path
 from PIL import Image
 
-for path in Path("mm-preprocessor/tests/fixtures/decode").iterdir():
+for path in Path("multimodal/tests/fixtures/decode").iterdir():
     if path.suffix in {".jpg", ".gif"}:
         path.with_suffix(".rgb").write_bytes(Image.open(path).convert("RGB").tobytes())
 ```
@@ -42,7 +42,7 @@ rgb = np.repeat(np.arange(256, dtype=np.uint8)[:, None], 3, axis=1)
 scaled = (rgb.astype(np.float64) * (1 / 255)).astype(np.float32)
 mean = np.array([0.5, 0.4, 0.3], dtype=np.float32)
 std = np.array([0.5, 0.25, 0.75], dtype=np.float32)
-Path("mm-preprocessor/tests/fixtures/transforms/hf_normalized_u8.f32le").write_bytes(
+Path("multimodal/tests/fixtures/transforms/hf_normalized_u8.f32le").write_bytes(
     ((scaled - mean) / std).astype("<f4").tobytes()
 )
 ```
