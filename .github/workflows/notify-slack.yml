@@ -6,23 +6,35 @@ on:
     # `name: ci` in ci.yml silently disables alerting — change both together.
     workflows: [ci]
     types: [completed]
-  # Lets a maintainer re-report any historical run without waiting for a merge.
-  # Also the only way to exercise this workflow end-to-end, since `workflow_run`
-  # only fires once the file exists on the default branch.
+  # Manual mode: re-report a ci run, or post a custom message. Also the only way
+  # to exercise this workflow end-to-end, since `workflow_run` only fires once
+  # the file exists on the default branch.
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'ID of a ci run to report on'
-        required: true
+        description: 'ID of a ci run to report on. Leave empty for the latest completed run on main.'
+        required: false
+        default: ''
+      message:
+        description: 'Post this text instead of a run report (run_id is then ignored).'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Build and print the message without posting it to Slack.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
   actions: read # required to list the jobs of a *different* workflow run
 
 concurrency:
-  # Guards against event redelivery double-posting. Never cancel: a second
-  # attempt of the same run is a distinct failure worth reporting.
-  group: notify-slack-${{ github.event.workflow_run.id || inputs.run_id }}-${{ github.event.workflow_run.run_attempt || 1 }}
+  # Automatic runs: guards against event redelivery double-posting. Never
+  # cancel: a second attempt of the same run is a distinct failure worth
+  # reporting. Manual runs each get their own group, because GitHub cancels a
+  # queued run when a newer one joins the same group.
+  group: notify-slack-${{ github.event_name == 'workflow_dispatch' && github.run_id || format('{0}-{1}', github.event.workflow_run.id, github.event.workflow_run.run_attempt) }}
   cancel-in-progress: false
 
 jobs:
@@ -43,6 +55,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Verify the webhook secret is configured
+        if: ${{ !inputs.dry_run }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FE_CRATES_WEBHOOK_URL }}
         run: |
@@ -57,13 +70,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+          MESSAGE: ${{ inputs.message }}
         run: |
           set -euo pipefail
 
-          # A dispatched `run_id` is interpolated into an API path; allow digits only.
-          if ! [[ "${RUN_ID}" =~ ^[0-9]+$ ]]; then
-            echo "::error::run_id must be a numeric workflow run ID, got '${RUN_ID}'."
-            exit 1
+          # Slack treats `&`, `<` and `>` as control characters: `<!channel>`
+          # pings everyone and `<url|text>` renders a link. Escape any text a
+          # contributor or dispatcher controls.
+          jq_esc='def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");'
+
+          # Manual posts name who sent them, so nobody mistakes them for a new event.
+          by_line="by GitHub user \`${GITHUB_ACTOR}\` via <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|Notify Slack>"
+
+          if [ -n "${MESSAGE}" ]; then
+            jq -n --arg msg "${MESSAGE}" --arg by "${by_line}" \
+              "${jq_esc}"' { text: (":speech_balloon: \($msg | esc)\n_Sent manually \($by)_") }' >payload.json
+            cat payload.json
+            exit 0
           fi
 
           api() {
@@ -73,6 +96,23 @@ jobs:
               -H "Authorization: Bearer ${GITHUB_TOKEN}" \
               -H "Accept: application/vnd.github+json" "$@"
           }
+
+          if [ -z "${RUN_ID}" ]; then
+            # Latest completed run on main. Filter client-side: the API's
+            # `status=completed` parameter has been seen returning a stale run.
+            RUN_ID="$(api "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?branch=main&exclude_pull_requests=true&per_page=20" \
+              | jq -r '[.workflow_runs[] | select(.status == "completed")][0].id // empty')"
+            if [ -z "${RUN_ID}" ]; then
+              echo "::error::No completed ci run found on main."
+              exit 1
+            fi
+          fi
+
+          # A dispatched `run_id` is interpolated into an API path; allow digits only.
+          if ! [[ "${RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "::error::run_id must be a numeric workflow run ID, got '${RUN_ID}'."
+            exit 1
+          fi
 
           base="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
           run_json="$(mktemp)"
@@ -99,27 +139,40 @@ jobs:
             failed=":x: (no job-level failure — run concluded '$(jq -r .conclusion "${run_json}")')"
           fi
 
+          replay=""
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            replay=":repeat: *Manual replay* ${by_line} — not a new event."
+          fi
+
           jq -n \
             --arg repo "${GITHUB_REPOSITORY}" \
             --arg server "${GITHUB_SERVER_URL}" \
             --arg failed "${failed}" \
+            --arg replay "${replay}" \
             --slurpfile run "${run_json}" \
-            '# The commit title is contributor-controlled. Escape Slack control
-             # characters so a title cannot inject `<!channel>` pings or
-             # disguised links.
-             def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+            "${jq_esc}"'
              $run[0] as $r
-             | { text: (
-                 ":alert: *\($repo) — `\($r.head_branch)` CI failure*\n"
-                 + "workflow `\($r.name)` · attempt \($r.run_attempt) · "
-                 + "<\($server)/\($repo)/commit/\($r.head_sha)|`\($r.head_sha[0:7])`> \($r.display_title | esc)\n"
-                 + "<\($r.html_url)|Run summary>\n"
-                 + $failed
-               ) }' >payload.json
+             | $r.conclusion as $c
+             | "`\($r.head_branch)` CI" as $what
+             # A manual replay can target a run of any result, so the headline
+             # follows the result. Automatic runs only ever reach the last branch.
+             | (if $c == "success" then ":white_check_mark: *\($repo) — \($what) passed*"
+                elif $c == "cancelled" or $c == "skipped" then ":heavy_minus_sign: *\($repo) — \($what) \($c)*"
+                elif $c == null then ":hourglass_flowing_sand: *\($repo) — \($what) still running*"
+                else ":alert: *\($repo) — \($what) failure*" end) as $header
+             | (($r.run_started_at // $r.created_at) | fromdateiso8601 | strftime("%Y-%m-%d %H:%M UTC")) as $at
+             | { text: ([
+                   (if $replay != "" then $replay else empty end),
+                   $header,
+                   "workflow `\($r.name)` · attempt \($r.run_attempt) · \($at) · <\($server)/\($repo)/commit/\($r.head_sha)|`\($r.head_sha[0:7])`> \($r.display_title | esc)",
+                   "<\($r.html_url)|Run summary>",
+                   (if $c == "success" or $c == "cancelled" or $c == "skipped" or $c == null then empty else $failed end)
+                 ] | join("\n")) }' >payload.json
 
           cat payload.json
 
       - name: Notify Slack
+        if: ${{ !inputs.dry_run }}
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a  # v2.1.1
         with:
           webhook: ${{ secrets.SLACK_FE_CRATES_WEBHOOK_URL }}
