@@ -11,8 +11,12 @@ def matches_schema(value, schema):
     if schema.get("nullable") is True:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
-             "number": type(value) in (int, float), "integer": type(value) is int,
+             "number": type(value) in (int, float),
+             "integer": type(value) is int or (type(value) is float and value.is_integer()),
+             "boolean": type(value) is bool,
              "object": isinstance(value, dict), "array": isinstance(value, list)}
+    # Reject unknown types even when another union member matches the value.
+    assert all(isinstance(k, str) and k in types for k in kinds), schema
     if kinds and not any(types[k] for k in kinds):
         return False
     if "const" in schema and value != schema["const"]:

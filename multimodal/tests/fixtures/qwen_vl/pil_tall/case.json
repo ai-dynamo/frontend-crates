@@ -2,7 +2,7 @@
  "spec": {
   "family": "qwen_vl",
   "image_token_id": 900,
-  "resample": "aten_u8",
+  "resample": "pil",
   "patch_size": 14,
   "merge_size": 2,
   "temporal_patch_size": 2,
@@ -24,9 +24,6 @@
   901,
   900,
   902,
-  901,
-  900,
-  902,
   8
  ],
  "input_ids": [
@@ -36,8 +33,19 @@
   900,
   900,
   900,
-  902,
-  901,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
   900,
   900,
   900,
@@ -48,32 +56,22 @@
  "grids": [
   [
    1,
-   4,
-   4
-  ],
-  [
-   1,
-   4,
-   4
+   42,
+   2
   ]
  ],
  "offsets": [
   [
    2,
-   5
-  ],
-  [
-   8,
-   11
+   22
   ]
  ],
  "hashes": [
-  "11546768171972510105",
-  "18370475476986316740"
+  "9151906754831115069"
  ],
- "mrope_delta": -4,
+ "mrope_delta": 0,
  "provenance": {
-  "generator": "mm-preprocessor/tests/fixtures/qwen_vl/generate.py",
+  "generator": "multimodal/tests/fixtures/qwen_vl/generate.py",
   "transformers": "5.12.1",
   "torch": "2.13.0+cu130",
   "torchvision": "0.28.0+cu130",

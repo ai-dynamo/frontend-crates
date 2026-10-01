@@ -22,6 +22,7 @@ import json
 import re
 import subprocess
 import sys
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -375,6 +376,141 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert [markup.count('class="case-variant"') for markup in rendered] == [7, 5]
     assert "nullable: true" in rendered[1]
     assert "intersection" in rendered[0]
+
+
+def test_batch_null_groups_preserve_coercion_history(model_v2: dict) -> None:
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    mixed = "7-4.mixed_grep"
+    nullable = {"7-4", "7-4.anyof", "7-4.oneof", "7-4.nullable", "7-4.const"}
+    strings = {
+        "7-5", "7-5.union", "7-5.sibling_anyof", "7-5.sibling_oneof",
+        "7-5.untyped_branch", "7-5.const", "7-5.enum", "7-5.untyped_const", "7-5.untyped_enum",
+    }
+    columns = {column["sub"]: column for column in tab["columns"]}
+    assert {column["label"] for column in tab["columns"]
+            if column["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert all(columns[sub]["group_key"] == "args" for sub in ("7-4", "7-5"))
+    assert mixed not in columns
+    glossary_labels = {label for group in tab["glossary"] for label, _ in group["rows"]}
+    assert {label for label in glossary_labels if label.startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
+    assert candidates["golden"]["parse_mode"] == "batch"
+    assert {"9.2.0", "9.2.1"} <= _peer_versions("toolcalling/fixtures-batch-v1")["dynamo_v1"]
+    reference = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
+    baseline = candidates["dynamo_v1-b-9-2-0"]
+    fixed = candidates["dynamo_v1-b-9-2-1"]
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    leaves = {sub: cell for sub, cell in leaf_cells(row).items() if sub.startswith(("7-4", "7-5"))}
+    assert set(leaves) == nullable | strings | {mixed}
+    for parent, members in (("7-4", nullable | {mixed}), ("7-5", strings | {mixed})):
+        cell = row["cells"][parent]
+        assert {leaf["sub"] for leaf in cell["variants"]} == members
+        assert len(cell["variants"]) == len(members)
+        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green"
+        assert cell_state(cell, baseline)[0] == "red"
+    for sub, cell in leaves.items():
+        assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
+        arguments = {"pattern": "null", "path": None} if sub == mixed else {"city": None if sub in nullable else "null"}
+        name = "grep" if sub == mixed else "get_weather"
+        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+        for key in ("golden", fixed["key"]):
+            assert blocks[key]["calls"] == [{"name": name, "arguments": arguments}], sub
+            assert blocks[key]["normal_text"] == "", sub
+        old_arguments = {"pattern": None, "path": None} if sub == mixed else {"city": None}
+        assert blocks[baseline["key"]]["calls"] == [{"name": name, "arguments": old_arguments}], sub
+        assert blocks[baseline["key"]]["normal_text"] == "", sub
+        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green", sub
+        assert cell_state(cell, baseline)[0] == ("green" if sub in nullable else "red"), sub
+    tip = leaves[mixed]["tooltip"]
+    assert tip["input"]["kind"] == "text"
+    for name in ("pattern", "path"):
+        assert f"]<]minimax[>[<{name}>null]<]minimax[>[</{name}>" in tip["input"]["text"]
+    assert all(term in tip["description"] for term in ("strict: true", "schema", "string pattern", "nullable path", "anyOf"))
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    tips = [tip, row["cells"]["7.f"]["tooltip"]]
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    for expected, markup in zip(tips, json.loads(result.stdout)):
+        left = re.search(r'<td class="cin">(.*?)</td>', markup, re.S)
+        assert left is not None
+        text = unescape(re.sub(r"<[^>]+>", "", left.group(1)))
+        assert f"input_text='{expected['input']['text']}'" in text
+        assert ("Golden output" in text) == (expected is tip)
+        if expected is tip:
+            assert '"pattern":"null","path":null' in text
+    for row in tab["rows"]:
+        if row.get("family") and row["family"] != "minimax_m3":
+            for sub in ("7-4", "7-5"):
+                cell = row["cells"][sub]
+                assert cell_state(cell, reference)[0] == "na", row["family"]
+                assert cell["tooltip"]["na_note"], row["family"]
+
+
+@pytest.mark.parametrize("parent", ["7-4", "7-5"])
+def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
+    tab = _tab(model_v2, "tab-toolcalling-batch")
+    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
+    variants = row["cells"][parent]["tooltip"]["variants"]
+    assert len(variants) > 1
+    script = r"""
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const context = {};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  function implOf('),
+  source.indexOf('  // Parsers with limited family coverage')), context);
+const variants = JSON.parse(fs.readFileSync(0, 'utf8'));
+function grid(variant) {
+  const rows = [0, 1].map(() => {
+    const columns = variant.candidates.filter(c => c.key !== 'golden').map((c, order) => {
+      const classes = new Set();
+      return {key: c.key, getAttribute: name => ({'data-cand': c.key, 'data-cand-order': order})[name],
+        classList: {toggle(name, on) {if (on) classes.add(name); else classes.delete(name);},
+          contains: name => classes.has(name)}};
+    });
+    return {columns, querySelectorAll: () => columns.slice(),
+      appendChild(column) {columns.splice(columns.indexOf(column), 1); columns.push(column);}};
+  });
+  return {rows, querySelectorAll: selector => selector === 'tr' ? rows : rows.flatMap(r => r.columns)};
+}
+const fixed = 'dynamo_v1-b-9-2-1', old = 'dynamo_v1-b-9-2-0';
+for (const portalled of [false, true]) {
+  const grids = variants.map(grid);
+  const tip = {querySelector: () => grids[0],
+    querySelectorAll: selector => selector === '.cand' ? [] : grids};
+  const cell = {_ttip: portalled ? tip : null, querySelector: () => portalled ? null : tip};
+  for (const [base, selected] of [[fixed, [fixed]], [old, [old, fixed]],
+      [fixed, [fixed, old]], [old, [old]], [null, []]]) {
+    context.toggleCands(cell, new Set(selected), base);
+    for (const table of grids) {
+      for (const row of table.rows) {
+        assert.deepEqual(row.columns.filter(c => !c.classList.contains('col-hidden')).map(c => c.key), selected);
+        assert.deepEqual(row.columns.filter(c => c.classList.contains('col-ref')).map(c => c.key), base ? [base] : []);
+      }
+    }
+  }
+}
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance.js")],
+        input=json.dumps(variants), text=True, capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize("changed_field,value,missing_family", [

@@ -335,6 +335,14 @@ splits along four type-handling axes:
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
 
+The optional null-coercion variants below appear under the visible batch columns `7-4` and `7-5`. Each variant keeps its own fixture ID, input, and recorded result; the mixed-field probe is referenced under both columns.
+
+- **`TOOLCALLING.batch.7-4`** The request tool schema permits JSON null. Bare parameter text `null` becomes JSON `null`. Variants cover a nullable type array (base), `.anyof`, `.oneof`, `.nullable`, and an anyOf const-null branch (`.const`).
+- **`TOOLCALLING.batch.7-5`** The request tool schema excludes JSON null for the tested value, so bare parameter text `null` remains string `"null"`. Variants cover a string type (base), a non-nullable `.union`, intersecting `.sibling_anyof` and `.sibling_oneof` constraints, `.untyped_branch`, an anyOf string-const branch (`.const`), and a typed `.enum`.
+- **`TOOLCALLING.batch.7-5.untyped_const`** Direct `const: "null"` without a `type` still requires the literal string `"null"`.
+- **`TOOLCALLING.batch.7-5.untyped_enum`** Direct `enum: ["null"]` without a `type` still requires the literal string `"null"`.
+- **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.
+
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
 Model emits narration text before / after / between tool-call blocks.

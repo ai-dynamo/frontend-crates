@@ -1,8 +1,8 @@
 {
-  "snapshot": "20260924_185544",
-  "created_pt": "2026-09-24 18:55:44 America/Los_Angeles",
+  "snapshot": "20260930_143823",
+  "created_pt": "2026-09-30 14:38:23 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "9.1.0",
+    "dynamo-parsers": "9.2.1",
     "dynamo-parsers-v2": "0.7.4"
   },
   "peers": {
@@ -51,9 +51,19 @@
       "size": 9704
     },
     {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-9.2.0.tar.gz",
+      "sha256": "50968ccb54f6627cacc7537090796755621ac33888d56d47413aa32c637d3a0e",
+      "size": 621
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-9.2.1.tar.gz",
+      "sha256": "2efbac3d8cfbc8fd090150560e04a71f41c8632d6695f5b4a40136e8f810729e",
+      "size": 1635
+    },
+    {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
-      "sha256": "1afc3b0495f29614f594b67c6baa19a4c02e3eeb5ca81f8aa373a15a3b4d16b7",
-      "size": 44186
+      "sha256": "aeced38976854fee6f4ab57bd43e54548bc2b1e826487df19bae18d6c95710cb",
+      "size": 67449
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang_python-0.5.12.post1.tar.gz",

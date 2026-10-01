@@ -3034,13 +3034,14 @@ def build_combined_model(output_path: Path | None = None,
     }
     legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
     for tab in tabs:
-        if tab["id"] == "tab-toolcalling-streamv1" and any(
+        if tab["id"] in {"tab-toolcalling-batch", "tab-toolcalling-streamv1"} and any(
             "golden" in (cell.get("cmp") or {})
             for row in tab["rows"] for cell in row["cells"].values()
         ):
             tab["candidates"].append({"key": "golden", "impl": "golden", "label": "GOLDEN (oracle)",
                                       "label_html": "GOLDEN (oracle)", "default_bucket": "B",
-                                      "version": None, "parse_mode": "stream"})
+                                      "version": None,
+                                      "parse_mode": "batch" if tab["mode"] == "batch" else "stream"})
         group_null_variants(tab)
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
                              legend_html=legend_html)

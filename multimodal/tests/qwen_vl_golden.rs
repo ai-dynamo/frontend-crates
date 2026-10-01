@@ -12,12 +12,12 @@
 //! The resampler stage is pinned on its own (`resized_<i>.u8`) so a mismatch
 //! names the stage instead of surfacing as an opaque `pixel_values` diff.
 
-use dynamo_mm_preprocessor::image::decode::{DecodeLimits, decode_rgb};
-use dynamo_mm_preprocessor::image::resize;
-use dynamo_mm_preprocessor::models::qwen_vl::{QwenVlSpec, smart_resize};
-use dynamo_mm_preprocessor::processor::{DecodedMedia, PositionOutput, TensorData};
-use dynamo_mm_preprocessor::registry::processor_from_spec;
-use dynamo_mm_preprocessor::{content_hash_bytes, token_layout};
+use dynamo_multimodal::image::decode::{DecodeLimits, decode_rgb};
+use dynamo_multimodal::image::resize;
+use dynamo_multimodal::models::qwen_vl::{QwenVlSpec, smart_resize};
+use dynamo_multimodal::processor::{DecodedMedia, PositionOutput, TensorData};
+use dynamo_multimodal::registry::processor_from_spec;
+use dynamo_multimodal::{content_hash_bytes, token_layout};
 
 /// Every fixture directory; a dropped or misnamed case fails by name.
 const CASES: [&str; 5] = [

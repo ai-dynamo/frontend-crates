@@ -434,12 +434,15 @@
         body += row + '</tr>';
       });
     }
-    // Assembled row: the input cell shows the GOLDEN output (the reference); each engine
-    // column shows its own assembled block.
+    // Assembled row: keep text input above the GOLDEN output (the reference);
+    // chunked input is already shown in the preceding rows.
     var inputCell = golden
       ? outputBlock(golden.block, family, ctx).replace(/\n/g, '<br>')
         + '<br><br><span class="golden-out-cap">Golden output</span>'
       : (body ? 'assembled' : inputTextCell(input, ctx));
+    if (golden && input.kind === 'text') {
+      inputCell = inputTextCell(input, ctx) + '<br><br>' + inputCell;
+    }
     var fin = '<tr class="ttip-final"><td class="cin">' + inputCell + '</td>';
     cands.forEach(function (c, ci) {
       // Red when this candidate's assembled output DIVERGES from the golden oracle
