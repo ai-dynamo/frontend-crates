@@ -315,6 +315,36 @@ mod tests {
     }
 
     #[test]
+    fn unterminated_parameter_recovers_later_user_channel_at_eof() {
+        for terminator in ["<|eom|>", "<|eot|>", ""] {
+            for invoke_close in ["", "</atem:invoke>"] {
+                let input = format!(
+                    "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
+                     <atem:parameter name=\"x\">unfinished{invoke_close}{terminator}{}",
+                    channel("user", "Recovered answer.")
+                );
+                let want = vec![text("Recovered answer.")];
+                assert_eq!(batch(&input), want);
+                for split in 0..=input.len() {
+                    let mut parser = muse_glimmer_unified(&tools());
+                    assert!(parser.push(&input[..split]).expect("prefix").is_empty());
+                    assert!(parser.push(&input[split..]).expect("suffix").is_empty());
+                    assert_eq!(
+                        assemble(&parser.finish().expect("finish").events),
+                        want,
+                        "terminator {terminator:?}, invoke close {invoke_close:?}, split {split}"
+                    );
+                }
+                let chunks: Vec<_> = input
+                    .char_indices()
+                    .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                    .collect();
+                assert_eq!(events(&chunks), want);
+            }
+        }
+    }
+
+    #[test]
     fn malformed_guided_invoke_header_recovers_as_text_at_every_split() {
         let input = concat!(
             "Hello <atem:invoke name=\"get_weather\"",
