@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [9.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.2...dynamo-parsers-v9.2.3) - 2026-10-01
+
+### Bug fixes
+
+- *(parsers)* Retain GLM scalar types for non-string unions in v1 ([#280](https://github.com/ai-dynamo/frontend-crates/pull/280))
+
 ## [9.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.1.1...dynamo-parsers-v9.2.0) - 2026-09-29
 
 ### Features

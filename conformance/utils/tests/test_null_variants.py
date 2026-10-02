@@ -42,8 +42,8 @@ def test_group_does_not_hide_failures_or_missing_captures(signatures, missing, e
     assert result["tooltip"]["variants"] == [cell["tooltip"] for cell in before]
 
 
-@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
-def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id):
+@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1", "tab-toolcalling-batch"])
+def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str) -> None:
     labels = ["7-3", "7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
     tab = {"id": tab_id, "columns": [{"label": label, "sub": label, "group_key": "7"}
                                     for label in labels],

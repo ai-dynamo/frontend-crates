@@ -21,6 +21,66 @@ def _assert_value(value, schema):
     assert matches_schema(value, schema), (value, schema)
 
 
+@pytest.mark.parametrize("kind, valid, invalid", [
+    ("integer", [0, -2, 3, 2.0], [True, False, 1.5, "2", [], {}]),
+    ("number", [0, -2, 1.5], [True, False, "2", [], {}]),
+    ("string", ["", "text"], [0, 1.5, True, [], {}]),
+    ("boolean", [True, False], [0, 1, "true", [], {}]),
+    ("object", [{}, {"x": 2}], [0, "", True, []]),
+    ("array", [[], [2, None]], [0, "", True, {}]),
+])
+@pytest.mark.parametrize("nullable", [False, True])
+def test_schema_guard_valid_and_invalid_values(kind, valid, invalid, nullable):
+    schema = {"type": [kind, "null"] if nullable else kind}
+    if kind == "object":
+        schema["properties"] = {"x": {"type": "integer"}}
+    elif kind == "array":
+        schema["items"] = {"type": ["integer", "null"]}
+    for value in valid + ([None] if nullable else []):
+        _assert_value(value, schema)
+    for value in invalid + ([] if nullable else [None]):
+        with pytest.raises(AssertionError):
+            _assert_value(value, schema)
+
+
+def test_schema_guard_null_type():
+    _assert_value(None, {"type": "null"})
+    for value in (False, 0, "", [], {}):
+        with pytest.raises(AssertionError):
+            _assert_value(value, {"type": "null"})
+
+
+@pytest.mark.parametrize("value, schema", [
+    ({"x": True}, {"type": ["null", "object"], "properties": {"x": {"type": "integer"}}}),
+    ([1.5], {"type": ["null", "array"], "items": {"type": "integer"}}),
+    (None, {"type": ["null", "unsupported"]}),
+    (None, {"type": ["null", "integer"], "minimum": 0}),
+])
+def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, schema):
+    with pytest.raises(AssertionError):
+        _assert_value(value, schema)
+
+
+@pytest.mark.parametrize("schema, valid, invalid", [
+    ({"anyOf": [{"type": "string"}, {"type": "null"}]}, ["text", None], [1, False, []]),
+    ({"oneOf": [{"type": "integer"}, {"type": "null"}]}, [2, 2.0, None], [1.5, True, "2"]),
+    ({"oneOf": [{"type": "number"}, {"type": "integer"}]}, [1.5], [2, 2.0, None]),
+    ({"const": None}, [None], ["null", 0, False]),
+    ({"enum": [None, "text"]}, [None, "text"], ["other", 0, False]),
+    ({"type": "integer", "nullable": True}, [2, None], [1.5, True, "2"]),
+    ({"type": "string", "nullable": False}, ["text"], [None, 2]),
+    ({"type": ["string", "null"], "minLength": 2}, ["ok", None], ["", "x", 2]),
+])
+def test_schema_guard_corpus_keywords(schema, valid, invalid):
+    # Exercise the same nested argument path as authored tool calls.
+    tool_schema = {"type": "object", "properties": {"value": schema}}
+    for value in valid:
+        _assert_value({"value": value}, tool_schema)
+    for value in invalid:
+        with pytest.raises(AssertionError):
+            _assert_value({"value": value}, tool_schema)
+
+
 def _assert_golden_schemas(cases, tools):
     for case in cases.values():
         offered_tools = case.get("tools", tools)

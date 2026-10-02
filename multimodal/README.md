@@ -3,12 +3,13 @@ SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All 
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# dynamo-mm-preprocessor
+# dynamo-multimodal
 
-Model-family multimodal preprocessing for LLM inference routers/engines — a
-Rust replacement for the image pipelines behind HF `AutoProcessor`: per-family
-decode → resize → normalize → patchify, prompt placeholder expansion, and
-position math (M-RoPE), all **bit-exact** against the mirrored HF processor.
+Shared multimodal input processing and accounting for LLM inference routers
+and engines. The first model-family implementation reproduces the image
+pipelines behind HF `AutoProcessor`: decode → resize → normalize → patchify,
+prompt placeholder expansion, and position math (M-RoPE), all **bit-exact**
+against the mirrored HF processor.
 
 | feature    | default | adds |
 | ---------- | ------- | ---- |
@@ -26,7 +27,7 @@ a convenience helper, not a request security boundary.
 An **inference engine** preprocesses each request's multimodal inputs using this crate:
 
 ```
-engine                              │   dynamo-mm-preprocessor (this crate)
+engine                              │   dynamo-multimodal (this crate)
 ────────────────────────────────────│──────────────────────────────────────
 boot: locate model configs ────────►│  registry::spec_from_model_dir (or a
                                     │  pre-resolved spec) ─► build_processor
@@ -50,7 +51,7 @@ tokenize (if text) ─ ids, items ───►│  family.layout ─► token_la
 A **router** uses this crate for multimodal requests' load accounting and cache-aware routing:
 
 ```
-router                              │   dynamo-mm-preprocessor (this crate)
+router                              │   dynamo-multimodal (this crate)
 ────────────────────────────────────│──────────────────────────────────────
 boot: locate model configs ────────►│  registry::spec_from_model_dir
                                     │    ─► build_processor ─► Box<dyn MmFamilyProcessor>

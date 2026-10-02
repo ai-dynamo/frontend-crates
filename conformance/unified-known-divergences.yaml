@@ -6,32 +6,6 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-glm47:
-  UNIFIED.arg_json_null.glm47:
-    golden:
-      note: The GLM parser returns the string "null" for a JSON-null literal; PR #287 records the behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(get_weather, {"city":"null"})'
-  UNIFIED.arg_json_null_anyof.glm47:
-    golden:
-      note: The GLM parser returns the string "null" for a JSON-null literal under anyOf; PR #287 records the behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(get_weather, {"city":"null"})'
-  UNIFIED.arg_json_null_const.glm47:
-    golden:
-      note: The GLM parser returns the string "null" for a JSON-null literal under const; PR #287 records the behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(get_weather, {"city":"null"})'
-  UNIFIED.arg_json_null_nullable.glm47:
-    golden:
-      note: The GLM parser returns the string "null" for a nullable JSON-null literal; PR #287 records the behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(get_weather, {"city":"null"})'
-  UNIFIED.arg_json_null_oneof.glm47:
-    golden:
-      note: The GLM parser returns the string "null" for a JSON-null literal under oneOf; PR #287 records the behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(get_weather, {"city":"null"})'
-  UNIFIED.arg_null_mixed_labels.glm47:
-    golden:
-      note: The GLM parser stringifies all three null-looking fields in the mixed request; PR #287 records the JSON-null behavior targeted by Michael Feil's PR #268.
-      actual: 'tool_call(set_labels, {"label":"null","note":"null","literal":"null"})'
-
 muse_glimmer:
   UNIFIED.deepseek_v41_mixed_control_text_in_string.muse_glimmer:
     golden:
