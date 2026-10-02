@@ -351,6 +351,7 @@ impl ReasoningParserType {
                         true,
                     )
                     .with_dangling_end_recovery()
+                    .with_single_char_marker_buffering()
                     .with_implicit_tool_start_recovery()
                     // M3 can begin a native tool call without `</mm:think>`.
                     .with_tool_start_token(MINIMAX_M3_TOOL_NAMESPACE),
@@ -714,6 +715,31 @@ mod tests {
                      {prompt_prefilled_state_set}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_minimax_m3_reasoning_close_and_boundary_fakeout_at_every_split() {
+        let text = "<mm:think>thinking</mm:think>plain ]<]minimal answer";
+        let schedules = std::iter::once(text.chars().map(|c| c.to_string()).collect::<Vec<_>>())
+            .chain(
+                (0..=text.len())
+                    .map(|split| vec![text[..split].to_string(), text[split..].to_string()]),
+            );
+        for chunks in schedules {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+            let mut reasoning = String::new();
+            let mut normal = String::new();
+            for chunk in &chunks {
+                let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                reasoning.push_str(&result.reasoning_text);
+                normal.push_str(&result.normal_text);
+            }
+            let result = parser.finish_reasoning_stream();
+            reasoning.push_str(&result.reasoning_text);
+            normal.push_str(&result.normal_text);
+            assert_eq!(reasoning, "thinking", "chunks {chunks:?}");
+            assert_eq!(normal, "plain ]<]minimal answer", "chunks {chunks:?}");
         }
     }
 

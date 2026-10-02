@@ -1155,7 +1155,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "9.2.7"
+version = "9.2.8"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1178,7 +1178,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.8"
+version = "0.7.10"
 dependencies = [
  "anyhow",
  "num-traits",
