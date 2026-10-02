@@ -729,7 +729,7 @@ mod tests {
     #[test]
     fn recovers_complete_body_missing_end_marker() {
         // Body complete but no `<tool_call|>` end marker before EOF. The v1 batch
-        // parser recovers this (batch case 5.a), and the streamv2 conformance tab
+        // parser recovers this (batch case 5.a), and the streamv1 conformance tab
         // grades stream-vs-own-batch, so the stream parser must recover it too —
         // not drop it. (Contrast `drops_call_truncated_mid_value` below, where the
         // body itself is incomplete and v1 yields no call.)
@@ -958,7 +958,7 @@ mod tests {
 
     #[test]
     fn recovers_bare_call_without_opener() {
-        // streamv2.5.b: `call:NAME{...}<tool_call|>` with NO `<|tool_call>` opener.
+        // streamv1.5.b: `call:NAME{...}<tool_call|>` with NO `<|tool_call>` opener.
         // The v1 parser recovers it (missing-start); the streaming parser must too,
         // so the call body is a recovered tool call, NOT leaked as normal_text.
         let out = parse_chunks(
@@ -974,7 +974,7 @@ mod tests {
 
     #[test]
     fn recovers_bare_call_without_opener_at_every_split() {
-        // streamv2.5.b at every chunk boundary: a bare `call:NAME{...}<tool_call|>`
+        // streamv1.5.b at every chunk boundary: a bare `call:NAME{...}<tool_call|>`
         // with no `<|tool_call>` opener must recover as a call, never leak as text,
         // no matter where the stream happens to be cut.
         let input = "call:get_weather{location:<|\"|>NYC<|\"|>}<tool_call|>";
@@ -1001,7 +1001,7 @@ mod tests {
 
     #[test]
     fn recovers_bare_call_keeps_prefix_prose() {
-        // streamv2.5.g: genuine prose precedes a bare `call:` (no opener). The prose
+        // streamv1.5.g: genuine prose precedes a bare `call:` (no opener). The prose
         // stays normal_text; only the `call:...` body is recovered as a call.
         let out = parse_chunks(
             &weather_tools(),
@@ -1020,7 +1020,7 @@ mod tests {
 
     #[test]
     fn recovers_bare_call_then_wrapped_call() {
-        // streamv2.5.f: a bare valid call followed by a complete wrapped call. Both
+        // streamv1.5.f: a bare valid call followed by a complete wrapped call. Both
         // are emitted, the bare one recovered, with no leak.
         let out = parse_chunks(
             &weather_tools(),

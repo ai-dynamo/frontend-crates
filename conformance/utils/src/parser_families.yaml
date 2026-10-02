@@ -222,6 +222,13 @@ unified:
     tool_parser: gemma4
     golden_spec: gemma4.yaml
     leak_markers: ["thought\n"]
+  glm47:
+    registry: glm47
+    native: true
+    reasoning_parser: nemotron_deci
+    tool_parser: glm47
+    golden_spec: glm47.yaml
+    leak_markers: ["<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
   kimi_k2:
     registry: kimi_k2
     native: true

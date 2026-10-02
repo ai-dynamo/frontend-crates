@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [9.2.7] - 2026-10-02
+
+### Bug fixes
+
+- Preserve GLM47 calls to unknown tools for request-scoped validation by the executor, and refresh the V1 conformance capture.
+
+## [9.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.2...dynamo-parsers-v9.2.3) - 2026-10-01
+
+### Bug fixes
+
+- *(parsers)* Retain GLM scalar types for non-string unions in v1 ([#280](https://github.com/ai-dynamo/frontend-crates/pull/280))
+
+## [9.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.1.1...dynamo-parsers-v9.2.0) - 2026-09-29
+
+### Features
+
+- Kimi K3 structural tag default ([#196](https://github.com/ai-dynamo/frontend-crates/pull/196))
+
+## [9.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.1.0...dynamo-parsers-v9.1.1) - 2026-09-25
+
+### Bug fixes
+
+- *(parsers)* Allow EOS after native Kimi K3 tool calls ([#292](https://github.com/ai-dynamo/frontend-crates/pull/292))
+
+### Chore
+
+- Trivial rename legacy stream conventions ([#264](https://github.com/ai-dynamo/frontend-crates/pull/264))
+
+## [9.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.0.1...dynamo-parsers-v9.1.0) - 2026-09-22
+
+### Features
+
+- Add GLM-5.3 UnifiedParser support (part 1) ([#234](https://github.com/ai-dynamo/frontend-crates/pull/234))
+
 ## [9.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.0.0...dynamo-parsers-v9.0.1) - 2026-09-21
 
 ### Bug fixes

@@ -143,8 +143,9 @@ jobs:
 
       # Always run (not gated on the bump step): a merge that only manually
       # pegged a version produces no auto-bump commit but must still publish.
-      # `release-plz release` publishes whatever Cargo.toml versions aren't on
-      # crates.io yet and pushes their tags; it's a no-op otherwise.
+      # `release-plz release` publishes enabled packages whose Cargo.toml
+      # versions aren't on crates.io yet and pushes their tags; it's a no-op
+      # otherwise.
       - name: Publish to crates.io (trusted publishing)
         # The release-plz binary needs the forge token passed explicitly via
         # --git-token; unlike release-plz/action it does NOT read GITHUB_TOKEN

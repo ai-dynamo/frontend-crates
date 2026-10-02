@@ -19,7 +19,7 @@ import json
 
 import yaml
 
-STREAM_GLOB = "*/TOOLCALLING.streamv2*.yaml"
+STREAM_GLOB = "*/TOOLCALLING.streamv1*.yaml"
 
 
 def load_capture(path):

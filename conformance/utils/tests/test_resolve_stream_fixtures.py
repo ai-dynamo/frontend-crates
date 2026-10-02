@@ -25,8 +25,8 @@ if str(SRC) not in sys.path:
 from resolve_stream_fixtures import resolve  # noqa: E402
 
 FAMILY = "famx"
-CASE = "TOOLCALLING.streamv2.1"
-NAME = "TOOLCALLING.streamv2.1.yaml"
+CASE = "TOOLCALLING.streamv1.1"
+NAME = "TOOLCALLING.streamv1.1.yaml"
 
 
 def _write(path: Path, doc: dict) -> None:
@@ -35,10 +35,10 @@ def _write(path: Path, doc: dict) -> None:
 
 
 def _make_tree(root: Path) -> None:
-    # Shared inputs: 6 chunks (the real deepseek streamv2.1 shape).
+    # Shared inputs: 6 chunks (the real deepseek streamv1.1 shape).
     _write(root / "inputs" / FAMILY / NAME, {
         "family": FAMILY,
-        "mode": "streamv2",
+        "mode": "streamv1",
         "cases": {CASE: {"chunks": [
             {"delta_text": "<tc> <invoke"},
             {"delta_text": ' name="get_weather">'},
@@ -51,7 +51,7 @@ def _make_tree(root: Path) -> None:
     # v2 anchor (lowest version): emits name then args in chunk 3.
     _write(root / "dynamo_v2-0.1.11" / FAMILY / NAME, {
         "family": FAMILY,
-        "mode": "streamv2",
+        "mode": "streamv1",
         "captured_with": {"dynamo_v2": "0.1.11"},
         "cases": {CASE: {"chunks": [
             {"expected": []},
@@ -69,7 +69,7 @@ def _make_tree(root: Path) -> None:
     # chunks than the anchor — the shape that triggered the fold-doubling bug.
     _write(root / "dynamo_v2-0.2.0" / FAMILY / NAME, {
         "family": FAMILY,
-        "mode": "streamv2",
+        "mode": "streamv1",
         "captured_with": {"dynamo_v2": "0.2.0"},
         "cases": {CASE: {"chunks": [
             {"expected": [
@@ -91,7 +91,7 @@ def _dynamo_deltas(folded_case: dict) -> list[tuple[int, dict]]:
 
 
 def test_higher_version_with_fewer_chunks_fully_replaces_lower(tmp_path):
-    root = tmp_path / "sv2"
+    root = tmp_path / "sv1"
     out = tmp_path / "out"
     _make_tree(root)
 
@@ -114,7 +114,7 @@ def test_higher_version_with_fewer_chunks_fully_replaces_lower(tmp_path):
 
 def test_lower_target_keeps_anchor_untouched(tmp_path):
     # Selecting the anchor version itself must reproduce the anchor exactly.
-    root = tmp_path / "sv2"
+    root = tmp_path / "sv1"
     out = tmp_path / "out"
     _make_tree(root)
 

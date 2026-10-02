@@ -34,6 +34,7 @@ from vllm.parser.parser_manager import ParserManager
 FAMILY_PARSERS = {
     "gemma4": ("gemma4", "gemma4"),
     "qwen3": ("qwen3", "qwen3_coder"),
+    "glm47": ("glm47", "glm47"),
     "kimi_k2": ("kimi_k2", "kimi_k2"),
 }
 

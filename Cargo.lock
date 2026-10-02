@@ -1140,20 +1140,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "dynamo-mm-preprocessor"
+name = "dynamo-multimodal"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "gif",
  "image",
  "rayon",
  "serde",
  "serde_json",
  "turbojpeg",
+ "xxhash-rust",
 ]
 
 [[package]]
 name = "dynamo-parsers"
-version = "9.0.1"
+version = "9.2.7"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1162,6 +1164,7 @@ dependencies = [
  "futures",
  "num-traits",
  "openai-harmony",
+ "percent-encoding",
  "regex",
  "rstest",
  "rustpython-ruff_python_ast",
@@ -1175,11 +1178,12 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.6.3"
+version = "0.7.8"
 dependencies = [
  "anyhow",
  "num-traits",
  "openai-harmony",
+ "percent-encoding",
  "regex",
  "serde",
  "serde_json",
@@ -1216,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "5.3.2"
+version = "7.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1233,7 +1237,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-tokenizers"
-version = "1.9.0"
+version = "3.0.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -5901,6 +5905,12 @@ dependencies = [
  "whoami",
  "winapi",
 ]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y4m"

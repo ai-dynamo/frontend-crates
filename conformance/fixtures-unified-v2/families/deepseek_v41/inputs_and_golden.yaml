@@ -1636,7 +1636,7 @@ cases:
   two_calls:
     lifecycle: active
     scenario: two_calls
-    description: 'Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.'
+    description: 'Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.'
     policy: []
     display_id: UNIFIED.2-1
     historical_ids:
@@ -1718,7 +1718,7 @@ cases:
   two_calls_same_name:
     lifecycle: active
     scenario: two_calls_same_name
-    description: 'The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.'
+    description: 'The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.'
     policy: []
     display_id: UNIFIED.2-2
     historical_ids:
@@ -1800,7 +1800,7 @@ cases:
   text_only:
     lifecycle: active
     scenario: text_only
-    description: 'Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.'
+    description: 'Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.'
     policy: []
     display_id: UNIFIED.3-1
     historical_ids:
@@ -5286,7 +5286,7 @@ cases:
   tool_no_close:
     lifecycle: active
     scenario: tool_no_close
-    description: 'A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.'
+    description: 'A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.'
     policy: []
     display_id: UNIFIED.5-2
     historical_ids:
@@ -5565,7 +5565,7 @@ cases:
   empty_args:
     lifecycle: active
     scenario: empty_args
-    description: 'A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.'
+    description: 'A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv1.6.a.'
     policy:
     - P3
     display_id: UNIFIED.6-1
@@ -5635,7 +5635,7 @@ cases:
   arg_unicode:
     lifecycle: active
     scenario: arg_unicode
-    description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.'
+    description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.'
     policy: []
     display_id: UNIFIED.7-1
     historical_ids:
@@ -5781,13 +5781,13 @@ cases:
         arguments:
           cmd: git log </｜DSML｜ invoke> --oneline
   retired__7_3:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-3
+    lifecycle: active
+    scenario: deepseek_v41_mixed_control_text_in_string
+    description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
+    policy:
+    - I7
+    display_id: UNIFIED.7-3
+    historical_ids: []
     request:
       input: "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\"> <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
       init:
@@ -5857,11 +5857,16 @@ cases:
       - delta_text: </｜DSML｜ invoke>
       - delta_text: </｜DSML｜ calls>
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: " <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "
   text_before_tool:
     lifecycle: active
     scenario: text_before_tool
-    description: 'Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.'
+    description: 'Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.'
     policy: []
     display_id: UNIFIED.8-1
     historical_ids:
@@ -6014,7 +6019,7 @@ cases:
   text_sandwich:
     lifecycle: active
     scenario: text_sandwich
-    description: 'Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.'
+    description: 'Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.'
     policy: []
     display_id: UNIFIED.8-3
     historical_ids:
@@ -6093,7 +6098,7 @@ cases:
   text_between_calls:
     lifecycle: active
     scenario: text_between_calls
-    description: 'Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.'
+    description: 'Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.'
     policy: []
     display_id: UNIFIED.8-4
     historical_ids:
@@ -6289,3 +6294,474 @@ cases:
     - UNIFIED.muse-1
     request: null
     golden: null
+  qwen_string_null:
+    lifecycle: active
+    scenario: arg_json_null
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using a type array.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type:
+              - string
+              - 'null'
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null:
+    lifecycle: active
+    scenario: arg_string_null
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema declares `city` as non-nullable `string`.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_json_null_anyof:
+    lifecycle: active
+    scenario: arg_json_null_anyof
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.anyof
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_const:
+    lifecycle: active
+    scenario: arg_json_null_const
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema permits `city` to be null through an anyOf const-null branch.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.const
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - const: null
+              - type: string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_nullable:
+    lifecycle: active
+    scenario: arg_json_null_nullable
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as string with nullable: true.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.nullable
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              nullable: true
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_json_null_oneof:
+    lifecycle: active
+    scenario: arg_json_null_oneof
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using oneOf.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-4.oneof
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              oneOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="false">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_const:
+    lifecycle: active
+    scenario: arg_string_null_const
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits the literal string "null" through const, or an integer.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.const
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - const: 'null'
+              - type: integer
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_enum:
+    lifecycle: active
+    scenario: arg_string_null_enum
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.enum
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              enum:
+              - 'null'
+              - null
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_anyof:
+    lifecycle: active
+    scenario: arg_string_null_sibling_anyof
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.sibling_anyof
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              anyOf:
+              - type: string
+              - type: 'null'
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_oneof:
+    lifecycle: active
+    scenario: arg_string_null_sibling_oneof
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.sibling_oneof
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type:
+              - string
+              - 'null'
+              oneOf:
+              - type: string
+              - type: integer
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_union:
+    lifecycle: active
+    scenario: arg_string_null_union
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits string or integer through anyOf, but excludes null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.union
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              anyOf:
+              - type: string
+              - type: integer
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_untyped_branch:
+    lifecycle: active
+    scenario: arg_string_null_untyped_branch
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string; an anyOf branch without a type does not remove that requirement.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.untyped_branch
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+              anyOf:
+              - minLength: 1
+              - type: 'null'
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: 'null'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
