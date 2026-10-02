@@ -405,11 +405,68 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
         .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
 }
 
+/// The stock MiniMax M2 generation prompt. The template always pre-fills the
+/// assistant turn with an opened `<think>` block and never consults a thinking
+/// toggle, so `thinking=false` renders byte-identical to `thinking=true`.
+///
+/// Taken from `MiniMaxAI/MiniMax-M2.7` `chat_template.jinja` at Hugging Face
+/// revision `d494266a4affc0d2995ba1fa35c8481cbd84294b`. The upstream file is
+/// not vendored; `test_support` carries a minimal M2-style template and an
+/// ignored test in `oai.rs` checks a local copy of the real file on demand.
+const MINIMAX_M2_GENERATION_BLOCK: &str = r"{%- if add_generation_prompt -%}
+{{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}
+{%- endif -%}";
+
+/// Detects the stock MiniMax M2 family chat template (M2, M2.5, M2.7): the
+/// `<minimax:tool_call>` envelope plus the complete, unchanged generation block
+/// at the end of the template. Custom thinking logic inside or after that block
+/// does not match. MiniMax M3 uses `<mm:think>` and does not match either.
+fn is_minimax_m2_template_source(source: &str) -> bool {
+    source.contains("<minimax:tool_call>")
+        && source.trim_end().ends_with(MINIMAX_M2_GENERATION_BLOCK)
+}
+
+/// Make the MiniMax M2 generation prompt honor the standard thinking toggles.
+///
+/// The upstream template opens `<think>` unconditionally. When a request
+/// disables thinking (`thinking=false`, `enable_thinking=false`, or the
+/// DeepSeek-style `thinking_mode="chat"` that consumers map onto this family),
+/// the opener is closed immediately so the completion starts after an empty
+/// reasoning block instead of inside one. Requests without a toggle, or with
+/// thinking enabled, render exactly as upstream. Matching the complete terminal
+/// block preserves custom thinking logic and prevents repeated adaptation.
+fn adapt_minimax_m2_thinking_template_source(source: &str) -> String {
+    let trimmed = source.trim_end();
+    let Some(prefix) = trimmed.strip_suffix(MINIMAX_M2_GENERATION_BLOCK) else {
+        return source.to_string();
+    };
+
+    const NEW_GENERATION_BLOCK: &str = r"{%- if add_generation_prompt -%}
+{{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}
+{%- set dyn_minimax_thinking_disabled = false -%}
+{%- if thinking is boolean -%}
+    {%- set dyn_minimax_thinking_disabled = not thinking -%}
+{%- elif enable_thinking is boolean -%}
+    {%- set dyn_minimax_thinking_disabled = not enable_thinking -%}
+{%- elif thinking_mode is string and thinking_mode == 'chat' -%}
+    {%- set dyn_minimax_thinking_disabled = true -%}
+{%- endif -%}
+{%- if dyn_minimax_thinking_disabled -%}
+{{- '</think>' ~ '\n' }}
+{%- endif -%}
+{%- endif -%}";
+
+    let trailing_whitespace = &source[trimmed.len()..];
+    format!("{prefix}{NEW_GENERATION_BLOCK}{trailing_whitespace}")
+}
+
 fn normalize_chat_template_source(source: &str) -> String {
     let source = normalize_dict_method_calls(&remove_known_non_jinja2_tags(source));
 
     if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
+    } else if is_minimax_m2_template_source(&source) {
+        adapt_minimax_m2_thinking_template_source(&source)
     } else {
         source
     }
@@ -620,6 +677,27 @@ impl HfTokenizerConfigJsonFormatter {
 // }
 
 #[cfg(test)]
+pub(crate) mod test_support {
+    /// Synthetic input covering generation prompts and assistant reasoning replay.
+    /// Keep the generation block independent of the production matcher so changes
+    /// to the matcher cannot silently change the test input too.
+    pub(crate) fn minimax_m2_style_template() -> String {
+        r"<minimax:tool_call>
+{%- for message in messages -%}
+{{- message.role ~ '\n' }}
+{%- if message.role == 'assistant' and message.reasoning_content is string and message.reasoning_content -%}
+{{- '<think>\n' ~ message.reasoning_content ~ '\n</think>\n' }}
+{%- endif -%}
+{{- (message.content or '') ~ '\n' }}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+{{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}
+{%- endif -%}"
+            .to_string()
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -629,6 +707,99 @@ mod tests {
         let mut env = JinjaEnvironment::default().env();
         env.add_template_owned("default", src.to_string()).unwrap();
         env
+    }
+
+    #[test]
+    fn minimax_m2_template_is_detected_and_adapted_by_exact_match() {
+        let template = super::test_support::minimax_m2_style_template();
+        let template = template.as_str();
+        assert!(is_minimax_m2_template_source(template));
+        let adapted = normalize_chat_template_source(template);
+        assert_ne!(adapted, template);
+        assert_eq!(
+            adapted
+                .matches("{{- ']~b]ai' ~ '\\n' ~ '<think>' ~ '\\n' }}")
+                .count(),
+            1,
+            "the stock generation prompt is kept and extended, not duplicated"
+        );
+        assert!(adapted.contains("dyn_minimax_thinking_disabled"));
+        assert!(adapted.contains("{{- '</think>' ~ '\\n' }}"));
+        // Everything outside the generation prompt is exactly what the generic
+        // normalization passes (`.items()` -> `|items`, tag removal) produce.
+        let generic = normalize_dict_method_calls(&remove_known_non_jinja2_tags(template));
+        assert_eq!(adapted, adapt_minimax_m2_thinking_template_source(&generic));
+        let (head, tail) = generic.split_once(MINIMAX_M2_GENERATION_BLOCK).unwrap();
+        assert!(adapted.starts_with(head));
+        assert!(adapted.ends_with(tail));
+        assert_eq!(normalize_chat_template_source(&adapted), adapted);
+    }
+
+    #[test]
+    fn minimax_m2_adapter_ignores_other_templates() {
+        // MiniMax M3: `<mm:think>` and a `thinking_mode` switch.
+        let m3 = "{%- if add_generation_prompt -%}{{ ']~b]ai\n<mm:think>\n' }}{%- endif -%}]<]minimax[>[";
+        assert!(!is_minimax_m2_template_source(m3));
+        assert_eq!(normalize_chat_template_source(m3), m3);
+        // Same envelope token but a different generation prompt (custom template).
+        let custom = "<minimax:tool_call>{%- if add_generation_prompt -%}{{ ']~b]ai\n<think>\n' }}{%- endif -%}";
+        assert!(!is_minimax_m2_template_source(custom));
+        assert_eq!(normalize_chat_template_source(custom), custom);
+        // A custom closer after the stock block must also be preserved.
+        let custom = format!(
+            "<minimax:tool_call>{MINIMAX_M2_GENERATION_BLOCK}\n{}",
+            r"{%- if thinking is false -%}{{- '</think>' ~ '\n' }}{%- endif -%}"
+        );
+        assert!(!is_minimax_m2_template_source(&custom));
+        assert_eq!(normalize_chat_template_source(&custom), custom);
+        // Generic `<think>` templates are left alone.
+        let qwen = "{%- if add_generation_prompt -%}<|im_start|>assistant\n<think>\n{%- endif -%}";
+        assert!(!is_minimax_m2_template_source(qwen));
+        assert_eq!(normalize_chat_template_source(qwen), qwen);
+        // Adapting a non-matching source is a no-op.
+        assert_eq!(adapt_minimax_m2_thinking_template_source(qwen), qwen);
+    }
+
+    #[test]
+    fn minimax_m2_adapted_generation_prompt_honors_thinking_toggles() {
+        let generation_prompt_only = format!("<minimax:tool_call>{MINIMAX_M2_GENERATION_BLOCK}");
+        assert!(is_minimax_m2_template_source(&generation_prompt_only));
+        let env = env_with_default(&normalize_chat_template_source(&generation_prompt_only));
+        let tmpl = env.get_template("default").unwrap();
+        let render = |ctx: minijinja::Value| tmpl.render(ctx).unwrap();
+
+        let open = "<minimax:tool_call>]~b]ai\n<think>\n";
+        let closed = "<minimax:tool_call>]~b]ai\n<think>\n</think>\n";
+        assert_eq!(render(context! { add_generation_prompt => true }), open);
+        assert_eq!(
+            render(context! { add_generation_prompt => true, thinking => true }),
+            open
+        );
+        assert_eq!(
+            render(context! { add_generation_prompt => true, thinking => false }),
+            closed
+        );
+        assert_eq!(
+            render(context! { add_generation_prompt => true, enable_thinking => false }),
+            closed
+        );
+        assert_eq!(
+            render(context! { add_generation_prompt => true, thinking_mode => "chat" }),
+            closed
+        );
+        assert_eq!(
+            render(context! { add_generation_prompt => true, thinking_mode => "thinking" }),
+            open
+        );
+        // Non-bool values are not a toggle.
+        assert_eq!(
+            render(context! { add_generation_prompt => true, thinking => "false" }),
+            open
+        );
+        assert_eq!(
+            render(context! { add_generation_prompt => false, thinking => false }),
+            "<minimax:tool_call>"
+        );
     }
 
     #[test]

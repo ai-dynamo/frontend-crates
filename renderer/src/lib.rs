@@ -113,6 +113,25 @@ impl RenderedSegment {
     }
 }
 
+/// Where a rendered prompt leaves the assistant turn relative to the model's
+/// reasoning block.
+///
+/// Chat templates that pre-fill a reasoning opener (`<think>`, `<mm:think>`,
+/// ...) at the end of the generation prompt start the completion mid-reasoning;
+/// templates that open and immediately close that block start the completion
+/// after reasoning. Consumers use this to align backend reasoning state and
+/// guided-decoding gates with the prompt they actually rendered, instead of
+/// re-deriving it by matching prompt suffixes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PromptReasoningState {
+    /// The prompt ends inside an opened reasoning block; the completion starts
+    /// mid-reasoning and the model is expected to emit the closing marker.
+    Open,
+    /// The prompt opened and closed an empty reasoning block; the completion
+    /// starts after reasoning and no reasoning markers are expected.
+    Closed,
+}
+
 /// A rendered prompt plus its optional tokenization boundaries.
 ///
 /// The prompt owns its segment text while `dynamo-tokenizers` borrows that text
@@ -122,6 +141,7 @@ impl RenderedSegment {
 pub struct RenderedPrompt {
     text: String,
     segments: Option<Vec<RenderedSegment>>,
+    reasoning_state: Option<PromptReasoningState>,
 }
 
 impl RenderedPrompt {
@@ -129,6 +149,7 @@ impl RenderedPrompt {
         Self {
             text,
             segments: None,
+            reasoning_state: None,
         }
     }
 
@@ -140,7 +161,21 @@ impl RenderedPrompt {
         Self {
             text,
             segments: Some(segments),
+            reasoning_state: None,
         }
+    }
+
+    /// Record where the prompt leaves the assistant relative to its reasoning
+    /// block. Formatters set this when they know the template's reasoning
+    /// markers; `None` means the formatter made no claim.
+    pub fn with_reasoning_state(mut self, state: PromptReasoningState) -> Self {
+        self.reasoning_state = Some(state);
+        self
+    }
+
+    /// The formatter's claim about the prompt's reasoning state, if any.
+    pub fn reasoning_state(&self) -> Option<PromptReasoningState> {
+        self.reasoning_state
     }
 
     pub fn as_str(&self) -> &str {
@@ -373,8 +408,29 @@ impl PromptFormatter {
 #[cfg(test)]
 mod rendered_prompt_tests {
     use super::{
-        NoOpFormatter, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
+        NoOpFormatter, OAIPromptFormatter, PromptReasoningState, PromptRenderError, RenderedPrompt,
+        RenderedSegment,
     };
+
+    #[test]
+    fn reasoning_state_is_absent_unless_a_formatter_sets_it() {
+        let text = RenderedPrompt::text("hello<think>\n".to_string());
+        assert_eq!(text.reasoning_state(), None);
+        let segmented = RenderedPrompt::segmented(vec![RenderedSegment::new("<think>", true)]);
+        assert_eq!(segmented.reasoning_state(), None);
+
+        let open = RenderedPrompt::text("hello<think>\n".to_string())
+            .with_reasoning_state(PromptReasoningState::Open);
+        assert_eq!(open.reasoning_state(), Some(PromptReasoningState::Open));
+        assert_eq!(open.as_str(), "hello<think>\n");
+        assert_ne!(open, RenderedPrompt::text("hello<think>\n".to_string()));
+
+        let closed =
+            RenderedPrompt::segmented(vec![RenderedSegment::new("<think>\n</think>\n", true)])
+                .with_reasoning_state(PromptReasoningState::Closed);
+        assert_eq!(closed.reasoning_state(), Some(PromptReasoningState::Closed));
+        assert!(closed.segments().is_some());
+    }
 
     #[test]
     fn owned_segments_borrow_into_tokenizer_segments() {
