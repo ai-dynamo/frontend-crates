@@ -40,6 +40,7 @@ impl From<&crate::tool_calling::traits::Tool> for ToolDefinition {
 
 pub use config::{Glm47ParserConfig, KimiK2ParserConfig, MiniMaxM3ParserConfig, XmlParserConfig};
 pub use response::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
+pub(crate) use xml::minimax_delimiter;
 pub use xml::{
     parse_glm47_invoke, parse_tool_call_block, try_tool_call_parse_kimi_k2,
     try_tool_call_parse_minimax_m3, try_tool_call_parse_xml,

@@ -85,3 +85,6 @@ boundary). Partial matches must return "keep buffering" rather than flushing as
 plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
+
+- `TOOLCALLING.streamv1.7-14`: MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
+- `TOOLCALLING.streamv1.7-15`: MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.

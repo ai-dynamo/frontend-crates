@@ -35,6 +35,7 @@ pub use minimax_m3_parser::{
     detect_tool_call_start_minimax_m3, find_tool_call_end_position_minimax_m3,
     try_tool_call_parse_minimax_m3,
 };
+pub(crate) use parser::minimax_delimiter;
 pub use parser::{
     detect_tool_call_start_xml, find_tool_call_end_position_xml, try_tool_call_parse_xml,
 };
