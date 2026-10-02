@@ -1,8 +1,8 @@
 {
-  "snapshot": "20261001_152803",
-  "created_pt": "2026-10-01 15:28:03 America/Los_Angeles",
+  "snapshot": "20261002_120918",
+  "created_pt": "2026-10-02 12:09:18 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "9.2.6",
+    "dynamo-parsers": "9.2.7",
     "dynamo-parsers-v2": "0.7.8"
   },
   "peers": {
@@ -79,6 +79,11 @@
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-9.2.6.tar.gz",
       "sha256": "0c8137637020a87aac8b0eb13a7b0acb060d441c47235bf7bae7a1e67739af49",
       "size": 1326
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-9.2.7.tar.gz",
+      "sha256": "99994201b83aa4a9f486f76ad913773968458835c214c9f724060c6ee58756df",
+      "size": 461
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
