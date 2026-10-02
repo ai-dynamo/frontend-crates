@@ -386,6 +386,8 @@ def test_batch_null_groups_preserve_coercion_history(model_v2: dict) -> None:
         "7-5", "7-5.union", "7-5.sibling_anyof", "7-5.sibling_oneof",
         "7-5.untyped_branch", "7-5.const", "7-5.enum", "7-5.untyped_const", "7-5.untyped_enum",
     }
+    glm_nullable = {"7-4.inline", "7-4.ref"}
+    glm_strings = {"7-5.inline", "7-5.ref"}
     columns = {column["sub"]: column for column in tab["columns"]}
     assert {column["label"] for column in tab["columns"]
             if column["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
@@ -458,11 +460,20 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
         if expected is tip:
             assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
     for row in tab["rows"]:
-        if row.get("family") and row["family"] != "minimax_m3":
+        if row.get("family") and row["family"] not in {"minimax_m3", "glm47"}:
             for sub in ("7-4", "7-5"):
                 cell = row["cells"][sub]
                 assert cell_state(cell, reference)[0] == "na", row["family"]
                 assert cell["tooltip"]["na_note"], row["family"]
+    glm = next(row for row in tab["rows"] if row.get("family") == "glm47")
+    glm_leaves = leaf_cells(glm)
+    for sub in glm_nullable | glm_strings:
+        cell = glm_leaves[sub]
+        assert cell["tooltip"]["input"]["kind"] == "text"
+        assert cell_state(cell, reference)[0] == "green", sub
+        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+        expected = [{"name": "get_weather", "arguments": {"city": None if sub in glm_nullable else "null"}}]
+        assert blocks["golden"]["calls"] == blocks[reference["key"]]["calls"] == expected
 
 
 @pytest.mark.parametrize("mode,baseline_key,fixed_key", [
@@ -1100,6 +1111,46 @@ def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
             assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
 
 
+@pytest.mark.parametrize("scenario,sub,arguments", [
+    ("glm_ref_object", "7-9", {"payload": {"x": 1}}),
+    ("glm_ref_encoded_targets", "7-11", {"space": 42, "utf8_plus": 42, "pointer": 42}),
+    ("glm_ref_json_looking_strings", "7-12",
+     {"object_text": '{"x":1}', "array_text": '[1,2]',
+      "quoted_text": '"hello"', "inline_text": '{"x":1}'}),
+    ("glm_ref_scalar_types", "7-13", {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42}),
+])
+def test_glm_type_references_have_typed_current_batch_and_unified_captures(
+    model_v2: dict, scenario: str, sub: str, arguments: dict,
+) -> None:
+    calls = [{"name": "capture_payload", "arguments": arguments}]
+    batch = _tab(model_v2, "tab-toolcalling-batch")
+    row = next(row for row in batch["rows"] if row.get("family") == "glm47")
+    cell = leaf_cells(row)[sub]
+    assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
+    assert next(column for column in batch["columns"] if column["sub"] == sub)["group_key"] == "args"
+    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+    latest = [next(candidate for candidate in batch["candidates"]
+                   if candidate["key"].startswith(implementation) and candidate["parse_mode"] == mode)
+              for implementation, mode in (("dynamo_v1", "batch"), ("dynamo_v2", "stream"))]
+    assert latest[1]["version"] == dynamo_v2_label(REPO)
+    for candidate in latest:
+        block = blocks[candidate["key"]]
+        assert block["calls"] == calls
+        assert block["normal_text"] == ""
+        assert cell_state(cell, candidate)[0] == "green"
+
+    unified = _tab(model_v2, "tab-unified")
+    row = next(row for row in unified["rows"] if row.get("family") == "glm47")
+    cell = leaf_cells(row)[scenario]
+    assert cell["case_id"] == f"UNIFIED.{sub}"
+    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
+    events = [{"kind": "tool_call", **call} for call in calls]
+    assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
+    assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+    assert all(other["cells"][scenario]["status"] == "na"
+               for other in unified["rows"] if other.get("family") and other["family"] != "glm47")
+
+
 def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
@@ -1222,7 +1273,7 @@ process.stdout.write(JSON.stringify(results));
 
 
 @pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
-def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2, tab_id):
+def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, tab_id: str) -> None:
     tab = _tab(model_v2, tab_id)
     assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
@@ -1233,11 +1284,12 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2, tab_id)
         if row.get("family") not in families:
             continue
         mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
+        refs = tab_id == "tab-unified" and row["family"] == "glm47"
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            assert len(cell["variants"]) == count + int(mixed)
+            assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
             if tab_id.endswith("streamv1"):

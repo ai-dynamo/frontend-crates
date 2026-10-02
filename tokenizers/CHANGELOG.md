@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [3.0.0] - 2026-10-02
+
+### Breaking changes
+
+- Call `DecodeStream::finish()` when token input ends and append its returned text.
+  `step()` now buffers trailing byte-fallback runs, including valid UTF-8, until
+  a non-byte boundary or `finish()` so later bytes cannot rewrite emitted text.
+  Step-only callers can otherwise lose terminal text. Consecutive byte-fallback
+  output, including some emoji and rare CJK sequences, may remain buffered for
+  the entire response; this preserves full-decoding parity.
+
 ## [2.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.9.2...dynamo-tokenizers-v2.0.0) - 2026-10-01
 
 ### Features
