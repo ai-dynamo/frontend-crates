@@ -896,7 +896,7 @@ fn parse_tool_call_block(
         }
     }
 
-    // Preserve calls to unknown tools so the client can reject them.
+    // Preserve unknown calls; executors must authorize names against request-scoped tools.
     if let Some(tools_list) = tools
         && !tools_list.iter().any(|t| t.name == function_name)
     {
@@ -1680,8 +1680,8 @@ mod tests {
         assert_eq!(calls[1].function.name, "get_time");
     }
 
-    // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.8.c, TOOLCALLING.batch.13 in tests/parity/toolcalling/fixtures/glm47/TOOLCALLING.batch.13.yaml, tests/parity/toolcalling/fixtures/glm47/TOOLCALLING.batch.8.yaml.
-    #[test] // TOOLCALLING.batch.4, TOOLCALLING.batch.8
+    // Fixture coverage: glm47/TOOLCALLING.batch.yaml (TOOLCALLING.batch.13).
+    #[test]
     fn test_unknown_function_block_returned_as_call_no_tag_leak() {
         let config = get_test_config();
         let tools = vec![ToolDefinition {
@@ -1696,9 +1696,8 @@ mod tests {
 
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].function.name, "unknown_func");
-        let args: HashMap<String, Value> =
-            serde_json::from_str(&calls[0].function.arguments).unwrap();
-        assert!(args.contains_key("x"));
+        let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(args, serde_json::json!({"x": "1"}));
         let text = normal_text.unwrap();
         assert!(
             !text.contains("<tool_call>") && !text.contains("<arg_key>"),
@@ -1708,6 +1707,36 @@ mod tests {
             text.contains("Here is the result:"),
             "Leading prose must survive, got: {text}"
         );
+    }
+
+    #[tokio::test]
+    async fn test_public_dispatch_preserves_mixed_unknown_and_known_calls() {
+        let tools = vec![ToolDefinition {
+            name: "known_func".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {"x": {"type": "integer"}}
+            })),
+            strict: None,
+        }];
+        let message = "<tool_call>unknown_func<arg_key>x</arg_key><arg_value>1</arg_value></tool_call><tool_call>known_func<arg_key>x</arg_key><arg_value>2</arg_value></tool_call>";
+        let (calls, normal_text) =
+            crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery(
+                message,
+                Some("glm47"),
+                Some(&tools),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[0].function.name, "unknown_func");
+        assert_eq!(calls[1].function.name, "known_func");
+        let unknown_args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        let known_args: Value = serde_json::from_str(&calls[1].function.arguments).unwrap();
+        assert_eq!(unknown_args, serde_json::json!({"x": "1"}));
+        assert_eq!(known_args, serde_json::json!({"x": 2}));
+        assert!(normal_text.unwrap_or_default().trim().is_empty());
     }
 
     #[test] // helper
