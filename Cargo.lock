@@ -1178,7 +1178,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.8"
+version = "0.7.9"
 dependencies = [
  "anyhow",
  "num-traits",

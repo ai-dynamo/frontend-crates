@@ -1,9 +1,9 @@
 provenance:
   status: captured
   origin:
-    crate_version: 0.7.8
-    git_commit: ccafacf479754ecaf301501011ad0c1a2b5618ac
-    source_sha256: a3513cfc791b8d4d82f6b2aa25938fdaae7c26dde7e6aa0ec8b67e7de4081a1e
+    crate_version: 0.7.9
+    git_commit: b5ad82460a3c16318d15e818002a86bb23bceae5
+    source_sha256: 6b8ecc7152255a1b1a12bc9379ff1946f1883b432ad43f83ad4e2b969e93b62b
 document:
   mode: unified
 changes:
@@ -48,9 +48,9 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+    case_key: UNIFIED.7-3
     stimulus:
       ref: current
       semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
-    case_key: UNIFIED.7-3
 metadata_changes: {}
 document_overrides: {}

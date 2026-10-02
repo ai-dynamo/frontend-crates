@@ -1,9 +1,9 @@
 {
-  "snapshot": "20261001_152803",
-  "created_pt": "2026-10-01 15:28:03 America/Los_Angeles",
+  "snapshot": "20261002_095120",
+  "created_pt": "2026-10-02 09:51:20 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.2.6",
-    "dynamo-parsers-v2": "0.7.8"
+    "dynamo-parsers-v2": "0.7.9"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -211,6 +211,11 @@
       "size": 1691
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.9.tar.gz",
+      "sha256": "467ee7435c18370baa4b9c6c2b2612c7d5aac4ce9126b742f74a80efa4819c61",
+      "size": 2167
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
       "sha256": "b44b323ef970dfa4ece9b79c5d9a4b427f6d68a2c64a55aa5307aba3e5a2acd2",
       "size": 81484
@@ -268,8 +273,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "1ff46fb2b0d55cb39e88102e54d33dc7e14b80a631446ba20024fc4dfb969c3d",
-      "size": 3865992
+      "sha256": "ac7d76332077a522a3956cea155da99fbfa538dc2ece991234096d0a185a263a",
+      "size": 3867624
     }
   ],
   "inactive_shards": []
