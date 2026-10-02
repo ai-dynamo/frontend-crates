@@ -443,6 +443,14 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
         "prefilled_response_reasoning_markers_literal",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
+        "native_quoted_control_in_response",
+        "native_single_quoted_word_control",
+        "native_single_quote_contraction_response",
+        "guided_response_quoted_control_braces_named",
+        "guided_response_quoted_control_braces_required",
+        "native_quoted_incomplete_header",
+        "native_quoted_control_then_call",
+        "native_unmatched_quote_then_call",
     }
     for family in FAMILIES:
         cases = build_cases(family)
@@ -451,11 +459,18 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             for case_id, case in cases.items()
             if case["init"]["starting_state"] == "Response"
         }
-        extra = {"guided_json_quoted_bare_tool_header_in_answer"} if family == "muse_glimmer" else set()
+        extra = {"guided_json_quoted_bare_tool_header_in_answer", "muse_quoted_reserved_eom_argument", "muse_quoted_reserved_eot_argument", "muse_quoted_reserved_start_argument"} if family == "muse_glimmer" else set()
+        if family == "deepseek_v4":
+            extra |= {"guided_response_rejected_header_quote_ownership"}
         assert set(response_cases) == response_scenarios | extra
         marker = "<|message|>" if family == "muse_glimmer" else control_tokens(family)[0]
-        for case in response_cases.values():
-            assert marker in case["input"]
+        for scenario, case in response_cases.items():
+            if scenario == "guided_response_rejected_header_quote_ownership":
+                assert G.guided_invoke_prefix(family) in case["input"]
+            elif scenario.startswith(("native_", "guided_response_quoted_control_braces_")):
+                assert G._NATIVE_QUOTED_CONTROL[family] in case["input"] or scenario == "native_unmatched_quote_then_call"
+            elif not scenario.startswith("muse_quoted_reserved_"):
+                assert marker in case["input"]
 
 
 # --- scenario scope must be DECLARED, never inferred from a gap -----------------
@@ -725,24 +740,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 93,
-            "deepseek_v41": 93,
-            "gemma4": 95,
-            "glm47": 100,
-            "kimi_k2": 93,
-            "kimi_k3": 101,
-            "muse_glimmer": 94,
-            "qwen3": 93,
+            "deepseek_v4": 106,
+            "deepseek_v41": 105,
+            "gemma4": 107,
+            "glm47": 112,
+            "kimi_k2": 105,
+            "kimi_k3": 113,
+            "muse_glimmer": 109,
+            "qwen3": 105,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 862
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 112
+    assert len(UNIFIED_TAX) == 128
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -958,6 +973,21 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 def _family_value(scenario, family):
     reason_open, reason_close, _, _ = control_tokens(family)
+    if scenario.startswith("native_") and scenario != "native_unmatched_quote_then_call":
+        marker = G._NATIVE_QUOTED_CONTROL[family]
+        if scenario == "native_quoted_incomplete_header":
+            header = G.r_tool(family, "get_weather", "city", "Paris", 0).split("Paris", 1)[0]
+            return f"The literal `{header}` header is part of the explanation."
+        if scenario == "native_single_quoted_word_control":
+            return f"The literal 'example {marker} marker' is part of the explanation."
+        if scenario.startswith("native_single_quote_contraction_"):
+            return f"The literal 'doesn't {marker} marker' stays quoted."
+        return f'The literal "{marker}" marker is part of the explanation.'
+    if scenario.startswith("guided_quoted_reasoning_closer_"):
+        return f"The literal 'doesn't {reason_close} marker' stays quoted."
+    if scenario.startswith("guided_response_quoted_control_braces_"):
+        marker = G._NATIVE_QUOTED_CONTROL[family]
+        return f'The literal "{marker} {{ example }}" stays visible. '
     if scenario == "deepseek_v41_mixed_control_text_in_string":
         return G._MIXED_CONTROL_STRINGS[family]
     if scenario == "arg_marker_in_string":

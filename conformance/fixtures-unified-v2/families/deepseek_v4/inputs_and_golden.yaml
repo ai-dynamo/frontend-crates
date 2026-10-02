@@ -6830,3 +6830,891 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  native_quoted_control_in_reasoning:
+    lifecycle: active
+    scenario: native_quoted_control_in_reasoning
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.40-5
+    historical_ids: []
+    request:
+      input: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+  native_quoted_incomplete_header:
+    lifecycle: active
+    scenario: native_quoted_incomplete_header
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-10
+    historical_ids: []
+    request:
+      input: The literal `<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">` header is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal `
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="city" string="true">
+      - delta_text: '` header is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal `<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">` header is part of the explanation.
+  native_quoted_control_in_response:
+    lifecycle: active
+    scenario: native_quoted_control_in_response
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-6
+    historical_ids: []
+    request:
+      input: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+  native_single_quoted_word_control:
+    lifecycle: active
+    scenario: native_single_quoted_word_control
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-7
+    historical_ids: []
+    request:
+      input: The literal 'example <｜DSML｜tool_calls> marker' is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''example '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' marker'' is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal 'example <｜DSML｜tool_calls> marker' is part of the explanation.
+  native_quoted_control_then_call:
+    lifecycle: active
+    scenario: native_quoted_control_then_call
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-8
+    historical_ids: []
+    request:
+      input: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="city" string="true">
+      - delta_text: Paris
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  native_unmatched_quote_then_call:
+    lifecycle: active
+    scenario: native_unmatched_quote_then_call
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-9
+    historical_ids: []
+    request:
+      input: He said "maybe<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: He said "maybe
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="city" string="true">
+      - delta_text: Paris
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: He said "maybe
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_quoted_reasoning_closer_named:
+    lifecycle: active
+    scenario: guided_quoted_reasoning_closer_named
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    policy:
+    - I7
+    display_id: UNIFIED.34-8
+    historical_ids: []
+    request:
+      input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"city": "Paris"}'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: </think>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: </think>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't </think> marker' stays quoted.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_quoted_reasoning_closer_required:
+    lifecycle: active
+    scenario: guided_quoted_reasoning_closer_required
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    policy:
+    - I7
+    display_id: UNIFIED.34-9
+    historical_ids: []
+    request:
+      input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: </think>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: </think>
+      - delta_text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't </think> marker' stays quoted.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  native_single_quote_contraction_reasoning:
+    lifecycle: active
+    scenario: native_single_quote_contraction_reasoning
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.40-6
+    historical_ids: []
+    request:
+      input: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+  native_single_quote_contraction_response:
+    lifecycle: active
+    scenario: native_single_quote_contraction_response
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-11
+    historical_ids: []
+    request:
+      input: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+  guided_response_quoted_control_braces_named:
+    lifecycle: active
+    scenario: guided_response_quoted_control_braces_named
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    policy:
+    - I7
+    display_id: UNIFIED.35-3
+    historical_ids: []
+    request:
+      input: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. {"city": "Paris"}'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' { example }" stays visible. {"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_quoted_control_braces_required:
+    lifecycle: active
+    scenario: guided_response_quoted_control_braces_required
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    policy:
+    - I7
+    display_id: UNIFIED.35-4
+    historical_ids: []
+    request:
+      input: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_rejected_header_quote_ownership:
+    lifecycle: active
+    scenario: guided_response_rejected_header_quote_ownership
+    description: DeepSeek V4 prefilled guided Response rejects an incomplete invoke header, then strips its parameter markup; the rejected attribute quote cannot become a prose quote and protect that markup.
+    policy:
+    - P2
+    display_id: UNIFIED.35-5
+    historical_ids: []
+    request:
+      input: <｜DSML｜invoke name="f"<｜DSML｜parameter name="x" string="true">x[{"name":"f","arguments":{"x":"ok"}}]
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      chunks:
+      - delta_text: <｜DSML｜invoke name="f"<｜DSML｜parameter name="x" string="true">
+      - delta_text: x[{"name":"f","arguments":{"x":"ok"}}]
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: f"x
+      - kind: tool_call
+        name: f
+        arguments:
+          x: ok
