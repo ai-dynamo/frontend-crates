@@ -599,6 +599,9 @@ pub struct AnthropicTool {
     /// server tools (which define their own input shape server-side).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub input_schema: Option<serde_json::Value>,
+    /// Whether tool arguments must conform to the input schema.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
     /// Cache control breakpoint on this tool definition.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
@@ -942,6 +945,21 @@ fn estimate_block_len(block: &AnthropicContentBlock) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tool_strict_round_trips() {
+        for strict in [Some(true), Some(false), None] {
+            let mut input = serde_json::json!({
+                "name": "set_status",
+                "input_schema": {"type": "object"}
+            });
+            if let Some(strict) = strict {
+                input["strict"] = strict.into();
+            }
+            let tool: AnthropicTool = serde_json::from_value(input.clone()).unwrap();
+            assert_eq!(serde_json::to_value(tool).unwrap(), input);
+        }
+    }
 
     #[test]
     fn messages_request_keeps_nvext_opaque() {
