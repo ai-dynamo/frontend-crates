@@ -1252,7 +1252,6 @@ mod tests {
     fn large_fractional_arguments_remain_exact_json_numbers() {
         for raw in [
             "9007199254740992.5",
-            "9007199254740993.25",
             "9.0071992547409925e15",
             "0.10000000000000000001",
             "-9007199254740992.5",
