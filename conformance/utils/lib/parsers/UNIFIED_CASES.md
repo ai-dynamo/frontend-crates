@@ -47,7 +47,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 - **P3 Empty arguments** -> `{}`.
 - **P4 Structural whitespace** -> strip only tokenizer-structural whitespace bound to the marker grammar (e.g. gemma4 `thought\n`), preserve model-authored whitespace. RESOLVED for gemma4 by `ReasoningSpec::start_label`: the role label is consumed when present and TOLERATED when absent, so `<|channel>thoughtful musing<channel|>` keeps its first word and a bare `<|channel>` still opens a thought instead of leaking as text. Folding the label into the opener would have passed this corpus and broken both.
 - **P5 Implicit reasoning start** -> prompt-conditioned per family (forced-reasoning models start in reasoning with no `<think>`).
-- **P6 Marker quoted in prose** -> counts only as a real control token; text-only input is best-effort (known limitation, not pass/fail).
+- **P6 Marker quoted in prose** -> a balanced prose quotation owns its literal control tokens; an unmatched quotation cannot hide a genuine call or reasoning closer.
 - **P7 Nested channel markers (a marker of one channel inside another)** -> marker recognition is CHANNEL-SCOPED, and both directions follow the same best-effort-recovery rule (recover real structure, never leak markup, never drop a valid call):
   - Inside a **quoted tool-argument string value**, marker-looking bytes are DATA (I7). A reasoning marker there does NOT open a reasoning channel — it is the literal arg string (`reason_markup_in_arg`). A reasoning-first pipeline that extracts `<think>`/`<|channel>` before tool parsing corrupts the arg -> red (ARG_MISMATCH / MERGE).
   - A **well-formed tool-call envelope inside a reasoning span** is STRUCTURAL: break out of reasoning, emit the call, resume reasoning after its close (`tool_in_reason`). Leaking the raw `<|tool_call>...<tool_call|>` into `reasoning_content`, or dropping the call, is the regression -> red (LEAK). The asymmetry is deliberate: quote delimiters explicitly mark a data region, whereas a reasoning span is opaque text that can still contain recoverable structure.
@@ -106,6 +106,18 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`8-4`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv1.8.d.
 - **`8-5`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
 
+- **`8-6`** (`native_quoted_control_in_response`) A balanced double quotation names the native call opener. Preserve the complete explanation as visible text and emit no call.
+- **`8-7`** (`native_single_quoted_word_control`) A balanced single quotation starts with an ordinary word and contains a native opener. It is a quotation, not a contraction or possessive apostrophe.
+- **`8-8`** (`native_quoted_control_then_call`) A quoted native opener in an explanation precedes a real call. Preserve the explanation and dispatch only the real call.
+- **`8-9`** (`native_unmatched_quote_then_call`) An unmatched prose quotation precedes a complete native call with quoted attributes. Native headers and arguments own their quotation marks; preserve the prose prefix and dispatch the call.
+
+- **`8-11`** (`native_single_quote_contraction_response`) Prefilled Native Response quotes its opener inside a single quotation containing a contraction. The internal apostrophe does not close the quotation.
+- **`40-6`** (`native_single_quote_contraction_reasoning`) The same quotation remains in prefilled Native Reasoning.
+- **`34-8`** (`guided_quoted_reasoning_closer_named`) Prefilled guided reasoning quotes its closer inside a contraction-bearing quotation, then a real closer precedes named-tool arguments.
+- **`34-9`** (`guided_quoted_reasoning_closer_required`) The same boundary precedes a required-tool envelope.
+
+- **`8-10`** (`native_quoted_incomplete_header`) Balanced backticks quote an incomplete invocation header, including attribute or argument-header quotation. Preserve the complete explanation; incomplete native syntax inside a quotation is not a call.
+
 ### Group 10 — Reasoning span (`REASONING.*`)
 - **`10-1`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
 - **`10-2`** (`reason_then_content`) Reasoning then visible content, no call. This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).
@@ -132,9 +144,9 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 93 of the 112 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 105 of the 128 taxonomy cases for this family.
 - Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 19 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
+- The 23 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`; `muse-2` through `muse-4`, which require Muse parameter/channel syntax; and `35-5`, which requires DeepSeek V4 invoke/parameter markup. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
 <!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
@@ -304,6 +316,11 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 
 ### Group 35 — Guided Decoding: markers in visible answers
 - **`35-1`** (`guided_json_quoted_bare_header_in_answer`) A response that already has a visible channel open contains its family's reasoning marker before the guided payload. The marker must not reopen a private channel, and the following JSON must still dispatch.
+- **`35-3`** (`guided_response_quoted_control_braces_named`) Prefilled guided Response quotes a native opener and braces as visible text before named-tool arguments.
+- **`35-5`** (`guided_response_rejected_header_quote_ownership`) DeepSeek V4 prefilled guided Response rejects an invoke header, strips later parameter markup, and dispatches the payload. Quotes from rejected attributes remain native grammar debris.
+
+- **`35-4`** (`guided_response_quoted_control_braces_required`) The same quotation precedes a required-tool envelope.
+
 - **`35-2`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text.
 
 `31-3` and `31-4` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-1` through `31-4` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
@@ -317,6 +334,7 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`40-2`** (`prefilled_reasoning_with_guided_json`) Same, with the call as guided JSON.
 - **`40-3`** (`prefilled_reasoning_then_text_then_tool`) reasoning → visible prose → call. All three channels in one prefilled stream.
 - **`40-4`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
+- **`40-5`** (`native_quoted_control_in_reasoning`) A balanced quotation inside prefilled reasoning names the native tool opener. Preserve it as reasoning without creating a call or switching channels.
 
 ### Group 41 — Prefilled reasoning, malformed
 - **`41-1`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
@@ -390,3 +408,9 @@ Name the missing DIMENSION, not the example. `guided_json_stray_prefix_before_re
 The check is the count: if a review round produced N defects the corpus missed and the scenario count did not move, the holes are still open.
 
 **A duplicate is worse than a gap.** Before adding, normalize `(input, init, golden)` across the corpus and drop any crossing that already exists. A generated product once recreated three hand-authored scenarios — 9 cases across families — inflating the count while testing nothing new, and leaving two names for one behaviour to drift apart. `test_no_two_scenarios_have_identical_behaviour` now enforces this.
+
+## Quoted native controls
+
+The native quotation scenarios apply to all eight current Unified families. Balanced double quotes, single quotes, and backticks can name a native control token in an explanation. An unmatched quotation does not suppress a real reasoning closer or call. Invocation headers and argument bodies own their quotation marks, so those marks cannot close an unrelated prose quotation. Definite prose still streams before an ambiguous quoted control; the parser can retain an ambiguous control until its closing quote or EOF. Native recovery for malformed headers must give the same output for whole input and chunked input.
+
+Muse retains its existing recovery for unquoted reserved channel tokens in parameter values. **`muse-2`**, **`muse-3`**, and **`muse-4`** (`muse_quoted_reserved_eom_argument`, `muse_quoted_reserved_eot_argument`, `muse_quoted_reserved_start_argument`) add the balanced-quotation dimension: a quoted `<|eom|>`, `<|eot|>`, or `<|start|>` is literal argument data. The real unquoted channel terminator still ends the message. These cases are Muse-specific because its parameter grammar and channel framing share the decoded reserved-token vocabulary.

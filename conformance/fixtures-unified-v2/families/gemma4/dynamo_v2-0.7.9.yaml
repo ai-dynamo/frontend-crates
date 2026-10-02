@@ -1,0 +1,315 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.9
+    git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
+    source_sha256: 949fa9e5085e76aeae3b238e48e25f46fb313856351ffa127ed21f39f4b50147
+document:
+  mode: unified
+changes:
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <channel|> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <channel|> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 51b5c2a871283dd5b62e0690ca1ebb90117ca8bb6d95c0252eafbffebff20426
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <channel|> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <channel|> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: b348ad16ff780b42f3ca7304c79b251d2863e63d23f8d987ef24705fd1285666
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|tool_call> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|tool_call> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 9281cf51cf6688061f08561e117b6cb15c8f69174d987ac091f30aad761928b1
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|tool_call> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|tool_call> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 24c1b9fd2268b585d947594b40e6076676fe7174d142ff72150ce89b489648f2
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<|tool_call>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|tool_call>" marker is part of the explanation.
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: bc7858e169c9a0257be1faaa10e0d3bcf22341379cac2ca3be755aaa1809f29b
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|tool_call>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call>" marker is part of the explanation.
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 2045e2019bd341cdb201d694560bb6d6e7493fe39be9e2eff1613f6f9ba5fde8
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|tool_call>" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call>" marker is part of the explanation.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: d58d94ef6a101b3b7aae905904069813a4c0d2dfd9d69ca602c53d398cb6f081
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `<|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
+    stimulus:
+      ref: current
+      semantic_sha256: f042ce8f86c34947487f99876e81802d36262bbb3f4173c09b78f597ea6fcb05
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|tool_call> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|tool_call> marker' stays quoted.
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 602b3218f624a2ec8eb3f8df773ec83d7bc1678dbc5e04a1435ec9ce0a33b00f
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <|tool_call> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call> marker' stays quoted.
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 0bc6378eee6d141fdedb57ad461d745436a32d6a8dd56fbdf8211f2f66d916c8
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <|tool_call> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call> marker' is part of the explanation.
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 4961d36eac601e405dfcac5aae2d2141ba3767bed8138b8b10aaedb85268b667
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+    stimulus:
+      ref: current
+      semantic_sha256: 0ba915b753b2a79ece06cef1c8a604d2e2b6607b8d745a8a3bc050527b397279
+metadata_changes:
+  guided_quoted_reasoning_closer_named: {}
+  guided_quoted_reasoning_closer_required: {}
+  guided_response_quoted_control_braces_named: {}
+  guided_response_quoted_control_braces_required: {}
+  native_quoted_control_in_reasoning: {}
+  native_quoted_control_in_response: {}
+  native_quoted_control_then_call: {}
+  native_quoted_incomplete_header: {}
+  native_single_quote_contraction_reasoning: {}
+  native_single_quote_contraction_response: {}
+  native_single_quoted_word_control: {}
+  native_unmatched_quote_then_call: {}
+document_overrides: {}
