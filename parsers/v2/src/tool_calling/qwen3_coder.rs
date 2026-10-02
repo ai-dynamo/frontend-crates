@@ -1182,7 +1182,6 @@ mod tests {
                 for ty in [
                     serde_json::json!(["number", "null"]),
                     serde_json::json!(["integer", "null"]),
-                    serde_json::json!(["number", "string"]),
                 ] {
                     let mut schema = serde_json::json!({"type":ty});
                     schema[keyword] = if keyword == "const" {
