@@ -91,7 +91,7 @@ where
 /// - `prompt_embeds`: base64-encoded PyTorch tensor for pre-computed embeddings
 /// - `echo`: strict bool validation (rejects integers/strings)
 /// - `stream_options`: uses our extended `ChatCompletionStreamOptions` (with `continuous_usage_stats`)
-#[derive(Clone, Serialize, Deserialize, Default, Debug, Builder, PartialEq)]
+#[derive(Clone, Serialize, Default, Debug, Builder, PartialEq)]
 #[builder(name = "CreateCompletionRequestArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
@@ -143,6 +143,74 @@ pub struct CreateCompletionRequest {
     pub seed: Option<i64>,
 }
 
+// Track an omitted prompt separately from an explicit empty or null prompt.
+#[derive(Deserialize)]
+struct CompletionRequestInput {
+    model: String,
+    #[serde(default, deserialize_with = "deserialize_present_prompt")]
+    prompt: Option<Prompt>,
+    prompt_embeds: Option<String>,
+    suffix: Option<String>,
+    max_tokens: Option<u32>,
+    temperature: Option<f32>,
+    top_p: Option<f32>,
+    n: Option<u8>,
+    stream: Option<bool>,
+    stream_options: Option<ChatCompletionStreamOptions>,
+    logprobs: Option<u8>,
+    #[serde(default, deserialize_with = "deserialize_echo_bool")]
+    echo: Option<bool>,
+    stop: Option<Stop>,
+    presence_penalty: Option<f32>,
+    frequency_penalty: Option<f32>,
+    best_of: Option<u8>,
+    logit_bias: Option<HashMap<String, serde_json::Value>>,
+    user: Option<String>,
+    seed: Option<i64>,
+}
+
+fn deserialize_present_prompt<'de, D>(deserializer: D) -> Result<Option<Prompt>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Prompt::deserialize(deserializer).map(Some)
+}
+
+impl<'de> Deserialize<'de> for CreateCompletionRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let input = CompletionRequestInput::deserialize(deserializer)?;
+        let prompt = match input.prompt {
+            Some(prompt) => prompt,
+            None if input.prompt_embeds.is_some() => Prompt::default(),
+            None => return Err(serde::de::Error::missing_field("prompt")),
+        };
+        Ok(Self {
+            prompt,
+            model: input.model,
+            prompt_embeds: input.prompt_embeds,
+            suffix: input.suffix,
+            max_tokens: input.max_tokens,
+            temperature: input.temperature,
+            top_p: input.top_p,
+            n: input.n,
+            stream: input.stream,
+            stream_options: input.stream_options,
+            logprobs: input.logprobs,
+            echo: input.echo,
+            stop: input.stop,
+            presence_penalty: input.presence_penalty,
+            frequency_penalty: input.frequency_penalty,
+            best_of: input.best_of,
+            logit_bias: input.logit_bias,
+            user: input.user,
+            seed: input.seed,
+        })
+    }
+}
+
 /// Parsed server side events stream until an \[DONE\] is received from server.
 pub type CompletionResponseStream =
     Pin<Box<dyn Stream<Item = Result<CreateCompletionResponse, OpenAIError>> + Send>>;
@@ -184,6 +252,28 @@ mod tests {
         let json = r#"{"model":"test_model","prompt":null,"prompt_embeds":"synthetic"}"#;
 
         assert!(serde_json::from_str::<CreateCompletionRequest>(json).is_err());
+    }
+
+    #[test]
+    fn completion_requires_prompt_or_prompt_embeds() {
+        for json in [
+            r#"{"model":"test_model"}"#,
+            r#"{"model":"test_model","prompt_embeds":null}"#,
+        ] {
+            let error = serde_json::from_str::<CreateCompletionRequest>(json).unwrap_err();
+            assert!(error.to_string().contains("missing field `prompt`"));
+        }
+
+        let json = r#"{"model":"test_model","prompt":""}"#;
+        let request: CreateCompletionRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.prompt, Prompt::String(String::new()));
+    }
+
+    #[test]
+    fn completion_rejects_duplicate_prompt() {
+        let json = r#"{"model":"test_model","prompt":"one","prompt":"two"}"#;
+        let error = serde_json::from_str::<CreateCompletionRequest>(json).unwrap_err();
+        assert!(error.to_string().contains("duplicate field `prompt`"));
     }
 
     #[test]
