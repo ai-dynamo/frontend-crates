@@ -979,6 +979,10 @@ _ENGINE_RUNTIME = {
 
 def _full_label(impl: str, version: object, mode: str) -> str:
     base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
+    if impl == BASELINE_STREAM_IMPL:
+        producer = _dynamo_v2_producer()
+        if version == producer["crate_version"] and producer["kind"] == "unpublished":
+            version = f"{version} [unpublished {producer['source_id']}]"
     # The v1/v2 generation is part of the impl key (dynamo_v1/dynamo_v2), so the
     # display already reads "Dynamo v1 Rust 3.0.0 (batch)" / "Dynamo v2 Rust
     # 0.1.11 (stream)". The one remaining special case: v1 run against stream
@@ -1041,14 +1045,15 @@ def _candidate_name_key(label: str) -> str:
     """Parser name for ordering: the display label minus its trailing version token and
     "(mode)" suffix. "vLLM Rust 0.25.1 (stream)" -> "vllm rust". Sorting candidates on
     this puts PARSERS alphabetically (Dynamo < SGLang < vLLM Python < vLLM Rust)."""
-    base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"/"(jail+batch)"
-    base = re.sub(r"\s+\d[\w.+]*$", "", base)          # drop the trailing version token
+    match = _CANDIDATE_VERSION_RE.search(label)
+    base = label[:match.start()] if match else re.sub(r"\s*\([^)]*\)\s*$", "", label)
     return base.lower()
 
 
-# The version token may contain a `+` for non-Unified legacy candidates, but
-# Unified capture producers reject change-qualified labels before rendering.
-_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+]*)\s*(?:\([^)]*\))?\s*$")
+# Publication status belongs to display provenance, not the capture version key.
+_CANDIDATE_VERSION_RE = re.compile(
+    r"\s(\d[\w.+]*)\s*(?:\[unpublished sha256:[a-f0-9]+\]\s*)?(?:\([^)]*\))?\s*$"
+)
 
 
 def _sort_candidates(items: list[dict]) -> list[dict]:
@@ -1060,8 +1065,8 @@ def _sort_candidates(items: list[dict]) -> list[dict]:
     Reference (bucket A) stays first because Dynamo sorts ahead of the peers. Keys and
     default_bucket flags are untouched; only display order moves."""
     def _ver_key(it: dict):
-        m = _CANDIDATE_VERSION_RE.search(it["label"])
-        return fixtures._version_sort_key(m.group(1)) if m else ()
+        version = _version_of_label(it["label"])
+        return fixtures._version_sort_key(version) if version else ()
     ordered = sorted(items, key=_ver_key, reverse=True)
     return sorted(ordered, key=lambda it: _candidate_name_key(it["label"]))
 
@@ -2230,14 +2235,20 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_dynamo_label() -> str:
+@functools.cache
+def _dynamo_v2_producer() -> dict:
     # The renderer is copied into /tmp; the checker must inspect the source checkout.
     source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
-    return subprocess.run(
+    result = subprocess.run(
         [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
-         "--repo-root", str(source_root), "--format", "label"],
+         "--repo-root", str(source_root), "--format", "json"],
         check=True, capture_output=True, text=True,
-    ).stdout.strip()
+    )
+    return json.loads(result.stdout)
+
+
+def _unified_dynamo_label() -> str:
+    return _dynamo_v2_producer()["crate_version"]
 
 
 def _unified_capture_failure(record: dict) -> dict:

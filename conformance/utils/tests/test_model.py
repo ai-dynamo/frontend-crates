@@ -114,11 +114,12 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
     return out
 
 
-# A version token then a parenthesized mode, e.g. "0.1.24 (stream)". `+` is allowed in
-# the token because a capture can be filed under a change-scoped label ("0.1.24+pr163")
-# to compare one code state against another within a single release — see
-# conformance/utils/src/dynamo_version.py.
-_VER_PAREN = re.compile(r"\b\d[\w.+-]*\s+\([^)]+\)\s*$")
+# Labels and structured metadata must identify the same captured version.
+def _assert_candidate_versioned(candidate, location):
+    version = table._version_of_label(candidate["label"])
+    assert version, f"{location}: unversioned candidate {candidate['label']!r}"
+    assert candidate["version"] == version
+    assert table._parse_mode_of_label(candidate["label"]) in {"batch", "stream"}
 
 # ---- schema + shape -----------------------------------------------------------
 
@@ -277,7 +278,7 @@ def test_v2_every_candidate_is_versioned(model_v2):
             # carries no version (the unified tab measures every engine against it).
             if c.get("key") == "golden":
                 continue
-            assert _VER_PAREN.search(c["label"]), f"{t['id']}: unversioned candidate {c['label']!r}"
+            _assert_candidate_versioned(c, t["id"])
 
 
 def test_v2_exactly_one_reference_bucket_per_tab(model_v2):
@@ -306,14 +307,14 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
+def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_visible(model_v2):
     tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
     requested = dynamo_v2_label(REPO)
     assert dynamo["version"] == requested
-    assert dynamo["label"] == f"Dynamo v2 Rust {requested} (stream, Combined & Unified)"
+    assert dynamo["label"].startswith(f"Dynamo v2 Rust {requested} ")
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
@@ -788,6 +789,39 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
+@pytest.mark.parametrize("mode", ["stream", "stream, Combined & Unified"])
+def test_unpublished_current_label_projects_existing_producer_identity(monkeypatch, mode):
+    producer = {"crate_version": "0.7.9", "kind": "unpublished", "source_id": "sha256:abc123"}
+    monkeypatch.setattr(table, "_dynamo_v2_producer", lambda: producer)
+    label = table._full_label("dynamo_v2", "0.7.9", mode)
+    assert label == f"Dynamo v2 Rust 0.7.9 [unpublished sha256:abc123] ({mode})"
+    previous = table._full_label("dynamo_v2", "0.7.8", mode)
+    assert previous == f"Dynamo v2 Rust 0.7.8 ({mode})"
+    assert table._candidate_name_key(label) == table._candidate_name_key(previous) == "dynamo v2 rust"
+    assert table._version_of_label(label) == "0.7.9"
+    for items in ([{"key": "current", "label": label}, {"key": "previous", "label": previous}],
+                  [{"key": "previous", "label": previous}, {"key": "current", "label": label}]):
+        candidates = table._candidate_model(table._sort_candidates(items))
+        assert [(item["key"], item["version"]) for item in candidates] == [
+            ("current", "0.7.9"), ("previous", "0.7.8"),
+        ]
+    producer["kind"] = "release"
+    assert table._full_label("dynamo_v2", "0.7.9", mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
+
+
+def test_current_dynamo_display_identifies_the_measured_producer(model_v2):
+    producer = table._dynamo_v2_producer()
+    labels = [candidate["label"] for tab in model_v2["tabs"] for candidate in tab["candidates"]
+              if candidate.get("version") == producer["crate_version"]
+              and candidate["label"].startswith("Dynamo v2 Rust ")]
+    assert labels
+    for label in labels:
+        if producer["kind"] == "unpublished":
+            assert f"[unpublished {producer['source_id']}]" in label
+        else:
+            assert "[unpublished" not in label
+
+
 def test_tc_source_capture_versions_survive_label_parsing():
     impl = "dynamo_v2"
     versions = ["0.7.0+source.0abc123", "0.6.1"]
@@ -1059,7 +1093,7 @@ def test_v2_reasoning_candidates_versioned_incl_dynamo_v1(model_v2):
         labels = " ".join(c["label"] for c in cands)
         assert "Dynamo" in labels and "v1" in labels, labels
         for c in cands:
-            assert _VER_PAREN.search(c["label"]), f"{tid}: unversioned reasoning candidate {c['label']!r}"
+            _assert_candidate_versioned(c, tid)
 
 
 def test_v2_batch_tab_stream_candidates_use_current_peers(model_v2):

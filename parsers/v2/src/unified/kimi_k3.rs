@@ -14,7 +14,8 @@ use serde_json::Value;
 
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
-    JsonStringState, find_first_outside_strings, json_value_end, marker_prefix_suffix_len,
+    JsonStringState, ProseControl, ProseControlState, ProseGrammarSpan, find_first_outside_strings,
+    json_value_end, marker_prefix_suffix_len,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
 use crate::unified::{
@@ -1117,6 +1118,7 @@ impl InvokeBoundary for KimiK3CallBoundary {
 /// K3-owned native state. [`GuidedRouted`] adds the shared guided-JSON mode.
 pub(crate) struct KimiK3Native {
     buffer: String,
+    prose: ProseControlState,
     mode: Mode,
     active_call: Option<ActiveCall>,
     call_header_scan: Option<KimiK3HeaderScan>,
@@ -1131,6 +1133,7 @@ impl KimiK3Native {
     fn new() -> Self {
         Self {
             buffer: String::new(),
+            prose: ProseControlState::default(),
             mode: Mode::Idle,
             active_call: None,
             call_header_scan: None,
@@ -1144,6 +1147,58 @@ impl KimiK3Native {
 
     fn drain(&mut self, flush: bool, output: &mut UnifiedParserOutput) {
         loop {
+            if matches!(self.mode, Mode::Idle | Mode::Response | Mode::Reasoning) {
+                let control = self.prose.classify(
+                    &self.buffer,
+                    ALL_MARKERS.iter().flat_map(|marker| marker.variants()),
+                    flush,
+                    |text, at, flush| {
+                        let suffix = &text[at..];
+                        if !flush
+                            && CALL_OPEN
+                                .variants()
+                                .any(|marker| marker.starts_with(suffix))
+                        {
+                            return ProseGrammarSpan::Pending;
+                        }
+                        if CALL_OPEN.prefix_len(suffix).is_none() {
+                            return ProseGrammarSpan::NotOwned;
+                        }
+                        if !flush {
+                            return ProseGrammarSpan::Pending;
+                        }
+                        let mut boundary = KimiK3CallBoundary::new(CallBoundaryContext::Native);
+                        boundary
+                            .end_append(suffix, suffix, true, 0)
+                            .map(ProseGrammarSpan::Owned)
+                            .unwrap_or(ProseGrammarSpan::Pending)
+                    },
+                );
+                let (length, waiting, unmatched) = match control {
+                    ProseControl::Literal(length) => (length, false, false),
+                    ProseControl::Pending(at) => (at, true, false),
+                    ProseControl::Unmatched(at) => (at, false, true),
+                    ProseControl::Ordinary => (0, false, false),
+                };
+                if length > 0 {
+                    let text: String = self.buffer.drain(..length).collect();
+                    self.prose.consume(&text);
+                    if self.mode == Mode::Reasoning {
+                        output.push_reasoning(text);
+                    } else {
+                        output.push_text(text);
+                    }
+                }
+                if waiting {
+                    break;
+                }
+                if unmatched {
+                    self.prose.clear();
+                } else if length > 0 {
+                    continue;
+                }
+            }
+            let previous_mode = self.mode;
             let progressed = match self.mode {
                 Mode::Idle => self.drain_idle(flush, output),
                 Mode::Reasoning => self.drain_reasoning(flush, output),
@@ -1155,6 +1210,9 @@ impl KimiK3Native {
                     false
                 }
             };
+            if self.mode != previous_mode {
+                self.prose.clear();
+            }
             if !progressed {
                 break;
             }
@@ -1584,11 +1642,18 @@ impl KimiK3Native {
         output: &mut UnifiedParserOutput,
         emit: impl FnOnce(&mut UnifiedParserOutput, String),
     ) -> bool {
-        let len = safe_len(&self.buffer, markers, flush);
+        let len = safe_len(&self.buffer, markers, flush).min(self.buffer.len().saturating_sub(
+            if flush {
+                0
+            } else {
+                self.prose.punctuation_holdback(&self.buffer)
+            },
+        ));
         if len == 0 {
             return false;
         }
-        let text = self.buffer.drain(..len).collect();
+        let text: String = self.buffer.drain(..len).collect();
+        self.prose.consume(&text);
         emit(output, text);
         true
     }
@@ -1603,6 +1668,7 @@ impl KimiK3Native {
     }
 
     fn reset_state(&mut self) {
+        self.prose.clear();
         self.mode = Mode::Idle;
         self.active_call = None;
         self.call_header_scan = None;
