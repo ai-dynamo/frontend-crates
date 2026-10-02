@@ -99,6 +99,8 @@ where
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct CreateCompletionRequest {
     pub model: String,
+    /// Text or token prompt; omitted input uses an empty prompt for embeds-only requests.
+    #[serde(default)]
     pub prompt: Prompt,
     /// Base64-encoded PyTorch tensor containing pre-computed embeddings.
     /// At least one of prompt or prompt_embeds is required.
@@ -148,6 +150,41 @@ pub type CompletionResponseStream =
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn completion_accepts_prompt_embeds_without_prompt() {
+        let json = r#"{"model":"test_model","prompt_embeds":"c3ludGhldGljLWVtYmVkZGluZ3M="}"#;
+        let request: CreateCompletionRequest = serde_json::from_str(json).unwrap();
+
+        assert_eq!(request.prompt, Prompt::String(String::new()));
+        assert_eq!(
+            request.prompt_embeds.as_deref(),
+            Some("c3ludGhldGljLWVtYmVkZGluZ3M=")
+        );
+        let restored: CreateCompletionRequest =
+            serde_json::from_value(serde_json::to_value(&request).unwrap()).unwrap();
+        assert_eq!(restored, request);
+    }
+
+    #[test]
+    fn completion_prompt_defaults_match_the_builder() {
+        let json = r#"{"model":"test_model","prompt_embeds":"synthetic"}"#;
+        let request: CreateCompletionRequest = serde_json::from_str(json).unwrap();
+        let built = CreateCompletionRequestArgs::default()
+            .model("test_model")
+            .prompt_embeds("synthetic")
+            .build()
+            .unwrap();
+
+        assert_eq!(request, built);
+    }
+
+    #[test]
+    fn completion_rejects_explicit_null_prompt() {
+        let json = r#"{"model":"test_model","prompt":null,"prompt_embeds":"synthetic"}"#;
+
+        assert!(serde_json::from_str::<CreateCompletionRequest>(json).is_err());
+    }
 
     #[test]
     fn echo_rejects_integer() {
