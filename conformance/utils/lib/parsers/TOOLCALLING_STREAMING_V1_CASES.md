@@ -54,6 +54,8 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7-9`** Local parameter references preserve declared object types across chunks. Streaming form of `TOOLCALLING.batch.7-9` (PR #273).
 - **`TOOLCALLING.streamv1.7-10`** Nested properties, array items, and additional properties resolve references before coercion. Streaming form of `TOOLCALLING.batch.7-10` (PR #273).
 - **`TOOLCALLING.streamv1.7-11`** URI-encoded local reference fragments resolve their definitions before coercion. Streaming form of `TOOLCALLING.batch.7-11` (PR #273).
+- **`TOOLCALLING.streamv1.7-14`** MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
+- **`TOOLCALLING.streamv1.7-15`** MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.
@@ -85,6 +87,3 @@ boundary). Partial matches must return "keep buffering" rather than flushing as
 plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
-
-- `TOOLCALLING.streamv1.7-14`: MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
-- `TOOLCALLING.streamv1.7-15`: MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.

@@ -452,15 +452,18 @@ mod tests {
                     .await;
                 let calls: Vec<_> = results
                     .iter()
-                    .filter(|result| test_utils::has_tool_call(result))
+                    .filter_map(|result| result.data.as_ref())
+                    .flat_map(|data| &data.choices)
+                    .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                    .flatten()
                     .collect();
                 assert_eq!(calls.len(), copies, "split {split}");
                 for call in calls {
-                    test_utils::assert_tool_call(
-                        call,
-                        "echo",
-                        serde_json::json!({"text": value, "later": "ok"}),
-                    );
+                    let function = call.function.as_ref().unwrap();
+                    assert_eq!(function.name.as_deref(), Some("echo"));
+                    let arguments: serde_json::Value =
+                        serde_json::from_str(function.arguments.as_deref().unwrap()).unwrap();
+                    assert_eq!(arguments, serde_json::json!({"text": value, "later": "ok"}));
                 }
                 assert_eq!(
                     test_utils::reconstruct_content(&results),
