@@ -134,6 +134,8 @@ impl InvokeBoundary for QwenInvokeBoundary {
 pub(crate) struct Qwen3Emitter {
     tools: Vec<ToolDefinition>,
     partial: Option<PartialStringArgument>,
+    #[cfg(test)]
+    searched_bytes: usize,
 }
 
 /// Append-only Qwen argument state. Each schema-declared string parameter can
@@ -151,6 +153,9 @@ struct PartialStringArgument {
 
 struct ActiveStringParameter {
     value_cursor: usize,
+    // Searching advances even when EOF recovery requires withholding value bytes.
+    search_cursor: usize,
+    ambiguous_function_close: Option<usize>,
     at_start: bool,
     pending_newline: bool,
     started: bool,
@@ -192,19 +197,37 @@ impl InvokeEmitter for Qwen3Emitter {
         let mut arguments = String::new();
         loop {
             if let Some(active) = partial.active.as_mut() {
-                let value = &invoke[active.value_cursor..];
-                let close = value.find("</parameter>");
+                let search = &invoke[active.search_cursor..];
+                #[cfg(test)]
+                {
+                    self.searched_bytes += search.len();
+                }
+                let close = search
+                    .find("</parameter>")
+                    .map(|offset| active.search_cursor + offset);
                 // A function closer without a parameter closer is ambiguous until
                 // EOF. Retain it for legacy missing-parameter-close recovery; a
                 // later parameter closer confirms the bytes are literal data.
-                let safe_end = close.unwrap_or_else(|| {
-                    value
+                if close.is_none() && active.ambiguous_function_close.is_none() {
+                    #[cfg(test)]
+                    {
+                        self.searched_bytes += search.len();
+                    }
+                    active.ambiguous_function_close = search
                         .find(FUNCTION_END)
-                        .unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value))
-                });
+                        .map(|offset| active.search_cursor + offset);
+                }
+                active.search_cursor = invoke.len() - qwen_partial_suffix_len(search);
+                let safe_end = close
+                    .or(active.ambiguous_function_close)
+                    .unwrap_or(active.search_cursor);
                 let mut fragment = String::new();
-                append_literal_string_fragment(active, &value[..safe_end], &mut fragment);
-                active.value_cursor += safe_end;
+                append_literal_string_fragment(
+                    active,
+                    &invoke[active.value_cursor..safe_end],
+                    &mut fragment,
+                );
+                active.value_cursor = safe_end;
                 if active.started && !active.opener_pending.is_empty() {
                     arguments.push_str(&active.opener_pending);
                     active.opener_pending.clear();
@@ -281,6 +304,8 @@ impl InvokeEmitter for Qwen3Emitter {
             opener.push_str(":\"");
             partial.active = Some(ActiveStringParameter {
                 value_cursor: value_start,
+                search_cursor: value_start,
+                ambiguous_function_close: None,
                 at_start: true,
                 pending_newline: false,
                 started: false,
@@ -375,6 +400,8 @@ pub(crate) fn qwen3_scanner(tools: &[Tool]) -> WrappedBlockScanner<Qwen3Emitter>
         Qwen3Emitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
             partial: None,
+            #[cfg(test)]
+            searched_bytes: 0,
         },
     )
 }
@@ -522,6 +549,42 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn literal_function_closer_scanning_is_linear() {
+        let tools = weather_tools();
+        let mut emitter = Qwen3Emitter {
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+            partial: None,
+            searched_bytes: 0,
+        };
+        for length in [4096, 8192] {
+            emitter.reset();
+            emitter.searched_bytes = 0;
+            let value = format!("prefix</function>{}", "x".repeat(length));
+            let invoke =
+                format!("<function=get_weather><parameter=location>{value}</parameter></function>");
+            let mut arguments = String::new();
+            for end in 1..=invoke.len() {
+                if let Some(delta) = emitter.parse_partial_invoke(&invoke[..end], 0).unwrap() {
+                    arguments.push_str(&delta.arguments);
+                }
+            }
+            if let Some(delta) = emitter.parse_invoke(&invoke, 0).unwrap() {
+                arguments.push_str(&delta.arguments);
+            }
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&arguments).unwrap(),
+                serde_json::json!({"location": value})
+            );
+            assert!(
+                emitter.searched_bytes <= 32 * invoke.len(),
+                "searched {} bytes for {} input bytes",
+                emitter.searched_bytes,
+                invoke.len()
+            );
+        }
     }
 
     #[test]
