@@ -466,9 +466,19 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "muse_quoted_reserved_eom_argument",
                 "muse_quoted_reserved_eot_argument",
                 "muse_quoted_reserved_start_argument",
+                "prefilled_response_guided_closer_inside_invoke_quote",
+                "guided_json_native_parameter_object_before_payload",
+                "guided_json_native_parameter_array_before_payload",
             })
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
+        if family == "deepseek_v41":
+            extra.add("prefilled_response_guided_pending_invoke_header")
+        if family == "qwen3":
+            extra.update({
+                "guided_json_native_parameter_object_before_payload",
+                "guided_json_native_parameter_array_before_payload",
+            })
         assert set(response_cases) == response_scenarios | extra
         native_scenarios = {
             "native_quoted_control_in_response",
@@ -794,7 +804,7 @@ def test_unified_case_counts_match_the_generator():
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
+    deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
     assert len(UNIFIED_TAX) == 134
@@ -1094,9 +1104,14 @@ def _family_value(scenario, family):
         recipient = quoted[scenario]
         return (f"I mean to={recipient}literal" if family == "muse_glimmer"
                 else f"I mean {reason_open}{recipient} literal{reason_close}")
-    if scenario == "prefilled_response_reasoning_markers_literal":
+    if scenario in {
+        "prefilled_response_reasoning_markers_literal",
+        "guided_json_native_parameter_object_before_payload",
+        "guided_json_native_parameter_array_before_payload",
+    }:
+        suffix = " then a call" if scenario == "prefilled_response_reasoning_markers_literal" else ""
         return ("to=selfliteral" if family == "muse_glimmer"
-                else f"{reason_open}literal{reason_close}") + " then a call"
+                else f"{reason_open}literal{reason_close}") + suffix
     return None
 
 
@@ -1498,6 +1513,19 @@ def _assert_cross_family_contract(corpus):
                 # Complete native argument bodies are input even when guided mode
                 # suppresses them. Goldens alone cannot detect a changed stress value.
                 suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
+                if scenario == "guided_json_reasoning_markers_inside_native_parameter":
+                    opener, closer, _, _ = control_tokens(family)
+                    assert suppressed == [{"kind": "tool_call", "name": "f", "arguments": {"x": opener + "quoted" + closer}}], (
+                        family, scenario, "wrong suppressed marker role or payload",
+                    )
+                    suppressed[0]["arguments"]["x"] = "FAMILY_REASONING_MARKERS"
+                if scenario in {
+                    "guided_json_native_parameter_object_before_payload",
+                    "guided_json_native_parameter_array_before_payload",
+                }:
+                    for call in suppressed:
+                        if isinstance(call["arguments"]["x"], str):
+                            call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX)
     for scenario, families in by_scenario.items():

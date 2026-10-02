@@ -8,457 +8,220 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_elided_think_close_to_response:
-    case_key: UNIFIED.k3-5
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_malformed_call_then_valid:
-    case_key: UNIFIED.k3-6
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_message_end_after_response:
-    case_key: UNIFIED.k3-4
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_raw_json_arguments:
-    case_key: UNIFIED.k3-2
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_raw_json_eof:
-    case_key: UNIFIED.k3-7
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_spaced_xtml_markers:
-    case_key: UNIFIED.k3-3
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   kimi_k3_typed_argument_values:
-    case_key: UNIFIED.k3-1
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
     observation:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
-  guided_quoted_reasoning_closer_named:
-    case_key: UNIFIED.34-8
-    stimulus:
-      ref: current
-      semantic_sha256: 82cf4277658e3bbeb15b49d67608b01b86b822bed9d5d9edaa62ba808eba56db
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  guided_quoted_reasoning_closer_required:
-    case_key: UNIFIED.34-9
-    stimulus:
-      ref: current
-      semantic_sha256: a66a24d6f085ae85239a2c5daef2ba056d637e8c90116a03e0d48883e99680b5
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  guided_response_quoted_control_braces_named:
-    case_key: UNIFIED.35-3
-    stimulus:
-      ref: current
-      semantic_sha256: df889cf810d8602944a347e0a883a3ca330fa35ec049b06c63294d6750e5b962
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  guided_response_quoted_control_braces_required:
-    case_key: UNIFIED.35-4
-    stimulus:
-      ref: current
-      semantic_sha256: 9bf343e0b1ab1d9d2f0bc422d25a744d8b36d20eb04133759dcbfeeb0981d400
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_quoted_control_in_reasoning:
-    case_key: UNIFIED.40-5
-    stimulus:
-      ref: current
-      semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_single_quote_contraction_reasoning:
-    case_key: UNIFIED.40-6
-    stimulus:
-      ref: current
-      semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_quoted_incomplete_header:
-    case_key: UNIFIED.8-10
-    stimulus:
-      ref: current
-      semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_single_quote_contraction_response:
-    case_key: UNIFIED.8-11
-    stimulus:
-      ref: current
-      semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_quoted_control_in_response:
-    case_key: UNIFIED.8-6
-    stimulus:
-      ref: current
-      semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_single_quoted_word_control:
-    case_key: UNIFIED.8-7
-    stimulus:
-      ref: current
-      semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_quoted_control_then_call:
-    case_key: UNIFIED.8-8
-    stimulus:
-      ref: current
-      semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
-  native_unmatched_quote_then_call:
-    case_key: UNIFIED.8-9
-    stimulus:
-      ref: current
-      semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: split capture cannot apply the requested initialization
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:

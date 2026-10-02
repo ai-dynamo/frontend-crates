@@ -204,11 +204,14 @@ def build_shards(
                     and path.name.startswith("dynamo_v2-")
                     and "+pr" not in path.name
                 )
+            update_options = {
+                "complete_snapshot": complete_snapshot,
+                "required_capture_dirs": required_capture_dirs,
+            }
+            if excluded_unified_capture_dirs:
+                update_options["excluded_capture_dirs"] = excluded_unified_capture_dirs
             changed = unified_history.update_store_from_loose(
-                history_root,
-                capture_root,
-                complete_snapshot=complete_snapshot,
-                required_capture_dirs=required_capture_dirs,
+                history_root, capture_root, **update_options
             )
             for path in changed:
                 display_path = Path(fixture_disposition.UNIFIED_HISTORY_PATH) / path.relative_to(
@@ -801,6 +804,13 @@ def main():
         action="store_true",
         help="Remove store shards (and manifest entries) not rebuilt by this run. "
         "Default keeps them: local capture trees are often partial.",
+    )
+    ap.add_argument(
+        "--exclude-unified-capture-dir",
+        action="append",
+        default=[],
+        metavar="IMPLEMENTATION-VERSION",
+        help="Skip importing this Unified capture directory; all case IDs must already be in YAML history",
     )
     args = ap.parse_args()
     if args.stream_only and args.unified_only:

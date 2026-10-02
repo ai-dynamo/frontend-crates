@@ -32,6 +32,7 @@ import fixture_disposition
 
 
 FAMILY_DOCUMENT_NAME = "inputs_and_golden.yaml"
+MATERIALIZED_FORMAT = "unified_history"
 FAMILY_KEYS = {
     "input_document",
     "golden_document",
@@ -46,6 +47,7 @@ CAPTURE_DOCUMENT_KEYS = {
 }
 CAPTURE_PROVENANCE_KEYS = {"status", "origin", "captured_with"}
 CAPTURE_PROVENANCE_STATUSES = {"captured", "legacy"}
+CORRECTABLE_CAPTURE_UNAVAILABLE_CODES = {"vllm_tool_schema_unsupported"}
 CASE_KEY_ORDER = (
     "lifecycle",
     "scenario",
@@ -57,9 +59,10 @@ CASE_KEY_ORDER = (
     "golden",
 )
 CASE_KEYS = set(CASE_KEY_ORDER)
-CHANGE_KEYS = {"case_key", "stimulus", "observation"}
+CHANGE_KEY_ORDER = ("case_key", "stimulus", "observation")
+CHANGE_KEYS = set(CHANGE_KEY_ORDER)
 OBSERVATION_STATES = {"value", "error", "unavailable"}
-STIMULUS_STATES = {"ref", "inline", "partial", "unavailable"}
+STIMULUS_STATES = {"ref", "inline", "partial", "error", "unavailable"}
 REQUEST_KEYS = {"input", "init", "finish_reason", "tools", "chunks"}
 CAPTURE_DIRECTORY_RE = re.compile(
     r"(?P<implementation>[a-z0-9_]+)-(?P<runtime_version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)"
@@ -230,13 +233,16 @@ def _validate_stimulus(stimulus: Any, case: dict, where: str) -> None:
             raise ValueError(f"{where} stimulus digest differs from the canonical request")
     elif state == "inline":
         _validate_request(stimulus["inline"], f"{where}.inline")
+        digest = stimulus.get("semantic_sha256")
+        if digest is not None and digest != _request_digest(stimulus["inline"]):
+            raise ValueError(f"{where} stimulus digest differs from its inline request")
     elif state == "partial":
         if not isinstance(stimulus["partial"], dict):
             raise ValueError(f"{where}.partial must be a mapping")
-    else:
-        unavailable = _mapping(stimulus["unavailable"], f"{where}.unavailable")
-        if not isinstance(unavailable.get("code"), str):
-            raise ValueError(f"{where}.unavailable needs a string code")
+    elif state in {"error", "unavailable"}:
+        typed_state = _mapping(stimulus[state], f"{where}.{state}")
+        if not isinstance(typed_state.get("code"), str):
+            raise ValueError(f"{where}.{state} needs a string code")
 
 
 def _validate_observation(observation: Any, where: str) -> None:
@@ -299,10 +305,22 @@ class History:
                 if change == {"absent": True}:
                     state.pop(case_id, None)
                     continue
-                inherited_metadata = state.get(case_id, {}).get("_record_metadata")
-                inherited_overrides = state.get(case_id, {}).get("_document_overrides")
-                state[case_id] = copy.deepcopy(change)
-                state[case_id]["_origin_capture_id"] = current
+                previous = state.get(case_id)
+                if previous is None:
+                    if set(change) != CHANGE_KEYS:
+                        raise ValueError(
+                            f"first capture change must provide a complete record in "
+                            f"{self.capture_path(current)}: {case_id}"
+                        )
+                    state[case_id] = copy.deepcopy(change)
+                    state[case_id]["_origin_capture_id"] = current
+                else:
+                    state[case_id] = copy.deepcopy(previous)
+                    state[case_id].update(copy.deepcopy(change))
+                    if "observation" in change:
+                        state[case_id]["_origin_capture_id"] = current
+                inherited_metadata = previous.get("_record_metadata") if previous else None
+                inherited_overrides = previous.get("_document_overrides") if previous else None
                 if inherited_metadata is not None:
                     state[case_id]["_record_metadata"] = inherited_metadata
                 if inherited_overrides is not None and "parser_path" in inherited_overrides:
@@ -513,14 +531,18 @@ def _validate_capture_file(
         if change == {"absent": True}:
             continue
         change = _mapping(change, f"{path}:{case_id}")
-        _require_keys(change, CHANGE_KEYS, CHANGE_KEYS, f"{path}:{case_id}")
-        _safe_component(change["case_key"], f"{path}:{case_id}.case_key")
-        _validate_stimulus(
-            change["stimulus"],
-            families[family_name].cases[case_id],
-            f"{path}:{case_id}.stimulus",
-        )
-        _validate_observation(change["observation"], f"{path}:{case_id}.observation")
+        if not change or set(change) - CHANGE_KEYS:
+            raise ValueError(f"invalid change fields in {path}:{case_id}: {sorted(change)}")
+        if "case_key" in change:
+            _safe_component(change["case_key"], f"{path}:{case_id}.case_key")
+        if "stimulus" in change:
+            _validate_stimulus(
+                change["stimulus"],
+                families[family_name].cases[case_id],
+                f"{path}:{case_id}.stimulus",
+            )
+        if "observation" in change:
+            _validate_observation(change["observation"], f"{path}:{case_id}.observation")
     metadata_changes = _mapping(capture["metadata_changes"], f"{path}.metadata_changes")
     for case_id, metadata in metadata_changes.items():
         if case_id not in families[family_name].cases:
@@ -725,7 +747,11 @@ def store_digest(root: Path) -> tuple[str, int]:
 
 
 def rewrite_store(root: Path) -> None:
-    _mutate_store(root, lambda _store: None)
+    def compact(store: Store) -> None:
+        for history in store.histories.values():
+            _compact_history(history)
+
+    _mutate_store(root, compact)
 
 
 def _capture_document(history: History, capture_id: str) -> dict:
@@ -1134,7 +1160,16 @@ def _materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
         record["capture_input"] = case["request"]
     elif "inline" in stimulus:
         record["capture_input"] = stimulus["inline"]
+    else:
+        record["capture_stimulus"] = copy.deepcopy(stimulus)
+    if state in {"error", "unavailable"}:
+        record["capture_observation"] = {state: copy.deepcopy(observation[state])}
     return record, change["document"]
+
+
+def materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
+    """Return one history change in the loose-fixture record shape."""
+    return _materialized_record(case, change)
 
 
 def _capture_release_sort_key(runtime_version: str) -> tuple:
@@ -1150,7 +1185,15 @@ def materialize_store(
     *,
     include_current_inputs: bool = True,
     derived_release_versions: dict[str, str] | None = None,
+    current_capture_id: str | None = None,
 ) -> None:
+    """Materialize inputs and captures, filtering retired cases only from the current view.
+
+    Historical captures retain retired cases so their old columns remain reproducible. The
+    selected current capture is different: its record set must match today's active inputs or
+    the live-capture guard treats historical aliases as extra current requests. A current
+    release may be a derived view when the sparse history has no checkpoint for that version.
+    """
     store = load_store(root)
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
@@ -1228,10 +1271,9 @@ def materialize_store(
             case_key = case["display_id"] if case["lifecycle"] == "active" else change["case_key"]
             record, document_metadata = _materialized_record(case, change)
             document_metadata = dict(document_metadata)
-            # Rust readers pass this field to the shared Python selector. Keep a
-            # generated schema marker so an omitted legacy provenance and an
-            # intentional schema-v3 semantic view do not collapse into null.
-            document_metadata["capture_provenance"] = {"format": "schema_v3"}
+            # Re-ingestion must distinguish this generated view from original
+            # capture metadata, so the importer can discard the marker.
+            document_metadata["capture_provenance"] = {"format": MATERIALIZED_FORMAT}
             record_metadata = document_metadata.pop("record_metadata", {})
             record.update(record_metadata)
             document = _case_document(document_metadata, family_name, case_key, record)
@@ -1245,7 +1287,14 @@ def materialize_store(
             history.captures
         )
         for capture_id, capture in history.captures.items():
-            add_capture_state(capture_id, history, history.resolve(capture_id))
+            state = history.resolve(capture_id)
+            if capture_id == current_capture_id:
+                state = {
+                    case_id: change
+                    for case_id, change in state.items()
+                    if history.family.cases[case_id]["lifecycle"] == "active"
+                }
+            add_capture_state(capture_id, history, state)
 
     # The YAML store remains sparse: a release with no changed family output has
     # no checkpoint file. Consumers still need a complete directory for the
@@ -1295,7 +1344,14 @@ def materialize_store(
                         history.captures[capture_id]["runtime_version"]
                     ),
                 )
-                add_capture_state(target_id, history, history.resolve(source_id))
+                state = history.resolve(source_id)
+                if target_id == current_capture_id:
+                    state = {
+                        case_id: change
+                        for case_id, change in state.items()
+                        if history.family.cases[case_id]["lifecycle"] == "active"
+                    }
+                add_capture_state(target_id, history, state)
 
     _write_materialized_documents(documents)
 
@@ -1312,21 +1368,48 @@ def _internal_case_id(case_key: str, scenario: str | None, used: set[str]) -> st
 
 
 def _legacy_state(record: dict, raw: bytes, relative: str, bindings: dict, current: dict | None) -> tuple[dict, dict, dict]:
-    original = capture_stimulus.original_capture_input(record, raw, relative, bindings)
-    if original is None:
-        stimulus = {"unavailable": {"code": "original_request_not_retained"}}
-    elif current is not None and original == capture_stimulus.capture_input(current):
-        stimulus = {
-            "ref": "current",
-            "semantic_sha256": _request_digest(original),
-        }
-    elif isinstance(original, dict) and original.keys() == REQUEST_KEYS and original.get("tools") is not None:
-        stimulus = {"inline": original, "semantic_sha256": _request_digest(original)}
+    explicit_stimulus = record.get("capture_stimulus")
+    if explicit_stimulus is not None:
+        if not isinstance(explicit_stimulus, dict) or set(explicit_stimulus) not in ({"unavailable"}, {"error"}):
+            raise ValueError(f"invalid explicit capture stimulus: {relative}")
+        state_name = next(iter(explicit_stimulus))
+        state = explicit_stimulus[state_name]
+        if not isinstance(state, dict) or not isinstance(state.get("code"), str):
+            raise ValueError(f"explicit capture stimulus needs a typed {state_name} code: {relative}")
+        original = capture_stimulus.original_capture_input(record, raw, relative, bindings)
+        if current is not None and original == capture_stimulus.capture_input(current):
+            stimulus = {
+                "ref": "current",
+                "semantic_sha256": _request_digest(original),
+            }
+        else:
+            stimulus = copy.deepcopy(explicit_stimulus)
     else:
-        stimulus = {"partial": original}
+        original = capture_stimulus.original_capture_input(record, raw, relative, bindings)
+        if original is None:
+            stimulus = {"unavailable": {"code": "original_request_not_retained"}}
+        elif current is not None and original == capture_stimulus.capture_input(current):
+            stimulus = {
+                "ref": "current",
+                "semantic_sha256": _request_digest(original),
+            }
+        elif isinstance(original, dict) and original.keys() == REQUEST_KEYS and original.get("tools") is not None:
+            stimulus = {"inline": original, "semantic_sha256": _request_digest(original)}
+        else:
+            stimulus = {"partial": original}
+    explicit_observation = record.get("capture_observation")
+    if explicit_observation is not None:
+        if not isinstance(explicit_observation, dict) or set(explicit_observation) not in ({"error"}, {"unavailable"}):
+            raise ValueError(f"invalid explicit capture observation: {relative}")
+        observation_state = next(iter(explicit_observation))
+        observation_value = explicit_observation[observation_state]
+        if not isinstance(observation_value, dict) or not isinstance(observation_value.get("code"), str):
+            raise ValueError(f"explicit capture observation needs a typed {observation_state} code: {relative}")
 
     value = dict(record)
     value.pop("capture_input", None)
+    value.pop("capture_stimulus", None)
+    value.pop("capture_observation", None)
     value_fields = value.keys() & {"assembled", "chunks"}
     error_fields = value.keys() & {"error", "unavailable"}
     if bool(value_fields) + len(error_fields) != 1:
@@ -1340,10 +1423,16 @@ def _legacy_state(record: dict, raw: bytes, relative: str, bindings: dict, curre
     }
     if "error" in value:
         detail = value.pop("error")
-        observation = {"error": {"code": "legacy_unclassified", "detail": detail}}
+        typed = explicit_observation.get("error") if isinstance(explicit_observation, dict) else None
+        if typed is None and isinstance(explicit_stimulus, dict):
+            typed = explicit_stimulus.get("error")
+        observation = {"error": copy.deepcopy(typed) if isinstance(typed, dict) else {"code": "legacy_unclassified", "detail": detail}}
     elif "unavailable" in value:
         detail = value.pop("unavailable")
-        observation = {"unavailable": {"code": "legacy_unclassified", "detail": detail}}
+        typed = explicit_observation.get("unavailable") if isinstance(explicit_observation, dict) else None
+        if typed is None and isinstance(explicit_stimulus, dict):
+            typed = explicit_stimulus.get("unavailable")
+        observation = {"unavailable": copy.deepcopy(typed) if isinstance(typed, dict) else {"code": "legacy_unclassified", "detail": detail}}
     else:
         observation = {"value": value}
     return stimulus, observation, metadata
@@ -1357,6 +1446,19 @@ def _semantic_stimulus(value: dict) -> dict:
     return {key: item for key, item in value.items() if key != "semantic_sha256"}
 
 
+def _semantic_observation(value: dict) -> dict:
+    observation = copy.deepcopy(value)
+    unavailable = observation.get("unavailable")
+    if (
+        isinstance(unavailable, dict)
+        and unavailable.get("code") == "vllm_rust_parser_not_registered"
+    ):
+        # The capture identity already carries the engine version; this detail is the same
+        # unsupported-parser result with only that version interpolated into its wording.
+        unavailable.pop("detail", None)
+    return observation
+
+
 def _capture_semantic(value: dict, case_id: str) -> dict:
     """Return immutable capture content keyed by the canonical case identity.
 
@@ -1368,12 +1470,194 @@ def _capture_semantic(value: dict, case_id: str) -> dict:
     return {
         "case_id": case_id,
         "stimulus": _semantic_stimulus(value["stimulus"]),
-        "observation": value["observation"],
+        "observation": _semantic_observation(value["observation"]),
     }
 
 
+def _is_correctable_capture_placeholder(
+    before: dict, after: dict, case_id: str, request: dict | None
+) -> bool:
+    """Allow a corrected peer result only when its recorded request is unchanged."""
+    old_observation = before["observation"]
+    new_observation = after["observation"]
+    unavailable = old_observation.get("unavailable")
+
+    def has_verified_request_binding(change: dict) -> bool:
+        stimulus = change["stimulus"]
+        digest = stimulus.get("semantic_sha256")
+        if not isinstance(digest, str) or not digest:
+            return False
+        if stimulus.get("ref") == "current":
+            return request is not None and digest == _request_digest(request)
+        if "inline" in stimulus:
+            return digest == _request_digest(stimulus["inline"])
+        return False
+
+    return (
+        before["case_key"] == after["case_key"]
+        and _canonical_json(_semantic_stimulus(before["stimulus"]))
+        == _canonical_json(_semantic_stimulus(after["stimulus"]))
+        and has_verified_request_binding(before)
+        and has_verified_request_binding(after)
+        and isinstance(unavailable, dict)
+        and unavailable.get("code") in CORRECTABLE_CAPTURE_UNAVAILABLE_CODES
+        and set(new_observation) == {"value"}
+    )
+
+
 def _stored_change(value: dict) -> dict:
-    return {key: copy.deepcopy(value[key]) for key in CHANGE_KEYS}
+    return {key: copy.deepcopy(value[key]) for key in CHANGE_KEY_ORDER}
+
+
+def _capture_changes(before: dict, after: dict) -> dict:
+    """Express one resolved checkpoint as field-level deltas from its predecessor."""
+    changes = {}
+    for case_id in sorted(set(before) | set(after)):
+        old = before.get(case_id)
+        new = after.get(case_id)
+        if new is None:
+            if old is not None:
+                changes[case_id] = {"absent": True}
+            continue
+        if old is None:
+            changes[case_id] = _stored_change(new)
+            continue
+
+        delta = {}
+        if old["case_key"] != new["case_key"]:
+            delta["case_key"] = copy.deepcopy(new["case_key"])
+        if _canonical_json(_semantic_stimulus(old["stimulus"])) != _canonical_json(
+            _semantic_stimulus(new["stimulus"])
+        ):
+            delta["stimulus"] = copy.deepcopy(new["stimulus"])
+        if _canonical_json(_semantic_observation(old["observation"])) != _canonical_json(
+            _semantic_observation(new["observation"])
+        ):
+            delta["observation"] = copy.deepcopy(new["observation"])
+        if delta:
+            changes[case_id] = delta
+    return changes
+
+
+def _compact_history(history: History) -> None:
+    """Remove repeated case fields while preserving each resolved checkpoint."""
+    snapshots = [
+        (capture_id, history.resolve(capture_id))
+        for capture_id in history.ordered_capture_ids()
+    ]
+    previous = {}
+    for capture_id, snapshot in snapshots:
+        history.captures[capture_id]["changes"] = _capture_changes(previous, snapshot)
+        previous = snapshot
+
+
+def _insert_historical_capture(
+    history: History,
+    capture_id: str,
+    runtime_version: str,
+    records: dict,
+) -> bool:
+    """Insert a newly executed older peer release without changing newer results."""
+    ordered = history.ordered_capture_ids()
+    if not ordered or _capture_release_sort_key(runtime_version) >= _capture_release_sort_key(
+        history.captures[ordered[0]]["runtime_version"]
+    ):
+        return False
+    if any(
+        history.captures[current]["metadata_changes"]
+        or history.captures[current]["document_overrides"]
+        for current in ordered
+    ):
+        return False
+    later_states = {current: history.resolve(current) for current in ordered}
+    history.captures[capture_id] = {
+        "runtime_version": runtime_version,
+        "provenance": {
+            "status": "legacy",
+            "captured_with": {history.implementation: runtime_version},
+        },
+        "document": {"mode": "unified"},
+        "changes": _capture_changes({}, records),
+        "metadata_changes": {},
+        "document_overrides": {},
+    }
+    history.capture_paths[capture_id] = history.family.path.parent / f"{capture_id}.yaml"
+    for current in ordered:
+        current_index = history.ordered_capture_ids().index(current)
+        prior = {} if current_index == 0 else history.resolve(history.ordered_capture_ids()[current_index - 1])
+        history.captures[current]["changes"] = _capture_changes(prior, later_states[current])
+    return True
+
+
+def _add_bound_legacy_cases(
+    history: History,
+    capture_id: str,
+    records: dict,
+    additions: list[str],
+) -> bool:
+    """Add only new, request-bound rows to a legacy checkpoint without rewriting old rows."""
+    capture = history.captures[capture_id]
+    if capture["provenance"]["status"] != "legacy":
+        return False
+    if any(history.family.cases[case_id]["lifecycle"] != "active" for case_id in additions):
+        return False
+    for case_id in additions:
+        record = records[case_id]
+        stimulus = record["stimulus"]
+        if (
+            len(stimulus.keys() & {"ref", "inline"}) != 1
+            or not isinstance(stimulus.get("semantic_sha256"), str)
+            or not stimulus["semantic_sha256"]
+            or "capture_origin" in record["document"]
+        ):
+            return False
+
+    ordered = history.ordered_capture_ids()
+    target_index = ordered.index(capture_id)
+    before = {} if target_index == 0 else history.resolve(ordered[target_index - 1])
+    target = copy.deepcopy(history.resolve(capture_id))
+    later_states = {
+        current: history.resolve(current) for current in ordered[target_index + 1 :]
+    }
+
+    for case_id in additions:
+        target[case_id] = copy.deepcopy(records[case_id])
+        metadata = records[case_id]["document"].get("record_metadata", {})
+        if metadata:
+            capture["metadata_changes"][case_id] = copy.deepcopy(metadata)
+        parser_path = records[case_id]["document"].get("parser_path")
+        if parser_path is not None:
+            capture["document_overrides"][case_id] = {"parser_path": parser_path}
+
+    capture["changes"] = _capture_changes(before, target)
+    previous = target
+    for current in ordered[target_index + 1 :]:
+        # Preserve the exact pre-import state, including an absent tombstone, until
+        # that later version is explicitly backfilled with its own observation.
+        history.captures[current]["changes"] = _capture_changes(
+            previous, later_states[current]
+        )
+        for case_id in additions:
+            later = later_states[current].get(case_id)
+            if later is None:
+                continue
+            prior_document = previous.get(case_id, {}).get("document", {})
+            later_document = later["document"]
+            for field, owner in (
+                ("record_metadata", "metadata_changes"),
+                ("parser_path", "document_overrides"),
+            ):
+                if prior_document.get(field) == later_document.get(field):
+                    continue
+                value = later_document.get(field)
+                restored = (
+                    value or {}
+                    if field == "record_metadata"
+                    else ({field: value} if field in later_document else {})
+                )
+                history.captures[current][owner][case_id] = copy.deepcopy(restored)
+        previous = later_states[current]
+    return True
 
 
 def _snapshot_delta(target: dict, previous: dict) -> tuple[dict, dict, dict]:
@@ -1465,6 +1749,37 @@ def _update_from_loose(
             "Unified capture directories must use <implementation>-<semantic-version>; "
             f"found: {', '.join(malformed_capture_dirs)}"
         )
+    missing_excluded_dirs = sorted(excluded_capture_dirs - capture_dirs)
+    if missing_excluded_dirs:
+        raise ValueError(
+            "cannot exclude Unified capture directories absent from the loose corpus: "
+            f"{', '.join(missing_excluded_dirs)}"
+        )
+    required_exclusions = sorted(excluded_capture_dirs & required_capture_dirs)
+    if complete_snapshot and required_exclusions:
+        raise ValueError(
+            "complete snapshot cannot exclude required Unified captures: "
+            f"{', '.join(required_exclusions)}"
+        )
+    for capture_id in sorted(excluded_capture_dirs):
+        match = CAPTURE_DIRECTORY_RE.fullmatch(capture_id)
+        assert match is not None
+        family_dirs = sorted(
+            path.name
+            for path in (loose_root / capture_id).iterdir()
+            if path.is_dir()
+        )
+        if not family_dirs:
+            raise ValueError(
+                f"cannot exclude Unified capture {capture_id} without family directories"
+            )
+        for family_name in family_dirs:
+            history = store.histories.get((family_name, match["implementation"]))
+            if history is None or capture_id not in history.captures:
+                raise ValueError(
+                    f"cannot exclude Unified capture {capture_id}/{family_name}: "
+                    "absent from that family's YAML history"
+                )
     if complete_snapshot:
         missing_required_capture_dirs = sorted(required_capture_dirs - capture_dirs)
         if missing_required_capture_dirs:
@@ -1476,7 +1791,6 @@ def _update_from_loose(
         if (
             path.is_dir()
             and CAPTURE_DIRECTORY_RE.fullmatch(path.name) is not None
-            and path.name not in excluded_capture_dirs
         )
     ):
         match = CAPTURE_DIRECTORY_RE.fullmatch(capture_dir.name)
@@ -1552,10 +1866,10 @@ def _update_from_loose(
                 raw = path.read_bytes()
                 document = _load_loose_document(path, family_name)
                 metadata = {name: value for name, value in document.items() if name != "cases"}
-                # A schema-v3 marker belongs only to the extracted compatibility
+                # The history marker belongs only to the extracted compatibility
                 # view. It must not become canonical capture metadata when that
                 # view is ingested again.
-                if metadata.get("capture_provenance") == {"format": "schema_v3"}:
+                if metadata.get("capture_provenance") == {"format": MATERIALIZED_FORMAT}:
                     metadata.pop("capture_provenance")
                 for case_key, record in document["cases"].items():
                     external = (
@@ -1607,32 +1921,69 @@ def _update_from_loose(
                     )
             if capture_dir.name in captures:
                 resolved = history.resolve(capture_dir.name)
-                missing_active_cases = [
-                    case_id
-                    for case_id in sorted(set(resolved) - set(records))
-                    if history.family.cases[case_id]["lifecycle"] == "active"
-                ]
-                if complete_snapshot and not required_capture and missing_active_cases:
-                    missing = ", ".join(
-                        f"{family_name}/{case_id}" for case_id in missing_active_cases
-                    )
-                    raise ValueError(
-                        f"complete capture {capture_dir.name} is missing active cases: {missing}"
-                    )
-                conflicts = [
-                    case_id
-                    for case_id in sorted(set(resolved) & set(records))
-                    if _canonical_json(_capture_semantic(resolved[case_id], case_id))
-                    != _canonical_json(_capture_semantic(records[case_id], case_id))
-                ]
+                if capture_dir.name in excluded_capture_dirs:
+                    additions = sorted(set(records) - set(resolved))
+                    if additions:
+                        raise ValueError(
+                            f"cannot exclude Unified capture {capture_dir.name}/{family_name}; "
+                            f"unrecorded cases: {', '.join(additions)}"
+                        )
+                    # Exclusion keeps checked-in YAML authoritative for already-known rows.
+                    _compact_history(history)
+                    continue
+                if complete_snapshot and not required_capture:
+                    missing_existing_cases = [
+                        case_id
+                        for case_id in sorted(resolved)
+                        if (
+                            history.family.cases[case_id]["lifecycle"] == "active"
+                            and case_id not in records
+                        )
+                    ]
+                    if missing_existing_cases:
+                        missing = ", ".join(
+                            f"{family_name}/{case_id}" for case_id in missing_existing_cases
+                        )
+                        raise ValueError(
+                            f"complete capture {capture_dir.name} is missing previously "
+                            f"recorded active cases: {missing}"
+                        )
+                # Non-required snapshots are sparse deltas; absent rows inherit the prior result.
+                conflicts = []
+                corrections = []
+                for case_id in sorted(set(resolved) & set(records)):
+                    before = resolved[case_id]
+                    after = records[case_id]
+                    if _canonical_json(_capture_semantic(before, case_id)) == _canonical_json(
+                        _capture_semantic(after, case_id)
+                    ):
+                        continue
+                    if _is_correctable_capture_placeholder(
+                        before,
+                        after,
+                        case_id,
+                        history.family.cases[case_id]["request"],
+                    ):
+                        corrections.append(case_id)
+                    else:
+                        conflicts.append(case_id)
                 if conflicts:
-                    raise ValueError(f"capture is immutable; use a new identity: {capture_dir.name}")
+                    raise ValueError(
+                        f"capture is immutable; use a new identity: {capture_dir.name}/{family_name}"
+                    )
+                for case_id in corrections:
+                    captures[capture_dir.name]["changes"][case_id] = _stored_change(
+                        records[case_id]
+                    )
                 additions = sorted(set(records) - set(resolved))
                 if not additions:
+                    _compact_history(history)
+                    continue
+                if _add_bound_legacy_cases(history, capture_dir.name, records, additions):
                     continue
                 raise ValueError(
-                    f"capture {capture_dir.name} is already recorded; add a new semantic "
-                    "version after back-capturing any new case across prior versions"
+                    f"capture {capture_dir.name} is already recorded; only bound, conflict-free "
+                    "active-case additions to legacy captures are allowed"
                 )
             capture_version = _capture_release_sort_key(runtime_version)
             ordered_ids = history.ordered_capture_ids()
@@ -1817,6 +2168,12 @@ def _sync_current_corpus(
             for case_id, case in cases.items()
             if isinstance(case["scenario"], str)
         }
+        by_external_id = {
+            external_id: case_id
+            for case_id, case in cases.items()
+            for external_id in [case["display_id"], *case["historical_ids"]]
+            if isinstance(external_id, str)
+        }
         current_scenarios = set()
         scenario_owners = {}
         input_documents, golden_documents = family_documents[family_name]
@@ -1843,7 +2200,7 @@ def _sync_current_corpus(
                     )
                 scenario_owners[scenario] = f"{input_path}:{case_key}"
                 current_scenarios.add(scenario)
-                case_id = by_scenario.get(scenario)
+                case_id = by_scenario.get(scenario) or by_external_id.get(case_key)
                 if case_id is None:
                     case_id = _internal_case_id(case_key, scenario, set(cases))
                     cases[case_id] = {
