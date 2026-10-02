@@ -32,6 +32,32 @@ fn build_block_pattern(start: &str, end: &str, strict: bool) -> String {
     }
 }
 
+/// Locate a MiniMax delimiter outside parameter payloads. Parameter values are
+/// literal text up to `</parameter>`, including XML-looking invoke/wrapper tags.
+pub(crate) fn minimax_delimiter(text: &str, delimiter: &str) -> Option<usize> {
+    let mut cursor = 0;
+    loop {
+        let rest = &text[cursor..];
+        let end = rest.find(delimiter)?;
+        let Some(parameter) = rest.find("<parameter name=") else {
+            return Some(cursor + end);
+        };
+        if end < parameter {
+            return Some(cursor + end);
+        }
+        let value = parameter + rest[parameter..].find('>')? + 1;
+        cursor += value + rest[value..].find("</parameter>")? + "</parameter>".len();
+    }
+}
+
+fn xml_delimiter(text: &str, delimiter: &str, config: &XmlParserConfig) -> Option<usize> {
+    if config.tool_call_start_token == "<minimax:tool_call>" {
+        minimax_delimiter(text, delimiter)
+    } else {
+        text.find(delimiter)
+    }
+}
+
 /// Strip surrounding quotes from a string if present
 fn strip_quotes(s: &str) -> &str {
     let trimmed = s.trim();
@@ -124,7 +150,7 @@ fn extract_tool_calls(
 
     while cursor < text.len() {
         // Find next tool call start.
-        if let Some(start_pos) = text[cursor..].find(start_token.as_str()) {
+        if let Some(start_pos) = xml_delimiter(&text[cursor..], start_token, config) {
             let abs_start = cursor + start_pos;
             let gap = &text[cursor..abs_start];
             if let Some((prefix, mut recovered_calls)) =
@@ -143,7 +169,7 @@ fn extract_tool_calls(
             // itself is skipped when the cursor advances past `abs_end`.
 
             // Find the corresponding end token.
-            if let Some(end_pos) = text[abs_start..].find(end_token.as_str()) {
+            if let Some(end_pos) = xml_delimiter(&text[abs_start..], end_token, config) {
                 let abs_end = abs_start + end_pos + end_token.len();
                 let block = &text[abs_start..abs_end];
 
@@ -310,11 +336,37 @@ pub fn parse_tool_call_block(
 
     let mut results = Vec::new();
 
-    // Find all function blocks.
-    for func_cap in function_regex.captures_iter(block) {
-        let function_name_raw = func_cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
+    // MiniMax parameter payloads may contain function delimiters as literal
+    // text. Other XML dialects retain their existing recovery grammar.
+    let minimax = config.tool_call_start_token == "<minimax:tool_call>";
+    let mut functions = Vec::new();
+    if minimax {
+        let mut cursor = 0;
+        while let Some(start) = block[cursor..].find(config.function_start_token.as_str()) {
+            let header = cursor + start + config.function_start_token.len();
+            let Some(header_end) = block[header..].find('>') else {
+                break;
+            };
+            let body = header + header_end + 1;
+            let Some(end) = minimax_delimiter(&block[body..], &config.function_end_token) else {
+                break;
+            };
+            functions.push((&block[header..body - 1], &block[body..body + end], true));
+            cursor = body + end + config.function_end_token.len();
+        }
+    } else {
+        for capture in function_regex.captures_iter(block) {
+            functions.push((
+                capture.get(1).map(|m| m.as_str()).unwrap_or(""),
+                capture.get(2).map(|m| m.as_str()).unwrap_or(""),
+                capture
+                    .get(0)
+                    .is_some_and(|m| m.as_str().contains(config.function_end_token.as_str())),
+            ));
+        }
+    }
+    for (function_name_raw, function_body, function_terminated) in functions {
         let function_name = strip_quotes(function_name_raw);
-        let function_body = func_cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
         if function_name.is_empty() {
             continue;
@@ -330,9 +382,6 @@ pub fn parse_tool_call_block(
         // argument. A value bounded by *any* close marker — `</parameter>`,
         // `</function>` (function terminated), or `</tool_call>` — is complete and
         // still recovered.
-        let function_terminated = func_cap
-            .get(0)
-            .is_some_and(|m| m.as_str().contains(config.function_end_token.as_str()));
         if !function_terminated
             && let Some(open_idx) = function_body.rfind(config.parameter_start_token.as_str())
         {
@@ -358,6 +407,14 @@ pub fn parse_tool_call_block(
             if !param_name.is_empty() {
                 let parsed_value =
                     convert_param_value(param_value, param_name, &param_config, function_name);
+                // Keep the existing schema/null coercion, but string results
+                // retain the model's exact bytes rather than XML decoding.
+                let parsed_value =
+                    if minimax && matches!(parsed_value, ParsedValue::Json(Value::String(_))) {
+                        Value::String(param_value.to_string()).into()
+                    } else {
+                        parsed_value
+                    };
                 parameters.insert(param_name.to_string(), parsed_value);
             }
         }

@@ -14,4 +14,5 @@ pub use super::response;
 pub use glm47_parser::parse_glm47_invoke;
 pub use kimi_k2_parser::try_tool_call_parse_kimi_k2;
 pub use minimax_m3_parser::try_tool_call_parse_minimax_m3;
+pub(crate) use parser::minimax_delimiter;
 pub use parser::{parse_tool_call_block, try_tool_call_parse_xml};

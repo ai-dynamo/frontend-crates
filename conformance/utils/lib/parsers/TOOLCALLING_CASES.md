@@ -778,3 +778,6 @@ Minimum viable set:
    for XML grammars, `TOOLCALLING.harmony.{1, 2}` for Harmony.
 
 For reasoning parsers, see `REASONING_CASES.md`.
+
+- `TOOLCALLING.batch.7-14`: MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
+- `TOOLCALLING.batch.7-15`: MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.

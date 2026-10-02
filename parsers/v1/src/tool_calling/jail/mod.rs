@@ -1580,9 +1580,16 @@ impl JailedStream {
             .iter()
             .filter(|seq| !seq.is_empty())
             .find_map(|seq| {
-                accumulated_content[search_start..]
-                    .find(seq)
-                    .map(|pos| search_start + pos + seq.len())
+                let position = accumulated_content[search_start..].find(seq)? + search_start;
+                // MiniMax parameter bodies contain literal XML-looking text.
+                // A marker inside one must not release the jail before the
+                // batch parser has received the complete parameter.
+                let position = if self.tool_call_parser.as_deref() == Some("minimax_m2") {
+                    super::xml::minimax_delimiter(accumulated_content, seq)?
+                } else {
+                    position
+                };
+                Some(position + seq.len())
             })
             .inspect(|end_pos| progress.pending_end_marker = Some(*end_pos));
 
