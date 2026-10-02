@@ -93,13 +93,21 @@ fn next_scan_start(text: &str, marker_len: usize) -> usize {
 /// literal `</｜DSML｜ parameter>`. A close is chosen only if the text after it
 /// is itself a well-formed run of parameters. When the first close qualifies
 /// (every input the first-close rule parses), the result is unchanged.
+///
+/// A close followed by a malformed parameter header is never skipped: that
+/// header is a model error, not quoted data, so the call stays rejected as
+/// under the first-close rule instead of losing the parameter silently.
 struct ValueCloses<'a> {
     body: &'a str,
     /// Offset just past each `PARAMETER_END` in `body`, ascending.
     ends: Vec<usize>,
-    /// For each index into `ends`, the first index at or after it whose
-    /// remainder is a well-formed run of parameters. One extra trailing `None`.
-    next_complete: Vec<Option<usize>>,
+    /// Whether the remainder after each close is a well-formed run of
+    /// parameters.
+    complete: Vec<bool>,
+    /// For each index into `ends`, the close a string value reaching it ends
+    /// at: the first index at or after it that is complete or followed by a
+    /// malformed parameter header. One extra trailing `None`.
+    choice: Vec<Option<usize>>,
 }
 
 impl<'a> ValueCloses<'a> {
@@ -110,18 +118,28 @@ impl<'a> ValueCloses<'a> {
             .collect();
         let mut closes = Self {
             body,
-            next_complete: vec![None; ends.len() + 1],
+            complete: vec![false; ends.len()],
+            choice: vec![None; ends.len() + 1],
             ends,
         };
         // A remainder only depends on closes after it, so fill from the end.
         for index in (0..closes.ends.len()).rev() {
-            closes.next_complete[index] = if closes.complete_from(closes.ends[index]) {
+            let at = closes.ends[index];
+            closes.complete[index] = closes.complete_from(at);
+            closes.choice[index] = if closes.complete[index] || closes.malformed_header_at(at) {
                 Some(index)
             } else {
-                closes.next_complete[index + 1]
+                closes.choice[index + 1]
             };
         }
         closes
+    }
+
+    /// Whether `body[at..]` starts, after whitespace, with a parameter opener
+    /// whose header does not parse.
+    fn malformed_header_at(&self, at: usize) -> bool {
+        let rest = self.body[at..].trim_start();
+        rest.starts_with(PARAMETER_START) && parameter_header(rest).is_none()
     }
 
     /// Index into `ends` of the first close at or after `value_start`.
@@ -140,19 +158,21 @@ impl<'a> ValueCloses<'a> {
             return false;
         };
         let first = self.first_close(self.body.len() - value.len());
-        if string {
-            self.next_complete[first].is_some()
+        let chosen = if string {
+            self.choice[first]
         } else {
-            self.next_complete[first] == Some(first)
-        }
+            Some(first)
+        };
+        chosen.is_some_and(|chosen| self.complete.get(chosen) == Some(&true))
     }
 
     /// Start of the close ending the value at `value_start`: the first close
-    /// followed by well-formed parameters, else the first close.
+    /// followed by well-formed parameters or by a malformed parameter header,
+    /// else the first close.
     fn value_end(&self, value_start: usize, string: bool) -> Option<usize> {
         let first = self.first_close(value_start);
         let chosen = if string {
-            self.next_complete[first].unwrap_or(first)
+            self.choice[first].unwrap_or(first)
         } else {
             first
         };
@@ -1177,6 +1197,41 @@ mod tests {
                 .and_then(|()| parser.finish().map(|_| ()));
             assert!(result.is_err(), "split {split}");
             assert!(output.events.is_empty(), "split {split}");
+        }
+    }
+
+    #[test]
+    fn malformed_parameter_header_after_a_close_stays_an_error() {
+        // A model emitted `</｜DSML｜ parameter>` followed by a real parameter
+        // header without its `string` attribute. The first-close rule rejects
+        // the call; reading the close as quoted data instead would fold the
+        // malformed header and its value into the previous string and drop
+        // that parameter without any error.
+        let close = "</｜DSML｜ parameter>";
+        for header in [
+            "<｜DSML｜ parameter name=\"content\">",
+            "<｜DSML｜ parameter name=\"content\" string=\"maybe\">",
+        ] {
+            for before in [
+                "write docs file",
+                "a quoted close </｜DSML｜ parameter> then",
+            ] {
+                let invoke = format!(
+                    "<｜DSML｜ invoke name=\"write\">\n<｜DSML｜ parameter name=\"i\" string=\"true\">{before}{close}\n{header}body{close}\n</｜DSML｜ invoke>"
+                );
+                assert!(DeepSeekV41.parse_invoke(&invoke, 0).is_err(), "{invoke:?}");
+                let input = format!("<｜DSML｜ calls>\n{invoke}\n</｜DSML｜ calls>");
+                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                    let mut parser = deepseek_v41_unified(&[]);
+                    let mut output = UnifiedParserOutput::default();
+                    let result = parser
+                        .parse_into(&input[..split], &mut output)
+                        .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                        .and_then(|()| parser.finish().map(|_| ()));
+                    assert!(result.is_err(), "{input:?} split {split}");
+                    assert!(output.events.is_empty(), "{input:?} split {split}");
+                }
+            }
         }
     }
 
