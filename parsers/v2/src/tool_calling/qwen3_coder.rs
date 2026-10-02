@@ -81,8 +81,8 @@ struct PartialStringArgument {
 
 struct ActiveStringParameter {
     value_cursor: usize,
-    pending_entity: String,
-    trailing_whitespace: String,
+    has_checked_leading_newline: bool,
+    is_holding_newline: bool,
     started: bool,
     opener_pending: String,
 }
@@ -126,14 +126,14 @@ impl InvokeEmitter for Qwen3Emitter {
                 let close = value.find("</parameter>");
                 let safe_end =
                     close.unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value));
-                let decoded = decode_streamable_xml_text(
-                    &value[..safe_end],
-                    &mut active.pending_entity,
-                    close.is_some(),
-                );
                 active.value_cursor += safe_end;
                 let mut fragment = String::new();
-                append_trimmed_string_fragment(active, &decoded, &mut fragment);
+                append_raw_string_fragment(
+                    active,
+                    &value[..safe_end],
+                    close.is_some(),
+                    &mut fragment,
+                );
                 if active.started && !active.opener_pending.is_empty() {
                     arguments.push_str(&active.opener_pending);
                     active.opener_pending.clear();
@@ -209,8 +209,8 @@ impl InvokeEmitter for Qwen3Emitter {
             opener.push_str(":\"");
             partial.active = Some(ActiveStringParameter {
                 value_cursor: value_start,
-                pending_entity: String::new(),
-                trailing_whitespace: String::new(),
+                has_checked_leading_newline: false,
+                is_holding_newline: false,
                 started: false,
                 opener_pending: opener,
             });
@@ -316,80 +316,36 @@ pub(crate) fn qwen3_scanner(tools: &[Tool]) -> WrappedBlockScanner<Qwen3Emitter>
     )
 }
 
-fn append_trimmed_string_fragment(
+/// Stream a string value as written, minus the newline the chat template writes
+/// on each side of it. A trailing newline is held until the value closes, since
+/// only then is it known to be the template's.
+fn append_raw_string_fragment(
     active: &mut ActiveStringParameter,
-    decoded: &str,
+    mut text: &str,
+    closed: bool,
     output: &mut String,
 ) {
-    let decoded = if active.started {
-        decoded
-    } else {
-        decoded.trim_start()
-    };
-    let content_end = decoded.trim_end().len();
-    if content_end == 0 {
-        if active.started {
-            active.trailing_whitespace.push_str(decoded);
+    if !active.has_checked_leading_newline {
+        if text.is_empty() && !closed {
+            return;
         }
+        text = text.strip_prefix('\n').unwrap_or(text);
+        active.has_checked_leading_newline = true;
+    }
+    let mut fragment = String::new();
+    if std::mem::take(&mut active.is_holding_newline) {
+        fragment.push('\n');
+    }
+    fragment.push_str(text);
+    if fragment.ends_with('\n') {
+        fragment.pop();
+        active.is_holding_newline = !closed;
+    }
+    if fragment.is_empty() {
         return;
     }
-    let mut fragment = std::mem::take(&mut active.trailing_whitespace);
-    fragment.push_str(&decoded[..content_end]);
     output.push_str(&json_string_fragment(&fragment));
     active.started = true;
-    if content_end < decoded.len() {
-        active.trailing_whitespace.push_str(&decoded[content_end..]);
-    }
-}
-
-/// Decode only complete entities while retaining a bounded ambiguous suffix.
-fn decode_streamable_xml_text(raw: &str, pending: &mut String, flush: bool) -> String {
-    const ENTITIES: [(&str, &str); 9] = [
-        ("&amp;quot;", "\""),
-        ("&amp;#x27;", "'"),
-        ("&amp;#39;", "'"),
-        ("&lt;", "<"),
-        ("&gt;", ">"),
-        ("&amp;", "&"),
-        ("&quot;", "\""),
-        ("&#x27;", "'"),
-        ("&#39;", "'"),
-    ];
-    pending.push_str(raw);
-    let mut decoded = String::new();
-    let mut cursor = 0;
-    while cursor < pending.len() {
-        let rest = &pending[cursor..];
-        if rest.starts_with('&') {
-            if let Some((entity, replacement)) =
-                ENTITIES.iter().find(|(entity, _)| rest.starts_with(entity))
-            {
-                if !flush
-                    && ENTITIES
-                        .iter()
-                        .any(|(longer, _)| longer.len() > entity.len() && longer.starts_with(rest))
-                {
-                    break;
-                }
-                decoded.push_str(replacement);
-                cursor += entity.len();
-                continue;
-            }
-            if !flush && ENTITIES.iter().any(|(entity, _)| entity.starts_with(rest)) {
-                break;
-            }
-        }
-        let next_entity = rest
-            .char_indices()
-            .skip(1)
-            .find(|(_, character)| *character == '&')
-            .map(|(at, _)| at)
-            .unwrap_or(rest.len());
-        decoded.push_str(&rest[..next_entity]);
-        cursor += next_entity;
-    }
-    pending.drain(..cursor);
-    decoded
 }
 
 fn json_string_fragment(text: &str) -> String {
@@ -517,8 +473,8 @@ mod tests {
         assert_eq!(out.calls.len(), 1);
         assert_eq!(out.calls[0].tool_index, 0);
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
-        assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+        // A string value keeps everything but the template's wrapping newlines.
+        assert_eq!(out.calls[0].arguments, r#"{"location":" NYC "}"#);
     }
 
     #[test]
@@ -831,52 +787,41 @@ mod tests {
     }
 
     #[test]
-    fn defers_html_entities_until_complete_typing() {
+    fn keeps_html_entities_as_written_while_streaming() {
         let input = "<tool_call><function=get_weather><parameter=location>BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM</parameter></function></tool_call>";
-        let entity = input.find('&').unwrap();
-        let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
-        let mut before_entity = ToolParseResult::default();
-        for character in input[..entity].chars() {
-            before_entity.append(parser.push(&character.to_string()).expect("push"));
-        }
-        let emitted: String = before_entity
-            .calls
-            .iter()
-            .map(|call| call.arguments.as_str())
-            .collect();
-        assert!(emitted.contains("BEGIN-"));
-
         let close = input.find("</function>").unwrap();
-        for character in input[entity..close].chars() {
-            before_entity.append(parser.push(&character.to_string()).expect("push"));
+        let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
+        let mut out = ToolParseResult::default();
+        for character in input[..close].chars() {
+            out.append(parser.push(&character.to_string()).expect("push"));
         }
-        let emitted_before_close: String = before_entity
+        let emitted_before_close: String = out
             .calls
             .iter()
             .map(|call| call.arguments.as_str())
             .collect();
-        assert!(emitted_before_close.contains("&-LONG-TAIL-THAT-MUST-STREAM"));
+        assert!(emitted_before_close.contains("&amp;-LONG-TAIL-THAT-MUST-STREAM"));
 
-        before_entity.append(parser.push(&input[close..]).expect("close"));
-        before_entity.append(parser.finish().expect("finish"));
+        out.append(parser.push(&input[close..]).expect("close"));
+        out.append(parser.finish().expect("finish"));
         assert_eq!(
-            before_entity
-                .coalesce_calls()
-                .calls
-                .into_iter()
-                .map(|call| call.arguments)
-                .collect::<String>(),
-            r#"{"location":"BEGIN-&-LONG-TAIL-THAT-MUST-STREAM"}"#
+            out.coalesce_calls().calls[0].arguments,
+            r#"{"location":"BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM"}"#
         );
     }
 
     #[test]
-    fn longer_entity_prefix_waits_for_disambiguation() {
-        let input = "<tool_call><function=get_weather><parameter=location>&amp;quot;tail</parameter></function></tool_call>";
-        let split = input.find("&amp;").unwrap() + "&amp;".len();
-        let baseline = parse_chunks(&weather_tools(), &[input]).coalesce_calls();
+    fn strips_only_the_template_newlines_at_every_split() {
+        let input = "<tool_call>\n<function=create_file>\n<parameter=path>\n\n</parameter>\n<parameter=content>\n\n    indented &lt;b&gt; body\r\n\n</parameter>\n</function>\n</tool_call>";
+        let expected = r#"{"path":"","content":"\n    indented &lt;b&gt; body\r\n"}"#;
+        let baseline = parse_chunks(&create_file_tools(), &[input]).coalesce_calls();
+        assert_eq!(baseline.calls[0].arguments, expected);
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let out = parse_chunks(&create_file_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.coalesce_calls(), baseline, "split {split}");
+        }
         assert_eq!(
-            parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+            stream_every_char(&create_file_tools(), input).coalesce_calls(),
             baseline
         );
     }

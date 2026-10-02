@@ -401,8 +401,13 @@ fn parse_tool_call_block(
             let param_value = param_cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
             if !param_name.is_empty() {
-                let parsed_value =
-                    convert_param_value(param_value, param_name, &param_config, function_name);
+                let parsed_value = convert_param_value(
+                    param_value,
+                    param_name,
+                    &param_config,
+                    function_name,
+                    config,
+                );
                 match parameter_indices.get(param_name).copied() {
                     Some(index) => parameters[index].1 = parsed_value,
                     None => {
@@ -530,7 +535,7 @@ fn get_arguments_config(
 /// Output: Value::Null  // Handled before type checking
 ///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
-/// Output: Value::String("<tag>")  // HTML entities are unescaped
+/// Output: Value::String("<tag>")  // HTML entities are unescaped, except for Qwen-format values
 ///
 /// Input:  param_value="123", param_type=<undefined/not in schema>
 /// Output: Value::String("123")  // Unknown params returned as strings
@@ -542,6 +547,8 @@ fn get_arguments_config(
 /// * `param_name` - The parameter name (used for schema lookup and error messages)
 /// * `param_config` - Schema defining expected types for each parameter
 /// * `func_name` - The function/tool name (used for error messages)
+/// * `config` - The parser config; Qwen-format values are kept raw (see
+///   `keeps_raw_values`)
 ///
 /// # Type Aliases
 ///
@@ -557,9 +564,18 @@ fn convert_param_value(
     param_name: &str,
     param_config: &HashMap<String, Value>,
     func_name: &str,
+    config: &XmlParserConfig,
 ) -> ParsedValue {
-    // HTML unescape and trim
-    let param_value = html_unescape(param_value.trim());
+    // `param_value` feeds null detection and typed parsing; `string_value` is
+    // what string-typed and undeclared parameters return.
+    let (param_value, string_value) = if keeps_raw_values(config) {
+        let value = strip_wrapping_newline(param_value);
+        (value.trim().to_string(), value.to_string())
+    } else {
+        // HTML unescape and trim
+        let value = html_unescape(param_value.trim());
+        (value.clone(), value)
+    };
 
     // Handle null
     if param_value.to_lowercase() == "null" {
@@ -573,7 +589,7 @@ fn convert_param_value(
             param_name,
             func_name
         );
-        return Value::String(param_value).into();
+        return Value::String(string_value).into();
     }
 
     // Get the type from schema.
@@ -602,9 +618,9 @@ fn convert_param_value(
     // Each branch handles a category of type aliases (e.g., "int"/"integer"/"int32" all map to i64).
     // If parsing fails, we log a warning and fall back to returning the value as a string.
     match param_type.as_str() {
-        // String types: Return value as-is (already HTML-unescaped above)
+        // String types: Return value as-is (already normalized above)
         "string" | "str" | "text" | "varchar" | "char" | "enum" => {
-            Value::String(param_value).into()
+            Value::String(string_value).into()
         }
 
         // Integer types: Parse as i64, fall back to string on error.
@@ -800,6 +816,21 @@ fn safe_parse_value(raw: &str) -> serde_json::Value {
 
     // Default to string, stripping newlines from start and end.
     serde_json::Value::String(unescaped.trim_matches('\n').to_string())
+}
+
+/// Qwen-format values (`<parameter=NAME>` ... `</parameter>`) are written raw by
+/// the chat template, between two newlines. Keep them as written apart from
+/// those newlines, as the current vLLM and SGLang parsers do: decoding entities
+/// or trimming would rewrite what the model generated. Other XML families keep
+/// the unescape-and-trim behavior.
+fn keeps_raw_values(config: &XmlParserConfig) -> bool {
+    config.parameter_start_token == "<parameter="
+}
+
+/// Remove the one newline the chat template writes on each side of a value.
+fn strip_wrapping_newline(value: &str) -> &str {
+    let value = value.strip_prefix('\n').unwrap_or(value);
+    value.strip_suffix('\n').unwrap_or(value)
 }
 
 /// Simple HTML unescape for common entities.

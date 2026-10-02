@@ -1,0 +1,133 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.9
+    git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
+    source_sha256: c2ade655cacfcceab7711eb8e0332906c99ece5d0202250cbb522426af3d9b45
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    stimulus:
+      ref: current
+      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
+    case_key: UNIFIED.7-2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log </tool_call> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"git log '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' --oneline'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    stimulus:
+      ref: current
+      semantic_sha256: 2265cf929ee180d55608c508d42a9f2da9e60da2a50ae08773f50ec34c687366
+    case_key: UNIFIED.7-3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: ' <think>quoted</think> <tool_call> </tool_call> '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <think>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: quoted
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </think>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

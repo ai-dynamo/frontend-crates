@@ -89,4 +89,4 @@ qwen3:
   UNIFIED.deepseek_v41_mixed_control_text_in_string.qwen3:
     golden:
       note: Qwen3 does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
-      actual: 'tool_call(f, {"x":"<think>quoted</think> <tool_call> </tool_call>"})'
+      actual: 'tool_call(f, {"x":" <think>quoted</think> <tool_call> </tool_call> "})'

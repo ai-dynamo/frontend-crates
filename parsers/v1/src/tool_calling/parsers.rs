@@ -3372,7 +3372,7 @@ true
     }
 
     #[tokio::test]
-    async fn test_qwen3_coder_html_entities() {
+    async fn test_qwen3_coder_keeps_html_entities_as_written() {
         let input = r#"<tool_call>
 <function=print_message>
 <parameter=text>
@@ -3380,13 +3380,32 @@ true
 </parameter>
 </function>
 </tool_call>"#;
+        // nemotron_nano shares the Qwen format and its parser config.
+        for parser in ["qwen3_coder", "nemotron_nano"] {
+            let (result, _) = detect_and_parse_tool_call(input, Some(parser), None)
+                .await
+                .unwrap();
+            assert_eq!(result.len(), 1, "{parser}");
+            let (name, args) = extract_name_and_args(result[0].clone());
+            assert_eq!(name, "print_message");
+            // The chat template writes values unescaped, so entities are the model's text.
+            assert_eq!(
+                args["text"], "&lt;div&gt;Hello &amp; Welcome&lt;/div&gt;",
+                "{parser}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_qwen3_coder_strips_only_the_template_newlines() {
+        let input = "<tool_call>\n<function=str_replace>\n<parameter=old_str>\n    def _result(self):\n\n</parameter>\n<parameter=new_str>\n\n  x = 1  \n</parameter>\n</function>\n</tool_call>";
         let (result, _) = detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
             .await
             .unwrap();
         assert_eq!(result.len(), 1);
-        let (name, args) = extract_name_and_args(result[0].clone());
-        assert_eq!(name, "print_message");
-        assert_eq!(args["text"], "<div>Hello & Welcome</div>");
+        let (_, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(args["old_str"], "    def _result(self):\n");
+        assert_eq!(args["new_str"], "\n  x = 1  ");
     }
 
     #[tokio::test]

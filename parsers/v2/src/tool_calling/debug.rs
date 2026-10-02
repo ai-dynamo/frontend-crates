@@ -156,7 +156,7 @@ mod tests {
         let result = wrapped
             .parse_complete(
                 "<tool_call> <function=get_weather> \
-<parameter=location> NYC </parameter> </function> </tool_call>",
+<parameter=location>NYC</parameter> </function> </tool_call>",
             )
             .unwrap();
 

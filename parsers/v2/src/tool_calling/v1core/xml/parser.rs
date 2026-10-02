@@ -356,8 +356,13 @@ pub fn parse_tool_call_block(
             let param_value = param_cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
             if !param_name.is_empty() {
-                let parsed_value =
-                    convert_param_value(param_value, param_name, &param_config, function_name);
+                let parsed_value = convert_param_value(
+                    param_value,
+                    param_name,
+                    &param_config,
+                    function_name,
+                    config,
+                );
                 parameters.insert(param_name.to_string(), parsed_value);
             }
         }
@@ -479,7 +484,7 @@ fn get_arguments_config(
 /// Output: Value::Null  // Handled before type checking
 ///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
-/// Output: Value::String("<tag>")  // HTML entities are unescaped
+/// Output: Value::String("<tag>")  // HTML entities are unescaped, except for Qwen-format values
 ///
 /// Input:  param_value="123", param_type=<undefined/not in schema>
 /// Output: Value::String("123")  // Unknown params returned as strings
@@ -491,6 +496,8 @@ fn get_arguments_config(
 /// * `param_name` - The parameter name (used for schema lookup and error messages)
 /// * `param_config` - Schema defining expected types for each parameter
 /// * `func_name` - The function/tool name (used for error messages)
+/// * `config` - The parser config; Qwen-format values are kept raw (see
+///   `keeps_raw_values`)
 ///
 /// # Type Aliases
 ///
@@ -506,9 +513,18 @@ fn convert_param_value(
     param_name: &str,
     param_config: &HashMap<String, Value>,
     func_name: &str,
+    config: &XmlParserConfig,
 ) -> ParsedValue {
-    // HTML unescape and trim
-    let param_value = html_unescape(param_value.trim());
+    // `param_value` feeds null detection and typed parsing; `string_value` is
+    // what string-typed and undeclared parameters return.
+    let (param_value, string_value) = if keeps_raw_values(config) {
+        let value = strip_wrapping_newline(param_value);
+        (value.trim().to_string(), value.to_string())
+    } else {
+        // HTML unescape and trim
+        let value = html_unescape(param_value.trim());
+        (value.clone(), value)
+    };
 
     // Handle null
     if param_value.to_lowercase() == "null" {
@@ -522,7 +538,7 @@ fn convert_param_value(
             param_name,
             func_name
         );
-        return Value::String(param_value).into();
+        return Value::String(string_value).into();
     }
 
     // Get the type from schema.
@@ -544,7 +560,7 @@ fn convert_param_value(
             if let Some(schema) = param_schema {
                 let allowed = collect_allowed_types(schema);
                 if !allowed.is_empty() {
-                    return coerce_union_value(&param_value, &allowed);
+                    return coerce_union_value(&param_value, &string_value, &allowed);
                 }
             }
             "string".to_string()
@@ -557,9 +573,9 @@ fn convert_param_value(
     // Each branch handles a category of type aliases (e.g., "int"/"integer"/"int32" all map to i64).
     // If parsing fails, we log a warning and fall back to returning the value as a string.
     match param_type.as_str() {
-        // String types: Return value as-is (already HTML-unescaped above)
+        // String types: Return value as-is (already normalized above)
         "string" | "str" | "text" | "varchar" | "char" | "enum" => {
-            Value::String(param_value).into()
+            Value::String(string_value).into()
         }
 
         // Integer types: Parse as i64, fall back to string on error.
@@ -814,8 +830,13 @@ fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
 /// structured (object/array) parsing only when the union permits it, then
 /// integer, number, and boolean, and finally falls back to a string. A value
 /// that matches none of the allowed types degenerates to a string (documented
-/// behavior) rather than being force-parsed into a disallowed JSON type.
-fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue {
+/// behavior) rather than being force-parsed into a disallowed JSON type. The
+/// string fallback is `string_value`, the caller's normalized string form.
+fn coerce_union_value(
+    value: &str,
+    string_value: &str,
+    allowed: &HashSet<SchemaType>,
+) -> ParsedValue {
     // `null` is already handled by the caller before schema lookup.
     if allowed.contains(&SchemaType::Object) || allowed.contains(&SchemaType::Array) {
         if let Ok(json_val) = serde_json::from_str::<Value>(value)
@@ -863,7 +884,7 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
         }
     }
 
-    Value::String(value.to_string()).into()
+    Value::String(string_value.to_string()).into()
 }
 
 /// Try to parse a value similar to Python's ast.literal_eval.
@@ -985,6 +1006,21 @@ fn safe_parse_value(raw: &str) -> serde_json::Value {
     serde_json::Value::String(unescaped.trim_matches('\n').to_string())
 }
 
+/// Qwen-format values (`<parameter=NAME>` ... `</parameter>`) are written raw by
+/// the chat template, between two newlines. Keep them as written apart from
+/// those newlines, as the current vLLM and SGLang parsers do: decoding entities
+/// or trimming would rewrite what the model generated. Other XML families keep
+/// the unescape-and-trim behavior.
+fn keeps_raw_values(config: &XmlParserConfig) -> bool {
+    config.parameter_start_token == "<parameter="
+}
+
+/// Remove the one newline the chat template writes on each side of a value.
+fn strip_wrapping_newline(value: &str) -> &str {
+    let value = value.strip_prefix('\n').unwrap_or(value);
+    value.strip_suffix('\n').unwrap_or(value)
+}
+
 /// Simple HTML unescape for common entities.
 fn html_unescape(s: &str) -> String {
     s.replace("&lt;", "<")
@@ -1036,13 +1072,37 @@ mod coderabbit_fix_tests {
     fn large_integer_schema_value_stays_a_number() {
         let cfg = one_param("x", json!({"type": "integer"}));
         // 21 digits — well past i64::MAX. Old code degenerated this to a string.
-        let pv = convert_param_value("123456789012345678901", "x", &cfg, "f");
+        let pv = convert_param_value(
+            "123456789012345678901",
+            "x",
+            &cfg,
+            "f",
+            &XmlParserConfig::default(),
+        );
         assert_eq!(ser(&pv), "123456789012345678901");
         assert_ne!(ser(&pv), "\"123456789012345678901\"");
 
         // In-range integers and non-numeric fallback still behave.
-        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
-        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        assert_eq!(
+            ser(&convert_param_value(
+                "42",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
+            "42"
+        );
+        assert_eq!(
+            ser(&convert_param_value(
+                "abc",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
+            "\"abc\""
+        );
     }
 
     // Finding 2: Python keyword rewrites must not touch quoted string contents.
@@ -1057,7 +1117,13 @@ mod coderabbit_fix_tests {
 
         // Full path through convert_param_value with an object schema.
         let cfg = one_param("x", json!({"type": "object"}));
-        let pv = convert_param_value("{'message': 'True story'}", "x", &cfg, "f");
+        let pv = convert_param_value(
+            "{'message': 'True story'}",
+            "x",
+            &cfg,
+            "f",
+            &XmlParserConfig::default(),
+        );
         assert_eq!(ser(&pv), r#"{"message":"True story"}"#);
         // The previously-wrong "true story" must NOT appear.
         assert!(!ser(&pv).contains("true story"));
@@ -1071,7 +1137,7 @@ mod coderabbit_fix_tests {
             "x",
             json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
         );
-        let pv = convert_param_value("42", "x", &cfg, "f");
+        let pv = convert_param_value("42", "x", &cfg, "f", &XmlParserConfig::default());
         assert_eq!(ser(&pv), "\"42\"");
         assert_ne!(ser(&pv), "42");
 
@@ -1080,7 +1146,16 @@ mod coderabbit_fix_tests {
             "x",
             json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
         );
-        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(
+            ser(&convert_param_value(
+                "42",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
+            "42"
+        );
 
         // oneOf [object, null] + object literal: still JSON-parsed.
         let cfg = one_param(
@@ -1088,20 +1163,44 @@ mod coderabbit_fix_tests {
             json!({"oneOf": [{"type": "object"}, {"type": "null"}]}),
         );
         assert_eq!(
-            ser(&convert_param_value("{\"a\": 1}", "x", &cfg, "f")),
+            ser(&convert_param_value(
+                "{\"a\": 1}",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
             r#"{"a":1}"#
         );
 
         // type: ["number", "null"] + "3.14": becomes a float.
         let cfg = one_param("x", json!({"type": ["number", "null"]}));
-        assert_eq!(ser(&convert_param_value("3.14", "x", &cfg, "f")), "3.14");
+        assert_eq!(
+            ser(&convert_param_value(
+                "3.14",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
+            "3.14"
+        );
 
         // No alternative matches "42" -> documented string fallback.
         let cfg = one_param(
             "x",
             json!({"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
         );
-        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+        assert_eq!(
+            ser(&convert_param_value(
+                "42",
+                "x",
+                &cfg,
+                "f",
+                &XmlParserConfig::default()
+            )),
+            "\"42\""
+        );
     }
 
     fn bare_config() -> XmlParserConfig {
