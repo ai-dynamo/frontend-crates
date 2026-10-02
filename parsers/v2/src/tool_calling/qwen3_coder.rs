@@ -565,11 +565,11 @@ mod tests {
         assert_eq!(out.calls.len(), 1);
         assert_eq!(out.calls[0].tool_index, 0);
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        // Spaces belong to the string; only optional framing newlines are removed.
         assert_eq!(out.calls[0].arguments, r#"{"location":" NYC "}"#);
     }
 
     fn assert_argument_chunks(schema: serde_json::Value, raw: &str, expected: serde_json::Value) {
+        use crate::unified::UnifiedParserExt;
         let mut tools = weather_tools();
         tools[0].parameters["properties"]["location"] = schema.clone();
         let input = format!(
@@ -589,6 +589,70 @@ mod tests {
                 serde_json::json!({"location": expected}),
                 "schema {schema}, width {width}"
             );
+            let mut parser = crate::unified::qwen3::qwen3_unified(&tools);
+            let mut deltas = Vec::new();
+            for chunk in &chunks {
+                deltas.extend(parser.push(chunk).expect("unified push"));
+            }
+            deltas.extend(parser.finish().expect("unified finish").events);
+            assert_eq!(
+                crate::unified::assemble(&deltas),
+                vec![crate::unified::UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"location": expected}),
+                }],
+                "unified schema {schema}, width {width}"
+            );
+        }
+    }
+
+    #[test]
+    fn padded_scalar_arguments_follow_the_schema() {
+        use serde_json::{Value, json};
+
+        for (schema, raw, expected) in [
+            (json!({"type": "boolean"}), " true ", json!(true)),
+            (json!({"type": "boolean"}), " false ", json!(false)),
+            (json!({"type": "integer"}), " 42 ", json!(42)),
+            (json!({"type": "number"}), " 1.5 ", json!(1.5)),
+            (json!({"type": "null"}), " null ", Value::Null),
+            (json!({"type": ["integer", "null"]}), " null ", Value::Null),
+            (json!({"type": ["integer", "null"]}), " 42 ", json!(42)),
+            (
+                json!({"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
+                " true ",
+                json!(true),
+            ),
+            (
+                json!({"anyOf": [{"type": "number"}, {"type": "null"}]}),
+                " 1.5 ",
+                json!(1.5),
+            ),
+            (
+                json!({"type": "string", "nullable": true}),
+                " null ",
+                Value::Null,
+            ),
+            (
+                json!({"type": "string", "nullable": true}),
+                " 42 ",
+                json!(" 42 "),
+            ),
+            (json!({"type": "string"}), " true ", json!(" true ")),
+            (json!({"type": "string"}), " null ", json!(" null ")),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                " 42 ",
+                json!(" 42 "),
+            ),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                " null ",
+                json!(" null "),
+            ),
+            (json!({"type": "integer"}), " invalid ", json!(" invalid ")),
+        ] {
+            assert_argument_chunks(schema, raw, expected);
         }
     }
 

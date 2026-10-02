@@ -559,7 +559,7 @@ fn convert_prepared_param_value(
     param_config: &HashMap<String, Value>,
     func_name: &str,
 ) -> ParsedValue {
-    if param_value.eq_ignore_ascii_case("null") {
+    if param_value.trim().eq_ignore_ascii_case("null") {
         if param_config.get(param_name).is_some_and(|schema| {
             let allowed = collect_allowed_types(schema);
             allowed.contains(&SchemaType::String) && !allowed.contains(&SchemaType::Null)
@@ -611,7 +611,6 @@ fn convert_prepared_param_value(
     // Each branch handles a category of type aliases (e.g., "int"/"integer"/"int32" all map to i64).
     // If parsing fails, we log a warning and fall back to returning the value as a string.
     match param_type.as_str() {
-        // String types: Return value as-is (already HTML-unescaped above)
         "string" | "str" | "text" | "varchar" | "char" | "enum" => {
             Value::String(param_value).into()
         }
@@ -628,7 +627,7 @@ fn convert_prepared_param_value(
             // parses to i64 when it fits and falls back to a raw numeric literal
             // (via `serde_json::value::RawValue`) for values outside i64 range,
             // so a 21-digit argument stays a JSON number instead of a string.
-            match coerce_integer_literal(&param_value) {
+            match coerce_integer_literal(param_value.trim()) {
                 Some(coerced) => coerced,
                 None => {
                     tracing::warn!(
@@ -644,13 +643,14 @@ fn convert_prepared_param_value(
 
         // Preserve valid JSON number text without a floating-point roundtrip.
         t if t.starts_with("num") || t.starts_with("float") => {
-            coerce_number_value(&param_value).unwrap_or_else(|| Value::String(param_value).into())
+            coerce_number_value(param_value.trim())
+                .unwrap_or_else(|| Value::String(param_value).into())
         }
 
         // Boolean types: Only "true" or "false" (case-insensitive) are valid.
         // Any other value defaults to false with a warning.
         "boolean" | "bool" | "binary" => {
-            let lower_val = param_value.to_lowercase();
+            let lower_val = param_value.trim().to_lowercase();
             if lower_val != "true" && lower_val != "false" {
                 tracing::warn!(
                     "Parsed value '{}' of parameter '{}' is not a boolean (`true` or `false`) in tool '{}', degenerating to false.",
@@ -929,19 +929,19 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
     }
 
     if allowed.contains(&SchemaType::Integer)
-        && let Some(coerced) = coerce_integral_number(value)
+        && let Some(coerced) = coerce_integral_number(value.trim())
     {
         return coerced;
     }
 
     if allowed.contains(&SchemaType::Number)
-        && let Some(number) = coerce_number_value(value)
+        && let Some(number) = coerce_number_value(value.trim())
     {
         return number;
     }
 
     if allowed.contains(&SchemaType::Boolean) {
-        let lower = value.to_lowercase();
+        let lower = value.trim().to_lowercase();
         if lower == "true" || lower == "false" {
             return Value::Bool(lower == "true").into();
         }

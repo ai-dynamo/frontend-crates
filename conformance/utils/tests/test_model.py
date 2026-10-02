@@ -1155,7 +1155,6 @@ def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
     cell = row["cells"]["deepseek_v41_mixed_control_text_in_string"]
-    # Keep testing the recorded mismatch after the current parser fixes it.
     block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
                  if candidate["key"] == "dynamo@0.7.4")
     assert block["verdict"] == "ARG_MISMATCH"
