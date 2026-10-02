@@ -7,7 +7,7 @@ use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
 use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
-use super::v4::{Encoding, encode_messages_with_encoding};
+use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
 
 const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
 
@@ -72,6 +72,83 @@ pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
     Ok(parameters.join("\n"))
 }
 
+enum OrderMessage<'a> {
+    Assistant(Option<Vec<&'a str>>),
+    User { has_task: bool },
+    Tool(&'a str),
+    Boundary,
+}
+
+// Both raw encoding and typed media collection use this order. Boundaries end
+// the sortable group but retain call ranks, matching the reference encoder.
+fn message_order<'a>(messages: impl Iterator<Item = OrderMessage<'a>>) -> Vec<usize> {
+    let mut order = Vec::new();
+    let mut calls = std::collections::HashMap::new();
+    let mut slots = Vec::new();
+    let mut group_has_task = false;
+    fn flush(order: &mut [usize], slots: &mut Vec<(usize, usize)>) {
+        let mut sorted = slots.clone();
+        sorted.sort_by_key(|&(_, rank)| rank);
+        for ((target, _), (source, _)) in slots.drain(..).zip(sorted) {
+            order[target] = source;
+        }
+    }
+    for (index, message) in messages.enumerate() {
+        order.push(index);
+        match message {
+            OrderMessage::Tool(id) => slots.push((index, *calls.get(id).unwrap_or(&0))),
+            OrderMessage::User { has_task } => {
+                // A task stays on the merged group until the next user starts a new one.
+                if group_has_task {
+                    flush(&mut order, &mut slots);
+                }
+                group_has_task = has_task;
+            }
+            boundary => {
+                flush(&mut order, &mut slots);
+                group_has_task = false;
+                if let OrderMessage::Assistant(Some(ids)) = boundary {
+                    calls.clear();
+                    for (rank, id) in ids.into_iter().enumerate() {
+                        if !id.is_empty() {
+                            calls.insert(id, rank);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    flush(&mut order, &mut slots);
+    order
+}
+
+fn raw_message_order(messages: &[Value]) -> Vec<usize> {
+    message_order(
+        messages
+            .iter()
+            .map(|message| match message["role"].as_str() {
+                Some("assistant") => {
+                    OrderMessage::Assistant(message["tool_calls"].as_array().map(|calls| {
+                        calls
+                            .iter()
+                            .map(|call| {
+                                call["id"]
+                                    .as_str()
+                                    .or_else(|| call["function"]["id"].as_str())
+                                    .unwrap_or("")
+                            })
+                            .collect()
+                    }))
+                }
+                Some("user") => OrderMessage::User {
+                    has_task: !message["task"].is_null(),
+                },
+                Some("tool") => OrderMessage::Tool(message["tool_call_id"].as_str().unwrap_or("")),
+                _ => OrderMessage::Boundary,
+            }),
+    )
+}
+
 fn normalize_content(messages: &mut [Value]) -> Result<()> {
     for message in messages {
         for field in ["tools", "tool_calls"] {
@@ -108,7 +185,10 @@ fn normalize_content(messages: &mut [Value]) -> Result<()> {
         if let Some(content) = message.get("content") {
             let text = match content {
                 Value::Null => String::new(),
-                Value::String(text) => validate_text(text)?.to_owned(),
+                Value::String(text) => {
+                    validate_text(text)?;
+                    continue;
+                }
                 Value::Array(blocks) => {
                     let mut texts = Vec::with_capacity(blocks.len());
                     for block in blocks {
@@ -160,10 +240,34 @@ pub fn encode_messages(
         (1..=100).contains(&reasoning_effort),
         "DeepSeek V4.1 reasoning effort must be within 1–100"
     );
-    let mut messages = messages.to_vec();
+    encode_owned_messages(
+        messages.to_vec(),
+        thinking_mode,
+        drop_thinking,
+        reasoning_effort,
+    )
+}
+
+fn encode_owned_messages(
+    mut messages: Vec<Value>,
+    thinking_mode: ThinkingMode,
+    drop_thinking: bool,
+    reasoning_effort: u8,
+) -> Result<String> {
+    ensure!(
+        (1..=100).contains(&reasoning_effort),
+        "DeepSeek V4.1 reasoning effort must be within 1–100"
+    );
     normalize_content(&mut messages)?;
-    encode_messages_with_encoding(
-        &messages,
+    if messages.iter().any(|message| message["role"] == "tool") {
+        let order = raw_message_order(&messages);
+        messages = order
+            .into_iter()
+            .map(|index| std::mem::take(&mut messages[index]))
+            .collect();
+    }
+    encode_v4_messages(
+        messages,
         thinking_mode,
         true,
         drop_thinking,
@@ -181,10 +285,41 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
         false
     }
 
+    fn media_message_order(&self, request: &dyn crate::OAIChatLikeRequest) -> Option<Vec<usize>> {
+        use dynamo_protocols::types::ChatCompletionRequestMessage as Message;
+        let Some(messages) = request.typed_messages() else {
+            // Custom requests may expose only the same raw view used by render.
+            // Invalid raw messages are rejected by render before media collection.
+            let messages = serde_json::to_value(request.messages()).ok()?;
+            let messages = messages.as_array()?;
+            return messages
+                .iter()
+                .any(|message| message["role"] == "tool")
+                .then(|| raw_message_order(messages));
+        };
+        if !messages
+            .iter()
+            .any(|message| matches!(message, Message::Tool(_)))
+        {
+            return None;
+        }
+        Some(message_order(messages.iter().map(|message| {
+            match message {
+                Message::Assistant(assistant) => OrderMessage::Assistant(
+                    assistant
+                        .tool_calls
+                        .as_ref()
+                        .map(|calls| calls.iter().map(|call| call.id.as_str()).collect()),
+                ),
+                Message::User(_) => OrderMessage::User { has_task: false },
+                Message::Tool(tool) => OrderMessage::Tool(tool.tool_call_id.as_str()),
+                _ => OrderMessage::Boundary,
+            }
+        })))
+    }
+
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
-        let messages_value = req.messages();
-        let messages_json =
-            serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        let messages_json = crate::messages_to_json(req)?;
         crate::reject_unsupported_partial_assistant(&messages_json)?;
         crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
 
@@ -216,7 +351,9 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             None => true,
             Some(value) => value.as_bool().context("drop_thinking must be a boolean")?,
         };
-        let mut messages: Vec<Value> = serde_json::from_value(messages_json)?;
+        let Value::Array(mut messages) = messages_json else {
+            anyhow::bail!("Messages is not an array");
+        };
         let tools_enabled =
             req.tool_choice().as_ref().and_then(|value| value.as_str()) != Some("none");
         let tools = req
@@ -254,6 +391,6 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                 messages[0]["response_format"] = response_format;
             }
         }
-        encode_messages(&messages, thinking_mode, drop_thinking, budget)
+        encode_owned_messages(messages, thinking_mode, drop_thinking, budget)
     }
 }

@@ -23,6 +23,8 @@
 //! are atomic in BPE (`special: true, normalized: false`), so splitting there
 //! preserves the invariant `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
 //! No fallback to whitespace or punctuation — better to miss than to corrupt.
+//! Callers must supply actual atomic special tokens recognized by the inner tokenizer;
+//! adding arbitrary strings to the boundary list is unsafe.
 //!
 //! Atomicity alone is insufficient when registered special-token strings can overlap.
 //! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
@@ -48,20 +50,28 @@
 //! - `encode_segments` always passes through to the inner tokenizer without
 //!   caching. Flattening segments for L1 would discard their special-token
 //!   trust boundaries.
-//! - `max_memory_bytes` — L1 byte budget; entries evicted via approximate LRU.
+//! - `max_memory_bytes` — token-ID payload byte budget, excluding keys and metadata.
+//!   Moka shares admission and eviction via W-TinyLFU. Deferred maintenance makes the
+//!   capacity approximate; it is not a limit on total process memory.
+//! - [`CachedTokenizer::new`] owns a private cache. [`CachedTokenizer::new_with_cache`]
+//!   shares storage across wrappers; entries survive a wrapper being dropped while
+//!   shared storage remains alive. Equal namespaces must identify identical tokenizer
+//!   behavior, including tokenizer files, backend, and options that affect token IDs.
 //!
 //! # Provenance
 //!
 //! Adapted from `llm-tokenizer` v1.3.2 (`cache/l1.rs`, `cache/mod.rs`). L0 and
-//! fingerprinting were dropped; L1 alone covers the headline multi-turn-chat
-//! workload, and the in-memory cache lifetime is bound to a single tokenizer
-//! instance so fingerprint-based invalidation is unnecessary.
+//! upstream fingerprinting were dropped; L1 covers the multi-turn-chat workload.
+//! Shared caches use caller-supplied namespaces to separate tokenizer identities.
 
 mod l1;
 
 use std::sync::Arc;
 
-pub use l1::{CacheEventFn, L1Cache, L1CacheStats};
+use l1::PrefixLookup;
+pub use l1::{
+    CacheEventFn, L1Cache, L1CacheStats, SharedTokenizerCache, SharedTokenizerCacheStats,
+};
 
 use crate::{
     EncodeSegment, Encoding, Result, TokenIdType,
@@ -91,8 +101,6 @@ pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
     l1_enabled: bool,
-    /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
-    /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match`]).
     extend_on_hit: bool,
     /// Called once after every successful encode while L1 is active.
     token_observer: Option<CacheTokenUsageFn>,
@@ -108,7 +116,8 @@ impl CachedTokenizer {
     /// without touching the cache or its counters. An overlapping token set also disables
     /// L1, with a warning, because its boundaries are ambiguous.
     ///
-    /// `max_memory_bytes` is the L1 cache byte budget.
+    /// `max_memory_bytes` is the private token-ID payload byte budget. Moka defers
+    /// eviction, so the budget is approximate and excludes keys and metadata.
     ///
     /// # Errors
     ///
@@ -116,8 +125,40 @@ impl CachedTokenizer {
     /// safely wrapped in the prefix cache.
     pub fn new(
         inner: Arc<dyn Tokenizer>,
-        mut special_tokens: Vec<String>,
+        special_tokens: Vec<String>,
         max_memory_bytes: usize,
+    ) -> Result<Self> {
+        Self::build(inner, special_tokens, |tokens| {
+            L1Cache::new(max_memory_bytes, tokens)
+        })
+    }
+
+    /// Construct a tokenizer using shared storage and a caller-supplied namespace.
+    ///
+    /// Equal namespaces share entries and must describe identical tokenizer behavior,
+    /// including tokenizer files, backend, and encoding options. Different namespaces
+    /// compete for the same byte budget but cannot reuse each other's token IDs.
+    /// Entries survive this wrapper being dropped while the shared cache remains alive.
+    /// The eligibility checks are the same as [`Self::new`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the inner tokenizer's compatibility error if prefix caching is unsafe.
+    pub fn new_with_cache(
+        inner: Arc<dyn Tokenizer>,
+        special_tokens: Vec<String>,
+        shared_cache: SharedTokenizerCache,
+        namespace: &[u8],
+    ) -> Result<Self> {
+        Self::build(inner, special_tokens, |tokens| {
+            L1Cache::new_with_cache(shared_cache, tokens, namespace)
+        })
+    }
+
+    fn build(
+        inner: Arc<dyn Tokenizer>,
+        mut special_tokens: Vec<String>,
+        make_cache: impl FnOnce(Vec<String>) -> L1Cache,
     ) -> Result<Self> {
         inner.validate_prefix_cache()?;
         special_tokens.retain(|token| !token.is_empty());
@@ -146,7 +187,7 @@ impl CachedTokenizer {
         };
         Ok(Self {
             inner,
-            l1: L1Cache::new(max_memory_bytes, cache_tokens),
+            l1: make_cache(cache_tokens),
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
@@ -194,14 +235,15 @@ impl CachedTokenizer {
         }
     }
 
-    /// Snapshot of L1 cache statistics (cumulative hits/misses/entries/memory).
+    /// Wrapper-local hits/misses and namespace-wide entries/token bytes.
+    /// Shared storage statistics scan the namespace; private caches use Moka's totals.
+    /// Results can change under concurrent writes. Disabled wrappers report zeroes.
     pub fn cache_stats(&self) -> L1CacheStats {
-        self.l1.stats()
-    }
-
-    /// Clear all cached entries and reset counters.
-    pub fn clear_cache(&self) {
-        self.l1.clear();
+        if self.l1_enabled {
+            self.l1.stats()
+        } else {
+            L1CacheStats::default()
+        }
     }
 
     /// Access the underlying tokenizer (e.g. for downcasting to a concrete type).
@@ -212,53 +254,40 @@ impl CachedTokenizer {
 
 impl Encoder for CachedTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
-        // No specials => no boundaries are ever produced. Skip the lookup, miss-counter
-        // bump, and insert attempt entirely — otherwise the tiktoken wrapping path (which
-        // deliberately passes an empty list) pays the cost on every call with no chance
-        // of a hit.
         if !self.l1_enabled {
             return self.inner.encode(input);
         }
 
-        if let Some((prefix_tokens, prefix_len, deepest_boundary)) =
-            self.l1.longest_prefix_match(input)
-        {
-            let cached_tokens = prefix_tokens.len();
-            let suffix = &input[prefix_len..];
-            let encoding = if suffix.is_empty() {
-                Encoding::Sp(prefix_tokens.to_vec())
-            } else if self.extend_on_hit {
-                // Cache the new suffix at its deepest boundary so the next turn hits
-                // deeper, then return the full merged tokens. The deepest boundary was
-                // already found by `longest_prefix_match`, so no rescan is needed here.
-                Encoding::Sp(self.l1.extend_after_match(
+        let matched = match self.l1.lookup_prefix(input) {
+            PrefixLookup::Hit(matched) => matched,
+            PrefixLookup::Miss(prefix_hashes) => {
+                let encoding = Encoding::Sp(self.l1.populate_and_encode_with_hashes(
                     input,
-                    prefix_tokens,
-                    prefix_len,
-                    deepest_boundary,
+                    prefix_hashes.into_iter(),
                     self.inner.as_ref(),
-                )?)
-            } else {
-                let suffix_enc = self.inner.encode(suffix)?;
-                // Reserve exact capacity so appending the suffix doesn't grow-realloc and
-                // re-copy the (large) cached prefix.
-                let mut merged: Vec<TokenIdType> =
-                    Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
-                merged.extend_from_slice(&prefix_tokens);
-                merged.extend_from_slice(suffix_enc.token_ids());
-                Encoding::Sp(merged)
-            };
-            self.observe_token_usage(cached_tokens, encoding.token_ids().len());
-            return Ok(encoding);
-        }
+                )?);
+                self.observe_token_usage(0, encoding.token_ids().len());
+                return Ok(encoding);
+            }
+        };
 
-        // Miss path: tokenize once, caching the cumulative prefix at every boundary as we
-        // go. The returned ids equal an uncached encode (special tokens are atomic), so we
-        // avoid the redundant second tokenization a separate full-encode + insert would
-        // cost. Returns Encoding::Sp — consistent with the hit path (see the storage-
-        // normalization note in the module docs).
-        let encoding = Encoding::Sp(self.l1.populate_and_encode(input, self.inner.as_ref())?);
-        self.observe_token_usage(0, encoding.token_ids().len());
+        let cached_tokens = matched.tokens.len();
+        let encoding = if self.extend_on_hit {
+            Encoding::Sp(self.l1.extend_after_match_with_hash(
+                input,
+                matched,
+                self.inner.as_ref(),
+            )?)
+        } else {
+            let suffix_enc = self.inner.encode(&input[matched.prefix_len..])?;
+            // Reserve once to avoid copying the cached prefix during vector growth.
+            let mut merged: Vec<TokenIdType> =
+                Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
+            merged.extend_from_slice(&matched.tokens);
+            merged.extend_from_slice(suffix_enc.token_ids());
+            Encoding::Sp(merged)
+        };
+        self.observe_token_usage(cached_tokens, encoding.token_ids().len());
         Ok(encoding)
     }
 
@@ -289,6 +318,11 @@ impl Encoder for CachedTokenizer {
 }
 
 impl Decoder for CachedTokenizer {
+    fn has_unstable_suffix(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> bool {
+        self.inner
+            .has_unstable_suffix(token_ids, skip_special_tokens)
+    }
+
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
         // Decode is not cached — passthrough to inner.
         self.inner.decode(token_ids, skip_special_tokens)

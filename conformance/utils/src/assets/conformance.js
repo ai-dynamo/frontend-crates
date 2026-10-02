@@ -68,8 +68,7 @@
       if (first && first !== baseSec) { baseSec.parentNode.insertBefore(baseSec, first); }
     }
     // Per-chunk grid: show only the columns in the Reference + Compare-with selection.
-    const grid = tip.querySelector('.ttip-chunks');
-    if (grid) {
+    tip.querySelectorAll('.ttip-chunks').forEach(function (grid) {
       const cands = grid.querySelectorAll('[data-cand]');
       if (cands.length) {
         // Candidate-column grid: columns ARE the (impl, version) candidates. Show the
@@ -108,7 +107,7 @@
           el.classList.toggle('col-hidden', !activeImpls.has(el.getAttribute('data-col-impl')));
         });
       }
-    }
+    });
   }
   // Parsers with limited family coverage (Dynamo v2): key -> {label, families}. Drives
   // the reference-aware "not implemented" reason. Empty on pages without such a parser.

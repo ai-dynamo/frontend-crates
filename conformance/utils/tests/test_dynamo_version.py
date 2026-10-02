@@ -89,6 +89,67 @@ def test_reader_keeps_legacy_capture_directories_readable(release_repo):
     assert identity.select_capture_label(release_repo, {source_label: []}) == source_label
 
 
+@pytest.mark.parametrize("source_path", [
+    "parsers/v2/src/lib.rs",
+    "parsers/v2/src/new_parser.rs",
+    "parsers/v1/src/lib.rs",
+    "protocols/src/lib.rs",
+    "Cargo.lock",
+])
+def test_unified_publication_rejects_changed_source_at_a_released_version(release_repo, source_path):
+    (release_repo / source_path).write_text("// changed capture source\n", encoding="utf-8")
+    recorded = identity.dynamo_v2_provenance(release_repo, "current")
+
+    with pytest.raises(ValueError, match="already released.*new unpublished crate version"):
+        identity.validate_capture_provenance(release_repo, recorded)
+
+
+def test_unified_publication_accepts_changed_source_at_a_new_version(release_repo):
+    version = "0.6.1"
+    (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn new_parser() {}\n", encoding="utf-8")
+    manifest = release_repo / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('"0.6.0"', f'"{version}"'), encoding="utf-8")
+    recorded = identity.dynamo_v2_provenance(release_repo, "current")
+
+    origin = identity.validate_capture_provenance(release_repo, recorded)
+
+    assert origin["crate_version"] == version
+
+
+def test_unified_publication_accepts_new_commit_with_unchanged_source(release_repo):
+    previous = git(release_repo, "rev-parse", "HEAD")
+    (release_repo / "notes.json").write_text('{}\n', encoding="utf-8")
+    git(release_repo, "add", "notes.json")
+    commit = git(
+        release_repo, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+        "commit-tree", git(release_repo, "write-tree"), "-p", previous,
+        input="unrelated change\n",
+    )
+    git(release_repo, "update-ref", "HEAD", commit)
+    assert commit != previous
+    recorded = identity.dynamo_v2_provenance(release_repo, "current")
+
+    origin = identity.validate_capture_provenance(release_repo, recorded)
+
+    assert origin["crate_version"] == "0.6.0"
+    assert origin["source_sha256"] == identity.source_fingerprint(release_repo, previous)
+
+
+def test_reader_carries_forward_latest_semantic_checkpoint(release_repo, monkeypatch):
+    (release_repo / "parsers/v2/Cargo.toml").write_text(
+        '[package]\nname="dynamo-parsers-v2"\nversion="0.6.1"\n',
+        encoding="utf-8",
+    )
+    captures = {
+        "0.6.0": {"records": {"gemma4/UNIFIED.1-1": {"format": "schema_v3"}}},
+    }
+    assert identity.select_capture_label(release_repo, captures) == "0.6.0"
+
+    monkeypatch.setenv(identity.ENV_OVERRIDE, "current")
+    current = identity.dynamo_v2_provenance(release_repo, "current")
+    assert identity.select_capture_label(release_repo, captures) == current["label"]
+
+
 def test_reader_rejects_an_unverified_legacy_release_in_a_tagless_checkout(release_repo, monkeypatch):
     recorded = identity.dynamo_v2_provenance(release_repo)
     git(release_repo, "tag", "-d", "dynamo-parsers-v2-v0.6.0")

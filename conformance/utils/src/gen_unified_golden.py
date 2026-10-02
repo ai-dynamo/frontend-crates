@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -45,6 +46,7 @@ GRAMMAR_NOTE = {
     "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
+    "glm47": "reasoning `<think>...</think>`, tool `<tool_call>NAME<arg_key>KEY</arg_key><arg_value>VALUE</arg_value></tool_call>`.",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
@@ -148,29 +150,65 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 
 
 def r_tool(fam, name, key, val, idx):
+    assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
+    value = "null" if val is None else val
+    string_attr = "false" if val is None else "true"
     if fam == "deepseek_v41":
         return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'<｜DSML｜ parameter name="{key}" string="true">{val}'
+                f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
                 f'</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>')
     if fam == "deepseek_v4":
         return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
-                f"<｜DSML｜parameter name=\"{key}\" string=\"true\">{val}"
+                f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
                 f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
     if fam == "gemma4":
-        return f"<|tool_call>call:{name}{{{key}:<|\"|>{val}<|\"|>}}<tool_call|>"
+        argument = "null" if val is None else f'<|"|>{value}<|"|>'
+        return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
-                f"{val}\n</parameter>\n</function>\n</tool_call>")
+                f"{value}\n</parameter>\n</function>\n</tool_call>")
+    if fam == "glm47":
+        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
+                f"<arg_value>{value}</arg_value></tool_call>")
     if fam == "muse_glimmer":
+        argument = "null" if val is None else _atem_value(val)
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
-                f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
+                f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        return k3_tools(k3_call(name, idx + 1, k3_argument(key, "string", val)))
+        argument_type = "null" if val is None else "string"
+        return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+
+def qwen3_input_as_glm47(input_text):
+    """Translate a Qwen-shaped edge fixture into GLM XML."""
+    function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
+    parameter = re.compile(r"<parameter=([^>]+)>(.*?)</parameter>", re.DOTALL)
+
+    def convert_function(match):
+        name, body = match.groups()
+        rendered = parameter.sub(
+            lambda parameter_match: (
+                f"<arg_key>{parameter_match.group(1).strip()}</arg_key>"
+                f"<arg_value>{parameter_match.group(2).strip()}</arg_value>"
+            ),
+            body,
+        )
+        return f"{name}{rendered.strip()}"
+
+    converted = function.sub(convert_function, input_text)
+    converted = converted.replace("<tool_call>\n", "<tool_call>")
+    converted = re.sub(r"<function=([^>]+)>\n?", r"\1", converted)
+    converted = re.sub(
+        r"<parameter=([^>]+)>\n?", r"<arg_key>\1</arg_key><arg_value>", converted
+    )
+    converted = converted.replace("\n</parameter>", "</arg_value>")
+    converted = converted.replace("\n</function>", "")
+    return converted.replace("\n</tool_call>", "</tool_call>")
 
 
 def kimi_input_as_dsml(input_text):
@@ -385,6 +423,8 @@ def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
+    if fam == "glm47":
+        return ""
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
     # Search for the name AFTER the opener. A family whose opener already carries the
@@ -520,33 +560,33 @@ CLEAN = [
       "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
-    # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
+    # --- Group 2: multiple tool calls (TOOLCALLING.streamv1.2) — tool-only, green everywhere ---
     ("two_calls",
-     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.",
+     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.",
      [], [("tool", "f", "x", "1"), ("tool", "g", "y", "2")], M, M),
     ("two_calls_same_name",
-     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.",
+     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
-     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
+     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
      [], [("text", "The answer is 42, no tools needed.")], M, M),
 
-    # --- Group 7: argument fidelity (TOOLCALLING.streamv2.7) ---
+    # --- Group 7: argument fidelity (TOOLCALLING.streamv1.7) ---
     ("arg_unicode",
-     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.",
+     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.",
      [], [("tool", "get_weather", "city", "São Paulo 東京")], M, M),
 
-    # --- Group 8: content / narration position (TOOLCALLING.streamv2.8) ---
+    # --- Group 8: content / narration position (TOOLCALLING.streamv1.8) ---
     ("text_before_tool",
-     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.",
+     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.",
      [], [("text", "On it: "), ("tool", "get_weather", "city", "Paris")], M, M),
     ("text_sandwich",
-     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.",
+     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.",
      [], [("text", "Before. "), ("tool", "get_weather", "city", "Paris"), ("text", " After.")], M, M),
     ("text_between_calls",
-     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.",
+     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.",
      [], [("tool", "f", "x", "1"), ("text", " then "), ("tool", "g", "y", "2")], M, M),
     ("narrated_calls",
      "Multiple tool calls with visible narration between each — tool_call -> text -> tool_call -> text -> tool_call. The agentic pattern: call, narrate, call again. Every call and every inter-call text span must surface as its own ordered event.",
@@ -584,7 +624,41 @@ CLEAN = [
 # --- EDGE scenarios: grammar-specific raw input per family --------------------
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
 
+_DS41_MIXED_STRING = ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"' + "\\" + "\n "
+
+# Keep the original DS4.1 payload stable so its existing capture remains comparable.
+_MIXED_CONTROL_STRINGS = {
+    "deepseek_v41": _DS41_MIXED_STRING,
+    **{
+        family: " " + r_reason(family, "quoted") + " " + markers + ' &amp; "x"' + "\\" + "\n "
+        for family, markers in {
+            "deepseek_v4": "<｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke>",
+            "gemma4": "<|tool_call> <tool_call|>",
+            "glm47": "<tool_call> </tool_call>",
+            "qwen3": "<tool_call> </tool_call> </function>",
+            "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
+            "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
+            "muse_glimmer": "<atem:function_calls> </atem:function_calls> </atem:invoke>",
+        }.items()
+    },
+}
+
 EDGE = [
+    ("glm47_parameterless_call_shape_inside_argument",
+     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {
+         "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
+     }}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "glm47": (
+             "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
+             D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"),
+             M,
+         ),
+     })),
+
     ("truncated_tool_eof",
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
      ["P2"],
@@ -697,7 +771,7 @@ EDGE = [
       }),
 
     ("empty_args",
-     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
+     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv1.6.a.",
      ["P3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -713,7 +787,7 @@ EDGE = [
      }),
 
     ("tool_no_close",
-     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
+     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -1270,8 +1344,23 @@ EDGE = [
                     k3_channel("think", "literal") + " then a call"),
      }),
 
+    (
+        "deepseek_v41_mixed_control_text_in_string",
+        "A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.",
+        ["I7"],
+        [{"kind": "tool_call", "name": "f", "arguments": {"x": None}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {
+            family: (
+                r_tool(family, "f", "x", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M),
+                M,
+                value,
+            )
+            for family, value in _MIXED_CONTROL_STRINGS.items()
+        },
+    ),
 ]
-
 
 EDGE += [
     ("kimi_k3_typed_argument_values",
@@ -1485,6 +1574,15 @@ def _guided_product():
                 fill=(None if dispatches else
                       (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
             )
+            if scenario == "guided_json_schema_error_not_a_call_bare_opener":
+                # GLM's outer tool marker is itself the complete invoke opener.
+                # It has no separate bare inner header, so this crossing is the
+                # same bare JSON behavior covered by `guided_json_invalid_call`.
+                family_inputs = OnlyFamilies({
+                    family: spec
+                    for family, spec in family_inputs.items()
+                    if family != "glm47"
+                })
             out.append((
                 scenario,
                 f"Guided JSON, payload is {pay_name}, surrounded by {sur_desc}. "
@@ -1712,7 +1810,7 @@ EDGE += [
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
-        if fam == "deepseek_v4" and fam not in spec:
+        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
             return spec["qwen3"]
         return spec[fam]
     return spec
@@ -1734,10 +1832,15 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
+def _edge_case_family_policy(edge_case):
+    return edge_case[-2] if len(edge_case) == 8 else edge_case[-1]
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
-    if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+    if not isinstance(_edge_case_family_policy(spec), OnlyFamilies)
+    or "deepseek_v41" in _edge_case_family_policy(spec)
 }
 
 
@@ -1788,6 +1891,149 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+# Native grammars encode the oracle type; Qwen and GLM consult the request schema.
+_NULL_TEXT_INPUTS = {
+    "qwen3": "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+    "glm47": "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
+}
+
+EDGE += [
+    (
+        scenario,
+        null_description(label, detail),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({
+            family: (
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M), M,
+            )
+            for family in FAMILIES
+        }),
+        {family: [{"name": "get_weather", "parameters": {
+            "type": "object", "properties": {"city": json.loads(json.dumps(schema))},
+        }}] for family in FAMILIES},
+    )
+    for scenario, label, schema, value, detail in NULL_VARIANTS
+]
+
+# GLM's XML values have no native type marker. Keep these references unresolved
+# in the request so the parser must consult definitions on the parameters root.
+EDGE += [
+    (
+        scenario,
+        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
+                         'the tool parameters root; the referenced definition controls null coercion.'),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            _NULL_TEXT_INPUTS["glm47"],
+            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "get_weather", "parameters": {
+            "type": "object", "$defs": {"City": schema},
+            "properties": {"city": {"$ref": "#/$defs/City"}},
+        }}]},
+    )
+    for scenario, label, schema, value in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    )
+]
+
+EDGE.append((
+    "arg_null_mixed_labels",
+    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    ["I7"],
+    [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        "<tool_call>set_labels"
+        "<arg_key>label</arg_key><arg_value>null</arg_value>"
+        "<arg_key>note</arg_key><arg_value>null</arg_value>"
+        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
+    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+    {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
+     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+))
+
+# These valid-schema reference probes target GLM's untyped XML values. Keep the
+# request refs unresolved and author the expected values separately from the text.
+for scenario, description, parameters, raw_arguments, arguments in (
+    (
+        "glm_ref_object",
+        'PR #271 compatibility control: a local object reference keeps JSON object text as an object.',
+        {"type": "object", "$defs": {"Payload": {
+            "type": "object", "properties": {"x": {"type": "integer"}},
+        }}, "properties": {"payload": {"$ref": "#/$defs/Payload"}}},
+        {"payload": '{"x":1}'},
+        {"payload": {"x": 1}},
+    ),
+    (
+        "glm_ref_encoded_targets",
+        'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.',
+        {"type": "object", "$defs": {
+            "postal code": {"type": "integer"}, "café+": {"type": "integer"},
+            "a/b~c": {"type": "integer"},
+        }, "properties": {
+            "space": {"$ref": "#/$defs/postal%20code"},
+            "utf8_plus": {"$ref": "#/$defs/caf%c3%a9+"},
+            "pointer": {"$ref": "#/$defs/a%7E1b%7E0c"},
+        }},
+        {"space": "42", "utf8_plus": "42", "pointer": "42"},
+        {"space": 42, "utf8_plus": 42, "pointer": 42},
+    ),
+    (
+        "glm_ref_json_looking_strings",
+        'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.',
+        {"type": "object", "$defs": {"Text": {"type": "string"}}, "properties": {
+            "object_text": {"$ref": "#/$defs/Text"},
+            "array_text": {"$ref": "#/$defs/Text"},
+            "quoted_text": {"$ref": "#/$defs/Text"},
+            "inline_text": {"type": "string"},
+        }},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+    ),
+    (
+        "glm_ref_scalar_types",
+        'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union.',
+        {"type": "object", "$defs": {
+            "Integer": {"type": "integer"}, "Number": {"type": "number"},
+            "Boolean": {"type": "boolean"}, "Scalar": {"type": ["string", "integer"]},
+        }, "properties": {
+            "count": {"$ref": "#/$defs/Integer"}, "ratio": {"$ref": "#/$defs/Number"},
+            "flag": {"$ref": "#/$defs/Boolean"},
+            "narrowed": {"$ref": "#/$defs/Scalar", "type": "integer"},
+        }},
+        {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
+        {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
+    ),
+):
+    input_text = "<tool_call>capture_payload" + "".join(
+        f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>"
+        for key, raw in raw_arguments.items()
+    ) + "</tool_call>"
+    EDGE.append((
+        scenario, description, ["I7"],
+        [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            input_text, D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "capture_payload", "parameters": parameters}]},
+    ))
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -1816,10 +2062,13 @@ def build_cases(fam):
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
-        # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
+        # Support legacy tuples, stream config, and per-case request tool schemas.
+        case_tools = None
         if len(edge_case) == 6:
             name, desc, policy, golden, init, per_fam = edge_case
             stream_config = {"finish_reason": "stop"}
+        elif len(edge_case) == 8:
+            name, desc, policy, golden, init, stream_config, per_fam, case_tools = edge_case
         else:
             name, desc, policy, golden, init, stream_config, per_fam = edge_case
 
@@ -1844,6 +2093,10 @@ def _build_edge_cases(fam, specs):
                 kimi_input, *rest = per_fam["kimi_k2"]
                 per_fam = dict(per_fam)
                 per_fam[fam] = (kimi_input_as_dsml(kimi_input), *rest)
+            elif fam == "glm47" and "qwen3" in per_fam:
+                qwen_input, *rest = per_fam["qwen3"]
+                per_fam = dict(per_fam)
+                per_fam[fam] = (qwen3_input_as_glm47(qwen_input), *rest)
             else:
                 raise KeyError(
                     f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
@@ -1891,7 +2144,7 @@ def _build_edge_cases(fam, specs):
                 "vLLM base case does not set a starting channel state; conformance "
                 "captures default generation only",
             )
-        cases[cid] = {
+        case = {
             "description": desc,
             "policy": policy,
             "input": inp,
@@ -1900,6 +2153,9 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if case_tools is not None:
+            case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
+        cases[cid] = case
     return cases
 
 
@@ -1919,7 +2175,7 @@ def scenario_families(scenario):
         name = edge_case[0]
         if name != scenario:
             continue
-        per_fam = edge_case[-1]
+        per_fam = _edge_case_family_policy(edge_case)
         return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
@@ -1961,6 +2217,8 @@ def emit_yaml(fam):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
+        if c.get("tools") is not None:
+            lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
     return "\n".join(lines) + "\n"
 
 

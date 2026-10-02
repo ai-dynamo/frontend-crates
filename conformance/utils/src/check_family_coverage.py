@@ -5,13 +5,13 @@
 Diffs each parser family's fixture case IDs against the machine-readable case
 taxonomy (conformance/case-taxonomy.yaml) and fails on unexplained gaps, so
 "complete coverage" is a tool answer instead of a review-time reverse-engineering
-exercise (PR #120: batch groups 6/8/30 and the whole stream-v2 corpus were
+exercise (PR #120: batch groups 6/8/30 and the whole legacy stream corpus were
 missing and nothing said so before human review).
 
 Checks, per family:
   * family present in parser_families.yaml (toolcalling registry);
   * a fixtures dir exists for every applicable suite (catches "ALL stream test
-    cases missing" — a registry family with no fixtures-stream-v2/inputs dir);
+    cases missing" — a registry family with no fixtures-stream-v1/inputs dir);
   * every `required:` taxonomy group/case is present, either as real input
     (model_text / chunks) or as an explicit placeholder with an `explanation:`;
   * placeholders without an `explanation:` fail; "not yet authored" placeholders
@@ -45,13 +45,14 @@ sys.path.insert(0, str(HERE))
 
 import markers as markers_mod  # noqa: E402
 from tables import markup  # noqa: E402
+from fixture_disposition import canonical_toolcalling_case_key  # noqa: E402
 
 TAXONOMY_PATH = HERE.parents[1] / "case-taxonomy.yaml"
 REGISTRY_PATH = HERE / "parser_families.yaml"
 
 SUITE_INPUTS = {
     "toolcalling.batch": ("toolcalling/fixtures-batch-v1", "TOOLCALLING.batch"),
-    "toolcalling.stream": ("toolcalling/fixtures-stream-v2", "TOOLCALLING.streamv2"),
+    "toolcalling.stream": ("toolcalling/fixtures-stream-v1", "TOOLCALLING.streamv1"),
     "reasoning.batch": ("reasoning/fixtures-v1", "REASONING.batch"),
     "reasoning.stream": ("reasoning/fixtures-v1", "REASONING.stream"),
 }
@@ -111,7 +112,11 @@ def load_family_cases(root: Path, suite: str, family: str) -> dict[str, dict] | 
         for cid, case in (data.get("cases") or {}).items():
             if not cid.startswith(prefix + "."):
                 continue
-            cases[cid[len(prefix) + 1 :]] = case if isinstance(case, dict) else {}
+            cid = canonical_toolcalling_case_key(cid)
+            suffix = cid[len(prefix) + 1 :]
+            if suffix in cases:
+                raise ValueError(f"duplicate case after ID normalization: {family}/{cid}")
+            cases[suffix] = case if isinstance(case, dict) else {}
     return cases if cases else None
 
 

@@ -56,10 +56,10 @@ impl KimiK3Formatter {
     }
 
     fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<RenderedSegment>> {
-        let messages = json_value(req.messages()).context("Failed to convert K3 messages")?;
-        let messages = messages
-            .as_array()
-            .context("Kimi K3 messages must be an array")?;
+        let messages = crate::messages_to_json(req).context("Failed to convert K3 messages")?;
+        let Value::Array(messages) = messages else {
+            anyhow::bail!("Kimi K3 messages must be an array");
+        };
         let messages = normalize_tool_result_messages(messages)?;
 
         let tool_choice = req.tool_choice().map(json_value).transpose()?;
@@ -750,51 +750,43 @@ fn tool_call_index(tool_calls: Option<&Value>) -> HashMap<String, (usize, Option
     index
 }
 
-fn normalize_tool_result_messages(messages: &[Value]) -> Result<Vec<Value>> {
+fn normalize_tool_result_messages(messages: Vec<Value>) -> Result<Vec<Value>> {
     let mut output = Vec::with_capacity(messages.len());
     let mut current_index = HashMap::new();
-    let mut position = 0;
+    let mut messages = messages.into_iter().peekable();
 
-    while position < messages.len() {
-        let message = &messages[position];
+    while let Some(message) = messages.peek() {
         let role = message.get("role").and_then(Value::as_str);
         if role == Some("assistant") {
             current_index = tool_call_index(message.get("tool_calls"));
-            output.push(message.clone());
-            position += 1;
+            output.push(messages.next().expect("peeked message"));
             continue;
         }
         if role != Some("tool") {
-            output.push(message.clone());
-            position += 1;
+            output.push(messages.next().expect("peeked message"));
             continue;
         }
 
         let mut run: Vec<(Option<usize>, usize, Value, Option<String>)> = Vec::new();
         let mut unresolved = false;
         let mut offset = 0;
-        while position < messages.len()
-            && messages[position].get("role").and_then(Value::as_str) == Some("tool")
+        while messages
+            .peek()
+            .is_some_and(|message| message.get("role").and_then(Value::as_str) == Some("tool"))
         {
-            let tool_message = &messages[position];
+            let tool_message = messages.next().expect("peeked tool message");
             let call_id = tool_message
                 .get("tool_call_id")
                 .or_else(|| tool_message.get("id"))
                 .and_then(Value::as_str);
             let matched = call_id.and_then(|id| current_index.get(id));
             if let Some((tool_position, name)) = matched {
-                run.push((
-                    Some(*tool_position),
-                    offset,
-                    tool_message.clone(),
-                    name.clone(),
-                ));
+                run.push((Some(*tool_position), offset, tool_message, name.clone()));
             } else {
                 unresolved = true;
-                run.push((None, offset, tool_message.clone(), None));
+                run.push((None, offset, tool_message, None));
             }
             offset += 1;
-            position += 1;
         }
 
         if unresolved {
@@ -2042,6 +2034,34 @@ mod tests {
         );
         assert!(
             rendered.ends_with("<|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>")
+        );
+    }
+
+    #[test]
+    fn tool_result_order_preserves_unresolved_runs() {
+        let assistant = json!({"role": "assistant", "tool_calls": [
+            {"id": "first", "function": {"name": "one"}},
+            {"id": "second", "function": {"name": "two"}}
+        ]});
+        let second =
+            json!({"role": "tool", "tool_call_id": "second", "content": "第二", "name": "old"});
+        let first = json!({"role": "tool", "tool_call_id": "first", "content": "第一"});
+        let sorted =
+            normalize_tool_result_messages(vec![assistant.clone(), second.clone(), first]).unwrap();
+        assert_eq!(sorted[1]["content"], "第一");
+        assert_eq!(sorted[1]["tool"], "one");
+        assert_eq!(sorted[2]["content"], "第二");
+        assert_eq!(sorted[2]["tool"], "two");
+        assert_eq!(sorted[2]["name"], "two");
+
+        let unresolved = vec![
+            assistant,
+            second,
+            json!({"role": "tool", "tool_call_id": "unknown", "content": "keep order"}),
+        ];
+        assert_eq!(
+            normalize_tool_result_messages(unresolved.clone()).unwrap(),
+            unresolved
         );
     }
 
