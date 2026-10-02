@@ -36,7 +36,7 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "9.2.6" }
+dynamo-parsers = { path = "parsers/v1", version = "9.2.7" }
 dynamo-protocols = { path = "protocols", version = "6.1.0" }
 dynamo-renderer = { path = "renderer", version = "7.0.0" }
 dynamo-tokenizers = { path = "tokenizers", version = "3.0.0" }

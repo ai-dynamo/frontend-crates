@@ -24,6 +24,12 @@ The crate import path is `dynamo_parsers` (crate name, unaffected by the directo
 
 ## v1-specific API
 
+### Tool execution boundary
+
+The GLM47 parser preserves syntactically valid calls even when their names are absent from the supplied tools. Parsing does not authorize execution: every executor must validate each returned name against the tools offered in that request before dispatching it, including when using a broader global tool registry. Unknown calls have no matching request schema, so their arguments use the parser's schema-free coercion rules.
+
+### Entry points
+
 The v1 batch entry points (in `src/tool_calling/parsers.rs`) that v2 does not mirror:
 
 - `detect_and_parse_tool_call(input, parser_name, schema) -> (calls, normal_text)` — registry dispatch.

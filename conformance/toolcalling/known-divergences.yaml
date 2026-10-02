@@ -103,8 +103,6 @@ glm47:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.9.b:
     stream_vs_batch: *svb-whitespace-only
-  TOOLCALLING.batch.13:
-    stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.streamv1.7.a:
     jail: &jail-stringifies-scalars >-
       FIXME (v1 defect, wontfix — v1 is being removed): the jail emits
