@@ -84,8 +84,7 @@ fn parameter_re() -> &'static Regex {
     })
 }
 
-/// Find a control marker outside ATEM parameter values. An open parameter
-/// owns its bytes until its closer arrives, including framed channel headers.
+/// An open parameter owns its bytes until its closer arrives, including framed channel headers.
 fn outside_parameter(text: &str, marker: &str) -> Option<usize> {
     static OPEN: OnceLock<Regex> = OnceLock::new();
     let open =
