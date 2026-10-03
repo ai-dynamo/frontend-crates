@@ -87,6 +87,205 @@ fn next_scan_start(text: &str, marker_len: usize) -> usize {
     start
 }
 
+/// Close selection for `string="true"` parameter values.
+///
+/// The grammar has no escape, so a value that quotes DSML markup can contain a
+/// literal `</｜DSML｜ parameter>`. A close is chosen only if the text after it
+/// parses as the rest of the call: well-formed parameters with distinct names
+/// and valid `string="false"` JSON. When the first close qualifies (every input
+/// the first-close rule parses), the result is unchanged.
+///
+/// A close followed by a malformed parameter header is never skipped: that
+/// header is a model error, not quoted data, so the call stays rejected as
+/// under the first-close rule instead of losing the parameter silently.
+struct ValueCloses<'a> {
+    body: &'a str,
+    /// Offset just past each `PARAMETER_END` in `body`, ascending.
+    ends: Vec<usize>,
+    /// For each close whose remainder parses, the parameter names that
+    /// remainder defines; `None` when it does not parse.
+    complete: Vec<Option<Vec<&'a str>>>,
+    /// For each index into `ends`, the close a string value reaching it ends
+    /// at: the first index at or after it that is complete or followed by a
+    /// malformed parameter header. One extra trailing `None`.
+    choice: Vec<Option<usize>>,
+}
+
+impl<'a> ValueCloses<'a> {
+    fn new(body: &'a str) -> Self {
+        let ends: Vec<usize> = body
+            .match_indices(PARAMETER_END)
+            .map(|(at, _)| at + PARAMETER_END.len())
+            .collect();
+        let mut closes = Self {
+            body,
+            complete: vec![None; ends.len()],
+            choice: vec![None; ends.len() + 1],
+            ends,
+        };
+        // A remainder only depends on closes after it, so fill from the end.
+        for index in (0..closes.ends.len()).rev() {
+            let at = closes.ends[index];
+            closes.complete[index] = closes.names_from(at);
+            closes.choice[index] =
+                if closes.complete[index].is_some() || closes.malformed_header_at(at) {
+                    Some(index)
+                } else {
+                    closes.choice[index + 1]
+                };
+        }
+        closes
+    }
+
+    /// Whether `body[at..]` starts, after whitespace, with a parameter opener
+    /// whose header does not parse.
+    fn malformed_header_at(&self, at: usize) -> bool {
+        let rest = self.body[at..].trim_start();
+        rest.starts_with(PARAMETER_START) && parameter_header(rest).is_none()
+    }
+
+    /// Index into `ends` of the first close at or after `value_start`.
+    fn first_close(&self, value_start: usize) -> usize {
+        self.ends
+            .partition_point(|&end| end < value_start + PARAMETER_END.len())
+    }
+
+    /// Whether `body[at..]` parses as a run of parameters.
+    fn complete_from(&self, at: usize) -> bool {
+        self.names_from(at).is_some()
+    }
+
+    /// The parameter names `body[at..]` defines, if it parses as a run of
+    /// parameters with distinct names and valid `string="false"` values.
+    fn names_from(&self, at: usize) -> Option<Vec<&'a str>> {
+        let body = self.body;
+        let rest = body[at..].trim_start();
+        if rest.is_empty() {
+            return Some(Vec::new());
+        }
+        let (name, string, value) = parameter_header(rest)?;
+        let value_start = body.len() - value.len();
+        let first = self.first_close(value_start);
+        let chosen = if string { self.choice[first]? } else { first };
+        let names = self.complete.get(chosen)?.as_ref()?;
+        if names.contains(&name) {
+            return None;
+        }
+        if !string {
+            let value_end = self.ends[chosen] - PARAMETER_END.len();
+            serde_json::from_str::<Value>(&body[value_start..value_end]).ok()?;
+        }
+        let mut names = names.clone();
+        names.push(name);
+        Some(names)
+    }
+
+    /// Start of the close ending the value at `value_start`: the first close
+    /// followed by well-formed parameters or by a malformed parameter header,
+    /// else the first close.
+    fn value_end(&self, value_start: usize, string: bool) -> Option<usize> {
+        let first = self.first_close(value_start);
+        let chosen = if string {
+            self.choice[first].unwrap_or(first)
+        } else {
+            first
+        };
+        self.ends.get(chosen).map(|end| end - PARAMETER_END.len())
+    }
+}
+
+/// Name and body of a complete invocation, without validating the body.
+fn invocation_parts(invoke: &str) -> Option<(&str, &str)> {
+    let (name, body) = invoke.strip_prefix(INVOKE_START)?.split_once("\">")?;
+    Some((name, body.strip_suffix(INVOKE_END)?))
+}
+
+/// Whether `invoke` is one structurally well-formed invocation.
+fn invocation_is_well_formed(invoke: &str) -> bool {
+    let Some((name, body)) = invocation_parts(invoke) else {
+        return false;
+    };
+    if name.is_empty() {
+        return false;
+    }
+    if body.trim_start().starts_with('{') {
+        return serde_json::from_str::<Map<String, Value>>(body).is_ok();
+    }
+    ValueCloses::new(body).complete_from(0)
+}
+
+/// Invocation closes tried per decision when resolving a quoted close. Each
+/// try is a linear pass, so the cap keeps resolution linear in the stream
+/// even when the tail is crafted to hold many closes; a real quoted example
+/// needs one or two.
+const MAX_CLOSE_CANDIDATES: usize = 16;
+
+/// Offset just past the calls block when `text[at..]` holds zero or more
+/// well-formed invocations followed by its close.
+fn block_end_after(text: &str, mut at: usize) -> Option<usize> {
+    loop {
+        at = text.len() - text[at..].trim_start().len();
+        let rest = &text[at..];
+        if rest.starts_with(BLOCK_END) {
+            return Some(at + BLOCK_END.len());
+        }
+        if !rest.starts_with(INVOKE_START) {
+            return None;
+        }
+        at += rest
+            .match_indices(INVOKE_END)
+            .map(|(close, _)| close + INVOKE_END.len())
+            .take(MAX_CLOSE_CANDIDATES)
+            .find(|&end| invocation_is_well_formed(&rest[..end]))?;
+    }
+}
+
+/// Whether no DSML closer is stranded in `text[at..]`, i.e. every closer sits
+/// inside a later calls block. One linear pass.
+fn trailing_is_coherent(text: &str, mut at: usize) -> bool {
+    loop {
+        let rest = &text[at..];
+        let Some(close) = [PARAMETER_END, INVOKE_END, BLOCK_END]
+            .into_iter()
+            .filter_map(|marker| rest.find(marker))
+            .min()
+        else {
+            return true;
+        };
+        let Some(open) = rest.find(BLOCK_START).filter(|&open| open < close) else {
+            return false;
+        };
+        let after_open = at + open + BLOCK_START.len();
+        let Some(end) = text[after_open..].find(BLOCK_END) else {
+            return true;
+        };
+        at = after_open + end + BLOCK_END.len();
+    }
+}
+
+/// Invocation end to commit for a call whose string value quoted a parameter
+/// opener, given the whole remaining stream.
+///
+/// `first` is the end the first-close rule found. It stands unless it strands
+/// DSML closers after its calls block (the signature of a literal close taken
+/// as structure) and a later invocation close yields a well-formed invocation
+/// and calls block with nothing stranded after it.
+fn coherent_invocation_end(text: &str, first: usize) -> usize {
+    let coherent = |end: usize| {
+        invocation_is_well_formed(&text[..end])
+            && block_end_after(text, end).is_some_and(|block| trailing_is_coherent(text, block))
+    };
+    if coherent(first) {
+        return first;
+    }
+    text.match_indices(INVOKE_END)
+        .map(|(at, _)| at + INVOKE_END.len())
+        .filter(|&end| end > first)
+        .take(MAX_CLOSE_CANDIDATES)
+        .find(|&end| coherent(end))
+        .unwrap_or(first)
+}
+
 #[derive(Default)]
 enum InvocationPosition {
     #[default]
@@ -100,6 +299,8 @@ enum InvocationPosition {
     },
     ParameterValue {
         start: usize,
+        value_start: usize,
+        string: bool,
         scan_from: usize,
     },
     InvalidParameter {
@@ -111,6 +312,11 @@ enum InvocationPosition {
 struct DeepSeekV41InvocationBoundary {
     position: InvocationPosition,
     scan_from: usize,
+    /// A string value, read up to its first close, contains a parameter
+    /// opener, so that close may be quoted data rather than structure.
+    quoted_parameter_open: bool,
+    /// First-close end held back until EOF while `quoted_parameter_open`.
+    deferred_end: Option<usize>,
     json: JsonPrefixState,
     guided_prefix_scan_from: usize,
     guided_prefix_payload_at: Option<usize>,
@@ -180,6 +386,45 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
         flush: bool,
         _tool_index: usize,
     ) -> Option<usize> {
+        // As with the INVOKE_END/BLOCK_END lookahead in `tool_calling::dsml`,
+        // a close inside a value is only a candidate. A call that quoted a
+        // parameter opener is held to EOF, where the whole stream decides which
+        // close is structural; every other call commits at its first close,
+        // exactly as before.
+        let first = match self.deferred_end {
+            Some(end) => end,
+            None => self.first_close_end(candidate, flush)?,
+        };
+        if !self.quoted_parameter_open {
+            return Some(first);
+        }
+        if !flush {
+            self.deferred_end = Some(first);
+            return None;
+        }
+        Some(coherent_invocation_end(candidate, first))
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+impl DeepSeekV41InvocationBoundary {
+    /// Invocation end under the first-close rule, scanning appended bytes only.
+    fn first_close_end(&mut self, candidate: &str, flush: bool) -> Option<usize> {
         loop {
             match self.position {
                 InvocationPosition::Header => {
@@ -260,7 +505,7 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                         };
                         return None;
                     };
-                    let Some((_, _, value)) = parameter_header(&candidate[start..]) else {
+                    let Some((_, string, value)) = parameter_header(&candidate[start..]) else {
                         self.position = InvocationPosition::InvalidParameter { start };
                         continue;
                     };
@@ -268,20 +513,34 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                     debug_assert!(value_start >= header_end + 2);
                     self.position = InvocationPosition::ParameterValue {
                         start,
+                        value_start,
+                        string,
                         scan_from: value_start,
                     };
                 }
-                InvocationPosition::ParameterValue { start, scan_from } => {
+                InvocationPosition::ParameterValue {
+                    start,
+                    value_start,
+                    string,
+                    scan_from,
+                } => {
                     let Some(value_end) = find_from(candidate, scan_from, PARAMETER_END) else {
                         if flush {
                             return Self::malformed_end(candidate, start, true);
                         }
                         self.position = InvocationPosition::ParameterValue {
                             start,
+                            value_start,
+                            string,
                             scan_from: next_scan_start(candidate, PARAMETER_END.len()),
                         };
                         return None;
                     };
+                    if string {
+                        let value = &candidate[value_start..value_end];
+                        count_boundary_bytes(value.len());
+                        self.quoted_parameter_open |= value.contains(PARAMETER_START);
+                    }
                     self.scan_from = value_end + PARAMETER_END.len();
                     self.position = InvocationPosition::BetweenParameters;
                 }
@@ -290,22 +549,6 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                 }
             }
         }
-    }
-
-    fn opens(&self, _text: &str, _at: usize) -> bool {
-        true
-    }
-
-    fn holdback(&self, _text: &str) -> usize {
-        0
-    }
-
-    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
-        None
-    }
-
-    fn reset(&mut self) {
-        *self = Self::default();
     }
 }
 
@@ -337,12 +580,16 @@ impl InvokeEmitter for DeepSeekV41 {
         } else {
             Map::new()
         };
+        let closes = ValueCloses::new(body);
         while !body.trim().is_empty() {
             let (name, string, value) = parameter_header(body.trim_start())
                 .context("invalid DeepSeek V4.1 parameter header")?;
-            let (raw, remainder) = value
-                .split_once(PARAMETER_END)
+            let value_start = closes.body.len() - value.len();
+            let value_end = closes
+                .value_end(value_start, string)
                 .context("incomplete DeepSeek V4.1 parameter")?;
+            let raw = &closes.body[value_start..value_end];
+            let remainder = &closes.body[value_end + PARAMETER_END.len()..];
             let value = if string {
                 Value::String(raw.to_string())
             } else {
@@ -797,6 +1044,300 @@ mod tests {
                     arguments: serde_json::json!({"city":"Paris"}),
                 },
             ],
+        );
+    }
+
+    fn call(name: &str, arguments: serde_json::Value) -> UnifiedEvent {
+        UnifiedEvent::ToolCall {
+            name: name.into(),
+            arguments,
+        }
+    }
+
+    fn text(text: &str) -> UnifiedEvent {
+        UnifiedEvent::Text { text: text.into() }
+    }
+
+    /// One `write` invocation whose `content` value is `value`, followed by an
+    /// `i` parameter.
+    fn write_invoke(value: &str) -> String {
+        format!(
+            "<｜DSML｜ invoke name=\"write\">\n<｜DSML｜ parameter name=\"path\" string=\"true\">docs/format.md</｜DSML｜ parameter>\n<｜DSML｜ parameter name=\"content\" string=\"true\">{value}</｜DSML｜ parameter>\n<｜DSML｜ parameter name=\"i\" string=\"true\">doc</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n"
+        )
+    }
+
+    /// [`write_invoke`] alone inside a complete calls block.
+    fn write_call(value: &str) -> String {
+        format!("<｜DSML｜ calls>\n{}</｜DSML｜ calls>", write_invoke(value))
+    }
+
+    fn write_arguments(value: &str) -> serde_json::Value {
+        serde_json::json!({"path": "docs/format.md", "content": value, "i": "doc"})
+    }
+
+    #[test]
+    fn literal_dsml_block_in_string_value_is_data() {
+        // A file that documents the call syntax quotes a complete, well-formed
+        // calls block. Its first `</｜DSML｜ parameter>` is data: taking it as
+        // the close strands the rest of the block, the real close, and `i` in
+        // the trailing text.
+        let value = concat!(
+            "# Format\n\n```\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"read\">\n",
+            "<｜DSML｜ parameter name=\"path\" string=\"true\">app/main.py</｜DSML｜ parameter>\n",
+            "</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n\n<!-- END-OF-FILE-7f3a -->\n",
+        );
+        assert_every_split(
+            &format!("Writing it.\n\n{}", write_call(value)),
+            UnifiedParserStartingState::None,
+            vec![
+                text("Writing it.\n\n"),
+                call("write", write_arguments(value)),
+            ],
+        );
+    }
+
+    #[test]
+    fn mixed_dialect_literal_block_in_string_value_is_data() {
+        // The shape a model actually emitted: the quoted example mixes the V4
+        // openers with V4.1 parameter markup, and a second fenced example
+        // quotes a bare block close.
+        let value = concat!(
+            "# DeepSeek Tool Call Format\n\nBelow is an example of a valid tool call:\n\n```\n",
+            "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"read\">\n",
+            "<｜DSML｜ parameter name=\"path\">app/main.py</｜DSML｜ parameter>\n",
+            "</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n\n",
+            "Below is a broken call that has only the closing tags:\n\n```\n</invoke>\n</｜DSML｜ calls>\n```\n\n",
+            "<!-- END-OF-FILE-7f3a -->\n",
+        );
+        assert_every_split(
+            &format!("Writing it.\n\n{}", write_call(value)),
+            UnifiedParserStartingState::None,
+            vec![
+                text("Writing it.\n\n"),
+                call("write", write_arguments(value)),
+            ],
+        );
+    }
+
+    #[test]
+    fn literal_dsml_block_before_a_later_call_is_data() {
+        let value = concat!(
+            "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"read\">\n",
+            "<｜DSML｜ parameter name=\"path\" string=\"true\">a.py</｜DSML｜ parameter>\n",
+            "</｜DSML｜ invoke>\n</｜DSML｜ calls>\n",
+        );
+        let input = format!(
+            "<｜DSML｜ calls>\n{}<｜DSML｜ invoke name=\"done\">\n</｜DSML｜ invoke>\n</｜DSML｜ calls>",
+            write_invoke(value)
+        );
+        assert_every_split(
+            &input,
+            UnifiedParserStartingState::None,
+            vec![
+                call("write", write_arguments(value)),
+                call("done", serde_json::json!({})),
+            ],
+        );
+    }
+
+    #[test]
+    fn lone_literal_parameter_close_in_string_value_is_data() {
+        // Only one reading leaves well-formed markup after the close: the one
+        // that keeps the quoted close inside the value.
+        for value in [
+            "the close tag is </｜DSML｜ parameter> here",
+            "ends with a close tag </｜DSML｜ parameter>",
+        ] {
+            assert_every_split(
+                &write_call(value),
+                UnifiedParserStartingState::None,
+                vec![call("write", write_arguments(value))],
+            );
+        }
+    }
+
+    #[test]
+    fn guard_lone_literal_parameter_open_keeps_first_close() {
+        // Guard: a quoted opener with no quoted close must not make the parser
+        // look for a second close. Naive depth counting fails here.
+        let value = "fragment <｜DSML｜ parameter name=\"x\" string=\"true\">tail";
+        assert_every_split(
+            &write_call(value),
+            UnifiedParserStartingState::None,
+            vec![call("write", write_arguments(value))],
+        );
+    }
+
+    #[test]
+    fn guard_plain_parameters_are_unchanged() {
+        assert_every_split(
+            &write_call("plain text\nwith lines"),
+            UnifiedParserStartingState::None,
+            vec![call("write", write_arguments("plain text\nwith lines"))],
+        );
+    }
+
+    #[test]
+    fn guard_stranded_markers_without_coherent_alternative_keep_first_close() {
+        // Guard: markup after the block is stranded, but no other close yields
+        // a well-formed call, so the first close stands.
+        let value = "fragment <｜DSML｜ parameter name=\"x\" string=\"true\">tail";
+        let after = " Done; a value ends with </｜DSML｜ parameter> in this syntax.";
+        assert_every_split(
+            &format!("{}{after}", write_call(value)),
+            UnifiedParserStartingState::None,
+            vec![call("write", write_arguments(value)), text(after)],
+        );
+    }
+
+    #[test]
+    fn guard_literal_close_without_coherent_alternative_matches_first_close() {
+        // Guard (known residual): a quoted close followed by markup that closes
+        // the call is indistinguishable from a real close.
+        let input = "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"text\" string=\"true\">a</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>";
+        assert_every_split(
+            input,
+            UnifiedParserStartingState::None,
+            vec![call("run", serde_json::json!({"text": "a"}))],
+        );
+        // With nothing coherent after the quoted close, the call stays an error.
+        let input = "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"text\" string=\"true\">a</｜DSML｜ parameter> b</｜DSML｜ invoke></｜DSML｜ calls>";
+        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+            let mut parser = deepseek_v41_unified(&[]);
+            let mut output = UnifiedParserOutput::default();
+            let result = parser
+                .parse_into(&input[..split], &mut output)
+                .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                .and_then(|()| parser.finish().map(|_| ()));
+            assert!(result.is_err(), "split {split}");
+            assert!(output.events.is_empty(), "split {split}");
+        }
+    }
+
+    #[test]
+    fn malformed_parameter_header_after_a_close_stays_an_error() {
+        // A model emitted `</｜DSML｜ parameter>` followed by a real parameter
+        // header without its `string` attribute. The first-close rule rejects
+        // the call; reading the close as quoted data instead would fold the
+        // malformed header and its value into the previous string and drop
+        // that parameter without any error.
+        let close = "</｜DSML｜ parameter>";
+        for header in [
+            "<｜DSML｜ parameter name=\"content\">",
+            "<｜DSML｜ parameter name=\"content\" string=\"maybe\">",
+        ] {
+            for before in [
+                "write docs file",
+                "a quoted close </｜DSML｜ parameter> then",
+            ] {
+                let invoke = format!(
+                    "<｜DSML｜ invoke name=\"write\">\n<｜DSML｜ parameter name=\"i\" string=\"true\">{before}{close}\n{header}body{close}\n</｜DSML｜ invoke>"
+                );
+                assert!(DeepSeekV41.parse_invoke(&invoke, 0).is_err(), "{invoke:?}");
+                let input = format!("<｜DSML｜ calls>\n{invoke}\n</｜DSML｜ calls>");
+                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                    let mut parser = deepseek_v41_unified(&[]);
+                    let mut output = UnifiedParserOutput::default();
+                    let result = parser
+                        .parse_into(&input[..split], &mut output)
+                        .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                        .and_then(|()| parser.finish().map(|_| ()));
+                    assert!(result.is_err(), "{input:?} split {split}");
+                    assert!(output.events.is_empty(), "{input:?} split {split}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn quoted_parameter_named_like_a_real_one_is_data() {
+        // The quoted example repeats the call's own `language` parameter, and
+        // its `string="false"` twin quotes invalid JSON. Reading the quoted
+        // close as structure yields a duplicate or invalid parameter, so only
+        // the reading that keeps the example inside `code` parses.
+        for (quoted, real) in [
+            (
+                "<｜DSML｜ parameter name=\"language\" string=\"true\">python</｜DSML｜ parameter>",
+                "<｜DSML｜ parameter name=\"language\" string=\"true\">rust</｜DSML｜ parameter>",
+            ),
+            (
+                "<｜DSML｜ parameter name=\"count\" string=\"false\">bad</｜DSML｜ parameter>",
+                "<｜DSML｜ parameter name=\"language\" string=\"true\">rust</｜DSML｜ parameter>",
+            ),
+        ] {
+            let code = format!("x</｜DSML｜ parameter>\n{quoted}\nmore");
+            let input = format!(
+                "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"exec\">\n<｜DSML｜ parameter name=\"code\" string=\"true\">{code}</｜DSML｜ parameter>\n{real}\n</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+            );
+            assert_every_split(
+                &input,
+                UnifiedParserStartingState::None,
+                vec![call(
+                    "exec",
+                    serde_json::json!({"code": code, "language": "rust"}),
+                )],
+            );
+        }
+    }
+
+    #[test]
+    fn invocation_parse_matches_stream_for_quoted_markup() {
+        // The emitter alone, given only the invocation, selects the same closes
+        // as the streamed boundary did for the whole stream.
+        for value in [
+            "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"read\">\n<｜DSML｜ parameter name=\"path\" string=\"true\">a.py</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>\n",
+            "<｜DSML｜tool_calls>\n<｜DSML｜ parameter name=\"path\">a.py</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n",
+            "the close tag is </｜DSML｜ parameter> here",
+            "ends with a close tag </｜DSML｜ parameter>",
+            "fragment <｜DSML｜ parameter name=\"x\" string=\"true\">tail",
+            "plain text\nwith lines",
+        ] {
+            let delta = DeepSeekV41
+                .parse_invoke(write_invoke(value).trim_end(), 0)
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                serde_json::from_str::<Value>(&delta.arguments).unwrap(),
+                write_arguments(value),
+                "{value:?}"
+            );
+            assert_every_split(
+                &write_call(value),
+                UnifiedParserStartingState::None,
+                vec![call("write", write_arguments(value))],
+            );
+        }
+    }
+
+    #[test]
+    fn call_quoting_a_parameter_opener_is_committed_at_eof() {
+        // Only the whole stream shows whether a close after a quoted opener was
+        // structure, so that call is held until `finish`. A call without one
+        // still streams at its close (`calls_stream_at_each_invocation_close`).
+        let value = "fragment <｜DSML｜ parameter name=\"x\" string=\"true\">tail";
+        let mut parser = deepseek_v41_unified(&[]);
+        assert!(parser.push(&write_call(value)).unwrap().is_empty());
+        let output: UnifiedParserOutput = parser.finish().unwrap().events.into_iter().collect();
+        assert_eq!(
+            output.assembled(),
+            vec![call("write", write_arguments(value))]
+        );
+    }
+
+    #[test]
+    fn quoted_close_resolution_falls_back_after_bounded_work() {
+        // Thousands of later invocation closes, none of which yields a
+        // well-formed call: resolution tries a bounded number and keeps the
+        // first close, so the output matches the first-close rule.
+        let value = "<｜DSML｜ parameter name=\"x\" string=\"true\">q";
+        let tail = INVOKE_END.repeat(4096);
+        let input = format!(
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"text\" string=\"true\">{value}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>{tail}"
+        );
+        let mut parser = deepseek_v41_unified(&[]);
+        assert_eq!(
+            parser.parse_complete(&input).unwrap(),
+            vec![call("run", serde_json::json!({"text": value})), text(&tail)]
         );
     }
 

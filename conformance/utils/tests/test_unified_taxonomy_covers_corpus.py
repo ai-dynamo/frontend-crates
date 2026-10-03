@@ -726,7 +726,7 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 93,
-            "deepseek_v41": 93,
+            "deepseek_v41": 96,
             "gemma4": 95,
             "glm47": 100,
             "kimi_k2": 93,
@@ -735,14 +735,14 @@ def test_unified_case_counts_match_the_generator():
             "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 765
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 112
+    assert len(UNIFIED_TAX) == 115
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1125,7 +1125,50 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
     assert _native_input_calls("kimi_k2", raw) == []
 
 
+_QUOTED_DSML_VALUES = {name: content for name, _, content in G._DSV41_QUOTED_STRINGS}
+
+
+def _mask_quoted_dsml_value(scenario: str, case: dict) -> dict:
+    """Mask the authored value of a `dsv41-*` case on both input and golden.
+
+    Those values quote DSML markup byte-identical to structure, which is the
+    ambiguity the cases exist to test; a marker-level projection cannot read
+    them. Every other scenario is returned unchanged.
+    """
+    quoted = _QUOTED_DSML_VALUES.get(scenario)
+    if quoted is None:
+        return case
+    masked = json.loads(json.dumps(case))
+    assert masked["input"].count(quoted) == 1, (scenario, "authored quoted value")
+    masked["input"] = masked["input"].replace(quoted, "QUOTED_DSML_VALUE")
+    replaced = 0
+    for event in masked["golden"]:
+        for key, value in event.get("arguments", {}).items():
+            if value == quoted:
+                event["arguments"][key] = "QUOTED_DSML_VALUE"
+                replaced += 1
+    assert replaced == 1, (scenario, "authored quoted value in golden")
+    return masked
+
+
+@pytest.mark.parametrize("scenario", sorted(_QUOTED_DSML_VALUES))
+@pytest.mark.parametrize("mutation", ["later_argument", "quoted_value", "golden_value"])
+def test_quoted_dsml_mask_still_rejects_a_changed_call(scenario: str, mutation: str) -> None:
+    case = build_cases("deepseek_v41")[f"UNIFIED.{scenario}.deepseek_v41"]
+    _assert_input_carries_events("deepseek_v41", scenario, case)
+    case = json.loads(json.dumps(case))
+    if mutation == "later_argument":
+        case["input"] = case["input"].replace(">doc<", ">other<")
+    elif mutation == "quoted_value":
+        case["input"] = case["input"].replace("app/main.py", "other.py").replace("close tag", "end tag")
+    else:
+        case["golden"][0]["arguments"]["content"] += " "
+    with pytest.raises(AssertionError):
+        _assert_input_carries_events("deepseek_v41", scenario, case)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    case = _mask_quoted_dsml_value(scenario, case)
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
