@@ -562,6 +562,10 @@ impl ReasoningParser for BasicReasoningParser {
         }
     }
 
+    fn has_unflushed_state(&self) -> bool {
+        !self._buffer.is_empty()
+    }
+
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         if self._buffer.is_empty() {
             return ParserResult::default();

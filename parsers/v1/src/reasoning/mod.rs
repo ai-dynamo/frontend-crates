@@ -154,6 +154,20 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
         ParserResult::default()
     }
 
+    /// Whether this parser is currently holding text that
+    /// `finish_reasoning_stream` would surface if the stream ended now.
+    ///
+    /// Streaming callers use this to decide whether they must retain an
+    /// end-of-stream flush envelope. Retaining costs a per-chunk clone, so a
+    /// parser that buffers nothing must be able to say so and keep that cost
+    /// off the hot path. The default is `false`, which pairs with the default
+    /// `finish_reasoning_stream` above: a parser that flushes nothing holds
+    /// nothing. Any parser that overrides `finish_reasoning_stream` to flush a
+    /// buffer must override this too, or its buffered text is dropped at EOF.
+    fn has_unflushed_state(&self) -> bool {
+        false
+    }
+
     /// Override the parser's initial reasoning state. When called with `true`, the parser
     /// starts in reasoning mode without waiting for the start token in the completion stream.
     /// Use this when the chat template already injected the start token (e.g., `<think>`)
