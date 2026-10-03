@@ -46,7 +46,13 @@ UNIFIED_TAX = {
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    "arg_json_null_ref": (7, "4.ref"),
+    "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
+    "glm_ref_object": (7, "9"),
+    "glm_ref_encoded_targets": (7, "11"),
+    "glm_ref_json_looking_strings": (7, "12"),
+    "glm_ref_scalar_types": (7, "13"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
