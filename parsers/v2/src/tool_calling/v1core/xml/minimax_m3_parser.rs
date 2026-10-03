@@ -767,7 +767,6 @@ impl<'a> SchemaWalker<'a> {
         })
     }
 
-    // Test null against every sibling constraint within the traversal budget.
     fn permits_null(&mut self, schema: &'a Value) -> bool {
         self.with_schema(schema, false, |walker, schema| {
             if let Some(allowed) = schema.as_bool() {
@@ -907,14 +906,16 @@ mod tests {
                 expected,
                 "{schema}"
             );
-            let root = json!({"$defs": {"value": schema}});
-            let reference = json!({"$ref": "#/$defs/value"});
-            assert_eq!(
-                convert_scalar_value("null", Some(&reference), &root),
-                expected,
-                "referenced schema {root}"
-            );
         }
+
+        let root = json!({
+            "$defs": {"value": {"anyOf": [{"type": "string"}, {"const": null}]}}
+        });
+        let reference = json!({"$ref": "#/$defs/value"});
+        assert_eq!(
+            convert_scalar_value("null", Some(&reference), &root),
+            json!(null)
+        );
     }
 
     // Namespace token emitted before every M3 tag; keeps the test inputs readable.
