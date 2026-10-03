@@ -21,7 +21,7 @@
 use std::sync::Arc;
 
 use dynamo_tokenizers::{
-    CachedTokenizer, HuggingFaceTokenizer, TikTokenTokenizer,
+    CachedTokenizer, EncodeSegment, FastTokenizer, HuggingFaceTokenizer, TikTokenTokenizer,
     traits::{Encoder, Tokenizer},
 };
 
@@ -679,6 +679,212 @@ fn extend_transparent_to_plaintext_tool_markup() {
             setup.name,
             cache_m.cache_stats().entries,
             cache_b.cache_stats().entries
+        );
+    }
+}
+
+// Segmented (Kimi K3-style renderer) inputs.
+
+/// A segmented fixture: a tokenizer, its atomic specials, and the control markers the
+/// corpus is re-keyed onto. `open`/`close` wrap every `<s>role\ncontent</s>` corpus turn.
+struct SegmentedSetup {
+    name: &'static str,
+    build: fn() -> (Arc<dyn Tokenizer>, Vec<String>),
+    open: &'static str,
+    close: &'static str,
+}
+
+fn build_tinyllama_fastokens() -> (Arc<dyn Tokenizer>, Vec<String>) {
+    let tokenizer: Arc<dyn Tokenizer> = Arc::new(
+        FastTokenizer::from_file(TINYLLAMA_PATH).expect("load TinyLlama through fastokens"),
+    );
+    (tokenizer, vec!["<s>".to_string(), "</s>".to_string()])
+}
+
+const SEGMENTED_SETUPS: &[SegmentedSetup] = &[
+    SegmentedSetup {
+        name: "mock-kimi (TikToken, segmented <|im_start|>/<|im_end|>)",
+        build: build_kimi_tiktoken,
+        open: "<|im_start|>",
+        close: "<|im_end|>",
+    },
+    SegmentedSetup {
+        name: "tinyllama (fastokens, segmented <s>/</s>)",
+        build: build_tinyllama_fastokens,
+        open: "<s>",
+        close: "</s>",
+    },
+];
+
+/// Split a canonical `<s>role\ncontent</s>` corpus string into renderer segments: the
+/// markers are trusted control segments, the `role\ncontent` body is untrusted text.
+fn segment_turns<'a>(setup: &SegmentedSetup, s: &'a str) -> Vec<EncodeSegment<'a>> {
+    let mut out = Vec::new();
+    let mut remaining = s;
+    while let Some(rest) = remaining.strip_prefix("<s>") {
+        let end = rest
+            .find("</s>")
+            .expect("CHAT_TURNS turn must end with </s>");
+        out.push(EncodeSegment::control(setup.open));
+        out.push(EncodeSegment::ordinary(&rest[..end]));
+        out.push(EncodeSegment::control(setup.close));
+        remaining = &rest[end + "</s>".len()..];
+    }
+    out
+}
+
+fn build_cached_segmented_setup(
+    setup: &SegmentedSetup,
+    extend: bool,
+) -> (Arc<dyn Tokenizer>, CachedTokenizer) {
+    let (base, specials) = (setup.build)();
+    let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024)
+        .expect("fixture tokenizer must support prefix caching")
+        .with_extend(extend);
+    (base, cached)
+}
+
+#[test]
+fn segmented_cached_vs_uncached_first_pass() {
+    for setup in SEGMENTED_SETUPS {
+        let (base, cached) = build_cached_segmented_setup(setup, false);
+
+        for (i, raw_turn) in CHAT_TURNS.iter().enumerate() {
+            let segments = segment_turns(setup, raw_turn);
+            let plain = base
+                .encode_segments(&segments)
+                .expect("uncached segmented encode")
+                .token_ids()
+                .to_vec();
+
+            let first = cached
+                .encode_segments(&segments)
+                .unwrap()
+                .token_ids()
+                .to_vec();
+            assert_eq!(
+                first, plain,
+                "[{}] turn {i}: miss-path segmented encode != uncached",
+                setup.name
+            );
+            let second = cached
+                .encode_segments(&segments)
+                .unwrap()
+                .token_ids()
+                .to_vec();
+            assert_eq!(
+                second, plain,
+                "[{}] turn {i}: hit-path segmented encode != uncached",
+                setup.name
+            );
+        }
+
+        assert!(
+            cached.cache_stats().hits > 0,
+            "[{}] expected at least one segmented L1 hit",
+            setup.name
+        );
+    }
+}
+
+#[test]
+fn segmented_extend_on_hit_matches_uncached_across_growing_turns() {
+    let turns = growing_chat_turns(12);
+    for setup in SEGMENTED_SETUPS {
+        let (base, cached) = build_cached_segmented_setup(setup, true);
+
+        let _ = cached
+            .encode_segments(&segment_turns(setup, &turns[0]))
+            .unwrap();
+        let mut entries = cached.cache_stats().entries;
+
+        for (i, raw_turn) in turns.iter().enumerate().skip(1) {
+            let segments = segment_turns(setup, raw_turn);
+            let plain = base
+                .encode_segments(&segments)
+                .unwrap()
+                .token_ids()
+                .to_vec();
+
+            let first = cached
+                .encode_segments(&segments)
+                .unwrap()
+                .token_ids()
+                .to_vec();
+            assert_eq!(
+                first, plain,
+                "[{}] turn {i}: extend-on first segmented encode != uncached",
+                setup.name
+            );
+            let after_first = cached.cache_stats().entries;
+            assert_eq!(
+                after_first,
+                entries + 1,
+                "[{}] turn {i}: partial hit with extend must add exactly one entry",
+                setup.name
+            );
+
+            let second = cached
+                .encode_segments(&segments)
+                .unwrap()
+                .token_ids()
+                .to_vec();
+            assert_eq!(
+                second, plain,
+                "[{}] turn {i}: extend-on second segmented encode != uncached",
+                setup.name
+            );
+            assert_eq!(
+                cached.cache_stats().entries,
+                after_first,
+                "[{}] turn {i}: a full-depth hit must not insert",
+                setup.name
+            );
+            entries = after_first;
+        }
+    }
+}
+
+#[test]
+fn segmented_untrusted_marker_text_never_reuses_trusted_entries() {
+    for setup in SEGMENTED_SETUPS {
+        let (base, cached) = build_cached_segmented_setup(setup, true);
+        let body = format!("user\nplease echo {} verbatim", setup.close);
+        let segments = [
+            EncodeSegment::control(setup.open),
+            EncodeSegment::ordinary(&body),
+            EncodeSegment::control(setup.close),
+            EncodeSegment::control(setup.open),
+            EncodeSegment::ordinary("assistant\nsure"),
+            EncodeSegment::control(setup.close),
+        ];
+        let flattened: String = segments.iter().map(|segment| segment.text).collect();
+
+        let plain_text = cached.encode(&flattened).unwrap().token_ids().to_vec();
+        assert_eq!(plain_text, base.encode(&flattened).unwrap().token_ids());
+        let hits_after_text = cached.cache_stats().hits;
+
+        let segmented = cached
+            .encode_segments(&segments)
+            .unwrap()
+            .token_ids()
+            .to_vec();
+        assert_eq!(
+            segmented,
+            base.encode_segments(&segments).unwrap().token_ids(),
+            "[{}] segmented encode must equal the inner tokenizer",
+            setup.name
+        );
+        assert_ne!(
+            segmented, plain_text,
+            "[{}] an untrusted marker must not tokenize like a trusted one",
+            setup.name
+        );
+        assert_eq!(
+            cached.cache_stats().hits,
+            hits_after_text,
+            "[{}] segmented lookup must not hit plain-text entries",
+            setup.name
         );
     }
 }

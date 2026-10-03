@@ -200,6 +200,11 @@ pub mod traits {
         ///
         /// Implementations must explicitly opt in by returning `Ok(())`, or
         /// return an error explaining why the tokenizer is incompatible.
+        ///
+        /// [`crate::CachedTokenizer`] also splits segment lists at segment ends, so
+        /// `Ok(())` additionally promises that [`Encoder::encode_segments`] encodes each
+        /// segment independently and concatenates the ids, with no post-processing that
+        /// adds ids.
         fn validate_prefix_cache(&self) -> Result<()> {
             Err(Error::msg("tokenizer does not support prefix caching"))
         }
