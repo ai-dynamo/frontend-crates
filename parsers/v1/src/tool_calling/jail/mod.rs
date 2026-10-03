@@ -41,7 +41,7 @@ use serde_json::value::RawValue;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use crate::tool_calling::config::{JsonParserConfig, ParserConfig};
+use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
 use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
@@ -207,6 +207,10 @@ struct ChoiceJailState {
     accumulated_logprobs: Option<ChatChoiceLogprobs>,
     /// Buffer for partial marker matches across chunks
     partial_match_buffer: String,
+    /// Possible parser-owned terminal suffix, held until EOF or more visible text.
+    terminal_suffix_buffer: String,
+    /// A parsed call was emitted, with no subsequent visible prose.
+    terminal_suffix_after_tool_call: bool,
     /// Stream finish reason
     stream_finish_reason: Option<FinishReason>,
     /// Number of tool calls already emitted for this choice
@@ -460,6 +464,8 @@ impl ChoiceJailState {
             accumulated_content: String::new(),
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
+            terminal_suffix_buffer: String::new(),
+            terminal_suffix_after_tool_call: false,
             stream_finish_reason: None,
             emitted_tool_calls_count: 0,
             pending_reasoning_content: None,
@@ -583,7 +589,10 @@ impl ChoiceJailState {
 
         // A terminal marker may still be buffered. `finalize` owns the finish
         // reason in that case and reads it from `stream_finish_reason`.
-        if self.is_jailed || !self.partial_match_buffer.is_empty() {
+        if self.is_jailed
+            || !self.partial_match_buffer.is_empty()
+            || !self.terminal_suffix_buffer.is_empty()
+        {
             return;
         }
 
@@ -1011,9 +1020,65 @@ impl ChoiceJailState {
         emissions
     }
 
+    /// Hold a possible configured terminal suffix until more text disambiguates it.
+    /// Tool arguments never enter this content-only filter.
+    fn hold_terminal_suffix(
+        &mut self,
+        emissions: &mut [ChoiceEmission],
+        policy: TerminalMarkerPolicy,
+    ) {
+        let suffixes = policy.orphan_end_suffixes;
+        if suffixes.is_empty() {
+            return;
+        }
+        for emission in emissions {
+            let has_tool_calls = emission
+                .choice()
+                .delta
+                .tool_calls
+                .as_ref()
+                .is_some_and(|calls| !calls.is_empty());
+            if has_tool_calls {
+                self.terminal_suffix_after_tool_call = true;
+            }
+            let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
+                emission.choice_mut().delta.content.as_mut()
+            else {
+                continue;
+            };
+            if !self.terminal_suffix_buffer.is_empty() {
+                text.insert_str(0, &std::mem::take(&mut self.terminal_suffix_buffer));
+            }
+            // A parsed call is a channel boundary: release preceding prose
+            // now so a held word cannot move after the call or join its tail.
+            if has_tool_calls {
+                continue;
+            }
+            let suffix_len = suffixes
+                .iter()
+                .filter_map(|suffix| {
+                    (1..=suffix.len())
+                        .rev()
+                        .find(|&len| suffix.is_char_boundary(len) && text.ends_with(&suffix[..len]))
+                })
+                .max()
+                .unwrap_or(0);
+            if !text[..text.len() - suffix_len].trim().is_empty() {
+                self.terminal_suffix_after_tool_call = false;
+            }
+            if suffix_len > 0
+                && (!policy.orphan_suffix_after_tool_call_only
+                    || self.terminal_suffix_after_tool_call)
+            {
+                self.terminal_suffix_buffer = text.split_off(text.len() - suffix_len);
+            }
+        }
+    }
+
     /// Finalize any remaining content when stream ends
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Option<ChoiceEmission> {
-        if self.is_jailed && !self.accumulated_content.is_empty() {
+        let policy = jail_stream.terminal_marker_policy;
+        let mut emission = if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
             #[allow(deprecated)]
             let dummy_choice = create_choice_stream(
@@ -1061,7 +1126,16 @@ impl ChoiceJailState {
                 Some(ChoiceEmission::Content(final_choice))
             }
         } else if !self.partial_match_buffer.is_empty() {
-            let content = std::mem::take(&mut self.partial_match_buffer);
+            let mut content = std::mem::take(&mut self.partial_match_buffer);
+            if self.stream_finish_reason == Some(FinishReason::Length)
+                && policy.truncated_end_markers.iter().any(|(marker, prefix)| {
+                    content.starts_with(prefix) && marker.starts_with(&content)
+                })
+            {
+                // The limit interrupted a reserved close marker, not prose.
+                // Still emit its terminal chunk with the original finish reason.
+                content.clear();
+            }
             let choice = create_choice_stream(
                 self.index,
                 Some(Role::Assistant),
@@ -1073,7 +1147,47 @@ impl ChoiceJailState {
             Some(ChoiceEmission::Content(choice))
         } else {
             None
+        };
+        if !policy.orphan_end_suffixes.is_empty() {
+            if let Some(emission) = emission.as_mut() {
+                self.hold_terminal_suffix(std::slice::from_mut(emission), policy);
+            }
+            if !self.terminal_suffix_buffer.is_empty() {
+                let mut suffix = std::mem::take(&mut self.terminal_suffix_buffer);
+                if self.stream_finish_reason == Some(FinishReason::Length)
+                    && policy.orphan_end_suffixes.contains(&suffix.as_str())
+                    && (!policy.orphan_suffix_after_tool_call_only
+                        || self.terminal_suffix_after_tool_call)
+                {
+                    suffix.clear();
+                }
+                let choice = emission
+                    .get_or_insert_with(|| {
+                        ChoiceEmission::Content(create_choice_stream(
+                            self.index,
+                            Some(Role::Assistant),
+                            "",
+                            None,
+                            self.stream_finish_reason,
+                            None,
+                        ))
+                    })
+                    .choice_mut();
+                if !suffix.is_empty() {
+                    match choice.delta.content.as_mut() {
+                        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) => {
+                            text.push_str(&suffix);
+                        }
+                        _ => {
+                            choice.delta.content = Some(
+                                dynamo_protocols::types::ChatCompletionMessageContent::Text(suffix),
+                            );
+                        }
+                    }
+                }
+            }
         }
+        emission
     }
 }
 
@@ -1130,6 +1244,7 @@ pub struct JailedStream {
     jail_start_sequences: Vec<String>,
     jail_end_sequences: Vec<String>,
     completion_strategy: CompletionStrategy,
+    terminal_marker_policy: TerminalMarkerPolicy,
     tool_call_parser: Option<String>,
     /// When set, only tool calls with this name are emitted (enforces tool_choice=named
     /// when a tool_call_parser is active and the parser-aware MarkerBased path is used).
@@ -1272,6 +1387,10 @@ impl JailedStream {
                                 // Process this choice and get emissions
                                 let had_tool_calls_before = choice_state.emitted_tool_calls_count > 0;
                                 let mut emissions = choice_state.process_content(choice, text, &self).await;
+                                choice_state.hold_terminal_suffix(
+                                    &mut emissions,
+                                    self.terminal_marker_policy,
+                                );
                                 choice_state.normalize_terminal_emissions(
                                     choice,
                                     had_tool_calls_before,
@@ -1318,7 +1437,8 @@ impl JailedStream {
                                 choice_state.stream_finish_reason = choice.finish_reason;
                             }
                             let has_pending_buffered_output =
-                                !choice_state.partial_match_buffer.is_empty();
+                                !choice_state.partial_match_buffer.is_empty()
+                                    || !choice_state.terminal_suffix_buffer.is_empty();
                             let was_ever_jailed = !choice_state.accumulated_content.is_empty()
                                 || choice_state.is_jailed
                                 || has_pending_buffered_output;
@@ -2508,6 +2628,10 @@ impl JailedStreamBuilder {
             }
         };
 
+        let terminal_marker_policy = parser_config
+            .map(ParserConfig::terminal_marker_policy)
+            .unwrap_or_default();
+
         // Collect all possible marker patterns for the MarkerMatcher
         let mut all_patterns = Vec::new();
 
@@ -2576,6 +2700,7 @@ impl JailedStreamBuilder {
             jail_start_sequences: self.jail_start_sequences,
             jail_end_sequences: self.jail_end_sequences,
             completion_strategy,
+            terminal_marker_policy,
             tool_call_parser: self.tool_call_parser,
             named_tool_name: self.named_tool_name,
             tool_definitions: self.tool_definitions,
@@ -3241,6 +3366,310 @@ mod tests {
 
         assert_eq!(collect_text_content(&responses), expected);
         assert!(collect_tool_calls(&responses).is_empty());
+    }
+
+    #[rstest::rstest]
+    #[case::truncated_marker(vec!["answer", "<stop>", "end"], FinishReason::Length, "answer")]
+    #[case::short_prefix(vec!["answer", "<st"], FinishReason::Length, "answer<st")]
+    #[case::orphan_suffix(vec!["answer", "done", "<end>"], FinishReason::Length, "answer")]
+    #[case::unicode_suffix(vec!["answer", "終", "了", "<end>"], FinishReason::Length, "answer")]
+    #[case::partial_suffix(vec!["answer", "終"], FinishReason::Length, "answer終")]
+    #[case::normal_stop(vec!["answer", "done<end>"], FinishReason::Stop, "answerdone<end>")]
+    #[tokio::test]
+    async fn terminal_marker_policy_handles_configured_fragments(
+        #[case] content_chunks: Vec<&str>,
+        #[case] finish_reason: FinishReason,
+        #[case] expected: &str,
+    ) {
+        // No model-specific parser: exercise the shared algorithm with unrelated markers.
+        let mut jail = JailedStream::builder()
+            .jail_start_sequences(vec!["<stop>end<sep>".to_string()])
+            .build();
+        jail.terminal_marker_policy = TerminalMarkerPolicy {
+            truncated_end_markers: &[("<stop>end<sep>", "<stop>")],
+            orphan_end_suffixes: &["done<end>", "終了<end>"],
+            orphan_suffix_after_tool_call_only: false,
+        };
+        let mut chunks: Vec<_> = content_chunks.iter().map(|text| text_chunk(text)).collect();
+        let mut terminal = terminal_chunk();
+        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(finish_reason);
+        chunks.push(terminal);
+        let responses: Vec<_> = jail.apply(stream::iter(chunks)).collect().await;
+
+        assert_eq!(collect_text_content(&responses), expected);
+        assert!(collect_tool_calls(&responses).is_empty());
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(finish_reason)
+        );
+    }
+
+    #[tokio::test]
+    async fn terminal_marker_policy_defaults_preserve_other_parsers_content() {
+        let expected = "answer<|close|>message message<|sep|>";
+        let mut terminal = terminal_chunk();
+        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("hermes".to_string())
+            .build()
+            .apply(stream::iter(vec![text_chunk(expected), terminal]))
+            .collect()
+            .await;
+
+        assert_eq!(collect_text_content(&responses), expected);
+        assert!(collect_tool_calls(&responses).is_empty());
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+    }
+
+    #[rstest::rstest]
+    #[case::text_only(vec!["Print this literal suffix: message<|sep|>"])]
+    #[case::after_call(vec![KVV_K3_CALL, "Print this literal suffix: message<|sep|>"])]
+    #[case::split_after_call(vec![KVV_K3_CALL, "Print this literal suffix: ", "message", "<|sep|>"])]
+    #[tokio::test]
+    async fn kimi_k3_length_preserves_literal_suffix_in_prose(#[case] content_chunks: Vec<&str>) {
+        let mut chunks: Vec<_> = content_chunks.iter().map(|text| text_chunk(text)).collect();
+        let mut terminal = terminal_chunk();
+        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        chunks.push(terminal);
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("kimi_k3".to_string())
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await;
+
+        assert_eq!(
+            collect_text_content(&responses),
+            "Print this literal suffix: message<|sep|>"
+        );
+        if content_chunks.contains(&KVV_K3_CALL) {
+            assert_eq!(
+                collect_tool_calls(&responses),
+                vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+            );
+        } else {
+            assert!(collect_tool_calls(&responses).is_empty());
+        }
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_length_preserves_literal_suffix_coalesced_with_call() {
+        let body = "Print this literal suffix: message<|sep|>";
+        let combined = format!("{KVV_K3_CALL}{body}");
+        let responses = apply_kimi_k3_kvv_at_length(&[&combined]).await;
+
+        assert_eq!(collect_text_content(&responses), body);
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+    }
+
+    async fn apply_kimi_k3_kvv_at_length(
+        content_chunks: &[&str],
+    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+        let mut chunks: Vec<_> = content_chunks.iter().map(|text| text_chunk(text)).collect();
+        let mut terminal = terminal_chunk();
+        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        chunks.push(terminal);
+
+        apply_tool_calling_jail(
+            Some("kimi_k3".to_string()),
+            Some(dynamo_protocols::types::ChatCompletionToolChoiceOption::Required),
+            Some(vec![crate::tool_calling::ToolDefinition {
+                name: "kvv_walle_case".to_string(),
+                parameters: Some(serde_json::json!({
+                    "type": "object",
+                    "properties": {"value": {"type": "object"}},
+                    "required": ["value"],
+                    "additionalProperties": false
+                })),
+                strict: Some(true),
+            }]),
+            true,
+            stream::iter(chunks),
+        )
+        .collect()
+        .await
+    }
+
+    const KVV_K3_CALL: &str = concat!(
+        "<|open|>tools<|sep|>",
+        "<|open|>call tool=\"kvv_walle_case\" index=\"1\"<|sep|>",
+        "<|open|>argument key=\"value\" type=\"object\"<|sep|>{}",
+        "<|close|>argument<|sep|>",
+        "<|close|>call<|sep|>",
+        "<|close|>tools<|sep|>"
+    );
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_suppresses_incomplete_message_close() {
+        // KVV TestBasicTypes:17:stream exposed this response body and partial
+        // closing marker. Reproduce the post-reasoning parser input without a
+        // model, preserving plain JSON instead of fabricating a tool call.
+        let responses = apply_kimi_k3_kvv_at_length(&[
+            "{\"",
+            "value",
+            "\":",
+            "{",
+            "}}",
+            "<|close|>",
+            "message",
+        ])
+        .await;
+
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert!(collect_tool_calls(&responses).is_empty());
+        assert_eq!(collect_text_content(&responses), r#"{"value":{}}"#);
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_after_valid_call_suppresses_incomplete_message_close() {
+        // A retry can pass KVV's argument check while still exposing the same
+        // partial marker. Assert the call and the visible content separately.
+        let responses = apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "<|close|>", "message"]).await;
+
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+        assert_eq!(collect_text_content(&responses), "");
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_with_complete_message_close_is_clean() {
+        let responses =
+            apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "<|close|>", "message", "<|sep|>"]).await;
+
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+        assert_eq!(collect_text_content(&responses), "");
+    }
+
+    #[rstest::rstest]
+    #[case::batched(false)]
+    #[case::split(true)]
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_preserves_unattributed_message_suffix(#[case] split_suffix: bool) {
+        // KVV TestEnforcerCases:33:stream exposed this JSON body followed by
+        // `message<|sep|>` without the native close token. Preserve the body
+        // Without a parsed call, this suffix cannot be distinguished from text.
+        let body = "{\n  \"value\": {\n    \"name\": \"\",\n    \"attr\": \"\"\n  }\n}";
+        let chunks = if split_suffix {
+            vec![body, "message", "<|sep|>"]
+        } else {
+            vec![body, "message<|sep|>"]
+        };
+        let responses = apply_kimi_k3_kvv_at_length(&chunks).await;
+
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert!(collect_tool_calls(&responses).is_empty());
+        assert_eq!(
+            collect_text_content(&responses),
+            format!("{body}message<|sep|>")
+        );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_after_valid_call_suppresses_orphan_message_suffix() {
+        // The TestReferences:11 retry returned a valid call but still leaked
+        // this suffix. A schema-valid call must not hide the content failure.
+        let responses = apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "message", "<|sep|>"]).await;
+
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+        assert_eq!(collect_text_content(&responses), "");
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_preserves_quoted_message_suffix_example() {
+        // A repair must distinguish protocol residue from a quoted example
+        // in legitimate assistant text, which required choice still permits.
+        let body = "The wire suffix is `message<|sep|>`.";
+        let responses = apply_kimi_k3_kvv_at_length(&[body, KVV_K3_CALL]).await;
+
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+        assert_eq!(collect_text_content(&responses), body);
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_preserves_plain_message_word() {
+        let responses = apply_kimi_k3_kvv_at_length(&["A normal message"]).await;
+
+        assert_eq!(collect_text_content(&responses), "A normal message");
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(FinishReason::Length)
+        );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_kvv_length_keeps_message_word_before_tool_call() {
+        let responses =
+            apply_kimi_k3_kvv_at_length(&["A normal message", KVV_K3_CALL, "after."]).await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|response| response.choices.iter())
+            .collect();
+        let call_position = choices
+            .iter()
+            .position(|choice| {
+                choice
+                    .delta
+                    .tool_calls
+                    .as_ref()
+                    .is_some_and(|c| !c.is_empty())
+            })
+            .unwrap();
+        let text_before_call: String = choices[..=call_position]
+            .iter()
+            .filter_map(|choice| match &choice.delta.content {
+                Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) => {
+                    Some(text.as_str())
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(text_before_call, "A normal message");
+        assert_eq!(collect_text_content(&responses), "A normal messageafter.");
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
     }
 
     #[tokio::test]

@@ -22,7 +22,7 @@ use std::borrow::Cow;
 use serde_json::Value;
 
 use super::super::ToolDefinition;
-use super::super::config::KimiK3ParserConfig;
+use super::super::config::{KimiK3ParserConfig, TerminalMarkerPolicy};
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 pub(crate) const SEP: &str = "<|sep|>";
@@ -41,6 +41,14 @@ pub(crate) const MESSAGE_OPEN_PREFIX: &str = "<|open|>message";
 pub(crate) const MESSAGE_CLOSE: &str = "<|close|>message<|sep|>";
 pub(crate) const THINK_CLOSE: &str = "<|close|>think<|sep|>";
 pub(crate) const END_OF_MSG: &str = "<|end_of_msg|>";
+
+// A cut-short close is reserved; an orphan suffix is ambiguous in ordinary prose.
+// Recover the latter only directly after a parsed call, before any further prose.
+pub(crate) const TERMINAL_MARKER_POLICY: TerminalMarkerPolicy = TerminalMarkerPolicy {
+    truncated_end_markers: &[(MESSAGE_CLOSE, "<|close|>")],
+    orphan_end_suffixes: &["message<|sep|>"],
+    orphan_suffix_after_tool_call_only: true,
+};
 
 /// Every reserved Kimi K3 structural boundary that can safely terminate an
 /// implicit reasoning channel. Keeping this list K3-specific lets the
