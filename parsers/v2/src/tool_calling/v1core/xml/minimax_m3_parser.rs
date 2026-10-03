@@ -768,15 +768,48 @@ impl<'a> SchemaWalker<'a> {
     }
 
     fn permits_null(&mut self, schema: &'a Value) -> bool {
-        let Some(schema) = self.resolve_ref(schema) else {
-            return false;
-        };
-        let permitted = self.has_type(Some(schema), "null")
-            || schema.get("nullable").and_then(Value::as_bool) == Some(true)
-            || (schema.get("type").is_none()
-                && schema.get("anyOf").is_none()
-                && schema.get("oneOf").is_none());
-        permitted && !self.exhausted
+        self.with_schema(schema, false, |walker, schema| {
+            if let Some(allowed) = schema.as_bool() {
+                return allowed;
+            }
+            if let Some(ty) = schema.get("type") {
+                let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+                if !nullable
+                    && ty.as_str() != Some("null")
+                    && !ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty == "null"))
+                {
+                    return false;
+                }
+            }
+            if schema.get("const").is_some_and(|value| !value.is_null())
+                || schema
+                    .get("enum")
+                    .and_then(Value::as_array)
+                    .is_some_and(|values| !values.iter().any(Value::is_null))
+            {
+                return false;
+            }
+            for keyword in ["allOf", "anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let matches = branches
+                        .iter()
+                        .filter(|branch| walker.permits_null(branch))
+                        .count();
+                    if !match keyword {
+                        "allOf" => matches == branches.len(),
+                        "anyOf" => matches > 0,
+                        _ => matches == 1,
+                    } {
+                        return false;
+                    }
+                }
+            }
+            !schema
+                .get("not")
+                .is_some_and(|branch| walker.permits_null(branch))
+        })
     }
 
     fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
@@ -838,6 +871,52 @@ fn html_unescape(s: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn null_coercion_intersects_schema_constraints() {
+        for (schema, expected) in [
+            (
+                json!({"anyOf": [{"type": "string"}, {"const": null}]}),
+                json!(null),
+            ),
+            (
+                json!({"type": "string", "anyOf": [{"type": "string"}, {"type": "null"}]}),
+                json!("null"),
+            ),
+            (
+                json!({"type": "string", "oneOf": [{"type": "string"}, {"type": "null"}]}),
+                json!("null"),
+            ),
+            (
+                json!({"type": "string", "anyOf": [{}, {"type": "integer"}]}),
+                json!("null"),
+            ),
+            (json!({"enum": ["null"]}), json!("null")),
+            (json!({"const": "null"}), json!("null")),
+            (
+                json!({"allOf": [{"type": ["string", "null"]}, {"type": "string"}]}),
+                json!("null"),
+            ),
+            (json!({"oneOf": [{}, {"type": "null"}]}), json!("null")),
+            (json!({"not": {"type": "null"}}), json!("null")),
+            (json!(false), json!("null")),
+        ] {
+            assert_eq!(
+                convert_scalar_value("null", Some(&schema), &schema),
+                expected,
+                "{schema}"
+            );
+        }
+
+        let root = json!({
+            "$defs": {"value": {"anyOf": [{"type": "string"}, {"const": null}]}}
+        });
+        let reference = json!({"$ref": "#/$defs/value"});
+        assert_eq!(
+            convert_scalar_value("null", Some(&reference), &root),
+            json!(null)
+        );
+    }
 
     // Namespace token emitted before every M3 tag; keeps the test inputs readable.
     const TOK: &str = "]<]minimax[>[";
