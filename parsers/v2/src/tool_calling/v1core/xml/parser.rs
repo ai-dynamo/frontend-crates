@@ -395,10 +395,13 @@ pub fn parse_qwen_invoke(
     let Some(body) = body.strip_suffix("</function>") else {
         return Ok(None);
     };
-    let parameters_re = Regex::new(&build_block_pattern("<parameter=", "</parameter>", false))?;
+    static PARAMETERS_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+        Regex::new(&build_block_pattern("<parameter=", "</parameter>", false))
+            .expect("static Qwen parameter pattern compiles")
+    });
     let config = get_arguments_config(name, Some(tools));
     let mut parameters: HashMap<String, ParsedValue> = HashMap::new();
-    for parameter in parameters_re.captures_iter(body) {
+    for parameter in PARAMETERS_RE.captures_iter(body) {
         let key = strip_quotes(parameter.get(1).unwrap().as_str().trim());
         if key.is_empty() {
             continue;
