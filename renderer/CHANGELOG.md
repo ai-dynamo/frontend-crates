@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] - 2026-10-02
+
+### Breaking changes
+
+- Use `dynamo-tokenizers` 3.0 for the public tokenizer re-export and rendered
+  prompt segment types. Consumers must use tokenizer 3.x with renderer 7.x and
+  call `DecodeStream::finish()` when token input ends.
+
 ## [6.0.0] - 2026-09-30
 
 ### Breaking changes

@@ -339,6 +339,10 @@ The optional null-coercion variants below appear under the visible batch columns
 
 - **`TOOLCALLING.batch.7-4`** The request tool schema permits JSON null. Bare parameter text `null` becomes JSON `null`. Variants cover a nullable type array (base), `.anyof`, `.oneof`, `.nullable`, and an anyOf const-null branch (`.const`).
 - **`TOOLCALLING.batch.7-5`** The request tool schema excludes JSON null for the tested value, so bare parameter text `null` remains string `"null"`. Variants cover a string type (base), a non-nullable `.union`, intersecting `.sibling_anyof` and `.sibling_oneof` constraints, `.untyped_branch`, an anyOf string-const branch (`.const`), and a typed `.enum`.
+- **`TOOLCALLING.batch.7-4.inline`** GLM inline-schema control for PR #268: a nullable string type array converts bare `null` to JSON null.
+- **`TOOLCALLING.batch.7-5.inline`** GLM inline-schema control for PR #268: a string-only type preserves bare `null` as string `"null"`.
+- **`TOOLCALLING.batch.7-4.ref`** GLM regression for PR #268: the parameter uses an unresolved local `$ref` to a nullable string definition in the tool parameters root. Bare `null` must become JSON null after consulting that definition.
+- **`TOOLCALLING.batch.7-5.ref`** GLM regression for PR #268: the parameter uses an unresolved local `$ref` to a string-only definition in the tool parameters root. Bare `null` must remain string `"null"`; absence of an inline `type` does not permit JSON null.
 - **`TOOLCALLING.batch.7-5.untyped_const`** Direct `const: "null"` without a `type` still requires the literal string `"null"`.
 - **`TOOLCALLING.batch.7-5.untyped_enum`** Direct `enum: ["null"]` without a `type` still requires the literal string `"null"`.
 - **`TOOLCALLING.batch.7-4.mixed_grep`** Mixed string and nullable arguments. Constructed MiniMax M3 regression for PR #269: a `grep` tool with `strict: true` declares `pattern` as `string` and `path` as `anyOf: [string, null]`. Bare text `null` in both parameters must produce `{"pattern":"null","path":null}`.
@@ -349,11 +353,13 @@ The optional nested-union cases below exercise request tool schemas against nati
 - **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
 - **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
 
-The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases.
+The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases. GLM adds batch and Unified probes for PR #271 under `7-9`, `7-11`, `7-12`, and `7-13`; those request schemas retain unresolved refs so the parser must consult the tool parameters root.
 
 - **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
 - **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
-- **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type.
+- **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type. GLM also covers UTF-8 with a literal `+`, and encoded `~1` / `~0` escapes for definition names containing `/` and `~`.
+- **`TOOLCALLING.batch.7-12`** GLM referenced strings preserve JSON-looking object text, array text, and quoted text, including the literal quote characters. An inline string field with the same object-looking bytes is a control.
+- **`TOOLCALLING.batch.7-13`** GLM references to integer, number, and boolean definitions retain those scalar types. A sibling integer constraint narrows a referenced string-or-integer definition, so bare `42` becomes an integer.
 
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
