@@ -429,4 +429,112 @@ mod tests {
             out.normal_text
         );
     }
+    #[test]
+    fn integral_decimal_arguments_with_literal_constraints() {
+        for keyword in ["const", "enum"] {
+            for literal in [serde_json::json!(42), serde_json::json!(42.0)] {
+                for ty in [
+                    serde_json::json!(["number", "null"]),
+                    serde_json::json!(["integer", "null"]),
+                ] {
+                    let mut schema = serde_json::json!({"type":ty});
+                    schema[keyword] = if keyword == "const" {
+                        literal.clone()
+                    } else {
+                        serde_json::json!([literal])
+                    };
+                    for raw in ["42", "42.0", "4.2e1"] {
+                        let mut tools = weather_tools();
+                        tools[0].parameters["properties"]["location"] = schema.clone();
+                        let input = format!(
+                            "<minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\">{raw}</parameter></invoke></minimax:tool_call>"
+                        );
+                        for width in [1, input.len()] {
+                            let chunks: Vec<_> = input
+                                .as_bytes()
+                                .chunks(width)
+                                .map(|c| std::str::from_utf8(c).unwrap())
+                                .collect();
+                            let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                            assert_eq!(out.calls.len(), 1);
+                            assert_eq!(
+                                out.calls[0].arguments, r#"{"location":42}"#,
+                                "{schema}, {raw}, width {width}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn integral_decimal_coercion_preserves_precision() {
+        for (raw, expected) in [
+            ("9007199254740993.0", "9007199254740993"),
+            ("9.007199254740993e15", "9007199254740993"),
+            ("-4.2E+1", "-42"),
+            ("4200e-2", "42"),
+            ("0.0e-400", "0"),
+            ("42.0000000000000001", "\"42.0000000000000001\""),
+            ("1e-400", "\"1e-400\""),
+            ("42.5", "\"42.5\""),
+        ] {
+            let mut tools = weather_tools();
+            tools[0].parameters["properties"]["location"] =
+                serde_json::json!({"type":["integer","string"]});
+            let input = format!(
+                "<minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\">{raw}</parameter></invoke></minimax:tool_call>"
+            );
+            for width in [1, input.len()] {
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|c| std::str::from_utf8(c).unwrap())
+                    .collect();
+                let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert_eq!(out.calls.len(), 1);
+                assert_eq!(
+                    out.calls[0].arguments,
+                    format!(r#"{{"location":{expected}}}"#),
+                    "{raw}, width {width}"
+                );
+            }
+        }
+    }
+    #[test]
+    fn large_fractional_arguments_remain_exact_json_numbers() {
+        for raw in [
+            "9007199254740992.5",
+            "9.0071992547409925e15",
+            "0.10000000000000000001",
+            "-9007199254740992.5",
+        ] {
+            for schema in [
+                serde_json::json!({"type":"number"}),
+                serde_json::json!({"type":["number","null"],"const":serde_json::from_str::<serde_json::Value>(raw).unwrap()}),
+                serde_json::json!({"type":["number","null"],"enum":[serde_json::from_str::<serde_json::Value>(raw).unwrap()]}),
+            ] {
+                let mut tools = weather_tools();
+                tools[0].parameters["properties"]["location"] = schema.clone();
+                let input = format!(
+                    "<minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\">{raw}</parameter></invoke></minimax:tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|c| std::str::from_utf8(c).unwrap())
+                        .collect();
+                    let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(out.calls.len(), 1);
+                    assert_eq!(
+                        out.calls[0].arguments,
+                        format!(r#"{{"location":{raw}}}"#),
+                        "{schema}, width {width}"
+                    );
+                }
+            }
+        }
+    }
 }

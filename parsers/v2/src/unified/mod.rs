@@ -759,7 +759,10 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
             control_markers: self.scanner.control_markers().to_vec(),
             invoke_start: self.scanner.invoke_start().to_string(),
             invoke_end: self.scanner.invoke_end().to_string(),
-            invoke_boundary_factory: self.scanner.invoke_boundary_factory(),
+            invoke_boundary_factory: self
+                .scanner
+                .invoke_boundary_factory()
+                .and_then(InvokeBoundaryFactory::for_guided),
             guided_prefix_policy: self.guided_prefix_policy,
             guided_prefix_factory: self.guided_prefix_factory,
         }

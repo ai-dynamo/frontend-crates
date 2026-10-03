@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "dynamo-parsers-v2"
-version = "0.7.8"
+version = "0.7.10"
 edition.workspace = true
 license = "Apache-2.0"
 description = "Token-incremental tool-call streaming parsers for Dynamo"
@@ -19,7 +19,6 @@ serde_yaml = "0.9"
 regex = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
-num-traits = { workspace = true }
 percent-encoding = { workspace = true }
 
 [dev-dependencies]
