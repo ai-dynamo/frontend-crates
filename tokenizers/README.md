@@ -131,6 +131,11 @@ let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024)
     .expect("tokenizer must support prefix caching");
 ```
 
+Checkpoints that ship only a `tiktoken.model` (Kimi K2/K3) can also encode
+through `fastokens` without a converted `tokenizer.json`:
+`FastTikTokenTokenizer::from_file_auto("/path/to/tiktoken.model")` loads the
+same ranks, regex, and special tokens as `TikTokenTokenizer::from_file_auto`.
+
 Entries are admitted and evicted by Moka's W-TinyLFU policy. The byte budget counts
 token-ID payloads, excluding cache metadata and tokenizer objects. Eviction is
 deferred, so this is not a strict process-memory limit. A private cache lives as
