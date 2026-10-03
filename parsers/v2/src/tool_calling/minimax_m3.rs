@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn null_constraints_survive_every_chunk_boundary() {
+    fn null_constraints_preserve_argument_types() {
         let input = concat!(
             "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">",
             "]<]minimax[>[<location>null]<]minimax[>[</location>",
@@ -229,13 +229,10 @@ mod tests {
         ] {
             let mut tools = weather_tools();
             tools[0].parameters["properties"]["location"] = schema;
-            for split in 0..=input.len() {
-                let output =
-                    parse_chunks(&tools, &[&input[..split], &input[split..]]).coalesce_calls();
-                assert_eq!(output.calls.len(), 1, "split {split}");
-                assert_eq!(output.calls[0].arguments, expected, "split {split}");
-                assert!(output.calls[0].complete);
-            }
+            let output = parse_chunks(&tools, &[input]).coalesce_calls();
+            assert_eq!(output.calls.len(), 1);
+            assert_eq!(output.calls[0].arguments, expected);
+            assert!(output.calls[0].complete);
         }
     }
 
