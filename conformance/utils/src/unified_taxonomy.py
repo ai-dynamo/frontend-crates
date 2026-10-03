@@ -129,6 +129,8 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_header_in_answer": (35, "1"),
     "guided_json_quoted_bare_header_after_payload": (35, "2"),
     "guided_json_quoted_bare_tool_header_in_answer": ("muse", "1"),
+    "muse_unterminated_parameter_then_empty_call": ("muse", "2"),
+    "muse_unterminated_parameter_then_call": ("muse", "3"),
     # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),

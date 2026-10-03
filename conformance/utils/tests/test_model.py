@@ -1132,7 +1132,16 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     latest = [next(candidate for candidate in batch["candidates"]
                    if candidate["key"].startswith(implementation) and candidate["parse_mode"] == mode)
               for implementation, mode in (("dynamo_v1", "batch"), ("dynamo_v2", "stream"))]
-    assert latest[1]["version"] == dynamo_v2_label(REPO)
+    # Unified-only captures do not recapture the legacy stream corpus. Its
+    # latest candidate must name the newest recorded stream version.
+    recorded_stream_versions = [
+        path.name.removeprefix("dynamo_v2-")
+        for path in (_CACHE_ROOT / "toolcalling/fixtures-stream-v1").iterdir()
+        if re.fullmatch(r"dynamo_v2-\d+\.\d+\.\d+", path.name)
+    ]
+    assert latest[1]["version"] == max(
+        recorded_stream_versions, key=lambda version: tuple(map(int, version.split("."))),
+    )
     for candidate in latest:
         block = blocks[candidate["key"]]
         assert block["calls"] == calls

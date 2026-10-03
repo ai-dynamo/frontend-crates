@@ -6,4 +6,12 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-{}
+muse_glimmer:
+  UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
+    golden:
+      note: 'PR #316 follow-up: EOF drops the entire tool channel when the first invoke has an unclosed parameter, losing the later complete parameterless call.'
+      actual: ''
+  UNIFIED.muse_unterminated_parameter_then_call.muse_glimmer:
+    golden:
+      note: 'PR #316 follow-up: the later parameter closer completes the earlier malformed parameter, dispatching f with embedded invoke markup instead of get_weather.'
+      actual: tool_call(f, {"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"})
