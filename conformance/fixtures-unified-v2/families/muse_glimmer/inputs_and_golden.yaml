@@ -8641,3 +8641,162 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  muse_unterminated_parameter_then_empty_call:
+    lifecycle: active
+    scenario: muse_unterminated_parameter_then_empty_call
+    description: 'Muse: an unterminated parameter in the first invoke precedes a complete parameterless invoke in the same tool channel. At EOF, drop only the malformed invoke and emit the later call.'
+    policy:
+    - P2
+    display_id: UNIFIED.muse-2
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=tools<|message|><atem:function_calls><atem:invoke name="get_weather"><atem:parameter name="city">bad</atem:invoke><atem:invoke name="f"></atem:invoke></atem:function_calls><|eot|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=tools
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: <atem:parameter name="city">
+      - delta_text: bad
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: </atem:invoke>
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: {}
+  muse_unterminated_parameter_then_call:
+    lifecycle: active
+    scenario: muse_unterminated_parameter_then_call
+    description: 'Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call''s name and arguments.'
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.muse-3
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=tools<|message|><atem:function_calls><atem:invoke name="f"><atem:parameter name="x">bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke></atem:function_calls><|eot|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=tools
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: bad
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris

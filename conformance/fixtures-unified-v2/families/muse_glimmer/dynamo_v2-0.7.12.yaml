@@ -1,0 +1,66 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.12
+    git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+    source_sha256: cb3d6e0dffe97881454d47c73e8a8dde32317748863a0b62a1c405526409edda
+document:
+  mode: unified
+changes:
+  muse_unterminated_parameter_then_call:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
+    case_key: UNIFIED.muse-3
+  muse_unterminated_parameter_then_empty_call:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
+    case_key: UNIFIED.muse-2
+metadata_changes: {}
+document_overrides: {}

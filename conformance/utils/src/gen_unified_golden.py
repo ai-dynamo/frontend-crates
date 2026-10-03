@@ -644,6 +644,34 @@ _MIXED_CONTROL_STRINGS = {
 }
 
 EDGE = [
+    # Muse EOF recovery must skip an unterminated parameter without losing later
+    # invokes in the same ATEM channel. Scope is Muse-specific because the failure
+    # depends on its parameter-opaque invoke scanner (PR #316 review).
+    ("muse_unterminated_parameter_then_empty_call",
+     "Muse: an unterminated parameter in the first invoke precedes a complete parameterless invoke in the same tool channel. At EOF, drop only the malformed invoke and emit the later call.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "f", "arguments": {}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({"muse_glimmer": (
+         '<|start|>assistant to=tools<|message|><atem:function_calls>'
+         '<atem:invoke name="get_weather"><atem:parameter name="city">bad</atem:invoke>'
+         '<atem:invoke name="f"></atem:invoke></atem:function_calls><|eot|>',
+         V_MUSE, M,
+     )})),
+
+    ("muse_unterminated_parameter_then_call",
+     "Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call's name and arguments.",
+     ["P2", "I7"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({"muse_glimmer": (
+         '<|start|>assistant to=tools<|message|><atem:function_calls>'
+         '<atem:invoke name="f"><atem:parameter name="x">bad</atem:invoke>'
+         '<atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter>'
+         '</atem:invoke></atem:function_calls><|eot|>',
+         V_MUSE, M,
+     )})),
+
     ("glm47_parameterless_call_shape_inside_argument",
      "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
      ["I7"],
