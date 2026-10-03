@@ -170,6 +170,7 @@ def build_shards(
     dry_run=False,
     *,
     history_root=None,
+    excluded_unified_capture_dirs=frozenset(),
 ):
     """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
     shards = []
@@ -199,11 +200,14 @@ def build_shards(
                     and path.name.startswith("dynamo_v2-")
                     and "+pr" not in path.name
                 )
+            update_options = {
+                "complete_snapshot": complete_snapshot,
+                "required_capture_dirs": required_capture_dirs,
+            }
+            if excluded_unified_capture_dirs:
+                update_options["excluded_capture_dirs"] = excluded_unified_capture_dirs
             changed = unified_history.update_store_from_loose(
-                history_root,
-                capture_root,
-                complete_snapshot=complete_snapshot,
-                required_capture_dirs=required_capture_dirs,
+                history_root, capture_root, **update_options
             )
             for path in changed:
                 display_path = Path(fixture_disposition.UNIFIED_HISTORY_PATH) / path.relative_to(
@@ -421,7 +425,16 @@ def _validate_candidate_package(manifest, fixtures_dir, history_dir):
             raise ValueError(f"candidate package shard differs from manifest: {shard['path']}")
 
 
-def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
+def package_snapshot(
+    stamp,
+    created_pt,
+    crates,
+    peers,
+    *,
+    dry_run,
+    prune,
+    excluded_unified_capture_dirs=frozenset(),
+):
     conformance_root = ROOT / "conformance"
     manifest_path = ROOT / MANIFEST_REL
     with tempfile.TemporaryDirectory(
@@ -443,12 +456,10 @@ def package_snapshot(stamp, created_pt, crates, peers, *, dry_run, prune):
             shutil.copytree(UNIFIED_HISTORY_DIR, candidate_history)
 
             print("\nBuilding shards…")
-            shards = build_shards(
-                loose_root,
-                blobs_dir,
-                prune,
-                history_root=candidate_history,
-            )
+            build_options = {"history_root": candidate_history}
+            if excluded_unified_capture_dirs:
+                build_options["excluded_unified_capture_dirs"] = excluded_unified_capture_dirs
+            shards = build_shards(loose_root, blobs_dir, prune, **build_options)
 
             print(f"\nStaging store candidate for: {FIXTURES_DIR}")
             sync_store(
@@ -526,6 +537,13 @@ def main():
         help="Remove store shards (and manifest entries) not rebuilt by this run. "
         "Default keeps them: local capture trees are often partial.",
     )
+    ap.add_argument(
+        "--exclude-unified-capture-dir",
+        action="append",
+        default=[],
+        metavar="IMPLEMENTATION-VERSION",
+        help="Skip importing this Unified capture directory; all case IDs must already be in YAML history",
+    )
     args = ap.parse_args()
 
     try:
@@ -557,6 +575,7 @@ def main():
         peers,
         dry_run=args.dry_run,
         prune=args.prune,
+        excluded_unified_capture_dirs=frozenset(args.exclude_unified_capture_dir),
     )
 
 

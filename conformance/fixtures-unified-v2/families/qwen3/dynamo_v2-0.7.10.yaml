@@ -8,7 +8,6 @@ document:
   mode: unified
 changes:
   arg_json_null_nullable:
-    case_key: UNIFIED.7-4.nullable
     observation:
       value:
         assembled:
@@ -29,11 +28,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 6e0b46340fc2323941d5e915255edbe74a5eb384c46697d2ca1852db768f42b9
   arg_marker_in_string:
-    case_key: UNIFIED.7-2
     observation:
       value:
         assembled:
@@ -76,11 +71,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
   arg_string_null_const:
-    case_key: UNIFIED.7-5.const
     observation:
       value:
         assembled:
@@ -101,11 +92,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 598f958cc2ed7ed06fadb5a0b14f84c6cc88585ef29cea2ff222cb57cb492caa
   arg_string_null_enum:
-    case_key: UNIFIED.7-5.enum
     observation:
       value:
         assembled:
@@ -134,11 +121,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: ef784c4dcad52e5d9d39ab5928018eda86a1c14310c6537dd353f5ba2345ff34
   arg_string_null_sibling_anyof:
-    case_key: UNIFIED.7-5.sibling_anyof
     observation:
       value:
         assembled:
@@ -167,11 +150,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 8b572cfe08f734fb59fcda07b9423ce40761ae6b42aa23a3aa5634c8bcb3f02d
   arg_string_null_sibling_oneof:
-    case_key: UNIFIED.7-5.sibling_oneof
     observation:
       value:
         assembled:
@@ -192,11 +171,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 0d44dd040d10d51108dddb8e31201c9b30af3014e5b6b0166bf321d642e867bf
   arg_string_null_union:
-    case_key: UNIFIED.7-5.union
     observation:
       value:
         assembled:
@@ -217,11 +192,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 1f5b4eb699db6573f9b1a7b8df8e0003c913e891b7ba3153558151749ab0021f
   arg_string_null_untyped_branch:
-    case_key: UNIFIED.7-5.untyped_branch
     observation:
       value:
         assembled:
@@ -250,11 +221,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 2a4121a53c8a98ae45bb512d354b7b60382ffeec1dbe1d6f5ade910c73f1f353
   deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
     observation:
       value:
         assembled:
@@ -329,11 +296,7 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 2265cf929ee180d55608c508d42a9f2da9e60da2a50ae08773f50ec34c687366
   qwen_string_null:
-    case_key: UNIFIED.7-5
     observation:
       value:
         assembled:
@@ -362,8 +325,5 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 9732b6945959ed7895a88e2344b2420012d97b427299eeb61e2f064010d9c7af
 metadata_changes: {}
 document_overrides: {}

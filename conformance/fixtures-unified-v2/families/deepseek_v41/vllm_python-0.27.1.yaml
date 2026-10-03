@@ -1,0 +1,319 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.27.1
+document:
+  mode: unified
+changes:
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-4.anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 350b36194fbc96a17607491eaec662b0451ff98678505efbe0234b3509c222e8
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_json_null_const:
+    case_key: UNIFIED.7-4.const
+    stimulus:
+      ref: current
+      semantic_sha256: 898b188fa4953d4ef07262b729c19607a06c6be239260134eb2567c23e64c107
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-4.nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 97439846eea04d710b8116dd7c24fef75002800a1e50e79ffbba342386f888bc
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-4.oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 6eb2e6f3eefa5f0d7059fc683a5f44462d8aa39afc912f5cd7771086767b6a28
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: b0111315a321565ea6f3d9ff89f66654eda4df62b736919afa5fefefce794f50
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_const:
+    case_key: UNIFIED.7-5.const
+    stimulus:
+      ref: current
+      semantic_sha256: ceb880bb3fbd73b426e7d2809c65cf375db6b0c2d7cde3f07a5ef15c1e6bba37
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
+    stimulus:
+      ref: current
+      semantic_sha256: 8c3de860659452735e33de7e63f2e2317f37bef18ab7add459787d52286c1a46
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: a43d7c47af39892a0bd4bb481dd8a0dd32448fcfb76b5b8ab515db540c11a032
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 4dbef54a922b7266b898b06edb1ce17b78ddcd2ba7ab358461346455a65d070a
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
+    stimulus:
+      ref: current
+      semantic_sha256: 6f058ed6a2c738df48c0c608a287dab439be6a5e27a2a6fd454833ac7f4b8bbc
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-5.untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: e70d7c9532ef05e1e3cc16c23a58909bd2cfbf7bf116a87061ca68c0c3aa19e7
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-4
+    stimulus:
+      inline:
+        input: no tool needed</think>The answer is 42.
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: no tool needed
+        - delta_text: </think>
+        - delta_text: The answer is 42.
+        - delta_text: ‹finish›
+      semantic_sha256: c87985e9e8482bb4719d32cadff8be7e01e824d142d81535661f166836155d54
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-3
+    stimulus:
+      inline:
+        input: 'weighing options</think>Here''s what I found: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: weighing options
+        - delta_text: </think>
+        - delta_text: 'Here''s what I found: '
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: 42ca86432ea240c9189feb81163559881fd880ea813b92c5c5d442c244c897d8
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-1
+    stimulus:
+      inline:
+        input: checking weather</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: checking weather
+        - delta_text: </think>
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: f5e9972b0e37d55110facd78625152e1924867b9045dac5349e07b1cf1fe7724
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: a39e389d59259cb26df2c2056fe5d8ac921373e0e7fc496ea6ca961e3c935976
+    observation:
+      unavailable:
+        code: vllm_tool_schema_unsupported
+        detail: authored tools schema differs from the executable Unified schema
+metadata_changes: {}
+document_overrides: {}

@@ -57,11 +57,14 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, "conformance/utils/src")
+import model as report_model
 import gen_unified_golden as golden
 from dynamo_version import dynamo_v2_label
 from fixtures import _version_sort_key
+from validate_conformance_status import load_model as load_report_model
 from unified_history import load_store
 from unified_taxonomy import numbered_id
+import yaml
 
 root = Path("conformance/fixtures-unified-v2")
 current = json.loads(Path("conformance/CONFORMANCE_v2.json").read_text())
@@ -72,13 +75,30 @@ expected = {
     }
     for family in golden.FAMILIES
 }
-expected_red = {
+known_divergences = yaml.safe_load(Path("conformance/unified-known-divergences.yaml").read_text())
+expected_divergent_cases = {
     family: {
-        key[len("UNIFIED."):].rsplit(".", 1)[0]
-        for key, case in golden.build_cases(family).items()
-        if case.get("expect", {}).get("dynamo_current", {}).get("verdict") == "diverge"
+        numbered_id(key.split(".")[1])
+        for key, checks in known_divergences.get(family, {}).items()
+        if isinstance(checks, dict) and "golden" in checks
     }
     for family in golden.FAMILIES
+}
+rendered = report_model.hydrate_page(
+    load_report_model(Path("conformance/CONFORMANCE_v2.html"))
+)
+unified_tab = next(tab for tab in rendered["tabs"] if tab.get("id") == "tab-unified")
+expected_red = {
+    row["family"]: {
+        scenario
+        for scenario, cell in row["cells"].items()
+        if any(
+            leaf.get("case_id") in expected_divergent_cases[row["family"]]
+            for leaf in cell.get("variants", [cell])
+        )
+    }
+    for row in unified_tab["rows"]
+    if row.get("family") in expected_divergent_cases
 }
 
 current_version = dynamo_v2_label(Path.cwd())
@@ -128,7 +148,7 @@ for report in current["reports"]:
     }
     if report["empty"] or actual_red != expected_red[family]:
         raise SystemExit(
-            f"Unified display differs from documented current-Dynamo expectations for {family}: "
+            f"Unified display differs from documented current-Dynamo divergences for {family}: "
             f"empty={report['empty']} expected_red={sorted(expected_red[family])} "
             f"actual_red={sorted(actual_red)}"
         )

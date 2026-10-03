@@ -247,15 +247,46 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
         if row["family"] != "muse_glimmer":
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
+            assert cell["duplicate_of"] == "UNIFIED.35-1"
             for field in ("description", "na_note"):
-                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
+                assert cell["tooltip"][field].startswith("Duplicate of UNIFIED.35-1")
         if row["family"] == "deepseek_v41":
-            for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
+            duplicates = {
+                "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+                "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+                "prefilled_reasoning_then_text": "UNIFIED.10-2",
+            }
+            for scenario, canonical in duplicates.items():
                 cell = row["cells"][scenario]
-                assert cell["status"] != "na"
-                assert cell["tooltip"]["init"]["starting_state"] == "Reasoning"
-                assert cell["cmp"]["dynamo"].get("na", 0) == 0
-                assert cell["cmp"]["dynamo"]["sig"] == cell["cmp"]["golden"]["sig"]
+                assert cell["status"] == "na"
+                assert cell["duplicate_of"] == canonical
+                assert cell["tooltip"]["duplicate_of"] == canonical
+                assert cell["tooltip"]["na_note"] == f"Duplicate of {canonical}: same observable event contract for deepseek_v41."
+
+
+def test_unified_duplicate_cells_expose_canonical_pointer_in_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    assert {
+        scenario: row["cells"][scenario]["duplicate_of"]
+        for scenario in (
+            "prefilled_reasoning_with_tool",
+            "prefilled_reasoning_then_text_then_tool",
+            "prefilled_reasoning_then_text",
+        )
+    } == {
+        "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+        "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+        "prefilled_reasoning_then_text": "UNIFIED.10-2",
+    }
+
+
+def test_unified_duplicate_pointer_is_explained_in_tooltip_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    cell = row["cells"]["prefilled_reasoning_with_tool"]
+    assert cell["tooltip"]["duplicate_of"] == "UNIFIED.11-1"
+    assert "Duplicate of UNIFIED.11-1" in cell["tooltip"]["na_note"]
 
 
 def test_v2_exactly_one_active_tab(model_v2):
@@ -303,7 +334,10 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     )
     muse_tip = next(iter(muse["cells"].values()))["tooltip"]
     native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
-    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+    # The 0.26.0 history layer is intentionally empty because it inherits the
+    # unchanged 0.25.1 unavailable result. The candidate label carries the
+    # version; the inherited reason must not be duplicated just to restamp it.
+    assert native["block"]["unavailable"] == "No vLLM Rust Unified parser is registered for muse_glimmer."
 
 
 def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
@@ -803,7 +837,13 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys == {
+        "vllm",
+        "vllm_python@0.26.0",
+        "vllm_python@0.27.1",
+        "vllm_rust",
+        "vllm_rust@0.26.0",
+    }
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in leaf_cells(row).values()]
@@ -818,6 +858,13 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
+                    or "not registered" in reason
+                    or "No vLLM Rust Unified parser" in reason
+                    or "No released vLLM Python parser" in reason
+                    or "no GuidedJson/tool-choice request API" in reason
+                    or "authored tools schema differs from the executable Unified schema" in reason
+                    or "request-prefilled" in reason
+                    or reason.startswith("Peer harness supports only native/default initialization")
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
                 assert "events" not in peer["block"]
@@ -831,9 +878,24 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     ):
         for key in peer_keys:
             cell = gemma["cells"][scenario]
-            assert cell["cmp"][key].get("na") == 1
-            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-            assert "this case postdates that capture" in peer["block"]["unavailable"]
+            # Python vLLM receives the required/named GuidedJson request and is
+            # therefore comparable. The Rust parser has no request-mode API and
+            # must remain explicitly unavailable instead of looking empty.
+            expected_na = not (key == "vllm" or key.startswith("vllm_python"))
+            assert cell["cmp"][key].get("na") == int(expected_na)
+            if expected_na:
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                reason = peer["block"]["unavailable"]
+                assert (
+                    "this case postdates that capture" in reason
+                    or "no GuidedJson/tool-choice request API" in reason
+                    or reason.startswith(
+                        ("Capture stimulus mismatch (", "Capture stimulus unavailable:")
+                    )
+                )
+            else:
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                assert "events" in peer["block"]
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

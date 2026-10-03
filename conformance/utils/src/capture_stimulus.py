@@ -14,6 +14,22 @@ from fixture_disposition import (
     canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
     is_source_capture,
 )
+
+
+def validate_family_scoped_cases(cases: list[dict]) -> None:
+    """Reject jobs whose normalized IDs could collide across families."""
+    families = {case.get("family") for case in cases}
+    if len(families) > 1:
+        raise ValueError(
+            "Unified peer capture jobs must contain exactly one family; "
+            f"received {sorted(families)!r}"
+        )
+    ids = [case.get("id") for case in cases]
+    duplicates = sorted({case_id for case_id in ids if ids.count(case_id) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate peer capture case IDs: {duplicates!r}")
+
+
 def capture_input(record: dict) -> dict:
     return {
         "input": record.get("input", ""),
@@ -25,8 +41,36 @@ def capture_input(record: dict) -> dict:
     }
 
 
-def capture_peer_results(cases: list[dict], families, capture, *, tools, supports_finish=False) -> dict:
+def unavailable_result(
+    code: str,
+    detail: str,
+    *,
+    capture: dict | None = None,
+    observation: bool = False,
+) -> dict:
+    """Describe a peer limitation and retain the request that was not executed."""
+    field = "capture_observation" if observation else "capture_stimulus"
+    result = {
+        "unavailable": detail,
+        field: {"unavailable": {"code": code, "detail": detail}},
+    }
+    if capture is not None:
+        result["capture_input"] = capture
+    return result
+
+
+def capture_peer_results(
+    cases: list[dict],
+    families,
+    capture,
+    *,
+    tools,
+    supports_finish=False,
+    supports_init=False,
+    unsupported_reason=None,
+) -> dict:
     """Bind only native/default peer executions; unsupported requests never run."""
+    validate_family_scoped_cases(cases)
     ready, results, bindings = [], {}, {}
     for case in cases:
         if case["family"] not in families:
@@ -40,28 +84,67 @@ def capture_peer_results(cases: list[dict], families, capture, *, tools, support
         actual = capture_input({"input": case["input"], "tools": tools, "chunks": [{"delta_text": chunk} for chunk in chunks]})
         terminal_step = bool(chunks and chunks[-1] == "‹finish›" and "".join(chunks[:-1]) == case["input"])
         requested = capture_input({**case, "chunks": actual["chunks"]})
-        bindings[key] = actual
-        unsupported = [field for field in ("init", "finish_reason") if requested[field] != actual[field]]
+
+        def unavailable(code: str, detail: str) -> dict:
+            return unavailable_result(code, detail, capture=requested)
+
+        reason = unsupported_reason(case) if unsupported_reason is not None else None
+        if reason is not None:
+            if key in results:
+                raise ValueError(f"duplicate peer capture case: {key}")
+            code, detail = reason
+            results[key] = unavailable(code, detail)
+            continue
+        unsupported = []
+        if not supports_init and requested["init"] != actual["init"]:
+            unsupported.append("init")
+        if not supports_finish and requested["finish_reason"] != actual["finish_reason"]:
+            unsupported.append("finish_reason")
         if "tools" in case and case["tools"] != tools:
             unsupported.append("tools")
         if unsupported:
-            results[key] = {"unavailable": "Peer harness supports only native/default initialization and stop termination; unsupported request: " + ", ".join(unsupported)}
+            if key in results:
+                raise ValueError(f"duplicate peer capture case: {key}")
+            detail = "Peer harness supports only native/default initialization and stop termination; unsupported request: " + ", ".join(unsupported)
+            results[key] = unavailable("peer_request_unsupported", detail)
         elif terminal_step and not supports_finish:
+            if key in results:
+                raise ValueError(f"duplicate peer capture case: {key}")
             actual["chunks"] = actual["chunks"][:-1]
-            results[key] = {"unavailable": "Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness."}
+            results[key] = unavailable(
+                "peer_finish_unsupported",
+                "Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.",
+            )
         elif not terminal_step and "".join(chunks) != case["input"]:
             # A display-only finish row is not text delivered to the parser. Do not
             # invent a finish call or silently drop that row to manufacture parity.
-            results[key] = {"unavailable": "Peer chunk text differs from input; synthetic finish rows require an explicit engine finish operation and are not literal input."}
+            if key in results:
+                raise ValueError(f"duplicate peer capture case: {key}")
+            results[key] = unavailable(
+                "peer_chunk_schedule_unsupported",
+                "Peer chunk text differs from input; synthetic finish rows require an explicit engine finish operation and are not literal input.",
+            )
         else:
+            bindings[key] = requested if supports_init else actual
             ready.append({**case, "chunks": chunks[:-1] if terminal_step else chunks, "terminal_step": terminal_step})
     if ready:
         captured = capture(ready)
         expected = {case["id"] for case in ready}
         if captured.keys() != expected:
             raise ValueError(f"peer capture results differ from executed request: missing={sorted(expected - captured.keys())}, extra={sorted(captured.keys() - expected)}")
+        for result in captured.values():
+            if "error" in result and "capture_observation" not in result:
+                result["capture_observation"] = {
+                    "error": {
+                        "code": "peer_parser_error",
+                        "detail": result["error"],
+                    }
+                }
         results.update(captured)
-    return {key: {**result, "capture_input": bindings[key]} for key, result in results.items()}
+    return {
+        key: ({**result, "capture_input": bindings[key]} if key in bindings else result)
+        for key, result in results.items()
+    }
 
 
 def read_bindings(directory: Path) -> dict:
@@ -101,50 +184,19 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
     return None
 
 
-def current_source_snapshot(directory: Path) -> Path:
-    """Deprecated Rust harness compatibility; canonical YAML has no source patches."""
-    if not is_source_capture(directory.name):
-        return directory
-    candidates = [directory]
-    candidates.extend(path for path in directory.parent.glob(directory.name + ".patch*")
-                      if path.is_dir() and capture_layer_sort_key(path.name)[0] == directory.name)
-    selected = max(candidates, key=lambda path: capture_layer_sort_key(path.name))
-    marker = selected / CAPTURE_SNAPSHOT
-    if selected != directory or marker.is_file():
-        if not marker.is_file():
-            raise ValueError(f"source overlay has no complete snapshot index: {selected}")
-        capture_snapshot_members(marker.read_bytes(),
-                                 [str(path.relative_to(selected)) for path in selected.glob("*/*.yaml")])
-    return selected
-
-
 def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
-    base_name, _patch = capture_layer_sort_key(directory.name)
-    base = directory.with_name(base_name)
-    inactive = inactive_fixture_dirs(directory.parent)
-    if "+source." in base_name:
-        layers = [current_source_snapshot(base)]
-    else:
-        layers = [base, *(path for path in base.parent.glob(base.name + ".patch*")
-                          if path.is_dir() and capture_layer_sort_key(path.name)[0] == base.name)]
-        layers.sort(key=lambda path: capture_layer_sort_key(path.name))
     captures = {}
-    for layer in layers:
-        if layer.name in inactive:
-            continue
-        bindings = read_bindings(layer)
-        records = {}
-        for path in sorted(layer.glob("*/*.yaml")):
-            raw = path.read_bytes()
-            doc = yaml.safe_load(raw)
-            if doc["family"] != path.parent.name:
-                raise ValueError(f"capture family differs from its directory: {path}")
-            for key, record in doc["cases"].items():
-                ident = canonical_unified_record_key(doc["family"], key, input_aliases)
-                if ident in records and records[ident][0] != record:
-                    raise ValueError(f"conflicting current capture aliases: {ident}")
-                records[ident] = (record, raw, str(path.relative_to(layer)), bindings)
-        captures.update(records)
+    bindings = read_bindings(directory)
+    for path in sorted(directory.glob("*/*.yaml")):
+        raw = path.read_bytes()
+        doc = yaml.safe_load(raw)
+        if doc["family"] != path.parent.name:
+            raise ValueError(f"capture family differs from its directory: {path}")
+        for key, record in doc["cases"].items():
+            ident = canonical_unified_record_key(doc["family"], key, input_aliases)
+            if ident in captures and captures[ident][0] != record:
+                raise ValueError(f"conflicting current capture aliases: {ident}")
+            captures[ident] = (record, raw, str(path.relative_to(directory)), bindings)
     return captures
 
 
@@ -186,23 +238,16 @@ def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--select-source-snapshot", type=Path, help="deprecated Rust harness compatibility")
-    mode.add_argument("--validate-current", type=Path)
+    parser.add_argument("--validate-current", type=Path, required=True)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")
     args = parser.parse_args()
-    if args.select_source_snapshot is not None:
-        if args.format != "count":
-            parser.error("--format json requires --validate-current")
-        print(current_source_snapshot(args.select_source_snapshot))
+    if not args.inputs:
+        parser.error("--validate-current requires --inputs")
+    if args.format == "json":
+        print(json.dumps(validated_current_capture_docs(args.validate_current, args.inputs)))
     else:
-        if not args.inputs:
-            parser.error("--validate-current requires --inputs")
-        if args.format == "json":
-            print(json.dumps(validated_current_capture_docs(args.validate_current, args.inputs)))
-        else:
-            print(validate_current_capture(args.validate_current, args.inputs))
+        print(validate_current_capture(args.validate_current, args.inputs))
 
 
 if __name__ == "__main__":

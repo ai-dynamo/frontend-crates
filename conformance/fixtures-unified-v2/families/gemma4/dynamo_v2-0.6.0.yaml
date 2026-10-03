@@ -8,9 +8,6 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -34,9 +31,6 @@ changes:
             complete: true
         - expected: []
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -58,9 +52,6 @@ changes:
             complete: true
         - expected: []
   content_then_reason:
-    case_key: UNIFIED.11.g
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -84,9 +75,6 @@ changes:
             text: The capital is Paris.
         - expected: []
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -120,9 +108,6 @@ changes:
             complete: true
         - expected: []
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -139,9 +124,6 @@ changes:
             complete: true
         - expected: []
   gemma4_guided_json_malformed_call_prefix_before_reasoning:
-    case_key: UNIFIED.g4-2
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -169,9 +151,6 @@ changes:
             complete: true
         - expected: []
   gemma4_guided_json_visible_call_prose_before_reasoning:
-    case_key: UNIFIED.g4-1
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -199,9 +178,6 @@ changes:
             complete: true
         - expected: []
   guided_json_after_reasoning:
-    case_key: UNIFIED.30.f
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -224,9 +200,6 @@ changes:
             complete: true
         - expected: []
   guided_json_array_argument:
-    case_key: UNIFIED.30.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -245,9 +218,6 @@ changes:
             complete: true
         - expected: []
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.31-28
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -270,9 +240,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_escaped_string_args:
-    case_key: UNIFIED.30.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -288,9 +255,6 @@ changes:
             complete: true
         - expected: []
   guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -306,9 +270,6 @@ changes:
             complete: true
         - expected: []
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30.k
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -325,9 +286,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30.l
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -345,9 +303,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_invalid_call:
-    case_key: UNIFIED.31-1
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -359,9 +314,6 @@ changes:
             text: '{"unexpected": "shape"}'
         - expected: []
   guided_json_marker_inside_argument:
-    case_key: UNIFIED.30.g
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -379,9 +331,6 @@ changes:
             complete: true
         - expected: []
   guided_json_named_tool:
-    case_key: UNIFIED.30.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -397,9 +346,6 @@ changes:
             complete: true
         - expected: []
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.31-8
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -426,9 +372,6 @@ changes:
             complete: true
         - expected: []
   guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -453,9 +396,6 @@ changes:
             complete: true
         - expected: []
   guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      ref: current
     observation:
       value:
         assembled: []
@@ -469,9 +409,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_orphan_reason_close_before_payload:
-    case_key: UNIFIED.31-10
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -488,9 +425,6 @@ changes:
             complete: true
         - expected: []
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.31-11
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -507,9 +441,6 @@ changes:
             complete: true
         - expected: []
   guided_json_partial_calls:
-    case_key: UNIFIED.31-3
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -521,9 +452,6 @@ changes:
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
         - expected: []
   guided_json_prose_before_reasoning:
-    case_key: UNIFIED.31-9
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -551,9 +479,6 @@ changes:
             complete: true
         - expected: []
   guided_json_quoted_bare_header_after_payload:
-    case_key: UNIFIED.31-27
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -584,9 +509,6 @@ changes:
             text: <channel|>
         - expected: []
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.31-25
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -618,9 +540,6 @@ changes:
             complete: true
         - expected: []
   guided_json_required_tool:
-    case_key: UNIFIED.30.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -636,9 +555,6 @@ changes:
             complete: true
         - expected: []
   guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -650,9 +566,6 @@ changes:
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
         - expected: []
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.31-18
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -665,9 +578,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.31-19
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -681,9 +591,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -695,9 +602,6 @@ changes:
             text: '{"unexpected": "shape"}'
         - expected: []
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.31-15
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -710,9 +614,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.31-16
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -726,9 +627,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -752,9 +650,6 @@ changes:
             complete: true
         - expected: []
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.31-6
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -771,9 +666,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.31-5
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -790,9 +682,6 @@ changes:
             complete: true
         - expected: []
   guided_json_two_calls:
-    case_key: UNIFIED.30.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -816,9 +705,6 @@ changes:
             complete: true
         - expected: []
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -842,9 +728,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.31-7
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -862,9 +745,6 @@ changes:
         - expected: []
         - expected: []
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -898,9 +778,6 @@ changes:
             complete: true
         - expected: []
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -962,9 +839,6 @@ changes:
             complete: true
         - expected: []
   orphan_close_after_prose:
-    case_key: UNIFIED.5.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -977,9 +851,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1008,9 +879,6 @@ changes:
             complete: true
         - expected: []
   prefilled_reasoning_then_text:
-    case_key: UNIFIED.40.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1028,9 +896,6 @@ changes:
             text: The answer is 42.
         - expected: []
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1063,9 +928,6 @@ changes:
             complete: true
         - expected: []
   prefilled_reasoning_truncated:
-    case_key: UNIFIED.41.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1082,9 +944,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_reasoning_with_guided_json:
-    case_key: UNIFIED.40.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1106,9 +965,6 @@ changes:
             complete: true
         - expected: []
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1136,9 +992,6 @@ changes:
             complete: true
         - expected: []
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1180,9 +1033,6 @@ changes:
             complete: true
         - expected: []
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1223,9 +1073,6 @@ changes:
             text: It's 18C.
         - expected: []
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1269,9 +1116,6 @@ changes:
             complete: true
         - expected: []
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1322,9 +1166,6 @@ changes:
             complete: true
         - expected: []
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1350,9 +1191,6 @@ changes:
             complete: true
         - expected: []
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1388,9 +1226,6 @@ changes:
             text: ' done.'
         - expected: []
   reason_only:
-    case_key: UNIFIED.10.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1404,9 +1239,6 @@ changes:
         - expected: []
         - expected: []
   reason_then_content:
-    case_key: UNIFIED.10.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1425,9 +1257,6 @@ changes:
             text: The answer is 42.
         - expected: []
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1456,9 +1285,6 @@ changes:
             complete: true
         - expected: []
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1516,9 +1342,6 @@ changes:
         - expected: []
         - expected: []
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1574,9 +1397,6 @@ changes:
             complete: true
         - expected: []
   reason_unterminated:
-    case_key: UNIFIED.10.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1599,9 +1419,6 @@ changes:
   retired__muse_1:
     absent: true
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1628,9 +1445,6 @@ changes:
             complete: true
         - expected: []
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1672,9 +1486,6 @@ changes:
             complete: true
         - expected: []
   text_only:
-    case_key: UNIFIED.3.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1686,9 +1497,6 @@ changes:
             text: The answer is 42, no tools needed.
         - expected: []
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1749,9 +1557,6 @@ changes:
             complete: true
         - expected: []
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1783,9 +1588,6 @@ changes:
             text: ' After.'
         - expected: []
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled: []
@@ -1794,9 +1596,6 @@ changes:
         - expected: []
         - expected: []
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1830,9 +1629,6 @@ changes:
         - expected: []
         - expected: []
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1876,9 +1672,6 @@ changes:
             text: ' Here you go.'
         - expected: []
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled: []
@@ -1886,9 +1679,6 @@ changes:
         - expected: []
         - expected: []
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1910,9 +1700,6 @@ changes:
             complete: true
         - expected: []
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1939,9 +1726,6 @@ changes:
             text: The forecast shows clear skies for the rest of the week.
         - expected: []
   truncated_tool_eof:
-    case_key: UNIFIED.5.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1959,9 +1743,6 @@ changes:
         - expected: []
         - expected: []
   two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1989,9 +1770,6 @@ changes:
             text: done
         - expected: []
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -2028,9 +1806,6 @@ changes:
             complete: true
         - expected: []
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -2067,9 +1842,6 @@ changes:
             complete: true
         - expected: []
   two_reason_spans:
-    case_key: UNIFIED.10.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:

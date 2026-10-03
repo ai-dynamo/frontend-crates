@@ -36,6 +36,7 @@ import unified_history  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
+    DEEPSEEK_V41_REDUNDANT_SCENARIOS,
     OnlyFamilies,
     EDGE,
     FAMILIES,
@@ -47,6 +48,7 @@ from unified_taxonomy import (  # noqa: E402
     UNIFIED_GROUP_LABEL,
     UNIFIED_TAX,
     case_label,
+    historical_case_label,
     numbered_id,
     tax,
     taxonomy_sort_key,
@@ -58,6 +60,13 @@ TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
 def corpus_scenarios() -> list[str]:
     """Scenario slugs the generator actually emits — the first element of each case."""
     return [spec[0] for spec in (*CLEAN, *EDGE)]
+
+
+def test_scenario_definitions_do_not_overwrite_each_other() -> None:
+    """Duplicate definitions disappear during generation, before fixture checks run."""
+    scenarios = corpus_scenarios()
+    duplicates = sorted(name for name in set(scenarios) if scenarios.count(name) > 1)
+    assert not duplicates, f"duplicate scenario definitions: {duplicates}"
 
 
 def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
@@ -96,13 +105,18 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
         assert prefix.rsplit(">", 1)[-1]
 
 
-def test_request_scoped_cases_never_claim_vllm_match() -> None:
+def test_guided_json_cases_are_measured_as_vllm_requests() -> None:
+    """GuidedJson is now passed to the request-aware vLLM capture harness."""
+    guided_cases = []
+    verdicts = set()
     for family in FAMILIES:
         for case_id, case in build_cases(family).items():
             init = case["init"]
-            request_scoped = init.get("starting_state") != "None" or init.get("tool_output_mode") != "Native"
-            if request_scoped:
-                assert case["expect"]["vllm"]["verdict"] == "diverge", case_id
+            if init.get("tool_output_mode") == "GuidedJson":
+                guided_cases.append(case_id)
+                verdicts.add(case["expect"]["vllm"]["verdict"])
+    assert guided_cases
+    assert {"match", "diverge"} <= verdicts
 
 
 def test_no_corpus_scenario_falls_back_to_group_9() -> None:
@@ -122,14 +136,28 @@ def test_every_used_group_has_a_label() -> None:
     )
 
 
-def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
-    """Gemma-only call-prefix cases use their own named numeric group."""
+def test_case_labels_keep_family_specific_cases_out_of_generic_groups() -> None:
+    """Single-family cases use named groups; shared behavior uses numeric groups."""
     assert tax("guided_json_quoted_bare_header_in_answer") == (35, "1")
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == ("muse", "1")
     assert tax("guided_json_quoted_bare_header_after_payload") == (35, "2")
     assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (34, "7")
     assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("gemma", "1")
     assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("gemma", "2")
+    assert tax("kimi_k2_optional_prefix_name_overlap") == ("kimi_k2", "1")
+    assert tax("deepseek_v41_mixed_control_text_in_string") == (7, "3")
+    assert tax("prefilled_response_guided_pending_invoke_header") == ("deepseek_v41", "2")
+    assert tax("qwen3_guided_non_ascii_header_in_truncated_reasoning") == ("qwen3", "1")
+    assert tax("qwen3_guided_non_ascii_header_in_closed_reasoning") == ("qwen3", "2")
+    assert tax("qwen3_guided_reasoning_opener_inside_native_header") == ("qwen3", "3")
+    assert tax("muse_glimmer_guided_message_end_inside_native_header") == ("muse", "2")
+    assert tax("prefilled_response_guided_closer_inside_invoke_quote") == ("muse", "3")
+    assert tax("deepseek_v4_guided_reasoning_opener_inside_native_body") == ("deepseek_v4", "1")
+    assert tax("gemma4_guided_reasoning_opener_after_call_prefix") == ("gemma", "3")
+    assert tax("guided_json_native_parameter_body_inside_reasoning") == (34, "8")
+    assert tax("guided_json_reasoning_markers_inside_native_parameter") == (34, "9")
+    assert tax("guided_json_native_parameter_object_before_payload") == (35, "3")
+    assert tax("guided_json_native_parameter_array_before_payload") == (35, "4")
     assert case_label("guided_json_quoted_bare_header_in_answer") == "35-1"
     assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "muse-1"
     assert case_label("guided_json_quoted_bare_header_after_payload") == "35-2"
@@ -394,7 +422,13 @@ def test_deepseek_v41_follows_declared_scope_including_prefilled_cases() -> None
         if "deepseek_v41" in G.scenario_families(spec[0])
     }
     actual = {case_id.split(".", 2)[1] for case_id in build_cases("deepseek_v41")}
-    assert actual == declared
+    assert actual == declared - set(DEEPSEEK_V41_REDUNDANT_SCENARIOS)
+    assert DEEPSEEK_V41_REDUNDANT_SCENARIOS == {
+        "prefilled_reasoning_with_tool": "reason_then_tool",
+        "prefilled_reasoning_then_text_then_tool": "interstitial_text",
+        "prefilled_reasoning_then_text": "reason_then_content",
+    }
+    assert set(DEEPSEEK_V41_REDUNDANT_SCENARIOS.values()) <= actual
 
 
 def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
@@ -427,6 +461,141 @@ def test_historical_bare_header_stimulus_keeps_30m(family, prefix):
     ]
 
 
+@pytest.mark.parametrize("family", FAMILIES)
+def test_named_header_has_a_distinct_numeric_identity(family):
+    scenario = "guided_json_gt_in_argument_named_bare_opener"
+    cases = build_cases(family)
+    if family == "glm47":
+        assert scenario not in G.scenario_families(scenario)
+        assert f"UNIFIED.{scenario}.{family}" not in cases
+        return
+    named = cases[f"UNIFIED.{scenario}.{family}"]
+    bare = cases[f"UNIFIED.guided_json_gt_in_argument_bare_opener.{family}"]
+    assert numbered_id(scenario) == "UNIFIED.30-14"
+    assert G.scenario_families(scenario) == frozenset(
+        family for family in FAMILIES if family != "glm47"
+    )
+    assert named["input"] != bare["input"]
+    assert named["input"].split("[", 1)[0].count("get_weather") == 1
+    assert bare["input"].split("[", 1)[0].count("get_weather") == 0
+    assert named["input"].split("[", 1)[1] == bare["input"].split("[", 1)[1]
+    assert named["golden"] == bare["golden"]
+    assert named["init"] == bare["init"]
+
+
+@pytest.mark.parametrize("ending,case_id,suffix,golden", [
+    ("truncated", "UNIFIED.qwen3-1", "", [{"kind": "reasoning", "text": "éaaaaaaaaax"}]),
+    ("closed", "UNIFIED.qwen3-2",
+     "</function></think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
+])
+def test_non_ascii_header_reasoning_contract(ending, case_id, suffix, golden):
+    scenario = f"qwen3_guided_non_ascii_header_in_{ending}_reasoning"
+    assert numbered_id(scenario) == case_id
+    assert G.scenario_families(scenario) == frozenset({"qwen3"})
+    case = build_cases("qwen3")[f"UNIFIED.{scenario}.qwen3"]
+    assert case["input"] == "<think><function=éaaaaaaaaax" + suffix
+    assert case["golden"] == golden
+    assert case["init"] == {
+        "starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None,
+    }
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+def test_guided_native_body_case_keeps_the_parameter_stimulus(family):
+    scenario = "guided_json_native_parameter_body_inside_reasoning"
+    assert numbered_id(scenario) == "UNIFIED.34-8"
+    if family == "glm47":
+        assert scenario not in G.scenario_families(scenario)
+        assert f"UNIFIED.{scenario}.{family}" not in build_cases(family)
+        return
+    assert G.scenario_families(scenario) == frozenset(
+        family for family in FAMILIES if family != "glm47"
+    )
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert case["input"].endswith(G.GUIDED_ONE_CALL)
+    assert _native_input_calls(family, case["input"]) == [
+        {"kind": "tool_call", "name": "f", "arguments": {"x": "é🙂<par{value}"}},
+    ]
+    assert case["init"] == {
+        "starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None,
+    }
+    assert case["golden"] == [
+        {"kind": "reasoning", "text": "before  after"},
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+
+
+@pytest.mark.parametrize("family,stimulus,visible,opener,closer", [
+    ("qwen3", "<think>literal</think>", "<think>literal</think>",
+     "<function=f><parameter=x>", "</parameter></function>"),
+    ("muse_glimmer", "to=self<|message|>literal<|eom|>", "to=selfliteral",
+     '<atem:invoke name="f"><atem:parameter name="x">', "</atem:parameter></atem:invoke>"),
+])
+@pytest.mark.parametrize("shape,case_id,body", [
+    ("object", "UNIFIED.35-3", '{"city":"Rome"}'),
+    ("array", "UNIFIED.35-4", '[{"name":"get_weather","arguments":{"city":"Rome"}}]'),
+])
+def test_response_native_parameter_json_is_not_the_guided_payload(family, stimulus, visible, opener, closer, shape, case_id, body):
+    scenario = f"guided_json_native_parameter_{shape}_before_payload"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert numbered_id(scenario) == case_id
+    assert G.scenario_families(scenario) == frozenset({"qwen3", "muse_glimmer"})
+    assert case["input"] == stimulus + opener + body + closer + G.GUIDED_ONE_CALL
+    assert case["init"] == {
+        "starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None,
+    }
+    assert case["golden"] == [
+        {"kind": "text", "text": visible},
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+    assert json.loads(body) != json.loads(G.GUIDED_ONE_CALL)
+
+
+@pytest.mark.parametrize("family,scenario,case_id,state,prefix,golden", [
+    ("qwen3", "qwen3_guided_reasoning_opener_inside_native_header", "UNIFIED.qwen3-3", "None",
+     "<function=<think>x</function>",
+     [{"kind": "reasoning", "text": 'x</function>[{"name":"f","arguments":{}}]'}]),
+    ("muse_glimmer", "muse_glimmer_guided_message_end_inside_native_header", "UNIFIED.muse-2", "None",
+     '<atem:invoke name="x<|eom|>',
+     [{"kind": "text", "text": "x"}, {"kind": "tool_call", "name": "f", "arguments": {}}]),
+    ("deepseek_v4", "deepseek_v4_guided_reasoning_opener_inside_native_body", "UNIFIED.deepseek_v4-1", "Reasoning",
+     '<｜DSML｜invoke name="f"><think>x</｜DSML｜invoke>',
+     [{"kind": "reasoning", "text": 'f">x'}, {"kind": "tool_call", "name": "f", "arguments": {}}]),
+    ("gemma4", "gemma4_guided_reasoning_opener_after_call_prefix", "UNIFIED.gemma-3", "Reasoning",
+     "call:<|channel>thought\nx<channel|>",
+     [{"kind": "reasoning", "text": "call:x"}, {"kind": "tool_call", "name": "f", "arguments": {}}]),
+])
+def test_competing_native_reasoning_boundaries_preserve_prior_output(family, scenario, case_id, state, prefix, golden):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert numbered_id(scenario) == case_id
+    assert G.scenario_families(scenario) == frozenset({family})
+    assert case["input"] == prefix + '[{"name":"f","arguments":{}}]'
+    assert case["init"] == {
+        "starting_state": state, "tool_output_mode": "GuidedJson", "named_tool": None,
+    }
+    assert case["golden"] == golden
+
+
+@pytest.mark.parametrize("family,scenario,case_id,header,visible", [
+    ("deepseek_v41", "prefilled_response_guided_pending_invoke_header",
+     "UNIFIED.deepseek_v41-2", '<｜DSML｜ invoke name="', "I mean <think>self literal</think>"),
+    ("muse_glimmer", "prefilled_response_guided_closer_inside_invoke_quote",
+     "UNIFIED.muse-3", '<atem:invoke name="</atem:invoke>', "I mean to=selfliteral"),
+])
+def test_response_pending_header_preserves_the_call_and_visible_prefix(family, scenario, case_id, header, visible):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert numbered_id(scenario) == case_id
+    assert case["input"].endswith(header + G.GUIDED_ONE_CALL)
+    assert case["init"] == {
+        "starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None,
+    }
+    assert case["golden"] == [
+        {"kind": "text", "text": visible},
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+
+
 def test_deepseek_v41_empty_calls_envelope_keeps_4b():
     scenario = "tool_markup_only_emits_nothing"
     case = build_cases("deepseek_v41")[f"UNIFIED.{scenario}.deepseek_v41"]
@@ -451,11 +620,25 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             for case_id, case in cases.items()
             if case["init"]["starting_state"] == "Response"
         }
-        extra = {"guided_json_quoted_bare_tool_header_in_answer"} if family == "muse_glimmer" else set()
+        extra = {
+            "deepseek_v41": {"prefilled_response_guided_pending_invoke_header"},
+            "muse_glimmer": {
+                "prefilled_response_guided_closer_inside_invoke_quote",
+                "guided_json_quoted_bare_tool_header_in_answer",
+            },
+        }.get(family, set())
+        native_parameter_scenarios = {
+            "guided_json_native_parameter_object_before_payload",
+            "guided_json_native_parameter_array_before_payload",
+        } if family in {"qwen3", "muse_glimmer"} else set()
+        extra |= native_parameter_scenarios
         assert set(response_cases) == response_scenarios | extra
         marker = "<|message|>" if family == "muse_glimmer" else control_tokens(family)[0]
-        for case in response_cases.values():
+        native_marker = "<atem:parameter" if family == "muse_glimmer" else "<parameter="
+        for scenario, case in response_cases.items():
             assert marker in case["input"]
+            if scenario in native_parameter_scenarios:
+                assert native_marker in case["input"]
 
 
 # --- scenario scope must be DECLARED, never inferred from a gap -----------------
@@ -515,10 +698,6 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
         "arg_string_null_ref": {"glm47"},
-        "glm_ref_object": {"glm47"},
-        "glm_ref_encoded_targets": {"glm47"},
-        "glm_ref_json_looking_strings": {"glm47"},
-        "glm_ref_scalar_types": {"glm47"},
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
@@ -576,51 +755,6 @@ def test_glm_reference_goldens_use_the_tool_parameters_root(scenario: str, value
     assert not matches_schema({"city": value}, parameters)
 
 
-@pytest.mark.parametrize("scenario,label,arguments,references", [
-    ("glm_ref_object", "7-9", {"payload": {"x": 1}},
-     {"payload": "#/$defs/Payload"}),
-    ("glm_ref_encoded_targets", "7-11", {"space": 42, "utf8_plus": 42, "pointer": 42},
-     {"space": "#/$defs/postal%20code", "utf8_plus": "#/$defs/caf%c3%a9+",
-      "pointer": "#/$defs/a%7E1b%7E0c"}),
-    ("glm_ref_json_looking_strings", "7-12",
-     {"object_text": '{"x":1}', "array_text": '[1,2]',
-      "quoted_text": '"hello"', "inline_text": '{"x":1}'},
-     {key: "#/$defs/Text" for key in ("object_text", "array_text", "quoted_text")}),
-    ("glm_ref_scalar_types", "7-13", {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
-     {"count": "#/$defs/Integer", "ratio": "#/$defs/Number",
-      "flag": "#/$defs/Boolean", "narrowed": "#/$defs/Scalar"}),
-])
-def test_glm_type_reference_goldens_keep_raw_refs_and_schema_valid_arguments(
-    scenario: str, label: str, arguments: dict, references: dict[str, str],
-) -> None:
-    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
-    parameters = case["tools"][0]["parameters"]
-    assert numbered_id(scenario) == f"UNIFIED.{label}"
-    for key, reference in references.items():
-        assert parameters["properties"][key] == (
-            {"$ref": reference, "type": "integer"} if key == "narrowed" else {"$ref": reference}
-        )
-    assert case["golden"] == [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}]
-    assert matches_schema(arguments, parameters)
-    _assert_input_carries_events("glm47", scenario, case)
-
-
-@pytest.mark.parametrize("scenario,key,value", [
-    ("glm_ref_object", "payload", '{"x":1}'),
-    ("glm_ref_encoded_targets", "pointer", "42"),
-    ("glm_ref_json_looking_strings", "quoted_text", "hello"),
-    ("glm_ref_scalar_types", "narrowed", "42"),
-])
-def test_glm_reference_input_oracle_rejects_changed_golden_values(
-    scenario: str, key: str, value: object,
-) -> None:
-    case = json.loads(json.dumps(build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]))
-    _assert_input_carries_events("glm47", scenario, case)
-    case["golden"][0]["arguments"][key] = value
-    with pytest.raises(AssertionError, match="input call differs from golden"):
-        _assert_input_carries_events("glm47", scenario, case)
-
-
 def test_reference_oracle_preserves_chained_targets_and_sibling_constraints() -> None:
     parameters = {"$defs": {"City/Type": {"type": ["string", "null"]},
                             "Alias": {"$ref": "#/$defs/City~1Type"}},
@@ -656,6 +790,7 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert "<think>quoted</think>" in value
     assert '&amp; "x"' + "\\" + "\n" in value
     assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-3"
+    assert historical_case_label("7-3") == "7-3"
 
 
 @pytest.mark.parametrize("family", FAMILIES)
@@ -725,32 +860,48 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 93,
-            "deepseek_v41": 93,
-            "gemma4": 95,
+            "deepseek_v4": 97,
+            "deepseek_v41": 94,
+            "gemma4": 99,
             "glm47": 100,
-            "kimi_k2": 93,
-            "kimi_k3": 101,
-            "muse_glimmer": 94,
-            "qwen3": 93,
+            "kimi_k2": 97,
+            "kimi_k3": 104,
+            "muse_glimmer": 101,
+            "qwen3": 101,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 793
 
 
-def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
-        f"31-{number}" for number in range(31, 41)
+def test_restored_case_ids_resolve_as_current_or_historical_labels():
+    restored = {
+        ("kimi_k2", "1-2"): "kimi_k2-1",
+        ("deepseek_v41", "7-3"): "7-3",
+        (None, "30-14"): "30-14",
+        ("qwen3", "31-31"): "qwen3-1",
+        ("qwen3", "31-32"): "qwen3-2",
+        (None, "31-33"): "34-8",
+        (None, "31-34"): "35-3",
+        (None, "31-35"): "35-4",
+        ("qwen3", "31-36"): "qwen3-3",
+        ("muse_glimmer", "31-37"): "muse-2",
+        ("deepseek_v4", "31-38"): "deepseek_v4-1",
+        ("gemma4", "31-39"): "gemma-3",
+        (None, "31-40"): "34-9",
+        ("deepseek_v41", "50-1"): "deepseek_v41-2",
+        ("muse_glimmer", "50-2"): "muse-3",
     }
-    assert len(UNIFIED_TAX) == 112
-    assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
-        numbered_id(scenario) for scenario in UNIFIED_TAX
-    }
+    assert len(UNIFIED_TAX) == 126
+    assert len(restored) == 15
+    assert {
+        (family, historical_case_label(case_id, family))
+        for family, case_id in restored
+    } == {(family, current) for (family, _case_id), current in restored.items()}
 
 
 def _assert_documented_deepseek_counts(text):
     counts = re.search(r"current corpus emits (\d+) of the (\d+) taxonomy cases", text)
-    exclusions = re.search(r"The (\d+) omitted cases", text)
+    exclusions = re.search(r"The (\d+) intentional not-applicable cases", text)
     assert counts and exclusions, "DeepSeek V4.1 applicability counts are missing"
     applicable = len(build_cases("deepseek_v41"))
     assert tuple(map(int, counts.groups())) == (applicable, len(UNIFIED_TAX))
@@ -762,7 +913,7 @@ def test_documented_deepseek_counts_match_generated_applicability():
     _assert_documented_deepseek_counts(text)
 
 
-@pytest.mark.parametrize("pattern", [r"current corpus emits \d+", r"The \d+ omitted cases"])
+@pytest.mark.parametrize("pattern", [r"current corpus emits \d+", r"The \d+ intentional not-applicable"])
 def test_documented_deepseek_counts_reject_stale_prose(pattern):
     text = (UTILS / "lib/parsers/UNIFIED_CASES.md").read_text()
     _assert_documented_deepseek_counts(text)
@@ -986,9 +1137,14 @@ def _family_value(scenario, family):
         recipient = quoted[scenario]
         return (f"I mean to={recipient}literal" if family == "muse_glimmer"
                 else f"I mean {reason_open}{recipient} literal{reason_close}")
-    if scenario == "prefilled_response_reasoning_markers_literal":
+    if scenario in {
+        "prefilled_response_reasoning_markers_literal",
+        "guided_json_native_parameter_object_before_payload",
+        "guided_json_native_parameter_array_before_payload",
+    }:
+        suffix = " then a call" if scenario == "prefilled_response_reasoning_markers_literal" else ""
         return ("to=selfliteral" if family == "muse_glimmer"
-                else f"{reason_open}literal{reason_close}") + " then a call"
+                else f"{reason_open}literal{reason_close}") + suffix
     return None
 
 
@@ -1125,7 +1281,7 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
     assert _native_input_calls("kimi_k2", raw) == []
 
 
-def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+def _assert_input_carries_events(family, scenario, case):
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
@@ -1142,17 +1298,19 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    if family not in {"qwen3", "glm47"} or not isinstance(value, str):
-                        continue
-                    if value == "null" and matches_schema(None, schema, parameters):
-                        candidate["arguments"][key] = None
-                    elif not matches_schema(value, schema, parameters):
+                    if family == "glm47" and isinstance(value, str):
                         try:
-                            decoded = json.loads(value)
+                            parsed_value = json.loads(value)
                         except json.JSONDecodeError:
-                            continue
-                        if matches_schema(decoded, schema, parameters):
-                            candidate["arguments"][key] = decoded
+                            pass
+                        else:
+                            if not isinstance(parsed_value, str) and matches_schema(
+                                parsed_value, schema, parameters
+                            ):
+                                candidate["arguments"][key] = parsed_value
+                                continue
+                    if value == "null" and family in {"qwen3", "glm47"} and matches_schema(None, schema, parameters):
+                        candidate["arguments"][key] = None
         else:
             candidates = []
             for value in _json_values(raw):
@@ -1254,6 +1412,16 @@ def _assert_cross_family_contract(corpus):
                 # Complete native argument bodies are input even when guided mode
                 # suppresses them. Goldens alone cannot detect a changed stress value.
                 suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
+                if scenario == "guided_json_reasoning_markers_inside_native_parameter":
+                    opener, closer, _, _ = control_tokens(family)
+                    assert suppressed == [{"kind": "tool_call", "name": "f", "arguments": {"x": opener + "quoted" + closer}}], (
+                        family, scenario, "wrong suppressed marker role or payload",
+                    )
+                    suppressed[0]["arguments"]["x"] = "FAMILY_REASONING_MARKERS"
+                if scenario in {"guided_json_native_parameter_object_before_payload", "guided_json_native_parameter_array_before_payload"}:
+                    for call in suppressed:
+                        if isinstance(call["arguments"]["x"], str):
+                            call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX)
     for scenario, families in by_scenario.items():

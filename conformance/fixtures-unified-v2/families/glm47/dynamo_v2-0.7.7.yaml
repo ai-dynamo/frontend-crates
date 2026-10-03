@@ -8,9 +8,6 @@ document:
   mode: unified
 changes:
   arg_json_null:
-    stimulus:
-      ref: current
-      semantic_sha256: e0bd137d2ba081c157c71cdabb937e66ecb427219323267b53233a1645e8582e
     observation:
       value:
         assembled:
@@ -33,11 +30,7 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4
   arg_json_null_anyof:
-    stimulus:
-      ref: current
-      semantic_sha256: eccac08560e92e7f65b30f294c5bc3322d014adf96b982adef66664f35a2efff
     observation:
       value:
         assembled:
@@ -60,11 +53,7 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.anyof
   arg_json_null_const:
-    stimulus:
-      ref: current
-      semantic_sha256: c404aa59a3efee0e018e00744443b4dfba4eeca1ac5667d9c798082326918aac
     observation:
       value:
         assembled:
@@ -87,11 +76,7 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.const
   arg_json_null_nullable:
-    stimulus:
-      ref: current
-      semantic_sha256: 379e97a02c3f2db0b30e5b36bce0c2d7ac5fecd903bc49e8feb786147da856b6
     observation:
       value:
         assembled:
@@ -114,11 +99,7 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.nullable
   arg_json_null_oneof:
-    stimulus:
-      ref: current
-      semantic_sha256: 73c36b22ca48a1be302a7e657b1cf97ea8d29d3111fd26946788132d0287b6b3
     observation:
       value:
         assembled:
@@ -141,8 +122,8 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.oneof
   arg_json_null_ref:
+    case_key: UNIFIED.7-4.ref
     stimulus:
       ref: current
       semantic_sha256: 21ea667d0468b4d5b7f456cf930d3255458b813b30eb04f53df076a052410784
@@ -168,11 +149,7 @@ changes:
             arguments: '{"city":null}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.ref
   arg_null_mixed_labels:
-    stimulus:
-      ref: current
-      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
     observation:
       value:
         assembled:
@@ -209,8 +186,8 @@ changes:
             arguments: '{"label":null,"note":null,"literal":"null"}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-4.mixed_labels
   arg_string_null_ref:
+    case_key: UNIFIED.7-5.ref
     stimulus:
       ref: current
       semantic_sha256: 9a96c2d0f8a9fddaada0b350c2c3d757529d281c043c06b7882ee3e33f2b83b4
@@ -236,6 +213,5 @@ changes:
             arguments: '{"city":"null"}'
             complete: true
         - expected: []
-    case_key: UNIFIED.7-5.ref
 metadata_changes: {}
 document_overrides: {}

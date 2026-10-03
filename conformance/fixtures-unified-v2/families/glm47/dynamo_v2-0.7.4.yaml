@@ -7,68 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  qwen_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: 007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: 8b077779c614b08816fb79a6ee04a5e19e49f6f94cb6d43e149bd6846850e23f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: " <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
-            complete: true
-        - expected: []
   arg_json_null:
     case_key: UNIFIED.7-4
     stimulus:
@@ -150,47 +88,6 @@ changes:
             arguments: '{"city":"null"}'
             complete: true
         - expected: []
-  arg_null_mixed_labels:
-    case_key: UNIFIED.7-4.mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: set_labels
-          arguments:
-            label: 'null'
-            note: 'null'
-            literal: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: set_labels
-            arguments: '{"label":"null","note":"null","literal":"null"}'
-            complete: true
-        - expected: []
   arg_json_null_nullable:
     case_key: UNIFIED.7-4.nullable
     stimulus:
@@ -243,6 +140,47 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: 'null'
+            note: 'null'
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":"null","note":"null","literal":"null"}'
             complete: true
         - expected: []
   arg_string_null_const:
@@ -385,6 +323,68 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 47220d3fa4b68152be80a9d5c6bbc570d62d61bbb2e14ce239e34f2b641c49eb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: 8b077779c614b08816fb79a6ee04a5e19e49f6f94cb6d43e149bd6846850e23f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218
     observation:
       value:
         assembled:

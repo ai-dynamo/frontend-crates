@@ -2602,18 +2602,25 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
 
     rows = []
 
+    duplicate_cases = {
+        ("deepseek_v41", "prefilled_reasoning_with_tool"): "UNIFIED.11-1",
+        ("deepseek_v41", "prefilled_reasoning_then_text_then_tool"): "UNIFIED.11-5",
+        ("deepseek_v41", "prefilled_reasoning_then_text"): "UNIFIED.10-2",
+    }
+    duplicate_cases.update({
+        (family, "guided_json_quoted_bare_tool_header_in_answer"): "UNIFIED.35-1"
+        for family in families if family != "muse_glimmer"
+    })
+
     def _unified_na_cell(family: str, scenario: str, group_num: int) -> dict:
+        duplicate_of = duplicate_cases.get((family, scenario))
         note = (
             f"Not applicable to {family}: this scenario is authored only for "
             f"{', '.join(sorted(gen_unified_golden.scenario_families(scenario)))}. "
             f"{scn_desc[scenario]}"
         )
-        if scenario == "guided_json_quoted_bare_tool_header_in_answer":
-            note = (
-                "This is a duplication of UNIFIED.35-1 for this family: the existing "
-                "variant changes only the literal text inside its reasoning markers. "
-                "Muse's to=get_weather header exercises a separate recipient boundary."
-            )
+        if duplicate_of:
+            note = f"Duplicate of {duplicate_of}: same observable event contract for {family}."
         unavailable = {"unavailable": note}
         return {
             "kind": "cell",
@@ -2623,6 +2630,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             "col_group": f"unified_g{group_num}",
             "band": _band(group_num),
             "status": "na",
+            "duplicate_of": duplicate_of,
             "red_on_diff": False,
             "cmp": {candidate["key"]: markers.cmp_entry(0, na=1) for candidate in candidates},
             "facts": [],
@@ -2646,6 +2654,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "refs": [],
                 "leak_note": None,
                 "na_note": note,
+                "duplicate_of": duplicate_of,
             },
         }
 
@@ -2654,6 +2663,11 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         for s in scenarios:
             c = by_key.get((f, s))
             if not c:
+                duplicate_of = duplicate_cases.get((f, s))
+                if duplicate_of:
+                    g_num, _g_sub = _tax(s)
+                    cells[s] = _unified_na_cell(f, s, g_num)
+                    continue
                 applicable = gen_unified_golden.scenario_families(s)
                 if f not in applicable:
                     g_num, _g_sub = _tax(s)
@@ -2839,12 +2853,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     for pv in reversed(dynamo_history_vers)
                 ],
                 "baseline": None, "reasons": reasons, "dynamo_notes": [], "refs": [],
-                "leak_note": None, "na_note": None,
+                "leak_note": None, "na_note": None, "duplicate_of": None,
             }
             cells[s] = {
                 "kind": "cell", "case_id": unified_taxonomy.numbered_id(s), "family": f, "sub": s,
                 "col_group": f"unified_g{g_num}", "band": _band(g_num),
                 "status": "problem" if dynamo_failure else "ok", "red_on_diff": True,
+                "duplicate_of": None,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
             }
         rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,

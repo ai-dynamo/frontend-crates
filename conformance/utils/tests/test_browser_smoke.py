@@ -946,6 +946,38 @@ def test_legend_is_detailed_only(driver):
     assert detailed, "legend hidden in Detailed; it should be visible there"
 
 
+def test_duplicate_markers_are_detailed_only_and_name_the_canonical_case(driver, rendered_page):
+    driver.get(f"file://{rendered_page}?tab=tab-unified")
+
+    def state():
+        return driver.execute_script(
+            """
+            const markers = [...document.querySelectorAll('.duplicate-marker')];
+            return {
+              count: markers.length,
+              visible: markers.filter((marker) => getComputedStyle(marker).display !== 'none').length,
+              titles: markers.map((marker) => marker.getAttribute('title')),
+            };
+            """
+        )
+
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]');"
+        "if(v.checked){v.checked=false; v.dispatchEvent(new Event('change'));}"
+    )
+    overview = state()
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]');"
+        "v.checked=true; v.dispatchEvent(new Event('change'));"
+    )
+    detailed = state()
+
+    assert overview["count"] > 0, "Unified model rendered no duplicate markers"
+    assert overview["visible"] == 0, "duplicate marker leaked into Overview"
+    assert detailed["visible"] == detailed["count"], "duplicate marker hidden in Detailed"
+    assert all(title and title.startswith("Duplicate of UNIFIED.") for title in detailed["titles"])
+
+
 def test_touch_then_keyboard_does_not_pin(driver):
     """A keyboard activation after a touch must NOT inherit the touch's pinning.
 

@@ -748,10 +748,6 @@ changes:
           - kind: text
             text: <tool_call|>
   tool_no_close:
-    case_key: UNIFIED.5.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled: []

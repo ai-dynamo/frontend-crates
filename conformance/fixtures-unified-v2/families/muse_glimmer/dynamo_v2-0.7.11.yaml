@@ -48,9 +48,5 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
 metadata_changes: {}
 document_overrides: {}

@@ -8,9 +8,6 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: UNIFIED.7.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -36,9 +33,6 @@ changes:
         - expected: []
         - expected: []
   arg_unicode:
-    case_key: UNIFIED.7.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -63,9 +57,6 @@ changes:
             complete: true
         - expected: []
   content_then_reason_then_tool:
-    case_key: UNIFIED.11.f
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -102,9 +93,6 @@ changes:
             complete: true
         - expected: []
   empty_args:
-    case_key: UNIFIED.6.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -125,9 +113,6 @@ changes:
             complete: true
         - expected: []
   interstitial_text:
-    case_key: UNIFIED.11.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -164,9 +149,6 @@ changes:
             complete: true
         - expected: []
   narrated_calls:
-    case_key: UNIFIED.8.e
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -239,9 +221,6 @@ changes:
             complete: true
         - expected: []
   reason_after_tool:
-    case_key: UNIFIED.11.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -283,9 +262,6 @@ changes:
           - kind: text
             text: It's 18C.
   reason_between_calls:
-    case_key: UNIFIED.11.i
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -336,9 +312,6 @@ changes:
             complete: true
         - expected: []
   reason_interleaved:
-    case_key: UNIFIED.11.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -394,9 +367,6 @@ changes:
             complete: true
         - expected: []
   reason_markup_in_arg:
-    case_key: UNIFIED.12.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -427,9 +397,6 @@ changes:
             complete: true
         - expected: []
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -470,9 +437,6 @@ changes:
           - kind: text
             text: ' done.'
   reason_then_tool:
-    case_key: UNIFIED.11.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -504,9 +468,6 @@ changes:
             complete: true
         - expected: []
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11.h
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -567,9 +528,6 @@ changes:
             text: C
         - expected: []
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -640,9 +598,6 @@ changes:
   retired__51_b:
     absent: true
   text_before_tool:
-    case_key: UNIFIED.8.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -672,9 +627,6 @@ changes:
             complete: true
         - expected: []
   text_between_calls:
-    case_key: UNIFIED.8.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -723,9 +675,6 @@ changes:
             complete: true
         - expected: []
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11.j
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -791,9 +740,6 @@ changes:
             complete: true
         - expected: []
   text_sandwich:
-    case_key: UNIFIED.8.c
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -828,9 +774,6 @@ changes:
           - kind: text
             text: ' After.'
   tool_in_reason:
-    case_key: UNIFIED.12.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -867,9 +810,6 @@ changes:
             text: ' now answer'
         - expected: []
   tool_in_reason_with_text:
-    case_key: UNIFIED.12.d
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -914,9 +854,6 @@ changes:
           - kind: text
             text: ' Here you go.'
   tool_only:
-    case_key: UNIFIED.1.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -941,9 +878,6 @@ changes:
             complete: true
         - expected: []
   trailing_text_after_tool:
-    case_key: UNIFIED.8.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -973,9 +907,6 @@ changes:
           - kind: text
             text: The forecast shows clear skies for the rest of the week.
   two_calls:
-    case_key: UNIFIED.2.a
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:
@@ -1019,9 +950,6 @@ changes:
             complete: true
         - expected: []
   two_calls_same_name:
-    case_key: UNIFIED.2.b
-    stimulus:
-      ref: current
     observation:
       value:
         assembled:

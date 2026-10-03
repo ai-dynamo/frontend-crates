@@ -52,9 +52,7 @@ def canonical_toolcalling_case_key(case_id: str) -> str:
 def historical_unified_case_key(family: str, key: str) -> str:
     """Read historical archive IDs through the scenario-owned taxonomy aliases."""
     label = key.removeprefix("UNIFIED.")
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
-    return f"UNIFIED.{historical_case_label(label)}"
+    return f"UNIFIED.{historical_case_label(label, family)}"
 
 
 def canonical_unified_case_key(family: str, key: str, scenario: str | None = None) -> str:

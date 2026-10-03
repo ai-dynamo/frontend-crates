@@ -214,10 +214,24 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
 
 
 @pytest.mark.parametrize(
-    ("current_roots", "complete_snapshot"),
+    (
+        "current_roots",
+        "complete_snapshot",
+        "excluded_capture_dirs",
+        "capture_dirs",
+        "expected_required_capture_dirs",
+    ),
     [
-        ((), False),
-        (("inputs", "golden"), True),
+        ((), False, frozenset(), (), frozenset()),
+        (("inputs", "golden"), True, frozenset(), (), frozenset()),
+        ((), False, frozenset({"vllm_python-0.27.1"}), (), frozenset()),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset({"dynamo_v2-0.7.8"}),
+            ("dynamo_v2-0.7.8",),
+            frozenset({"dynamo_v2-0.7.8"}),
+        ),
     ],
 )
 def test_build_shards_passes_exact_inactive_unified_capture_directories(
@@ -225,11 +239,16 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
     monkeypatch,
     current_roots,
     complete_snapshot,
+    excluded_capture_dirs,
+    capture_dirs,
+    expected_required_capture_dirs,
 ):
     stage = tmp_path / "stage"
     (stage / "unified").mkdir(parents=True)
     for root in current_roots:
         (stage / "unified" / root).mkdir()
+    for capture_dir in capture_dirs:
+        (stage / "unified" / capture_dir).mkdir()
     history = tmp_path / "history"
     history.mkdir()
     blobs = tmp_path / "blobs"
@@ -248,9 +267,11 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
         *,
         complete_snapshot,
         required_capture_dirs,
+        **kwargs,
     ):
         observed["complete_snapshot"] = complete_snapshot
         observed["required_capture_dirs"] = required_capture_dirs
+        observed.update(kwargs)
         return []
 
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
@@ -258,12 +279,20 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
     monkeypatch.setattr(unified_history, "update_store_from_loose", update_store)
     monkeypatch.setattr(unified_history, "store_digest", lambda _root: ("0" * 64, 0))
 
-    package_fixtures.build_shards(stage, blobs, history_root=history)
+    package_fixtures.build_shards(
+        stage,
+        blobs,
+        history_root=history,
+        excluded_unified_capture_dirs=excluded_capture_dirs,
+    )
 
-    assert observed == {
+    expected = {
         "complete_snapshot": complete_snapshot,
-        "required_capture_dirs": frozenset(),
+        "required_capture_dirs": expected_required_capture_dirs,
     }
+    if excluded_capture_dirs:
+        expected["excluded_capture_dirs"] = excluded_capture_dirs
+    assert observed == expected
 
 
 @pytest.mark.parametrize("failure_stage", ["history", "archives", "manifest"])
@@ -628,9 +657,27 @@ def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_pa
 @pytest.mark.parametrize(("family", "old", "new"), [
     ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-1"),
     ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-2"),
+    ("kimi_k2", "UNIFIED.1-2", "UNIFIED.kimi_k2-1"),
+    ("deepseek_v41", "UNIFIED.7-3", "UNIFIED.7-3"),
+    ("deepseek_v41", "UNIFIED.deepseek_v41-1", "UNIFIED.7-3"),
+    ("qwen3", "UNIFIED.31-31", "UNIFIED.qwen3-1"),
+    ("qwen3", "UNIFIED.31-32", "UNIFIED.qwen3-2"),
+    ("deepseek_v4", "UNIFIED.31-38", "UNIFIED.deepseek_v4-1"),
+    ("gemma4", "UNIFIED.31-39", "UNIFIED.gemma-3"),
+    ("muse_glimmer", "UNIFIED.31-37", "UNIFIED.muse-2"),
+    ("muse_glimmer", "UNIFIED.50-2", "UNIFIED.muse-3"),
+    ("deepseek_v41", "UNIFIED.50-1", "UNIFIED.deepseek_v41-2"),
+    ("qwen3", "UNIFIED.31-36", "UNIFIED.qwen3-3"),
+    ("gemma4", "UNIFIED.31-33", "UNIFIED.34-8"),
+    ("qwen3", "UNIFIED.31-34", "UNIFIED.35-3"),
+    ("muse_glimmer", "UNIFIED.31-35", "UNIFIED.35-4"),
+    ("gemma4", "UNIFIED.31-40", "UNIFIED.34-9"),
     ("qwen3", "UNIFIED.31.a", "UNIFIED.31-1"),
     ("gemma4", "UNIFIED.31.x", "UNIFIED.34-6"),
     ("qwen3", "UNIFIED.31-29", "UNIFIED.31-29"),
+    ("gemma4", "UNIFIED.1-2", "UNIFIED.1-2"),
+    ("qwen3", "UNIFIED.7-3", "UNIFIED.7-3"),
+    ("deepseek_v41", "UNIFIED.31-36", "UNIFIED.31-36"),
     ("qwen3", "UNIFIED.30.m", "UNIFIED.30-13"),
     ("qwen3", "UNIFIED.1.a", "UNIFIED.1-1"),
     ("muse_glimmer", "UNIFIED.31-26", "UNIFIED.muse-1"),

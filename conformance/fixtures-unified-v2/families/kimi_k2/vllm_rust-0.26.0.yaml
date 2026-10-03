@@ -5,207 +5,175 @@ provenance:
 document:
   mode: unified
 changes:
-  guided_json_gt_in_argument_bare_opener:
-    case_key: UNIFIED.30.m
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-4.anyof
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: e867356fd12138d19a377476cc90e87672d874d9830103ba75993b8cfb33b866
     observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: text
-            text: 'functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-  guided_json_narrated_prefix_inside_reasoning:
-    case_key: UNIFIED.31-22
-    stimulus:
       unavailable:
-        code: original_request_not_retained
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_json_null_const:
+    case_key: UNIFIED.7-4.const
+    stimulus:
+      ref: current
+      semantic_sha256: 41c426654256ed5b9817cdfa05c3711987eb5df84dcebc0a3a224c3ee4f53eb8
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-4.nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 2873c69865ff78ad578143dc5df23f72135614afb06ccac71feabd60b40e7479
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-4.oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 16f0af420f5cf20f4599be8f75fb76dfb9c7b27220466aea3583dc164573be83
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 8776039283ee9c71168284b4990799cc1c09a57ee375092c0a3d431443f1f4d7
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_const:
+    case_key: UNIFIED.7-5.const
+    stimulus:
+      ref: current
+      semantic_sha256: 7a41bb704ded1018566540afc65435d6c67774dff5a957e3075f480724852a68
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
+    stimulus:
+      ref: current
+      semantic_sha256: af7e4fecc2fd083beaeb7b2f7949239d133ce8db38acc1f0a256931959cda8fe
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 1ee5ef51b5ecffedb458508eaf901f7d08cc89a705adbb441efaba33121a9c37
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 4108782299c7e01df3b8f7814432e269251a11400472c63fbcf007d944baa004
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
+    stimulus:
+      ref: current
+      semantic_sha256: 5e0898ce696caa5ba78e30c44b32d0157c031cd51acfdbdb6e9e45710a991720
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-5.untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: 4eab2521a0881f99a4083eaa8c1baf957ae70d2cd55dfe8fe23b8cc592150bbc
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: a27329512418077440ae487d97b5e72525a84485b7318966542f6d70d2383466
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: I'll call <|tool_call_begin|>functions.get_weather
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: 'I''ll call '
-        - expected:
-          - kind: reasoning
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: reasoning
-            text: functions.get_weather
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-  guided_json_native_markup_only:
-    case_key: UNIFIED.31-23
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
+          text: quoted
         - kind: tool_call
-          name: get_weather
+          name: f
           arguments:
-            city: Paris
+            x: "  <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "
         chunks:
         - expected: []
         - expected: []
         - expected: []
         - expected:
           - kind: tool_call
-            name: get_weather
+            name: f
             arguments: ''
         - expected:
           - kind: tool_call
             name: null
-            arguments: '{"city": "Paris"}'
+            arguments: '{"x": " '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|tool_calls_section_begin|>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|tool_calls_section_end|>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|tool_call_end|>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' &amp; \"x\"\\\n "}'
         - expected: []
         - expected: []
-  guided_json_schema_error_nameless_element_bare_opener:
-    case_key: UNIFIED.31-20
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: 75f5a4ae417384d04da1c04240c8fdbba6b428b6faf807a49bca5bc251020a60
     observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: text
-            text: 'functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-  guided_json_schema_error_not_a_call_bare_opener:
-    case_key: UNIFIED.31-17
-    stimulus:
       unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_call_begin|>functions.{"unexpected": "shape"}'
-        chunks:
-        - expected:
-          - kind: text
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: text
-            text: 'functions.{"unexpected": "shape"}'
-  guided_json_stray_prefix_before_reasoning:
-    case_key: UNIFIED.31-21
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: secret
-        - kind: text
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
-          - kind: text
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: text
-            text: functions.
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: secret
-        - expected: []
-        - expected:
-          - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-  guided_json_syntax_error_bare_opener:
-    case_key: UNIFIED.31-14
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": '
-        chunks:
-        - expected:
-          - kind: text
-            text: <|tool_call_begin|>
-        - expected:
-          - kind: text
-            text: 'functions.[{"name": "get_weather", "arguments": {"city": '
-  guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.31-24
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'thinking<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: thinking
-        - expected:
-          - kind: reasoning
-            text: <|tool_calls_section_begin|>
-        - expected:
-          - kind: reasoning
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected:
-          - kind: reasoning
-            text: <|tool_calls_section_end|>
-  two_adjacent_reason_spans:
-    case_key: UNIFIED.10.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'first
-
-            second'
-        - kind: text
-          text: done
-        chunks:
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: first
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: '
-
-              second'
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
 metadata_changes: {}
 document_overrides: {}
