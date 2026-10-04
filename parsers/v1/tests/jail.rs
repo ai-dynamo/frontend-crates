@@ -430,6 +430,51 @@ mod tests {
     use test_utils::*;
 
     #[tokio::test]
+    async fn minimax_literal_markers_survive_every_utf8_split() {
+        let value = "  Montréal &amp; a</invoke>b</minimax:tool_call>c<minimax:tool_call><invoke name=\"fake\"><parameter name=\"later\">literal\n  ";
+        let input = format!(
+            "<minimax:tool_call><invoke name=\"echo\"><parameter name=\"text\">{value}</parameter><parameter name=\"later\">ok</parameter></invoke></minimax:tool_call>"
+        );
+        for copies in [1, 2] {
+            let input = input.repeat(copies);
+            for split in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+                let chunks = vec![
+                    create_mock_response_chunk(input[..split].to_string(), 0),
+                    create_mock_response_chunk(input[split..].to_string(), 0),
+                    create_final_response_chunk(0),
+                ];
+                let jail = JailedStream::builder()
+                    .tool_call_parser("minimax_m2")
+                    .build();
+                let results: Vec<_> = jail
+                    .apply_with_finish_reason(stream::iter(chunks))
+                    .collect()
+                    .await;
+                let calls: Vec<_> = results
+                    .iter()
+                    .filter_map(|result| result.data.as_ref())
+                    .flat_map(|data| &data.choices)
+                    .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                    .flatten()
+                    .collect();
+                assert_eq!(calls.len(), copies, "split {split}");
+                for call in calls {
+                    let function = call.function.as_ref().unwrap();
+                    assert_eq!(function.name.as_deref(), Some("echo"));
+                    let arguments: serde_json::Value =
+                        serde_json::from_str(function.arguments.as_deref().unwrap()).unwrap();
+                    assert_eq!(arguments, serde_json::json!({"text": value, "later": "ok"}));
+                }
+                assert_eq!(
+                    test_utils::reconstruct_content(&results),
+                    "",
+                    "split {split}"
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn test_jailed_stream_with_start_end_sequences() {
         // Create chunks with jail start/end markers
         let chunks = vec![
