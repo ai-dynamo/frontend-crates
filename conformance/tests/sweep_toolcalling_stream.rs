@@ -37,7 +37,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 mod common;
-use common::{collect_yaml, fixture_name};
+use chunking::{Assembled, KnownDivergences};
+use common::{collect_yaml, fixture_name, known_toolcalling_chunking as chunking};
 
 use dynamo_parsers_v2::{
     REGISTERED_FAMILIES, Tool, ToolParseResult, ToolParser, create_tool_parser_for_family,
@@ -82,12 +83,6 @@ struct Chunk {
 /// Chunking-independent view of a full parse: per-index (name, parsed args)
 /// plus the concatenated `normal_text`. Delta *granularity* may differ across
 /// chunkings (name+args in one delta vs split); the assembly must not.
-#[derive(Debug, PartialEq, Eq)]
-struct Assembled {
-    calls: Vec<(String, Value)>,
-    normal_text: String,
-}
-
 fn assemble(results: &[ToolParseResult]) -> Assembled {
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut args: BTreeMap<usize, String> = BTreeMap::new();
@@ -203,21 +198,8 @@ struct SweepStats {
 }
 
 /// Load the strict chunking-divergence allowlist: family -> case id -> note.
-fn load_allowlist() -> BTreeMap<String, BTreeMap<String, String>> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("toolcalling/known-chunking-divergences.yaml");
-    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let allow: BTreeMap<String, BTreeMap<String, String>> =
-        serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    for (fam, cases) in &allow {
-        for (cid, note) in cases {
-            assert!(
-                !note.trim().is_empty(),
-                "{fam}:{cid}: empty note in known-chunking-divergences.yaml"
-            );
-        }
-    }
-    allow
+fn load_allowlist() -> KnownDivergences {
+    chunking::load()
 }
 
 // ── Test ──────────────────────────────────────────────────────────────────────
@@ -267,9 +249,7 @@ fn toolcalling_stream_split_sweep() {
                 subsampled_cases: 0,
             });
             let label = format!("{} {cid}", fx.family);
-            let allowlisted = allowlist
-                .get(&fx.family)
-                .is_some_and(|c| c.contains_key(cid.as_str()));
+            let allowlisted = allowlist.get(&fx.family).and_then(|c| c.get(cid.as_str()));
 
             if token_path {
                 let full: Vec<u32> = case
@@ -289,10 +269,15 @@ fn toolcalling_stream_split_sweep() {
                     stat.chunkings += 1;
                     if got != reference {
                         diverged.insert((fx.family.clone(), cid.clone()));
-                        if !allowlisted {
-                            failures.push(format!(
+                        match allowlisted {
+                            Some(expected) if got == expected.got && reference == expected.want => {}
+                            Some(expected) => failures.push(format!(
+                                "{label} [{desc}]: known divergence changed\n expected got {:?}\n expected want {:?}\n actual got {got:?}\n actual want {reference:?}",
+                                expected.got, expected.want
+                            )),
+                            None => failures.push(format!(
                                 "{label} [{desc}]:\n        got  {got:?}\n        want {reference:?}"
-                            ));
+                            )),
                         }
                     }
                 };
@@ -323,10 +308,15 @@ fn toolcalling_stream_split_sweep() {
                     stat.chunkings += 1;
                     if got != reference {
                         diverged.insert((fx.family.clone(), cid.clone()));
-                        if !allowlisted {
-                            failures.push(format!(
+                        match allowlisted {
+                            Some(expected) if got == expected.got && reference == expected.want => {}
+                            Some(expected) => failures.push(format!(
+                                "{label} [{desc}]: known divergence changed\n expected got {:?}\n expected want {:?}\n actual got {got:?}\n actual want {reference:?}",
+                                expected.got, expected.want
+                            )),
+                            None => failures.push(format!(
                                 "{label} [{desc}]:\n        got  {got:?}\n        want {reference:?}"
-                            ));
+                            )),
                         }
                     }
                 };

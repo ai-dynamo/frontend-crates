@@ -21,6 +21,10 @@ from urllib.parse import quote, urlsplit
 from fixture_snapshot import fixture_snapshot_root
 
 
+# Case descriptions use legacy dotted IDs and numbered hyphenated IDs.
+CASE_DESCRIPTION_SUFFIX = r"[0-9]+(?:\.[a-z]|-[0-9]+)?"
+
+
 # ---------------------------------------------------------------------------
 # Destination-aware link resolution for the conformance generator. The generator
 # calls set_links() with its own output path before building, so the table builders

@@ -1167,7 +1167,9 @@ def materialize_store(
         family_name = history.family.name
         for case_id, change in sorted(state.items()):
             case = history.family.cases[case_id]
-            case_key = change["case_key"]
+            # Captures retain their original labels as evidence. Current views
+            # follow the stable owner when taxonomy numbers are reassigned.
+            case_key = case["display_id"] if case["lifecycle"] == "active" else change["case_key"]
             record, document_metadata = _materialized_record(case, change)
             document_metadata = dict(document_metadata)
             # Rust readers pass this field to the shared Python selector. Keep a

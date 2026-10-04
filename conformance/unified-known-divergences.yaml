@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Expected Unified parser mismatches captured by the conformance corpus. Each
+# entry pins the exact output pair so another failure in the same case still
+# fails CI. Entries that stop diverging fail as stale and must be removed.
+# Schema: family -> case ID -> check -> note and exact observed output.
+
+{}
