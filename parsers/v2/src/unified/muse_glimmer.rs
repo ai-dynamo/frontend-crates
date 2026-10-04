@@ -293,6 +293,58 @@ mod tests {
     }
 
     #[test]
+    fn native_parameter_preserves_control_markers_at_every_split() {
+        let value = " <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n ";
+        let input = tool_channel("get_weather", "city", value);
+        let want = vec![call("get_weather", serde_json::json!({"city": value}))];
+        assert_eq!(batch(&input), want);
+        for split in 0..=input.len() {
+            if input.is_char_boundary(split) {
+                assert_eq!(
+                    events(&[&input[..split], &input[split..]]),
+                    want,
+                    "split {split}"
+                );
+            }
+        }
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect();
+        assert_eq!(events(&chunks), want);
+    }
+
+    #[test]
+    fn unterminated_parameter_recovers_later_user_channel_at_eof() {
+        for terminator in ["<|eom|>", "<|eot|>", ""] {
+            for invoke_close in ["", "</atem:invoke>"] {
+                let input = format!(
+                    "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
+                     <atem:parameter name=\"x\">unfinished{invoke_close}{terminator}{}",
+                    channel("user", "Recovered answer.")
+                );
+                let want = vec![text("Recovered answer.")];
+                assert_eq!(batch(&input), want);
+                for split in 0..=input.len() {
+                    let mut parser = muse_glimmer_unified(&tools());
+                    assert!(parser.push(&input[..split]).expect("prefix").is_empty());
+                    assert!(parser.push(&input[split..]).expect("suffix").is_empty());
+                    assert_eq!(
+                        assemble(&parser.finish().expect("finish").events),
+                        want,
+                        "terminator {terminator:?}, invoke close {invoke_close:?}, split {split}"
+                    );
+                }
+                let chunks: Vec<_> = input
+                    .char_indices()
+                    .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                    .collect();
+                assert_eq!(events(&chunks), want);
+            }
+        }
+    }
+
+    #[test]
     fn malformed_guided_invoke_header_recovers_as_text_at_every_split() {
         let input = concat!(
             "Hello <atem:invoke name=\"get_weather\"",
@@ -766,34 +818,20 @@ mod tests {
     }
 
     #[test]
-    fn a_special_token_in_a_parameter_value_is_data_only_until_it_ends_the_channel() {
-        // `opaque: ["atem:parameter"]` in parser_families.yaml colours a parameter
-        // body as argument DATA. That holds for `<|message|>`, which has no
-        // body-cutting role, but NOT for the channel terminators: they close the
-        // message before `</atem:invoke>` arrives, so the invoke is truncated and
-        // dropped, and the residual markup surfaces as the prose it now is. Both
-        // engines truncate on `<|eom|>` / `<|eot|>` the same way.
-        //
-        // `<|start|>` is where the two sides part: this crate reads the decoded
-        // reserved token as a REAL channel switch (see the `next_channel_message`
-        // rationale in the v1 parser) and drops the call, while SGLang's `muse`
-        // detector keeps it as data and emits `{"x": "a<|start|>b"}`. The corpus has
-        // no case for it, so nothing renders it today — this pins which side of the
-        // gap Dynamo is on, so a change of mind is deliberate rather than silent.
+    fn special_tokens_in_parameter_values_are_data() {
         let call_of = |marker: &str| {
             format!(
                 "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
                  <atem:parameter name=\"x\">a{marker}b</atem:parameter></atem:invoke><|eom|>"
             )
         };
-        let truncated = vec![text("b</atem:parameter>")];
-        for marker in ["<|eom|>", "<|eot|>", "<|start|>"] {
-            assert_eq!(events(&[&call_of(marker)]), truncated, "marker {marker}");
+        for marker in ["<|eom|>", "<|eot|>", "<|start|>", "<|message|>"] {
+            assert_eq!(
+                events(&[&call_of(marker)]),
+                vec![call("f", serde_json::json!({"x": format!("a{marker}b")}))],
+                "marker {marker}",
+            );
         }
-        assert_eq!(
-            events(&[&call_of("<|message|>")]),
-            vec![call("f", serde_json::json!({"x": "a<|message|>b"}))]
-        );
     }
 
     #[test]

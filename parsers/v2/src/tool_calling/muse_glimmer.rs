@@ -84,6 +84,30 @@ fn parameter_re() -> &'static Regex {
     })
 }
 
+/// An open parameter owns its bytes until its closer arrives, including framed channel headers.
+fn outside_parameter(text: &str, marker: &str, at_eof: bool) -> Option<usize> {
+    static OPEN: OnceLock<Regex> = OnceLock::new();
+    let open =
+        OPEN.get_or_init(|| Regex::new(r#"<atem:parameter\b[^>]*?\bname="[^"]+"[^>]*?>"#).unwrap());
+    const CLOSE: &str = "</atem:parameter>";
+    let mut cursor = 0;
+    loop {
+        let tail = &text[cursor..];
+        let at = tail.find(marker)?;
+        let Some(parameter) = open.find(tail) else {
+            return Some(cursor + at);
+        };
+        if at < parameter.end() {
+            return Some(cursor + at);
+        }
+        let value_start = cursor + parameter.end();
+        let Some(end) = text[value_start..].find(CLOSE) else {
+            return at_eof.then_some(cursor + at);
+        };
+        cursor = value_start + end + CLOSE.len();
+    }
+}
+
 /// The channel the scanner is currently inside.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
@@ -762,7 +786,7 @@ impl MuseChannelScanner {
     ) -> anyhow::Result<()> {
         self.started = true;
         self.buffer.push_str(chunk);
-        self.drain(out)
+        self.drain(out, false)
     }
 
     /// Apply the channel state the prompt left this stream in, before any byte is
@@ -794,6 +818,9 @@ impl MuseChannelScanner {
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
         let mut out = Vec::new();
+        // EOF releases channel framing hidden by a parameter that never closed.
+        // The invoke scan still requires complete parameters, so it drops the call.
+        self.drain(&mut out, true)?;
         self.flush(&mut out);
         Ok(out)
     }
@@ -851,13 +878,21 @@ impl MuseChannelScanner {
         self.reasoning_join_armed = false;
     }
 
+    fn body_marker(&self, marker: &str, at_eof: bool) -> Option<usize> {
+        if self.state == State::InToolChannel {
+            outside_parameter(&self.buffer, marker, at_eof)
+        } else {
+            self.buffer.find(marker)
+        }
+    }
+
     /// Byte offset where the OPEN body ends, ignoring the bare-header recovery
     /// (which applies to reasoning only): the earliest terminator or framed
     /// header, else the buffer end.
-    fn tool_body_limit(&self) -> usize {
+    fn tool_body_limit(&self, at_eof: bool) -> usize {
         [EOM, EOT, START]
             .iter()
-            .filter_map(|m| self.buffer.find(m))
+            .filter_map(|m| outside_parameter(&self.buffer, m, at_eof))
             .min()
             .unwrap_or(self.buffer.len())
     }
@@ -869,7 +904,7 @@ impl MuseChannelScanner {
         let body = &self.buffer[..limit];
         let open = invoke_open_re().captures(body)?;
         let whole = open.get(0).expect("regex match has group 0");
-        let close = body[whole.end()..].find(INVOKE_CLOSE)?;
+        let close = outside_parameter(&body[whole.end()..], INVOKE_CLOSE, false)?;
         Some((whole.start(), whole.end() + close + INVOKE_CLOSE.len()))
     }
 
@@ -877,7 +912,7 @@ impl MuseChannelScanner {
     ///
     /// Every state change `continue`s rather than breaking, so one push of a
     /// multi-channel delta emits every complete call before the terminal chunk.
-    fn drain(&mut self, out: &mut Vec<UnifiedParserEvent>) -> anyhow::Result<()> {
+    fn drain(&mut self, out: &mut Vec<UnifiedParserEvent>, at_eof: bool) -> anyhow::Result<()> {
         loop {
             if self.state == State::Idle {
                 if self.buffer.is_empty() {
@@ -893,7 +928,7 @@ impl MuseChannelScanner {
             // A complete invoke inside the OPEN tool body emits as soon as its
             // close has streamed, before the channel terminator arrives.
             if self.state == State::InToolChannel
-                && let Some((start, end)) = self.next_invoke(self.tool_body_limit())
+                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(at_eof))
             {
                 let invoke = self.buffer[start..end].to_string();
                 self.buffer.drain(..end);
@@ -910,11 +945,11 @@ impl MuseChannelScanner {
 
             let terminator = [EOM, EOT]
                 .iter()
-                .filter_map(|t| self.buffer.find(t).map(|p| (p, t.len())))
+                .filter_map(|t| self.body_marker(t, at_eof).map(|p| (p, t.len())))
                 .min_by_key(|(p, _)| *p);
-            // Framed headers cut any body; bare headers cut only a reasoning body
+            // Framed headers outside parameters cut a body; bare headers cut only reasoning
             // (missing-`<|eom|>` recovery).
-            let start_pos = self.buffer.find(START);
+            let start_pos = self.body_marker(START, at_eof);
             let bare_pos = if self.state == State::InReasoning {
                 bare_header_pos(&self.buffer, self.last_body_char)
             } else {
