@@ -30,22 +30,32 @@ def _local_reference(root_schema: dict, reference: str) -> dict:
 def matches_schema(
     value: object, schema: dict, root_schema: dict | None = None,
     _references: tuple[str, ...] = (),
+    _inherited_nullable: bool = False,
 ) -> bool:
     root_schema = schema if root_schema is None else root_schema
+    nullable = _inherited_nullable or schema.get("nullable") is True
     if "$id" in schema:
         # Corpus $id controls are scalar declarations; reference scopes remain unsupported.
         assert schema.keys() <= {"$id", "type", "const", "enum"}, schema
-    assert schema.keys() <= {"$id", "type", "properties", "items", "anyOf", "oneOf", "const",
-                             "enum", "nullable", "minLength", "required", "$ref", "$defs", "definitions"}, schema
+    assert schema.keys() <= {
+        "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
+        "nullable", "minLength", "required", "$ref", "$defs", "definitions",
+        "allOf", "minimum",
+    }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
         assert reference not in _references, ("cyclic schema reference", reference)
         target = _local_reference(root_schema, reference)
-        if not matches_schema(value, target, root_schema, _references + (reference,)):
+        if not matches_schema(
+            value, target, root_schema, _references + (reference,), nullable
+        ):
+            return False
+        siblings = {key: item for key, item in schema.items() if key != "$ref"}
+        if not matches_schema(value, siblings, root_schema, _references, nullable):
             return False
     kind = schema.get("type")
     kinds = kind if isinstance(kind, list) else [kind] if kind else []
-    if kinds and schema.get("nullable") is True:
+    if nullable and kinds:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
              "number": type(value) in (int, float),
@@ -60,9 +70,22 @@ def matches_schema(
         return False
     if "enum" in schema and value not in schema["enum"]:
         return False
-    if "anyOf" in schema and not any(matches_schema(value, branch, root_schema, _references) for branch in schema["anyOf"]):
+    if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
         return False
-    if "oneOf" in schema and sum(matches_schema(value, branch, root_schema, _references) for branch in schema["oneOf"]) != 1:
+    if "anyOf" in schema and not any(
+        matches_schema(value, branch, root_schema, _references, nullable)
+        for branch in schema["anyOf"]
+    ):
+        return False
+    if "oneOf" in schema and sum(
+        matches_schema(value, branch, root_schema, _references, nullable)
+        for branch in schema["oneOf"]
+    ) != 1:
+        return False
+    if "allOf" in schema and not all(
+        matches_schema(value, branch, root_schema, _references, nullable)
+        for branch in schema["allOf"]
+    ):
         return False
     if isinstance(value, str) and len(value) < schema.get("minLength", 0):
         return False
@@ -70,7 +93,12 @@ def matches_schema(
         if not set(schema.get("required", [])) <= value.keys():
             return False
         properties = schema.get("properties", {})
-        return all(matches_schema(item, properties[key], root_schema, _references) for key, item in value.items() if key in properties)
+        if not all(key in value for key in schema.get("required", [])):
+            return False
+        return all(
+            matches_schema(item, properties[key], root_schema, _references)
+            for key, item in value.items() if key in properties
+        )
     if isinstance(value, list) and "items" in schema:
         return all(matches_schema(item, schema["items"], root_schema, _references) for item in value)
     return True

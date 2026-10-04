@@ -57,6 +57,8 @@ UNIFIED_TAX = {
     "unused_reference_graph_parameter_types": (7, "14"),
     "nullable_reference_alias_literals": (7, "15"),
     "local_schema_id_preserves_type": (7, "16"),
+    "deepseek_v41_json_invocation_body": ("deepseek", "1"),
+    "glm47_reference_type_intersection": ("glm5", "2"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
@@ -180,11 +182,12 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
-    "deepseek_v4": "DeepSeek V4-specific tests",
-    "gemma": "Gemma-specific tests",
-    "glm5": "GLM-specific tests",
-    "kimi": "Kimi-specific tests",
-    "muse": "Muse-specific tests",
+    "deepseek_v4": "Single Family Test: DeepSeek V4-specific tests",
+    "gemma": "Single Family Test: Gemma 4 guided call-prefix boundaries",
+    "glm5": "Single Family Test: GLM argument handling",
+    "deepseek": "Single Family Test: DeepSeek V4.1 DSML invocation bodies",
+    "kimi": "Single Family Test: Kimi K3 XTML",
+    "muse": "Single Family Test: Muse-specific",
 }
 
 
@@ -238,6 +241,8 @@ def numbered_id(scenario):
 # read-side bridge from their former labels to the scenario-owned current label.
 # Current inputs and goldens use ``numbered_id`` and never write these aliases.
 LEGACY_CASE_LABELS = {
+    "7-6": "deepseek_v41_json_invocation_body",
+    "7-7": "glm47_reference_type_intersection",
     "1.a": "tool_only",
     "2.a": "two_calls", "2.b": "two_calls_same_name",
     "3.a": "text_only",

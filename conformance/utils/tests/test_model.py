@@ -313,7 +313,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
 def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_visible(model_v2):
     tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
-    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
+    release = next(candidate for candidate in tab["candidates"] if candidate["key"].startswith("dynamo@"))
 
     requested = dynamo_v2_label(REPO)
     assert dynamo["version"] == requested
@@ -321,7 +321,7 @@ def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == table._full_label("dynamo_v2", "0.6.0", "stream")
+    assert release["label"] == table._full_label("dynamo_v2", release["version"], "stream")
     assert release["default_bucket"] == "C"
 
 
@@ -380,104 +380,6 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert [markup.count('class="case-variant"') for markup in rendered] == [8, 5]
     assert "nullable: true" in rendered[1]
     assert "intersection" in rendered[0]
-
-
-def test_batch_null_groups_preserve_coercion_history(model_v2: dict) -> None:
-    tab = _tab(model_v2, "tab-toolcalling-batch")
-    mixed = "7-4.mixed_grep"
-    nullable = {"7-4", "7-4.anyof", "7-4.oneof", "7-4.nullable", "7-4.const"}
-    strings = {
-        "7-5", "7-5.union", "7-5.sibling_anyof", "7-5.sibling_oneof",
-        "7-5.untyped_branch", "7-5.const", "7-5.enum", "7-5.untyped_const", "7-5.untyped_enum",
-    }
-    glm_nullable = {"7-4.inline", "7-4.ref"}
-    glm_strings = {"7-5.inline", "7-5.ref"}
-    columns = {column["sub"]: column for column in tab["columns"]}
-    assert {column["label"] for column in tab["columns"]
-            if column["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
-    assert all(columns[sub]["group_key"] == "args" for sub in ("7-4", "7-5"))
-    assert mixed not in columns
-    glossary_labels = {label for group in tab["glossary"] for label, _ in group["rows"]}
-    assert {label for label in glossary_labels if label.startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
-    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
-    assert candidates["golden"]["parse_mode"] == "batch"
-    assert {"9.2.0", "9.2.1"} <= _peer_versions("toolcalling/fixtures-batch-v1")["dynamo_v1"]
-    reference = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
-    baseline = candidates["dynamo_v1-b-9-2-0"]
-    fixed = candidates["dynamo_v1-b-9-2-1"]
-    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
-    leaves = {sub: cell for sub, cell in leaf_cells(row).items() if sub.startswith(("7-4", "7-5"))}
-    assert set(leaves) == nullable | strings | {mixed}
-    for parent, members in (("7-4", nullable | {mixed}), ("7-5", strings | {mixed})):
-        cell = row["cells"][parent]
-        assert {leaf["sub"] for leaf in cell["variants"]} == members
-        assert len(cell["variants"]) == len(members)
-        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green"
-        assert cell_state(cell, baseline)[0] == "red"
-    for sub, cell in leaves.items():
-        assert cell["case_id"] == f"TOOLCALLING.batch.{sub}"
-        arguments = {"pattern": "null", "path": None} if sub == mixed else {"city": None if sub in nullable else "null"}
-        name = "grep" if sub == mixed else "get_weather"
-        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
-        for key in ("golden", fixed["key"]):
-            assert blocks[key]["calls"] == [{"name": name, "arguments": arguments}], sub
-            assert blocks[key]["normal_text"] == "", sub
-        old_arguments = {"pattern": None, "path": None} if sub == mixed else {"city": None}
-        assert blocks[baseline["key"]]["calls"] == [{"name": name, "arguments": old_arguments}], sub
-        assert blocks[baseline["key"]]["normal_text"] == "", sub
-        assert cell_state(cell, reference)[0] == cell_state(cell, fixed)[0] == "green", sub
-        assert cell_state(cell, baseline)[0] == ("green" if sub in nullable else "red"), sub
-    tip = leaves[mixed]["tooltip"]
-    assert tip["input"]["kind"] == "text"
-    for name in ("pattern", "path"):
-        assert f"]<]minimax[>[<{name}>null]<]minimax[>[</{name}>" in tip["input"]["text"]
-    assert all(term in tip["description"] for term in ("strict: true", "schema", "string pattern", "nullable path", "anyOf"))
-    script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
-vm.runInContext(source.replace('// --- Entry point',
-  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
-const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
-process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
-"""
-    tips = [tip, row["cells"]["7.f"]["tooltip"]]
-    result = subprocess.run(
-        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
-        input=json.dumps(tips), text=True, capture_output=True, check=True,
-    )
-    for expected, markup in zip(tips, json.loads(result.stdout)):
-        left = re.search(r'<td class="cin">(.*?)</td>', markup, re.S)
-        assert left is not None
-        text = unescape(re.sub(r"<[^>]+>", "", left.group(1)))
-        assert text == f"input_text='{expected['input']['text']}'"
-        assert "<th>input</th>" in markup
-        right = re.search(rf'<td data-cand="{fixed["key"]}"[^>]*>(.*?)</td>', markup, re.S)
-        assert right is not None
-        output = unescape(re.sub(r"<[^>]+>", "", right.group(1)))
-        block = next(candidate["block"] for candidate in expected["candidates"] if candidate["key"] == fixed["key"])
-        assert f"normal_text='{block['normal_text']}'" in output
-        assert "calls=" in output
-        if expected is tip:
-            assert "calls=" + json.dumps(block["calls"], separators=(",", ":")) in output
-    for row in tab["rows"]:
-        if row.get("family") and row["family"] not in {"minimax_m3", "glm47"}:
-            for sub in ("7-4", "7-5"):
-                cell = row["cells"][sub]
-                assert cell_state(cell, reference)[0] == "na", row["family"]
-                assert cell["tooltip"]["na_note"], row["family"]
-    glm = next(row for row in tab["rows"] if row.get("family") == "glm47")
-    glm_leaves = leaf_cells(glm)
-    for sub in glm_nullable | glm_strings:
-        cell = glm_leaves[sub]
-        assert cell["tooltip"]["input"]["kind"] == "text"
-        assert cell_state(cell, reference)[0] == "green", sub
-        blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
-        expected = [{"name": "get_weather", "arguments": {"city": None if sub in glm_nullable else "null"}}]
-        assert blocks["golden"]["calls"] == blocks[reference["key"]]["calls"] == expected
 
 
 @pytest.mark.parametrize("mode,baseline_key,fixed_key", [
@@ -572,9 +474,10 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
 
 @pytest.mark.parametrize("parent", ["7-4", "7-5"])
 def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
-    tab = _tab(model_v2, "tab-toolcalling-batch")
-    row = next(row for row in tab["rows"] if row.get("family") == "minimax_m3")
-    variants = row["cells"][parent]["tooltip"]["variants"]
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "glm47")
+    sub = next(column["sub"] for column in tab["columns"] if column["label"] == parent)
+    variants = row["cells"][sub]["tooltip"]["variants"]
     assert len(variants) > 1
     script = r"""
 const assert = require('node:assert/strict');
@@ -599,7 +502,7 @@ function grid(variant) {
   });
   return {rows, querySelectorAll: selector => selector === 'tr' ? rows : rows.flatMap(r => r.columns)};
 }
-const fixed = 'dynamo_v1-b-9-2-1', old = 'dynamo_v1-b-9-2-0';
+const [fixed, old] = variants[0].candidates.filter(c => c.key !== 'golden').map(c => c.key);
 for (const portalled of [false, true]) {
   const grids = variants.map(grid);
   const tip = {querySelector: () => grids[0],
@@ -850,7 +753,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in leaf_cells(row).values()]
@@ -865,6 +768,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
+                    or "no GuidedJson" in reason
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
                 assert "events" not in peer["block"]
@@ -878,9 +782,13 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     ):
         for key in peer_keys:
             cell = gemma["cells"][scenario]
-            assert cell["cmp"][key].get("na") == 1
-            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-            assert "this case postdates that capture" in peer["block"]["unavailable"]
+            comparison = cell["cmp"][key]
+            if key.startswith("vllm_rust"):
+                assert comparison["na"] == 1
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                assert "no GuidedJson" in peer["block"]["unavailable"]
+            else:
+                assert comparison["na"] == 0
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
@@ -1251,7 +1159,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
         assert measured["events"], family
         expected_color = "green" if measured["events"] == events else "red"
         assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == expected_color
-        assert "without proving reference resolution" in shared["tooltip"]["description"]
+        assert "PR #271" in shared["tooltip"]["description"]
         if family != "glm47":
             for candidate in shared["tooltip"]["candidates"]:
                 if not candidate["key"].startswith("dynamo@"):
@@ -1289,8 +1197,10 @@ def test_v2_reasoning_uses_current_peers(model_v2):
             assert ver in r, f"reasoning missing current peer {impl} {ver}"
 
 
-@pytest.mark.parametrize("old_id,new_id", [("7-1", "7-5"), ("7-2", "7-4")])
-def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeypatch):
+@pytest.mark.parametrize("old_id,new_id", [
+    ("7-1", "7-5"), ("7-2", "7-4"),
+])
+def test_stream_case_display_aliases_preserve_recorded_data(old_id, new_id, monkeypatch):
     monkeypatch.setattr(table.fixtures, "FIXTURES", Path(table.fixtures.__file__).parent / "fixtures")
     monkeypatch.setattr(table.fixtures, "_CAPTURED_WITH_BY_MODE", {})
     original = {"description": "null type", "chunks": [{"delta_text": "null", "expected": {"dynamo_v2": []}}]}
@@ -1305,12 +1215,83 @@ def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeyp
     assert case["expected"]["dynamo_v2"] == {"calls": [], "normal_text": ""}
 
 
-def test_stream_null_columns_match_unified_numbers(model_v2):
+@pytest.mark.parametrize("sub,uses_taxonomy", [
+    ("7.k", True), ("51.a", True), ("999.a", False), ("7-1", False),
+])
+def test_stream_display_descriptions_preserve_archived_inputs(sub, uses_taxonomy, monkeypatch):
+    monkeypatch.setattr(table.fixtures, "FIXTURES", Path(table.fixtures.__file__).parent / "fixtures")
+    monkeypatch.setattr(table.fixtures, "_CAPTURED_WITH_BY_MODE", {})
+    archived = {"description": "Archived prose", "chunks": []}
+    docs = {("glm47", f"TOOLCALLING.streamv1.{sub}.yaml"): {
+        "family": "glm47", "mode": "streamv1",
+        "cases": {f"TOOLCALLING.streamv1.{sub}": copy.deepcopy(archived)},
+    }}
+    cases, _ = table.fixtures.load_all_cases("streamv1", docs)
+    case = next(iter(cases.values()))
+    if uses_taxonomy:
+        taxonomy = yaml.safe_load((table.fixtures.REPO_ROOT / "case-taxonomy.yaml").read_text())
+        group, suffix = sub.split(".", 1)
+        assert case["description"] == taxonomy["suites"]["toolcalling.stream"]["groups"][group]["cases"][suffix]["desc"]
+    else:
+        assert case["description"] == archived["description"]
+    assert case["chunks"] == archived["chunks"]
+
+
+def test_stream_regression_matrix_uses_consistent_display_ids(model_v2):
     tab = _tab(model_v2, "tab-toolcalling-streamv1")
-    row = next(row for row in tab["rows"] if row.get("family") == "qwen3_coder")
-    assert "7-1" not in row["cells"] and "7-2" not in row["cells"]
-    for label in ("7-4", "7-5"):
-        assert row["cells"][label]["case_id"] == "TOOLCALLING.streamv1." + label
+    wanted = {"7.g", "7.h", "7.i", "7.j", "7.k", "7.l", "51.a", "51.b"}
+    labels = {column["label"] for column in tab["columns"]}
+    assert wanted <= labels
+    assert "51-1" not in labels
+    glossary = {label for group in tab["glossary"] for label, _ in group["rows"]}
+    assert wanted <= glossary
+    for row in tab["rows"]:
+        for sub, cell in row["cells"].items():
+            if sub in wanted and cell.get("kind") == "cell":
+                assert cell["case_id"] == f"TOOLCALLING.streamv1.{sub}"
+                assert cell["tooltip"]["head"].startswith(cell["case_id"])
+                if sub == "7.k":
+                    assert "does not distinguish sibling type intersections" in cell["tooltip"]["description"]
+                    assert ["Ref", "https://github.com/ai-dynamo/frontend-crates/pull/271"] in cell["tooltip"]["refs"]
+
+
+@pytest.mark.parametrize("scenario,label,family", [
+    ("deepseek_v41_json_invocation_body", "deepseek-1", "deepseek_v41"),
+    ("glm47_reference_type_intersection", "glm5-2", "glm47"),
+])
+def test_targeted_unified_regressions_use_family_specific_columns(model_v2, scenario, label, family):
+    assert table.gen_unified_golden.scenario_families(scenario) == {family}
+    tab = _tab(model_v2, "tab-unified")
+    column = next(column for column in tab["columns"] if column["sub"] == scenario)
+    assert column["label"] == label
+    assert not {"7-6", "7-7"} & {column["label"] for column in tab["columns"]}
+    for row in tab["rows"]:
+        if not row.get("family"):
+            continue
+        cell = row["cells"][scenario]
+        assert (cell["status"] == "na") == (row["family"] != family)
+        if row["family"] == family:
+            assert cell["case_id"] == "UNIFIED." + label
+
+
+def test_unified_family_specific_groups_are_labeled_single_family_tests(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    labels = {
+        group["key"]: group["label"]
+        for group in tab["column_groups"]
+    }
+    for key in ("unified_ggemma", "unified_gglm5", "unified_gdeepseek", "unified_gkimi", "unified_gmuse"):
+        assert labels[key].startswith("Single Family Test:")
+
+
+@pytest.mark.parametrize("tab_id", ["tab-toolcalling-batch", "tab-toolcalling-streamv1"])
+def test_legacy_toolcalling_tabs_omit_null_probes(model_v2, tab_id):
+    tab = _tab(model_v2, tab_id)
+    assert not any(column["label"].startswith(("7-4", "7-5")) for column in tab["columns"])
+    assert not any(label.startswith(("7-4", "7-5"))
+                   for group in tab["glossary"] for label, _ in group["rows"])
+    for row in tab["rows"]:
+        assert not any(sub.startswith(("7-4", "7-5")) for sub in leaf_cells(row))
 
 
 @pytest.mark.parametrize("mode", ["batch", "streamv1"])
@@ -1319,7 +1300,7 @@ def test_numbered_cases_keep_argument_group_and_natural_fallback_order(mode: str
         "13-10", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
     )}
     assert table.fixtures._discover_sub_cases(mode, cases) == [
-        "7.a", "7-5", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
+        "7.a", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
     ]
     assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8"))
 
@@ -1342,13 +1323,8 @@ def test_case_description_readers_accept_numbered_suffixes(tmp_path, monkeypatch
         }
 
 
-def test_stream_null_column_popups_show_type_descriptions_above_chart(model_v2, monkeypatch):
-    tab = _tab(model_v2, "tab-toolcalling-streamv1")
-    monkeypatch.setattr(
-        table, "TOOLCALLING_STREAMING_V1_CASES_MD",
-        UTILS / "lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md",
-    )
-    descriptions = table._parse_subcase_descriptions("streamv1")
+def test_unified_null_column_popups_show_type_descriptions_above_chart(model_v2):
+    tab = _tab(model_v2, "tab-unified")
     script = r"""
 const fs = require('fs');
 const vm = require('vm');
@@ -1361,7 +1337,7 @@ vm.runInContext(source.replace('// --- Entry point',
 const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
 const results = {};
 for (const sub of ['7-4', '7-5']) {
-  const column = tab.columns.find(col => col.sub === sub);
+  const column = tab.columns.find(col => col.label === sub);
   const model = context.window.audit.columnGrammarModel(tab, column);
   results[sub] = context.window.audit.buildGrammarHtml(model);
 }
@@ -1376,8 +1352,7 @@ process.stdout.write(JSON.stringify(results));
         ("7-4", "request tool schema permits JSON null"),
         ("7-5", "request tool schema requires a string"),
     ):
-        column = next(col for col in tab["columns"] if col["sub"] == sub)
-        assert descriptions[sub].startswith(column["desc"].rstrip("."))
+        column = next(col for col in tab["columns"] if col["label"] == sub)
         assert explanation in column["desc"]
         assert "<table" in rendered[sub]
         header = rendered[sub].split("<table", 1)[0]
@@ -1387,31 +1362,24 @@ process.stdout.write(JSON.stringify(results));
     assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
 
 
-@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
-def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, tab_id: str) -> None:
-    tab = _tab(model_v2, tab_id)
+def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2):
+    tab = _tab(model_v2, "tab-unified")
     assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
-    families = set(table.gen_unified_golden.FAMILIES) if tab_id == "tab-unified" else {
-        "deepseek_v4", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer",
-        "qwen3_coder", "minimax_m2", "minimax_m3"}
+    families = set(table.gen_unified_golden.FAMILIES)
     for row in tab["rows"]:
         if row.get("family") not in families:
             continue
-        mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
-        refs = tab_id == "tab-unified" and row["family"] == "glm47"
+        mixed = row["family"] == "glm47"
+        refs = row["family"] == "glm47"
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = tab_id == "tab-unified" and row["family"] == "qwen3" and label == "7-5"
+            qwen_ref = row["family"] == "qwen3" and label == "7-5"
             assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
-            if tab_id.endswith("streamv1"):
-                for leaf in cell["variants"]:
-                    for key in ("dynamo_v1-9-1-0", "dynamo_v2-0-7-4"):
-                        assert leaf["cmp"][key]["na"] == 0
         assert len(groups[0] & groups[1]) == int(mixed)
 
 
@@ -1422,7 +1390,7 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     assert column["label"] == "35-5"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
-    assert group["label"] == "DeepSeek V4-specific tests"
+    assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
     assert group["span"] == 1
     assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}

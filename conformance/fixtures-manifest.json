@@ -1,6 +1,6 @@
 {
-  "snapshot": "20261006_232907",
-  "created_pt": "2026-10-06 23:29:07 America/Los_Angeles",
+  "snapshot": "20261007_122400",
+  "created_pt": "2026-10-07 12:24:00 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.2.8",
     "dynamo-parsers-v2": "0.7.18"
@@ -196,14 +196,19 @@
       "size": 1258
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.0.tar.gz",
+      "sha256": "5063ecaf04ab6f38c62f955a7f62c0d666aade337ebaa778f486594e2f954bc1",
+      "size": 8499
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.10.tar.gz",
       "sha256": "17354e3944761ad47e415a33643bf8eba7e8b21912b6ebe9ef1264f7b5c62268",
       "size": 2862
     },
     {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.11.tar.gz",
-      "sha256": "c6100c11b0f6931662de33f98ee9af8db32ce3ec0022f61e8df3021dd0554db0",
-      "size": 2172
+      "sha256": "3666de3b125805e81441b113739b9395bbc31155e2eff77029d41e60eebbbeaa",
+      "size": 15523
     },
     {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.13.tar.gz",
@@ -226,9 +231,14 @@
       "size": 16260
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.3.tar.gz",
+      "sha256": "0ac5755d9cffad2c11122661a98d67b874dac9905c664984ff646443fd22b29c",
+      "size": 8717
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.4.tar.gz",
-      "sha256": "a60b7463ad462597ca4f8c89fc34dc1e7c3c461616e06b4979fbe361bc51b8f2",
-      "size": 3580
+      "sha256": "2f51af8f0265c7de0ac639b0ba0189f3c2ef8ae070712e876014c4630f973762",
+      "size": 4637
     },
     {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.5.tar.gz",
@@ -251,9 +261,14 @@
       "size": 1691
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.9.tar.gz",
+      "sha256": "bfb32c7d55f1441184a67782b8cc64d3cc01b8048656167d4e7294963f545345",
+      "size": 16514
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
-      "sha256": "711bd82aa5f3b1fa80bff1282101cd636230850413dcda39b499ffb46549c9a1",
-      "size": 82431
+      "sha256": "8dd21cab4637f88ca14a719c7d054719101b10ca2aa89c92296a7531500c7527",
+      "size": 84744
     },
     {
       "path": "toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -308,8 +323,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "020e4f53385dbbb5327ba4a572e7ea5e1c73cd00810b7f4273281464233fd43f",
-      "size": 4788273
+      "sha256": "9d1cf19d0fb0cd987c3afa55f9bea4eaf259a03c03cc0e0f16f40deb5e4060e4",
+      "size": 5749734
     }
   ],
   "inactive_shards": []

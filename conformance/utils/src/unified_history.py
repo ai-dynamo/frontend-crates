@@ -305,8 +305,10 @@ class History:
                 state[case_id]["_origin_capture_id"] = current
                 if inherited_metadata is not None:
                     state[case_id]["_record_metadata"] = inherited_metadata
-                if inherited_overrides is not None:
-                    state[case_id]["_document_overrides"] = inherited_overrides
+                if inherited_overrides is not None and "parser_path" in inherited_overrides:
+                    state[case_id].setdefault("_document_overrides", {})[
+                        "parser_path"
+                    ] = copy.deepcopy(inherited_overrides["parser_path"])
             for case_id, metadata in capture["metadata_changes"].items():
                 if case_id not in state:
                     raise ValueError(
@@ -323,7 +325,9 @@ class History:
                         f"document override has no observation in {self.capture_path(current)}: "
                         f"{case_id}"
                     )
-                state[case_id]["_document_overrides"] = copy.deepcopy(override)
+                state.setdefault(case_id, {}).setdefault("_document_overrides", {}).update(
+                    copy.deepcopy(override)
+                )
             if current == capture_id:
                 break
         else:
@@ -335,12 +339,17 @@ class History:
             overrides = record.pop("_document_overrides", {})
             origin_capture_id = record.pop("_origin_capture_id")
             origin_capture = self.captures[origin_capture_id]
-            case_document = {
-                **_capture_document_metadata(origin_capture, self.implementation),
-                **overrides,
-            }
+            case_document = _capture_document_metadata(origin_capture, self.implementation)
             if origin_capture_id != capture_id:
                 case_document["inherited_from"] = origin_capture["runtime_version"]
+            provenance_override = overrides.pop("capture_provenance", None)
+            if provenance_override is not None:
+                for key, value in provenance_override.items():
+                    if value is None:
+                        case_document.pop(key, None)
+                    else:
+                        case_document[key] = copy.deepcopy(value)
+            case_document.update(overrides)
             if record_metadata:
                 case_document["record_metadata"] = record_metadata
             record["document"] = case_document
@@ -530,10 +539,57 @@ def _validate_capture_file(
             raise ValueError(
                 f"document override contains reserved metadata in {path}:{case_id}"
             )
-        if set(metadata) - {"parser_path"}:
+        if set(metadata) - {"parser_path", "capture_provenance"}:
             raise ValueError(f"unsupported document override in {path}:{case_id}")
         if "parser_path" in metadata and not isinstance(metadata["parser_path"], str):
             raise ValueError(f"{path}:{case_id}.document_overrides.parser_path must be a string")
+        if "capture_provenance" in metadata:
+            provenance = _mapping(
+                metadata["capture_provenance"],
+                f"{path}:{case_id}.document_overrides.capture_provenance",
+            )
+            if set(provenance) != {"captured_with", "capture_origin", "inherited_from"}:
+                raise ValueError(
+                    f"{path}:{case_id}.document_overrides.capture_provenance has invalid keys"
+                )
+            captured_with = _mapping(
+                provenance["captured_with"],
+                f"{path}:{case_id}.document_overrides.capture_provenance.captured_with",
+            )
+            if not captured_with or any(
+                not isinstance(implementation, str)
+                or not isinstance(version, str)
+                for implementation, version in captured_with.items()
+            ):
+                raise ValueError(
+                    f"{path}:{case_id}.document_overrides.capture_provenance.captured_with is invalid"
+                )
+            origin = provenance["capture_origin"]
+            if origin is not None:
+                origin = _mapping(
+                    origin,
+                    f"{path}:{case_id}.document_overrides.capture_provenance.capture_origin",
+                )
+                if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", origin.get("crate_version", "")):
+                    raise ValueError(
+                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid crate_version"
+                    )
+                if not re.fullmatch(r"[0-9a-f]{64}", origin.get("source_sha256", "")):
+                    raise ValueError(
+                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid source hash"
+                    )
+                if "git_commit" in origin and not re.fullmatch(
+                    r"[0-9a-f]{40}", origin["git_commit"]
+                ):
+                    raise ValueError(
+                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid git commit"
+                    )
+            if provenance["inherited_from"] is not None and not isinstance(
+                provenance["inherited_from"], str
+            ):
+                raise ValueError(
+                    f"{path}:{case_id}.document_overrides.capture_provenance has invalid inherited_from"
+                )
     return family_name, implementation, capture_id, capture
 
 
@@ -1320,6 +1376,50 @@ def _stored_change(value: dict) -> dict:
     return {key: copy.deepcopy(value[key]) for key in CHANGE_KEYS}
 
 
+def _snapshot_delta(target: dict, previous: dict) -> tuple[dict, dict, dict]:
+    changes = {}
+    metadata_changes = {}
+    document_overrides = {}
+    for case_id in sorted(set(target) | set(previous)):
+        before = previous.get(case_id)
+        after = target.get(case_id)
+        if after is None:
+            if before is not None:
+                changes[case_id] = {"absent": True}
+            continue
+        if before is None or _canonical_json(_capture_semantic(after, case_id)) != _canonical_json(
+            _capture_semantic(before, case_id)
+        ):
+            changes[case_id] = _stored_change(after)
+        after_document = after.get("document", {})
+        before_document = {} if before is None else before.get("document", {})
+        after_metadata = after_document.get("record_metadata", {})
+        before_metadata = before_document.get("record_metadata", {})
+        if _canonical_json(after_metadata) != _canonical_json(before_metadata):
+            metadata_changes[case_id] = copy.deepcopy(after_metadata)
+        after_path = after_document.get("parser_path")
+        before_path = before_document.get("parser_path")
+        if after_path != before_path:
+            if after_path is None:
+                raise ValueError(
+                    f"historical backfill cannot remove parser_path for {case_id}"
+                )
+            document_overrides.setdefault(case_id, {})["parser_path"] = after_path
+        provenance_keys = ("captured_with", "capture_origin", "inherited_from")
+        after_provenance = {
+            key: copy.deepcopy(after_document.get(key)) for key in provenance_keys
+        }
+        before_provenance = {
+            key: copy.deepcopy(before_document.get(key)) if before is not None else None
+            for key in provenance_keys
+        }
+        if after_provenance != before_provenance:
+            document_overrides.setdefault(case_id, {})[
+                "capture_provenance"
+            ] = after_provenance
+    return changes, metadata_changes, document_overrides
+
+
 def _load_loose_document(path: Path, family_name: str) -> dict:
     document = load_yaml(path)
     if document.get("family") != family_name:
@@ -1534,47 +1634,32 @@ def _update_from_loose(
                     f"capture {capture_dir.name} is already recorded; add a new semantic "
                     "version after back-capturing any new case across prior versions"
                 )
-            prior_id = history.ordered_capture_ids()[-1]
-            if _capture_release_sort_key(runtime_version) <= _capture_release_sort_key(
-                history.captures[prior_id]["runtime_version"]
-            ):
-                raise ValueError(
-                    f"capture {capture_dir.name} must use a new semantic version after "
-                    f"{prior_id}"
-                )
-            prior = history.resolve(prior_id)
-            changes = {}
-            metadata_changes = {}
-            for case_id in sorted(set(prior) | set(records)):
-                before = prior.get(case_id)
-                after = records.get(case_id)
-                # Display IDs are renumbered independently of capture semantics.
-                # Compare by the stable case ID so a renamed case is inherited,
-                # while a changed observation or stimulus still creates a capture.
-                before_key = (
-                    None
-                    if before is None
-                    else _canonical_json(_capture_semantic(before, case_id))
-                )
-                after_key = (
-                    None
-                    if after is None
-                    else _canonical_json(_capture_semantic(after, case_id))
-                )
-                if before_key != after_key:
-                    changes[case_id] = (
-                        {"absent": True} if after is None else _stored_change(after)
-                    )
-                before_metadata = (
-                    {} if before is None else before["document"].get("record_metadata", {})
-                )
-                after_metadata = (
-                    {} if after is None else after["document"].get("record_metadata", {})
-                )
-                if after is not None and _canonical_json(before_metadata) != _canonical_json(
-                    after_metadata
-                ):
-                    metadata_changes[case_id] = after_metadata
+            capture_version = _capture_release_sort_key(runtime_version)
+            ordered_ids = history.ordered_capture_ids()
+            prior_ids = [
+                capture_id
+                for capture_id in ordered_ids
+                if _capture_release_sort_key(
+                    history.captures[capture_id]["runtime_version"]
+                ) < capture_version
+            ]
+            later_ids = [
+                capture_id
+                for capture_id in ordered_ids
+                if _capture_release_sort_key(
+                    history.captures[capture_id]["runtime_version"]
+                ) > capture_version
+            ]
+            prior = history.resolve(prior_ids[-1]) if prior_ids else {}
+            later_snapshots = {
+                capture_id: history.resolve(capture_id) for capture_id in later_ids
+            }
+            changes, metadata_changes, document_overrides = _snapshot_delta(records, prior)
+            for case_id in list(document_overrides):
+                if case_id not in changes:
+                    document_overrides[case_id].pop("capture_provenance", None)
+                    if not document_overrides[case_id]:
+                        del document_overrides[case_id]
             origins = {
                 _canonical_json(record["document"]["capture_origin"])
                 for record in records.values()
@@ -1589,12 +1674,9 @@ def _update_from_loose(
                     "status": "legacy",
                     "captured_with": {implementation: runtime_version},
                 }
-            document_overrides = {
-                case_id: {"parser_path": record["document"]["parser_path"]}
-                for case_id, record in records.items()
-                if "parser_path" in record["document"]
-            }
-            # Derived release views have no source origin; identical captured runs do.
+            # Extraction may derive a complete semantic release directory from
+            # an earlier checkpoint. That inherited view is not a new capture.
+            # Source-origin changes remain meaningful even when observations match.
             if not changes and not metadata_changes and not document_overrides and not origins:
                 continue
             capture = {
@@ -1606,9 +1688,27 @@ def _update_from_loose(
                 "document_overrides": document_overrides,
             }
             captures[capture_dir.name] = capture
-            history.capture_paths[capture_dir.name] = (
-                history.family.path.parent / f"{capture_dir.name}.yaml"
-            )
+            capture_path = history.family.path.parent / f"{capture_dir.name}.yaml"
+            history.capture_paths[capture_dir.name] = capture_path
+            documents[capture_path] = capture
+            previous_snapshot = records
+            for later_id in later_ids:
+                later_capture = history.captures[later_id]
+                later_snapshot = later_snapshots[later_id]
+                (
+                    later_changes,
+                    later_metadata_changes,
+                    later_document_overrides,
+                ) = _snapshot_delta(later_snapshot, previous_snapshot)
+                updated_capture = {
+                    **later_capture,
+                    "changes": later_changes,
+                    "metadata_changes": later_metadata_changes,
+                    "document_overrides": later_document_overrides,
+                }
+                history.captures[later_id] = updated_capture
+                documents[history.capture_paths[later_id]] = updated_capture
+                previous_snapshot = later_snapshot
     return documents
 
 

@@ -2147,6 +2147,72 @@ for scenario, description, parameters, raw_arguments, arguments in (
         ) for family in FAMILIES}),
         {family: [{"name": "capture_payload", "parameters": parameters}] for family in FAMILIES},
     ))
+_DS41_JSON_BODY_ARGS = {
+    "value": ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"\n',
+    "nested": {"values": [True, 42, -1250]},
+}
+_DS41_JSON_BODY = json.dumps(_DS41_JSON_BODY_ARGS, ensure_ascii=False)
+EDGE.append((
+    "deepseek_v41_json_invocation_body",
+    "PR #250: DeepSeek V4.1 accepts a JSON object as the invocation body and preserves marker-looking text inside its string values.",
+    ["I7"],
+    [
+        {"kind": "tool_call", "name": "inspect", "arguments": _DS41_JSON_BODY_ARGS},
+        {"kind": "tool_call", "name": "done", "arguments": {}},
+    ],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({"deepseek_v41": (
+        '<｜DSML｜ calls>\n'
+        '<｜DSML｜ invoke name="inspect">\n'
+        + _DS41_JSON_BODY
+        + '\n</｜DSML｜ invoke>\n'
+        '<｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>\n'
+        '</｜DSML｜ calls>', M, M,
+    )}),
+    {"deepseek_v41": [
+        {"name": "inspect", "parameters": {
+            "type": "object",
+            "properties": {
+                "value": {"type": "string"},
+                "nested": {"type": "object"},
+            },
+            "required": ["value", "nested"],
+        }},
+        {"name": "done", "parameters": {"type": "object"}},
+    ]},
+))
+
+_GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
+    "type": "object",
+    "$defs": {
+        "Text": {"type": "string"},
+        "TextAlias": {"$ref": "#/$defs/Text"},
+        "Count": {"type": "integer"},
+    },
+    "properties": {
+        "payload": {"$ref": "#/$defs/TextAlias", "allOf": [{"type": "string"}]},
+        "count": {"$ref": "#/$defs/Count", "minimum": 1},
+    },
+    "required": ["payload", "count"],
+}}]
+EDGE.append((
+    "glm47_reference_type_intersection",
+    "PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
+    ["I7"],
+    [{"kind": "tool_call", "name": "capture_payload", "arguments": {
+        "payload": '{"x":1}', "count": 42,
+    }}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({"glm47": (
+        '<tool_call>capture_payload'
+        '<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value>'
+        '<arg_key>count</arg_key><arg_value>42</arg_value></tool_call>', M,
+        M,
+    )}),
+    {"glm47": _GLM_REFERENCE_TOOLS},
+))
 
 
 

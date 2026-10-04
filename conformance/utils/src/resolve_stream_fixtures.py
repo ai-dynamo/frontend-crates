@@ -24,6 +24,7 @@ Readers (load_all_cases("streamv1")) consume the flat output unchanged.
 """
 import argparse
 import copy
+import re
 import sys
 from pathlib import Path
 
@@ -133,6 +134,14 @@ def resolve_docs(sv1_root, select, corpus=None):
     folded: set[tuple[str, str]] = set()
     for impl, target in targets.items():
         tk = version_key(target)
+        if re.fullmatch(r".+\.patch\d+", target) is None:
+            patches = [
+                key
+                for key, version, _vdir in dirs[impl]
+                if version.startswith(target + ".patch")
+            ]
+            if patches:
+                tk = max(tk, max(patches))
         for k, _v, vdir in dirs[impl]:
             if k > tk:
                 continue

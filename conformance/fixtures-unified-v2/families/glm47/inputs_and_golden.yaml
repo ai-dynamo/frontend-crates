@@ -6043,6 +6043,68 @@ cases:
         name: run
         arguments:
           cmd: before </tool_call><tool_call>get_weather</tool_call> after
+  glm47_reference_type_intersection:
+    lifecycle: active
+    scenario: glm47_reference_type_intersection
+    description: 'PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.'
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-2
+    historical_ids:
+    - UNIFIED.7-7
+    request:
+      input: <tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+            TextAlias:
+              $ref: '#/$defs/Text'
+            Count:
+              type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/TextAlias'
+              allOf:
+              - type: string
+            count:
+              $ref: '#/$defs/Count'
+              minimum: 1
+          required:
+          - payload
+          - count
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: payload
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '{"x":1}'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: count
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '42'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+          count: 42
   qwen_string_null:
     lifecycle: active
     scenario: arg_string_null
@@ -6729,7 +6791,7 @@ cases:
   arg_string_null_ref:
     lifecycle: active
     scenario: arg_string_null_ref
-    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'
     policy:
     - I7
     display_id: UNIFIED.7-5.ref
@@ -6771,7 +6833,7 @@ cases:
   glm_ref_encoded_targets:
     lifecycle: active
     scenario: glm_ref_encoded_targets
-    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.'
     policy:
     - I7
     display_id: UNIFIED.7-11
@@ -6835,7 +6897,7 @@ cases:
   glm_ref_json_looking_strings:
     lifecycle: active
     scenario: glm_ref_json_looking_strings
-    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.'
     policy:
     - I7
     display_id: UNIFIED.7-12
@@ -6904,7 +6966,7 @@ cases:
   glm_ref_scalar_types:
     lifecycle: active
     scenario: glm_ref_scalar_types
-    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union.'
     policy:
     - I7
     display_id: UNIFIED.7-13
@@ -6982,7 +7044,7 @@ cases:
   glm_ref_object:
     lifecycle: active
     scenario: glm_ref_object
-    description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object.'
     policy:
     - I7
     display_id: UNIFIED.7-9

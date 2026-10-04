@@ -781,23 +781,23 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 114,
-            "deepseek_v41": 113,
+            "deepseek_v41": 114,
             "gemma4": 115,
-            "glm47": 116,
+            "glm47": 117,
             "kimi_k2": 113,
             "kimi_k3": 121,
             "muse_glimmer": 117,
             "qwen3": 114,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 923
+    assert sum(per_family.values()) == 925
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 132
+    assert len(UNIFIED_TAX) == 134
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1214,17 +1214,53 @@ def _native_input_calls(family, raw):
         "kimi_k2": r'<\|tool_call_begin\|>(?:functions\.)?([\w.-]+):\d+<\|tool_call_argument_begin\|>',
         "kimi_k3": r'<\|open\|>\s*call tool="([^"]+)" index="\d+"\s*<\|sep\|>',
     }
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        gap = " " if family == "deepseek_v41" else ""
+        invocation_end = f"</｜DSML｜{gap}invoke>"
+        parameter_pattern = re.compile(
+            rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>',
+            re.S,
+        )
+        decoder = json.JSONDecoder()
+        calls = []
+        cursor = 0
+        while match := re.search(headers[family], raw[cursor:]):
+            name = match[1]
+            body_start = cursor + match.end()
+            start = body_start + len(raw[body_start:]) - len(raw[body_start:].lstrip())
+            try:
+                value, end = decoder.raw_decode(raw, start)
+            except json.JSONDecodeError:
+                value = None
+            else:
+                suffix = raw[end:]
+                closer_start = end + len(suffix) - len(suffix.lstrip())
+                if isinstance(value, dict) and raw.startswith(invocation_end, closer_start):
+                    cursor = closer_start + len(invocation_end)
+                    calls.append({"kind": "tool_call", "name": name, "arguments": value})
+                    continue
+
+            arguments = {}
+            body_cursor = body_start
+            while True:
+                body_end = raw.find(invocation_end, body_cursor)
+                parameter = parameter_pattern.search(raw, body_cursor)
+                if parameter and (body_end < 0 or parameter.start() < body_end):
+                    key, is_string, value = parameter.groups()
+                    arguments[key] = value if is_string == "true" else json.loads(value)
+                    body_cursor = parameter.end()
+                    continue
+                cursor = len(raw) if body_end < 0 else body_end + len(invocation_end)
+                break
+            calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
+        return calls
+
     found = list(re.finditer(headers[family], raw))
     calls = []
     for index, match in enumerate(found):
         body = raw[match.end():found[index + 1].start() if index + 1 < len(found) else len(raw)]
         arguments = {}
-        if family in {"deepseek_v4", "deepseek_v41"}:
-            gap = " " if family == "deepseek_v41" else ""
-            pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>'
-            for key, is_string, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if is_string == "true" else json.loads(value)
-        elif family == "qwen3":
+        if family == "qwen3":
             # The generator frames values with one newline; payload whitespace is data.
             arguments = {key: value.removeprefix("\n").removesuffix("\n")
                          for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
@@ -1248,6 +1284,29 @@ def _native_input_calls(family, raw):
                     arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
     return calls
+
+
+@pytest.mark.parametrize(("family", "invocation_start", "fake_invocation", "invocation_end"), [
+    ("deepseek_v4", '<｜DSML｜invoke name="inspect">', '<｜DSML｜invoke name="fake">', "</｜DSML｜invoke>"),
+    ("deepseek_v41", '<｜DSML｜ invoke name="inspect">', '<｜DSML｜ invoke name="fake">', "</｜DSML｜ invoke>"),
+])
+def test_deepseek_json_body_projection_keeps_marker_text_inside_json_data(
+    family, invocation_start, fake_invocation, invocation_end
+):
+    marker_text = f"literal {fake_invocation} and {invocation_end}"
+    valid = invocation_start + json.dumps({"value": marker_text}) + invocation_end
+    malformed = invocation_start + '{"ok":true} trailing text' + invocation_end
+
+    assert _native_input_calls(family, valid) == [{
+        "kind": "tool_call",
+        "name": "inspect",
+        "arguments": {"value": marker_text},
+    }]
+    assert _native_input_calls(family, malformed) == [{
+        "kind": "tool_call",
+        "name": "inspect",
+        "arguments": {},
+    }]
 
 
 @pytest.mark.parametrize("header,name", [
