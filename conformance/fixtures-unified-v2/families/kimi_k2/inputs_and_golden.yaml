@@ -6878,3 +6878,185 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  three_identical_calls:
+    lifecycle: active
+    scenario: three_identical_calls
+    description: Kimi preserves three calls with identical names and arguments in emission order; repeated calls are not deduplicated.
+    policy: []
+    display_id: UNIFIED.2-3
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:2<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:2
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  kimi_uuid_header_then_valid:
+    lifecycle: active
+    scenario: kimi_uuid_header_then_valid
+    description: A UUID-only Kimi header has no native function name. Suppress the malformed call without leaking its envelope, preserve surrounding reasoning and text, and recover the following valid call.
+    policy: []
+    display_id: UNIFIED.4-3
+    historical_ids: []
+    request:
+      input: '<think>check</think>before <|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{"city":"Paris"}<|tool_call_end|><|tool_calls_section_end|> after <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:7<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: check
+      - delta_text: </think>
+      - delta_text: 'before '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city":"Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' after '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:7
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: check
+      - kind: text
+        text: 'before  after '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris

@@ -31,11 +31,13 @@ UNIFIED_TAX = {
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
+    "three_identical_calls": (2, "3"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
     "tool_block_never_closed_then_text": (4, "1"),
     "tool_markup_only_emits_nothing": (4, "2"),
+    "kimi_uuid_header_then_valid": (4, "3"),
 
     # Group 5 — Truncation / recovery (streamv1.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),

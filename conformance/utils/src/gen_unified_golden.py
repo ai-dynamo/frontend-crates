@@ -1363,6 +1363,23 @@ EDGE = [
 ]
 
 EDGE += [
+    ("three_identical_calls",
+     "Kimi preserves three calls with identical names and arguments in emission order; repeated calls are not deduplicated.",
+     [], [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}} for _ in range(3)],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({"kimi_k2": ("".join(r_tool("kimi_k2", "get_weather", "city", "Paris", index) for index in range(3)), M, M)})),
+    ("kimi_uuid_header_then_valid",
+     "A UUID-only Kimi header has no native function name. Suppress the malformed call without leaking its envelope, preserve surrounding reasoning and text, and recover the following valid call.",
+     [], [{"kind": "reasoning", "text": "check"}, {"kind": "text", "text": "before  after "},
+          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({"kimi_k2": (
+         '<think>check</think>before <|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{"city":"Paris"}<|tool_call_end|><|tool_calls_section_end|> after '
+         + r_tool("kimi_k2", "get_weather", "city", "Paris", 7),
+         D("UNSUPPORTED", "Malformed native header recovery and surrounding-text preservation are not established by the existing peer captures."), M)})),
+]
+
+EDGE += [
     ("kimi_k3_typed_argument_values",
      "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
      ["I7"],

@@ -729,20 +729,20 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v41": 93,
             "gemma4": 95,
             "glm47": 100,
-            "kimi_k2": 93,
+            "kimi_k2": 95,
             "kimi_k3": 101,
             "muse_glimmer": 94,
             "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 764
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 112
+    assert len(UNIFIED_TAX) == 114
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }

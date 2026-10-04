@@ -1,0 +1,113 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.12
+    git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+    source_sha256: 645312b5fefdaa20ad98e247c5723845511e15037548ba5675dceecb91f80a7a
+document:
+  mode: unified
+changes:
+  kimi_uuid_header_then_valid:
+    stimulus:
+      ref: current
+      semantic_sha256: b6ab26a2b0f77c1a0ba9616041eaf2c0cca4be665ea9f2990f82f8d92787aeeb
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check
+        - kind: text
+          text: 'before  after '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'before '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' after '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.4-3
+  three_identical_calls:
+    stimulus:
+      ref: current
+      semantic_sha256: fa1e0629361915361aa967a6f4228f50d6b0522293f10fb869ec44f3185d7b55
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.2-3
+metadata_changes: {}
+document_overrides: {}

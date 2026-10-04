@@ -1132,7 +1132,9 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     latest = [next(candidate for candidate in batch["candidates"]
                    if candidate["key"].startswith(implementation) and candidate["parse_mode"] == mode)
               for implementation, mode in (("dynamo_v1", "batch"), ("dynamo_v2", "stream"))]
-    assert latest[1]["version"] == dynamo_v2_label(REPO)
+    # The batch tab's stream candidate retains its measured version after a Unified-only refresh.
+    recorded = _peer_versions("toolcalling/fixtures-stream-v1")["dynamo_v2"]
+    assert latest[1]["version"] in {version.split("+source.", 1)[0] for version in recorded}
     for candidate in latest:
         block = blocks[candidate["key"]]
         assert block["calls"] == calls

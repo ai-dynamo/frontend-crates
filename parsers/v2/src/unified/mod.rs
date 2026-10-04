@@ -592,6 +592,17 @@ pub fn tool_arguments_raw(deltas: &[UnifiedParserEvent]) -> BTreeMap<usize, Stri
 /// unparseable arguments become `{}` (policy P3) rather than an error, because a
 /// malformed argument payload must not take down the rest of the turn.
 pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
+    assemble_with_tool_indices(deltas)
+        .into_iter()
+        .map(|(_, event)| event)
+        .collect()
+}
+
+/// Assemble events while retaining each call's original parser index.
+/// Text and reasoning carry no index; dropping an incomplete call never renumbers survivors.
+pub fn assemble_with_tool_indices(
+    deltas: &[UnifiedParserEvent],
+) -> Vec<(Option<usize>, UnifiedEvent)> {
     // Coalesce adjacent same-kind runs with the SAME helper the scan core uses, so
     // `I8` has exactly ONE implementation instead of one per type.
     let mut merged: Vec<UnifiedParserEvent> = Vec::new();
@@ -606,23 +617,28 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
     // Convert, joining each call's argument fragments. Keyed by `tool_index` so
     // fragments of two interleaved calls cannot merge, and carrying each call's
     // position so it stays where its FIRST delta landed.
-    let mut out: Vec<UnifiedEvent> = Vec::new();
+    let mut out: Vec<(Option<usize>, UnifiedEvent)> = Vec::new();
     let mut calls: BTreeMap<usize, (usize, String, bool)> = BTreeMap::new();
     for delta in merged {
         match delta {
-            UnifiedParserEvent::Reasoning(text) => out.push(UnifiedEvent::Reasoning { text }),
-            UnifiedParserEvent::Text(text) => out.push(UnifiedEvent::Text { text }),
+            UnifiedParserEvent::Reasoning(text) => {
+                out.push((None, UnifiedEvent::Reasoning { text }))
+            }
+            UnifiedParserEvent::Text(text) => out.push((None, UnifiedEvent::Text { text })),
             UnifiedParserEvent::ToolCall(call) => {
                 let (pos, raw, complete) = calls.entry(call.tool_index).or_insert_with(|| {
-                    out.push(UnifiedEvent::ToolCall {
-                        name: String::new(),
-                        arguments: serde_json::Value::Null,
-                    });
+                    out.push((
+                        Some(call.tool_index),
+                        UnifiedEvent::ToolCall {
+                            name: String::new(),
+                            arguments: serde_json::Value::Null,
+                        },
+                    ));
                     (out.len() - 1, String::new(), false)
                 });
                 raw.push_str(&call.arguments);
                 if let Some(incoming) = call.name
-                    && let UnifiedEvent::ToolCall { name, .. } = &mut out[*pos]
+                    && let UnifiedEvent::ToolCall { name, .. } = &mut out[*pos].1
                     && name.is_empty()
                 {
                     *name = incoming;
@@ -638,7 +654,7 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
             incomplete_positions.push(pos);
             continue;
         }
-        if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[pos] {
+        if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[pos].1 {
             // Best-effort (P3): a malformed payload must not take down the turn, but
             // it is NOT discarded silently — `{}` alone is indistinguishable from a
             // genuine no-arg call, so a corrupted argument would look like a clean parse.
@@ -660,17 +676,17 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
         out.remove(pos);
     }
     let mut recoalesced = Vec::with_capacity(out.len());
-    for event in out {
+    for (index, event) in out {
         match (recoalesced.last_mut(), event) {
             (
-                Some(UnifiedEvent::Text { text: existing }),
+                Some((None, UnifiedEvent::Text { text: existing })),
                 UnifiedEvent::Text { text: incoming },
             ) => existing.push_str(&incoming),
             (
-                Some(UnifiedEvent::Reasoning { text: existing }),
+                Some((None, UnifiedEvent::Reasoning { text: existing })),
                 UnifiedEvent::Reasoning { text: incoming },
             ) => existing.push_str(&incoming),
-            (_, event) => recoalesced.push(event),
+            (_, event) => recoalesced.push((index, event)),
         }
     }
     recoalesced
@@ -6673,6 +6689,33 @@ mod tests {
             vec![UnifiedEvent::Text {
                 text: "beforebetweenafter".into()
             }]
+        );
+    }
+
+    #[test]
+    fn indexed_assembly_keeps_sparse_interleaved_indices_after_drops() {
+        let mut incomplete = call(2, Some("drop"), "{");
+        if let UnifiedParserEvent::ToolCall(ref mut call) = incomplete {
+            call.complete = false;
+        }
+        let deltas = vec![
+            incomplete,
+            call(9, Some("f"), "{\"x\":"),
+            UnifiedParserEvent::Text("between".into()),
+            call(5, Some("f"), "{\"x\":1}"),
+            call(9, None, "1}"),
+        ];
+        let indexed = assemble_with_tool_indices(&deltas);
+        assert_eq!(
+            indexed.iter().map(|(index, _)| *index).collect::<Vec<_>>(),
+            vec![Some(9), None, Some(5)]
+        );
+        assert_eq!(
+            indexed
+                .iter()
+                .map(|(_, event)| event.clone())
+                .collect::<Vec<_>>(),
+            assemble(&deltas)
         );
     }
 

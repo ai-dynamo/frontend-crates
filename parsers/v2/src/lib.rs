@@ -35,7 +35,7 @@ pub use unified::{
     InvalidGuidedPayloadPolicy, REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParser,
     UnifiedParserEvent, UnifiedParserExt, UnifiedParserFactory, UnifiedParserInit,
     UnifiedParserOutput, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
-    builtin_unified_families, canonical_unified_family, create_unified_parser_for_family,
-    register_unified_parser, tool_arguments_raw, unregister_unified_parser,
-    vendor_unified_families,
+    assemble_with_tool_indices, builtin_unified_families, canonical_unified_family,
+    create_unified_parser_for_family, register_unified_parser, tool_arguments_raw,
+    unregister_unified_parser, vendor_unified_families,
 };
