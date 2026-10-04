@@ -1,0 +1,56 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.11
+    git_commit: 9ea8ba5e1087a9c193ef85dcdea9420fcd838fcb
+    source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+document:
+  mode: unified
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
+metadata_changes: {}
+document_overrides: {}

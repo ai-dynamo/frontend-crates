@@ -11,18 +11,18 @@
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
 //! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
 //! per-block value typing is delegated to the vendored batch XML parser via
-//! `parse_tool_call_block`, so a streamed call matches exactly what the batch
-//! parser produces. Arguments are re-serialized in the
+//! `parse_qwen_invoke`, which retains Qwen literal parameter text while reusing
+//! schema-directed value typing. Arguments are re-serialized in the
 //! source parameter order because the v1 parser builds them from a `HashMap`
 //! whose key order is non-deterministic; streaming fixtures store the arguments
 //! as an exact JSON string, so order has to be pinned to the model-emitted
 //! order (the order vLLM's Rust parser also preserves).
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    marker_prefix_suffix_len, reorder_arguments,
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
+    WrappedBlockScanner, WrappedBlockSpec, marker_prefix_suffix_len, reorder_arguments,
 };
-use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, parse_tool_call_block};
+use crate::tool_calling::v1core::{ToolDefinition, parse_qwen_invoke};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use std::collections::HashSet;
@@ -54,16 +54,88 @@ fn spec() -> WrappedBlockSpec {
         drop_invoke_crossing_block_end: false,
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
-        ..Default::default()
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
+            Box::new(QwenInvokeBoundary::default())
+        })),
+    }
+}
+
+/// Cursor for the shared scanner's active invoke. Only a parameter closer
+/// releases ownership of a value; function and tool markers inside it are data.
+#[derive(Default)]
+struct QwenInvokeBoundary {
+    cursor: usize,
+    in_parameter: bool,
+    parameter_value_start: usize,
+}
+
+impl InvokeBoundary for QwenInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        loop {
+            let tail = &candidate[self.cursor..];
+            if self.in_parameter {
+                if let Some(end) = tail.find("</parameter>") {
+                    self.cursor += end + "</parameter>".len();
+                    self.in_parameter = false;
+                } else {
+                    if flush {
+                        return candidate[self.parameter_value_start..]
+                            .find(FUNCTION_END)
+                            .map(|at| self.parameter_value_start + at + FUNCTION_END.len());
+                    }
+                    self.cursor =
+                        candidate.len() - marker_prefix_suffix_len(tail, ["</parameter>"]);
+                    return None;
+                }
+            } else {
+                let parameter = tail.find(PARAMETER_START);
+                let close = tail.find(FUNCTION_END);
+                if let Some(close) = close
+                    && parameter.is_none_or(|parameter| close < parameter)
+                {
+                    return Some(self.cursor + close + FUNCTION_END.len());
+                }
+                if let Some(parameter) = parameter {
+                    self.cursor += parameter;
+                    let header_end = candidate[self.cursor..].find('>')?;
+                    self.cursor += header_end + 1;
+                    self.in_parameter = true;
+                    self.parameter_value_start = self.cursor;
+                } else {
+                    self.cursor = candidate.len()
+                        - marker_prefix_suffix_len(tail, [PARAMETER_START, FUNCTION_END]);
+                    return None;
+                }
+            }
+        }
+    }
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+    fn reset(&mut self) {
+        *self = Self::default();
     }
 }
 
 /// Value-typing hook: types one complete `<function=...></function>` block and
 /// re-orders the arguments to source order.
 pub(crate) struct Qwen3Emitter {
-    config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
     partial: Option<PartialStringArgument>,
+    #[cfg(test)]
+    searched_bytes: usize,
 }
 
 /// Append-only Qwen argument state. Each schema-declared string parameter can
@@ -81,8 +153,11 @@ struct PartialStringArgument {
 
 struct ActiveStringParameter {
     value_cursor: usize,
-    pending_entity: String,
-    trailing_whitespace: String,
+    // Searching advances even when EOF recovery requires withholding value bytes.
+    search_cursor: usize,
+    ambiguous_function_close: Option<usize>,
+    at_start: bool,
+    pending_newline: bool,
     started: bool,
     opener_pending: String,
 }
@@ -122,18 +197,37 @@ impl InvokeEmitter for Qwen3Emitter {
         let mut arguments = String::new();
         loop {
             if let Some(active) = partial.active.as_mut() {
-                let value = &invoke[active.value_cursor..];
-                let close = value.find("</parameter>");
-                let safe_end =
-                    close.unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value));
-                let decoded = decode_streamable_xml_text(
-                    &value[..safe_end],
-                    &mut active.pending_entity,
-                    close.is_some(),
-                );
-                active.value_cursor += safe_end;
+                let search = &invoke[active.search_cursor..];
+                #[cfg(test)]
+                {
+                    self.searched_bytes += search.len();
+                }
+                let close = search
+                    .find("</parameter>")
+                    .map(|offset| active.search_cursor + offset);
+                // A function closer without a parameter closer is ambiguous until
+                // EOF. Retain it for legacy missing-parameter-close recovery; a
+                // later parameter closer confirms the bytes are literal data.
+                if close.is_none() && active.ambiguous_function_close.is_none() {
+                    #[cfg(test)]
+                    {
+                        self.searched_bytes += search.len();
+                    }
+                    active.ambiguous_function_close = search
+                        .find(FUNCTION_END)
+                        .map(|offset| active.search_cursor + offset);
+                }
+                active.search_cursor = invoke.len() - qwen_partial_suffix_len(search);
+                let safe_end = close
+                    .or(active.ambiguous_function_close)
+                    .unwrap_or(active.search_cursor);
                 let mut fragment = String::new();
-                append_trimmed_string_fragment(active, &decoded, &mut fragment);
+                append_literal_string_fragment(
+                    active,
+                    &invoke[active.value_cursor..safe_end],
+                    &mut fragment,
+                );
+                active.value_cursor = safe_end;
                 if active.started && !active.opener_pending.is_empty() {
                     arguments.push_str(&active.opener_pending);
                     active.opener_pending.clear();
@@ -184,9 +278,10 @@ impl InvokeEmitter for Qwen3Emitter {
                 .and_then(|tool| tool.parameters.as_ref())
                 .and_then(|schema| schema.get("properties"))
                 .and_then(|properties| properties.get(parameter))
-                .and_then(|schema| schema.get("type"))
-                .and_then(serde_json::Value::as_str)
-                == Some("string");
+                .is_some_and(|schema| {
+                    schema.get("type").and_then(serde_json::Value::as_str) == Some("string")
+                        && schema.get("nullable").and_then(serde_json::Value::as_bool) != Some(true)
+                });
             if !streamable {
                 let Some(_) = closed else {
                     break;
@@ -209,8 +304,10 @@ impl InvokeEmitter for Qwen3Emitter {
             opener.push_str(":\"");
             partial.active = Some(ActiveStringParameter {
                 value_cursor: value_start,
-                pending_entity: String::new(),
-                trailing_whitespace: String::new(),
+                search_cursor: value_start,
+                ambiguous_function_close: None,
+                at_start: true,
+                pending_newline: false,
                 started: false,
                 opener_pending: opener,
             });
@@ -234,15 +331,7 @@ impl InvokeEmitter for Qwen3Emitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        // Type this ONE invoke directly. Wrapping it back in `<tool_call>` and
-        // re-entering `try_tool_call_parse_xml` made the batch parser re-run
-        // block discovery, which cuts the block at the FIRST `</tool_call>` —
-        // so a parameter value that legitimately contains that marker was
-        // truncated (`<parameter=cmd>git log </tool_call> --oneline</parameter>`
-        // typed as `git log </tool_call>`). The scanner has already delimited
-        // the invoke, so re-discovering its bounds could only corrupt them.
-        let calls = parse_tool_call_block(invoke, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
+        let Some(call) = parse_qwen_invoke(invoke, &self.tools)? else {
             return Ok(None);
         };
         let arguments =
@@ -309,87 +398,45 @@ pub(crate) fn qwen3_scanner(tools: &[Tool]) -> WrappedBlockScanner<Qwen3Emitter>
     WrappedBlockScanner::new(
         spec(),
         Qwen3Emitter {
-            config: XmlParserConfig::default(),
             tools: tools.iter().map(ToolDefinition::from).collect(),
             partial: None,
+            #[cfg(test)]
+            searched_bytes: 0,
         },
     )
 }
 
-fn append_trimmed_string_fragment(
+/// Drop only the framing newlines. Hold the last newline until another byte
+/// proves it belongs to the value, preserving all spaces and entity spellings.
+fn append_literal_string_fragment(
     active: &mut ActiveStringParameter,
-    decoded: &str,
+    raw: &str,
     output: &mut String,
 ) {
-    let decoded = if active.started {
-        decoded
-    } else {
-        decoded.trim_start()
-    };
-    let content_end = decoded.trim_end().len();
-    if content_end == 0 {
-        if active.started {
-            active.trailing_whitespace.push_str(decoded);
-        }
+    if raw.is_empty() {
         return;
     }
-    let mut fragment = std::mem::take(&mut active.trailing_whitespace);
-    fragment.push_str(&decoded[..content_end]);
+    let raw = if active.at_start {
+        active.at_start = false;
+        raw.strip_prefix('\n').unwrap_or(raw)
+    } else {
+        raw
+    };
+    if raw.is_empty() {
+        return;
+    }
+    let mut fragment = String::new();
+    if active.pending_newline {
+        fragment.push('\n');
+    }
+    active.pending_newline = raw.ends_with('\n');
+    fragment.push_str(if active.pending_newline {
+        &raw[..raw.len() - 1]
+    } else {
+        raw
+    });
     output.push_str(&json_string_fragment(&fragment));
-    active.started = true;
-    if content_end < decoded.len() {
-        active.trailing_whitespace.push_str(&decoded[content_end..]);
-    }
-}
-
-/// Decode only complete entities while retaining a bounded ambiguous suffix.
-fn decode_streamable_xml_text(raw: &str, pending: &mut String, flush: bool) -> String {
-    const ENTITIES: [(&str, &str); 9] = [
-        ("&amp;quot;", "\""),
-        ("&amp;#x27;", "'"),
-        ("&amp;#39;", "'"),
-        ("&lt;", "<"),
-        ("&gt;", ">"),
-        ("&amp;", "&"),
-        ("&quot;", "\""),
-        ("&#x27;", "'"),
-        ("&#39;", "'"),
-    ];
-    pending.push_str(raw);
-    let mut decoded = String::new();
-    let mut cursor = 0;
-    while cursor < pending.len() {
-        let rest = &pending[cursor..];
-        if rest.starts_with('&') {
-            if let Some((entity, replacement)) =
-                ENTITIES.iter().find(|(entity, _)| rest.starts_with(entity))
-            {
-                if !flush
-                    && ENTITIES
-                        .iter()
-                        .any(|(longer, _)| longer.len() > entity.len() && longer.starts_with(rest))
-                {
-                    break;
-                }
-                decoded.push_str(replacement);
-                cursor += entity.len();
-                continue;
-            }
-            if !flush && ENTITIES.iter().any(|(entity, _)| entity.starts_with(rest)) {
-                break;
-            }
-        }
-        let next_entity = rest
-            .char_indices()
-            .skip(1)
-            .find(|(_, character)| *character == '&')
-            .map(|(at, _)| at)
-            .unwrap_or(rest.len());
-        decoded.push_str(&rest[..next_entity]);
-        cursor += next_entity;
-    }
-    pending.drain(..cursor);
-    decoded
+    active.started |= !fragment.is_empty();
 }
 
 fn json_string_fragment(text: &str) -> String {
@@ -397,8 +444,7 @@ fn json_string_fragment(text: &str) -> String {
     encoded[1..encoded.len() - 1].to_string()
 }
 
-/// Keep a native function-close prefix out of an open parameter value without
-/// exposing it to the shared guided-decoding marker vocabulary.
+/// Hold split parameter and function closers until ownership is known.
 fn qwen_partial_suffix_len(value: &str) -> usize {
     marker_prefix_suffix_len(value, ["</parameter>", FUNCTION_END])
 }
@@ -455,7 +501,11 @@ fn source_parameter_order(function: &str) -> Vec<String> {
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + header_end + 1;
+        let value_start = start + header_end + 1;
+        let Some(close) = function[value_start..].find("</parameter>") else {
+            break;
+        };
+        cursor = value_start + close + "</parameter>".len();
     }
     names
 }
@@ -502,6 +552,67 @@ mod tests {
     }
 
     #[test]
+    fn literal_function_closer_scanning_is_linear() {
+        let tools = weather_tools();
+        let mut emitter = Qwen3Emitter {
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+            partial: None,
+            searched_bytes: 0,
+        };
+        for length in [4096, 8192] {
+            emitter.reset();
+            emitter.searched_bytes = 0;
+            let value = format!("prefix</function>{}", "x".repeat(length));
+            let invoke =
+                format!("<function=get_weather><parameter=location>{value}</parameter></function>");
+            let mut arguments = String::new();
+            for end in 1..=invoke.len() {
+                if let Some(delta) = emitter.parse_partial_invoke(&invoke[..end], 0).unwrap() {
+                    arguments.push_str(&delta.arguments);
+                }
+            }
+            if let Some(delta) = emitter.parse_invoke(&invoke, 0).unwrap() {
+                arguments.push_str(&delta.arguments);
+            }
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&arguments).unwrap(),
+                serde_json::json!({"location": value})
+            );
+            assert!(
+                emitter.searched_bytes <= 32 * invoke.len(),
+                "searched {} bytes for {} input bytes",
+                emitter.searched_bytes,
+                invoke.len()
+            );
+        }
+    }
+
+    #[test]
+    fn missing_parameter_close_recovers_at_eof_at_every_split() {
+        let input = "<tool_call>\n<function=get_weather>\n<parameter=location>\nNYC\n</function>\n</tool_call>";
+        for split in 0..=input.len() {
+            let output = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]])
+                .coalesce_calls();
+            assert_eq!(output.calls.len(), 1, "split {split}");
+            assert_eq!(
+                output.calls[0].arguments, r#"{"location":"NYC"}"#,
+                "split {split}"
+            );
+        }
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(at, c)| &input[at..at + c.len_utf8()])
+            .collect();
+        assert_eq!(
+            parse_chunks(&weather_tools(), &chunks)
+                .coalesce_calls()
+                .calls[0]
+                .arguments,
+            r#"{"location":"NYC"}"#
+        );
+    }
+
+    #[test]
     fn emits_complete_call_on_close() {
         let out = parse_chunks(
             &weather_tools(),
@@ -517,8 +628,192 @@ mod tests {
         assert_eq!(out.calls.len(), 1);
         assert_eq!(out.calls[0].tool_index, 0);
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
-        assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+        assert_eq!(out.calls[0].arguments, r#"{"location":" NYC "}"#);
+    }
+
+    fn assert_argument_chunks(schema: serde_json::Value, raw: &str, expected: serde_json::Value) {
+        use crate::unified::UnifiedParserExt;
+        let mut tools = weather_tools();
+        tools[0].parameters["properties"]["location"] = schema.clone();
+        let input = format!(
+            "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+        );
+        for width in [1, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let output = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
+            assert!(output.calls[0].complete, "schema {schema}, width {width}");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
+                serde_json::json!({"location": expected}),
+                "schema {schema}, width {width}"
+            );
+            let mut parser = crate::unified::qwen3::qwen3_unified(&tools);
+            let mut deltas = Vec::new();
+            for chunk in &chunks {
+                deltas.extend(parser.push(chunk).expect("unified push"));
+            }
+            deltas.extend(parser.finish().expect("unified finish").events);
+            assert_eq!(
+                crate::unified::assemble(&deltas),
+                vec![crate::unified::UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"location": expected}),
+                }],
+                "unified schema {schema}, width {width}"
+            );
+        }
+    }
+
+    #[test]
+    fn padded_scalar_arguments_follow_the_schema() {
+        use serde_json::{Value, json};
+
+        for (schema, raw, expected) in [
+            (json!({"type": "boolean"}), " true ", json!(true)),
+            (json!({"type": "boolean"}), " false ", json!(false)),
+            (json!({"type": "integer"}), " 42 ", json!(42)),
+            (json!({"type": "number"}), " 1.5 ", json!(1.5)),
+            (json!({"type": "null"}), " null ", Value::Null),
+            (json!({"type": ["integer", "null"]}), " null ", Value::Null),
+            (json!({"type": ["integer", "null"]}), " 42 ", json!(42)),
+            (
+                json!({"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
+                " true ",
+                json!(true),
+            ),
+            (
+                json!({"anyOf": [{"type": "number"}, {"type": "null"}]}),
+                " 1.5 ",
+                json!(1.5),
+            ),
+            (
+                json!({"type": "string", "nullable": true}),
+                " null ",
+                Value::Null,
+            ),
+            (
+                json!({"type": "string", "nullable": true}),
+                " 42 ",
+                json!(" 42 "),
+            ),
+            (json!({"type": "string"}), " true ", json!(" true ")),
+            (json!({"type": "string"}), " null ", json!(" null ")),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                " 42 ",
+                json!(" 42 "),
+            ),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                " null ",
+                json!(" null "),
+            ),
+            (json!({"type": "integer"}), " invalid ", json!(" invalid ")),
+        ] {
+            assert_argument_chunks(schema, raw, expected);
+        }
+    }
+
+    #[test]
+    fn null_text_completes_with_the_schema_selected_type() {
+        for (schema, expected) in [
+            (
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"type": "string"}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"], "oneOf": [
+                    {"type": "string"}, {"type": "integer"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"minLength": 1}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "enum": ["null", null]}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            assert_argument_chunks(schema, "null", expected);
+        }
+    }
+
+    #[test]
+    fn literal_union_branches_preserve_typed_arguments() {
+        for schema in [
+            serde_json::json!({"anyOf": [{"const": "auto"}, {"type": "integer"}]}),
+            serde_json::json!({"oneOf": [{"enum": ["auto"]}, {"type": "integer"}]}),
+        ] {
+            for (raw, expected) in [
+                ("42", serde_json::json!(42)),
+                ("auto", serde_json::json!("auto")),
+            ] {
+                assert_argument_chunks(schema.clone(), raw, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn numeric_literal_constraints_preserve_argument_types() {
+        for keyword in ["const", "enum"] {
+            for (literal, raw, types, expected) in [
+                (
+                    serde_json::json!(42.0),
+                    "42",
+                    serde_json::json!(["integer", "null"]),
+                    serde_json::json!(42),
+                ),
+                (
+                    serde_json::json!(42.5),
+                    "42.5",
+                    serde_json::json!(["number", "null"]),
+                    serde_json::json!(42.5),
+                ),
+            ] {
+                let mut schema = serde_json::json!({"type": types});
+                schema[keyword] = if keyword == "enum" {
+                    serde_json::json!([literal])
+                } else {
+                    literal
+                };
+                assert_argument_chunks(schema, raw, expected);
+            }
+        }
     }
 
     #[test]
@@ -831,7 +1126,7 @@ mod tests {
     }
 
     #[test]
-    fn defers_html_entities_until_complete_typing() {
+    fn streams_entity_spellings_as_literal_text() {
         let input = "<tool_call><function=get_weather><parameter=location>BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM</parameter></function></tool_call>";
         let entity = input.find('&').unwrap();
         let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
@@ -855,7 +1150,7 @@ mod tests {
             .iter()
             .map(|call| call.arguments.as_str())
             .collect();
-        assert!(emitted_before_close.contains("&-LONG-TAIL-THAT-MUST-STREAM"));
+        assert!(emitted_before_close.contains("&amp;-LONG-TAIL-THAT-MUST-STREAM"));
 
         before_entity.append(parser.push(&input[close..]).expect("close"));
         before_entity.append(parser.finish().expect("finish"));
@@ -866,12 +1161,12 @@ mod tests {
                 .into_iter()
                 .map(|call| call.arguments)
                 .collect::<String>(),
-            r#"{"location":"BEGIN-&-LONG-TAIL-THAT-MUST-STREAM"}"#
+            r#"{"location":"BEGIN-&amp;-LONG-TAIL-THAT-MUST-STREAM"}"#
         );
     }
 
     #[test]
-    fn longer_entity_prefix_waits_for_disambiguation() {
+    fn entity_spellings_are_chunk_invariant() {
         let input = "<tool_call><function=get_weather><parameter=location>&amp;quot;tail</parameter></function></tool_call>";
         let split = input.find("&amp;").unwrap() + "&amp;".len();
         let baseline = parse_chunks(&weather_tools(), &[input]).coalesce_calls();
@@ -879,5 +1174,113 @@ mod tests {
             parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
             baseline
         );
+    }
+    #[test]
+    fn integral_decimal_arguments_with_literal_constraints() {
+        for keyword in ["const", "enum"] {
+            for literal in [serde_json::json!(42), serde_json::json!(42.0)] {
+                for ty in [
+                    serde_json::json!(["number", "null"]),
+                    serde_json::json!(["integer", "null"]),
+                ] {
+                    let mut schema = serde_json::json!({"type":ty});
+                    schema[keyword] = if keyword == "const" {
+                        literal.clone()
+                    } else {
+                        serde_json::json!([literal])
+                    };
+                    for raw in ["42", "42.0", "4.2e1"] {
+                        let mut tools = weather_tools();
+                        tools[0].parameters["properties"]["location"] = schema.clone();
+                        let input = format!(
+                            "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+                        );
+                        for width in [1, input.len()] {
+                            let chunks: Vec<_> = input
+                                .as_bytes()
+                                .chunks(width)
+                                .map(|c| std::str::from_utf8(c).unwrap())
+                                .collect();
+                            let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                            assert_eq!(out.calls.len(), 1);
+                            assert_eq!(
+                                out.calls[0].arguments, r#"{"location":42}"#,
+                                "{schema}, {raw}, width {width}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn integral_decimal_coercion_preserves_precision() {
+        for (raw, expected) in [
+            ("9007199254740993.0", "9007199254740993"),
+            ("9.007199254740993e15", "9007199254740993"),
+            ("-4.2E+1", "-42"),
+            ("4200e-2", "42"),
+            ("0.0e-400", "0"),
+            ("42.0000000000000001", "\"42.0000000000000001\""),
+            ("1e-400", "\"1e-400\""),
+            ("42.5", "\"42.5\""),
+        ] {
+            let mut tools = weather_tools();
+            tools[0].parameters["properties"]["location"] =
+                serde_json::json!({"type":["integer","string"]});
+            let input = format!(
+                "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+            );
+            for width in [1, input.len()] {
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|c| std::str::from_utf8(c).unwrap())
+                    .collect();
+                let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert_eq!(out.calls.len(), 1);
+                assert_eq!(
+                    out.calls[0].arguments,
+                    format!(r#"{{"location":{expected}}}"#),
+                    "{raw}, width {width}"
+                );
+            }
+        }
+    }
+    #[test]
+    fn large_fractional_arguments_remain_exact_json_numbers() {
+        for raw in [
+            "9007199254740992.5",
+            "9.0071992547409925e15",
+            "0.10000000000000000001",
+            "-9007199254740992.5",
+        ] {
+            for schema in [
+                serde_json::json!({"type":"number"}),
+                serde_json::json!({"type":["number","null"],"const":serde_json::from_str::<serde_json::Value>(raw).unwrap()}),
+                serde_json::json!({"type":["number","null"],"enum":[serde_json::from_str::<serde_json::Value>(raw).unwrap()]}),
+            ] {
+                let mut tools = weather_tools();
+                tools[0].parameters["properties"]["location"] = schema.clone();
+                let input = format!(
+                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|c| std::str::from_utf8(c).unwrap())
+                        .collect();
+                    let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(out.calls.len(), 1);
+                    assert_eq!(
+                        out.calls[0].arguments,
+                        format!(r#"{{"location":{raw}}}"#),
+                        "{schema}, width {width}"
+                    );
+                }
+            }
+        }
     }
 }
