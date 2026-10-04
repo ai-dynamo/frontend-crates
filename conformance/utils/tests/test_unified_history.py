@@ -193,6 +193,41 @@ def test_schema_v3_keeps_the_first_origin_when_an_unchanged_capture_is_rerun(tmp
         unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
 
 
+def test_schema_v3_backfills_an_older_capture_without_changing_later_results(tmp_path):
+    root = _store(tmp_path / "store")
+    before = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    original_later = before.resolve("dynamo_v2-0.5.2")["text_only"]
+    loose = tmp_path / "loose" / "dynamo_v2-0.5.1" / "gemma4"
+    loose.mkdir(parents=True)
+    source = tmp_path / "before" / "dynamo_v2-0.5.0"
+    unified_history.materialize_store(root, tmp_path / "before", include_current_inputs=False)
+    document = unified_history.load_yaml(source / "gemma4/UNIFIED.1-1.yaml")
+    document["captured_with"] = {"dynamo_v2": "0.5.1"}
+    document["capture_origin"] = {
+        "crate_version": "0.5.1",
+        "source_sha256": "a" * 64,
+        "git_commit": "b" * 40,
+    }
+    document["cases"]["UNIFIED.1-1"]["assembled"] = [
+        {"kind": "text", "text": "middle"}
+    ]
+    (loose / "UNIFIED.1-1.yaml").write_text(
+        unified_history.dump_yaml(document), encoding="utf-8"
+    )
+
+    unified_history.update_store_from_loose(root, tmp_path / "loose", complete_snapshot=False)
+
+    updated = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    inserted = updated.resolve("dynamo_v2-0.5.1")["text_only"]
+    later = updated.resolve("dynamo_v2-0.5.2")["text_only"]
+    assert inserted["observation"]["value"]["assembled"] == [
+        {"kind": "text", "text": "middle"}
+    ]
+    assert inserted["document"]["capture_origin"]["crate_version"] == "0.5.1"
+    assert later["observation"] == original_later["observation"]
+    assert later["stimulus"] == original_later["stimulus"]
+
+
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
 def test_schema_v3_rejects_patch_and_source_qualified_filenames(tmp_path, version):
     _write_family(tmp_path)

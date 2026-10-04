@@ -32,13 +32,18 @@ def matches_schema(
     _references: tuple[str, ...] = (),
 ) -> bool:
     root_schema = schema if root_schema is None else root_schema
-    assert schema.keys() <= {"type", "properties", "items", "anyOf", "oneOf", "const",
-                             "enum", "nullable", "minLength", "$ref", "$defs", "definitions"}, schema
+    assert schema.keys() <= {
+        "type", "properties", "required", "items", "anyOf", "oneOf", "const",
+        "enum", "nullable", "minLength", "$ref", "$defs", "definitions", "allOf", "minimum",
+    }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
         assert reference not in _references, ("cyclic schema reference", reference)
         target = _local_reference(root_schema, reference)
         if not matches_schema(value, target, root_schema, _references + (reference,)):
+            return False
+        siblings = {key: item for key, item in schema.items() if key != "$ref"}
+        if not matches_schema(value, siblings, root_schema, _references):
             return False
     kind = schema.get("type")
     kinds = kind if isinstance(kind, list) else [kind] if kind else []
@@ -57,15 +62,24 @@ def matches_schema(
         return False
     if "enum" in schema and value not in schema["enum"]:
         return False
+    if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
+        return False
     if "anyOf" in schema and not any(matches_schema(value, branch, root_schema, _references) for branch in schema["anyOf"]):
         return False
     if "oneOf" in schema and sum(matches_schema(value, branch, root_schema, _references) for branch in schema["oneOf"]) != 1:
+        return False
+    if "allOf" in schema and not all(matches_schema(value, branch, root_schema, _references) for branch in schema["allOf"]):
         return False
     if isinstance(value, str) and len(value) < schema.get("minLength", 0):
         return False
     if isinstance(value, dict):
         properties = schema.get("properties", {})
-        return all(matches_schema(item, properties[key], root_schema, _references) for key, item in value.items() if key in properties)
+        if not all(key in value for key in schema.get("required", [])):
+            return False
+        return all(
+            matches_schema(item, properties[key], root_schema, _references)
+            for key, item in value.items() if key in properties
+        )
     if isinstance(value, list) and "items" in schema:
         return all(matches_schema(item, schema["items"], root_schema, _references) for item in value)
     return True

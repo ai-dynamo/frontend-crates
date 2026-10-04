@@ -6043,6 +6043,68 @@ cases:
         name: run
         arguments:
           cmd: before </tool_call><tool_call>get_weather</tool_call> after
+  glm47_reference_type_intersection:
+    lifecycle: active
+    scenario: glm47_reference_type_intersection
+    description: 'PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.'
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-2
+    historical_ids:
+    - UNIFIED.7-7
+    request:
+      input: <tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+            TextAlias:
+              $ref: '#/$defs/Text'
+            Count:
+              type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/TextAlias'
+              allOf:
+              - type: string
+            count:
+              $ref: '#/$defs/Count'
+              minimum: 1
+          required:
+          - payload
+          - count
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: payload
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '{"x":1}'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: count
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '42'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+          count: 42
   qwen_string_null:
     lifecycle: active
     scenario: arg_string_null

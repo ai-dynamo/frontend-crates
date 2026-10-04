@@ -1320,6 +1320,38 @@ def _stored_change(value: dict) -> dict:
     return {key: copy.deepcopy(value[key]) for key in CHANGE_KEYS}
 
 
+def _snapshot_delta(target: dict, previous: dict) -> tuple[dict, dict, dict]:
+    changes = {}
+    metadata_changes = {}
+    document_overrides = {}
+    for case_id in sorted(set(target) | set(previous)):
+        before = previous.get(case_id)
+        after = target.get(case_id)
+        if after is None:
+            if before is not None:
+                changes[case_id] = {"absent": True}
+            continue
+        if before is None or _canonical_json(_capture_semantic(after, case_id)) != _canonical_json(
+            _capture_semantic(before, case_id)
+        ):
+            changes[case_id] = _stored_change(after)
+        after_document = after.get("document", {})
+        before_document = {} if before is None else before.get("document", {})
+        after_metadata = after_document.get("record_metadata", {})
+        before_metadata = before_document.get("record_metadata", {})
+        if _canonical_json(after_metadata) != _canonical_json(before_metadata):
+            metadata_changes[case_id] = copy.deepcopy(after_metadata)
+        after_path = after_document.get("parser_path")
+        before_path = before_document.get("parser_path")
+        if after_path != before_path:
+            if after_path is None:
+                raise ValueError(
+                    f"historical backfill cannot remove parser_path for {case_id}"
+                )
+            document_overrides[case_id] = {"parser_path": after_path}
+    return changes, metadata_changes, document_overrides
+
+
 def _load_loose_document(path: Path, family_name: str) -> dict:
     document = load_yaml(path)
     if document.get("family") != family_name:
@@ -1534,47 +1566,27 @@ def _update_from_loose(
                     f"capture {capture_dir.name} is already recorded; add a new semantic "
                     "version after back-capturing any new case across prior versions"
                 )
-            prior_id = history.ordered_capture_ids()[-1]
-            if _capture_release_sort_key(runtime_version) <= _capture_release_sort_key(
-                history.captures[prior_id]["runtime_version"]
-            ):
-                raise ValueError(
-                    f"capture {capture_dir.name} must use a new semantic version after "
-                    f"{prior_id}"
-                )
-            prior = history.resolve(prior_id)
-            changes = {}
-            metadata_changes = {}
-            for case_id in sorted(set(prior) | set(records)):
-                before = prior.get(case_id)
-                after = records.get(case_id)
-                # Display IDs are renumbered independently of capture semantics.
-                # Compare by the stable case ID so a renamed case is inherited,
-                # while a changed observation or stimulus still creates a capture.
-                before_key = (
-                    None
-                    if before is None
-                    else _canonical_json(_capture_semantic(before, case_id))
-                )
-                after_key = (
-                    None
-                    if after is None
-                    else _canonical_json(_capture_semantic(after, case_id))
-                )
-                if before_key != after_key:
-                    changes[case_id] = (
-                        {"absent": True} if after is None else _stored_change(after)
-                    )
-                before_metadata = (
-                    {} if before is None else before["document"].get("record_metadata", {})
-                )
-                after_metadata = (
-                    {} if after is None else after["document"].get("record_metadata", {})
-                )
-                if after is not None and _canonical_json(before_metadata) != _canonical_json(
-                    after_metadata
-                ):
-                    metadata_changes[case_id] = after_metadata
+            capture_version = _capture_release_sort_key(runtime_version)
+            ordered_ids = history.ordered_capture_ids()
+            prior_ids = [
+                capture_id
+                for capture_id in ordered_ids
+                if _capture_release_sort_key(
+                    history.captures[capture_id]["runtime_version"]
+                ) < capture_version
+            ]
+            later_ids = [
+                capture_id
+                for capture_id in ordered_ids
+                if _capture_release_sort_key(
+                    history.captures[capture_id]["runtime_version"]
+                ) > capture_version
+            ]
+            prior = history.resolve(prior_ids[-1]) if prior_ids else {}
+            later_snapshots = {
+                capture_id: history.resolve(capture_id) for capture_id in later_ids
+            }
+            changes, metadata_changes, document_overrides = _snapshot_delta(records, prior)
             origins = {
                 _canonical_json(record["document"]["capture_origin"])
                 for record in records.values()
@@ -1589,11 +1601,6 @@ def _update_from_loose(
                     "status": "legacy",
                     "captured_with": {implementation: runtime_version},
                 }
-            document_overrides = {
-                case_id: {"parser_path": record["document"]["parser_path"]}
-                for case_id, record in records.items()
-                if "parser_path" in record["document"]
-            }
             # Extraction may derive a complete semantic release directory from
             # an earlier checkpoint. That inherited view is not a new capture.
             if not changes and not metadata_changes and not document_overrides:
@@ -1607,9 +1614,27 @@ def _update_from_loose(
                 "document_overrides": document_overrides,
             }
             captures[capture_dir.name] = capture
-            history.capture_paths[capture_dir.name] = (
-                history.family.path.parent / f"{capture_dir.name}.yaml"
-            )
+            capture_path = history.family.path.parent / f"{capture_dir.name}.yaml"
+            history.capture_paths[capture_dir.name] = capture_path
+            documents[capture_path] = capture
+            previous_snapshot = records
+            for later_id in later_ids:
+                later_capture = history.captures[later_id]
+                later_snapshot = later_snapshots[later_id]
+                (
+                    later_changes,
+                    later_metadata_changes,
+                    later_document_overrides,
+                ) = _snapshot_delta(later_snapshot, previous_snapshot)
+                updated_capture = {
+                    **later_capture,
+                    "changes": later_changes,
+                    "metadata_changes": later_metadata_changes,
+                    "document_overrides": later_document_overrides,
+                }
+                history.captures[later_id] = updated_capture
+                documents[history.capture_paths[later_id]] = updated_capture
+                previous_snapshot = later_snapshot
     return documents
 
 

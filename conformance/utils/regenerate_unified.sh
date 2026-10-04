@@ -53,6 +53,7 @@ run python3 -m pytest -q \
 run python3 - <<'PY' || status=1
 import json
 from pathlib import Path
+import yaml
 
 import sys
 
@@ -60,6 +61,7 @@ sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
 from dynamo_version import dynamo_v2_label
 from fixtures import _version_sort_key
+from case_variants import visible_null_groups
 from unified_history import load_store
 from unified_taxonomy import numbered_id
 
@@ -72,14 +74,16 @@ expected = {
     }
     for family in golden.FAMILIES
 }
-expected_red = {
-    family: {
-        key[len("UNIFIED."):].rsplit(".", 1)[0]
-        for key, case in golden.build_cases(family).items()
-        if case.get("expect", {}).get("dynamo_current", {}).get("verdict") == "diverge"
+expected_red = {family: set() for family in golden.FAMILIES}
+known_divergences = yaml.safe_load(Path("conformance/unified-known-divergences.yaml").read_text()) or {}
+for family, cases in known_divergences.items():
+    labels = {
+        numbered_id(key[len("UNIFIED."):].rsplit(".", 1)[0])
+        .removeprefix("UNIFIED.")
+        for key, checks in cases.items()
+        if "golden" in checks
     }
-    for family in golden.FAMILIES
-}
+    expected_red[family] = visible_null_groups(labels, family)
 
 current_version = dynamo_v2_label(Path.cwd())
 store = load_store(root)
@@ -122,7 +126,7 @@ for report in current["reports"]:
     family = report["model"]
     seen_reports.add(family)
     actual_red = {
-        issue["scenario"]
+        issue["case"]
         for issue in report.get("issues", [])
         if issue.get("state") == "red"
     }

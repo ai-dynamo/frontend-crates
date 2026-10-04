@@ -1,14 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import dynamo_version as identity  # noqa: E402
+import refresh_dynamo_captures  # noqa: E402
 
 
 def git(repo, *args, input=None):
@@ -75,6 +78,68 @@ def test_changed_same_version_is_capturable_but_not_a_new_consumer_identity(rele
     assert producer["label"].startswith("0.6.0+source.")
     assert identity.dynamo_v2_label(release_repo) == "0.6.0"
     assert identity.select_capture_label(release_repo, {"0.6.0": [producer]}) == "0.6.0"
+
+
+def test_capture_source_fingerprint_resolves_release_and_unpublished_labels(release_repo):
+    released_source = identity.source_fingerprint(
+        release_repo, "refs/tags/dynamo-parsers-v2-v0.6.0"
+    )
+    manifest = release_repo / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('"0.6.0"', '"0.6.1"'))
+    current_source = identity.source_fingerprint(release_repo)
+    current_label = identity.dynamo_v2_provenance(release_repo, "current")["label"]
+
+    assert identity.capture_source_fingerprint(release_repo, "0.6.0") == released_source
+    assert identity.capture_source_fingerprint(release_repo, "0.6.0.patch1") == released_source
+    assert identity.capture_source_fingerprint(release_repo, "0.6.1") == current_source
+    assert identity.capture_source_fingerprint(release_repo, current_label) == current_source
+    with pytest.raises(ValueError, match="no verifiable parser source"):
+        identity.capture_source_fingerprint(release_repo, "0.6.2")
+
+
+@pytest.mark.parametrize("version, changed, allowed", [
+    ("0.6.0", False, True),
+    ("0.6.0", True, False),
+    ("0.6.1", True, True),
+])
+def test_stream_receipt_binds_released_or_unpublished_source(release_repo, monkeypatch, version, changed, allowed):
+    # Receipts belong to capture publication, outside the parser fixture input/output schema.
+    manifest = release_repo / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('"0.6.0"', f'"{version}"'))
+    if changed:
+        (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed() {}\n")
+    tree = release_repo / "stream"
+    input_file = tree / "inputs/glm47/TOOLCALLING.streamv1.7.yaml"
+    input_file.parent.mkdir(parents=True)
+    case_id = "TOOLCALLING.streamv1.7.g"
+    input_file.write_text(yaml.safe_dump({"family": "glm47", "mode": "streamv1",
+                                         "cases": {case_id: {"chunks": [{"delta_text": "payload"}]}}}))
+    monkeypatch.setattr(refresh_dynamo_captures, "ROOT", release_repo)
+    monkeypatch.setattr(refresh_dynamo_captures, "ensure_tree", lambda _name: tree)
+    monkeypatch.setattr(refresh_dynamo_captures, "V2_FAMILIES", ["glm47"])
+    monkeypatch.setattr(refresh_dynamo_captures, "run_bin",
+                        lambda *_args: json.dumps({case_id: [{"deltas": [{"index": 0, "name": "call"}]}]}))
+    receipt_path = release_repo / "receipt.json"
+    label = identity.dynamo_v2_label(release_repo, "current")
+    if not allowed:
+        with pytest.raises(ValueError, match="source does not match release"):
+            refresh_dynamo_captures.refresh_stream(label, receipt_path)
+        assert not receipt_path.exists()
+        assert not (tree / f"dynamo_v2-{version}").exists()
+        return
+    refresh_dynamo_captures.refresh_stream(label, receipt_path)
+    receipt = json.loads(receipt_path.read_text())["captures"][f"dynamo_v2-{version}"]
+    assert receipt["producer_source_sha256"] == identity.source_fingerprint(release_repo)
+    output = yaml.safe_load((tree / f"dynamo_v2-{version}/glm47/TOOLCALLING.streamv1.7.yaml").read_text())
+    assert output["captured_with"] == {"dynamo_v2": version}
+    assert output["cases"][case_id]["chunks"][0]["expected"] == [{"index": 0, "name": "call"}]
+
+
+def test_stream_receipt_rejects_another_version_before_touching_output(release_repo, monkeypatch):
+    monkeypatch.setattr(refresh_dynamo_captures, "ROOT", release_repo)
+    monkeypatch.setattr(refresh_dynamo_captures, "ensure_tree", lambda _name: pytest.fail("must reject before mutation"))
+    with pytest.raises(ValueError, match="capture (version|label)"):
+        refresh_dynamo_captures.refresh_stream("0.6.1", release_repo / "receipt.json")
 
 
 def test_reader_keeps_legacy_capture_directories_readable(release_repo):

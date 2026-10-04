@@ -726,23 +726,23 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 93,
-            "deepseek_v41": 93,
+            "deepseek_v41": 94,
             "gemma4": 95,
-            "glm47": 100,
+            "glm47": 101,
             "kimi_k2": 93,
             "kimi_k3": 101,
             "muse_glimmer": 94,
             "qwen3": 93,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 764
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 112
+    assert len(UNIFIED_TAX) == 114
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1073,17 +1073,52 @@ def _native_input_calls(family, raw):
         "kimi_k2": r'<\|tool_call_begin\|>(?:functions\.)?([\w.-]+):\d+<\|tool_call_argument_begin\|>',
         "kimi_k3": r'<\|open\|>\s*call tool="([^"]+)" index="\d+"\s*<\|sep\|>',
     }
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        gap = " " if family == "deepseek_v41" else ""
+        invocation_end = f"</｜DSML｜{gap}invoke>"
+        calls = []
+        cursor = 0
+        while match := re.search(headers[family], raw[cursor:]):
+            call_name = match[1]
+            body_start = cursor + match.end()
+            start = body_start + len(raw[body_start:]) - len(raw[body_start:].lstrip())
+            arguments = {}
+            try:
+                value, end = json.JSONDecoder().raw_decode(raw, start)
+            except json.JSONDecodeError:
+                pass
+            else:
+                suffix = raw[end:]
+                closer_start = end + len(suffix) - len(suffix.lstrip())
+                if isinstance(value, dict) and raw.startswith(invocation_end, closer_start):
+                    arguments = value
+                    cursor = closer_start + len(invocation_end)
+                    calls.append({"kind": "tool_call", "name": call_name, "arguments": arguments})
+                    continue
+            pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>'
+            body_cursor = body_start
+            while True:
+                body_end = raw.find(invocation_end, body_cursor)
+                parameter = re.search(pattern, raw[body_cursor:], re.S)
+                parameter_start = body_cursor + parameter.start() if parameter else len(raw)
+                if parameter and (body_end < 0 or parameter_start < body_end):
+                    key, is_string, value = parameter.groups()
+                    arguments[key] = value if is_string == "true" else json.loads(value)
+                    body_cursor += parameter.end()
+                    continue
+                if body_end < 0:
+                    cursor = len(raw)
+                else:
+                    cursor = body_end + len(invocation_end)
+                break
+            calls.append({"kind": "tool_call", "name": call_name, "arguments": arguments})
+        return calls
     found = list(re.finditer(headers[family], raw))
     calls = []
     for index, match in enumerate(found):
         body = raw[match.end():found[index + 1].start() if index + 1 < len(found) else len(raw)]
         arguments = {}
-        if family in {"deepseek_v4", "deepseek_v41"}:
-            gap = " " if family == "deepseek_v41" else ""
-            pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>'
-            for key, is_string, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if is_string == "true" else json.loads(value)
-        elif family == "qwen3":
+        if family == "qwen3":
             # The generator frames values with one newline; payload whitespace is data.
             arguments = {key: value.removeprefix("\n").removesuffix("\n")
                          for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
@@ -1125,6 +1160,37 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
     assert _native_input_calls("kimi_k2", raw) == []
 
 
+@pytest.mark.parametrize(("family", "invocation_start", "fake_invocation", "invocation_end"), [
+    ("deepseek_v4", '<｜DSML｜invoke name="inspect">', '<｜DSML｜invoke name="fake">', "</｜DSML｜invoke>"),
+    ("deepseek_v41", '<｜DSML｜ invoke name="inspect">', '<｜DSML｜ invoke name="fake">', "</｜DSML｜ invoke>"),
+])
+def test_deepseek_json_body_projection_keeps_marker_text_inside_json_data(
+    family, invocation_start, fake_invocation, invocation_end
+):
+    marker_text = f"literal {fake_invocation} and {invocation_end}"
+    valid = (
+        invocation_start
+        + json.dumps({"value": marker_text})
+        + invocation_end
+    )
+    malformed = (
+        invocation_start
+        + '{"ok":true} trailing text'
+        + invocation_end
+    )
+
+    assert _native_input_calls(family, valid) == [{
+        "kind": "tool_call",
+        "name": "inspect",
+        "arguments": {"value": marker_text},
+    }]
+    assert _native_input_calls(family, malformed) == [{
+        "kind": "tool_call",
+        "name": "inspect",
+        "arguments": {},
+    }]
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
@@ -1142,16 +1208,15 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    if family not in {"qwen3", "glm47"} or not isinstance(value, str):
-                        continue
-                    if value == "null" and matches_schema(None, schema, parameters):
-                        candidate["arguments"][key] = None
-                    elif not matches_schema(value, schema, parameters):
+                    if isinstance(value, str):
+                        if family in {"qwen3", "glm47"} and value == "null" and matches_schema(None, schema, parameters):
+                            candidate["arguments"][key] = None
+                            continue
                         try:
                             decoded = json.loads(value)
                         except json.JSONDecodeError:
                             continue
-                        if matches_schema(decoded, schema, parameters):
+                        if not isinstance(decoded, str) and matches_schema(decoded, schema, parameters):
                             candidate["arguments"][key] = decoded
         else:
             candidates = []

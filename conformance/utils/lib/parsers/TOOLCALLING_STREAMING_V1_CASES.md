@@ -46,14 +46,20 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.d`** Nested object + array. Streaming form of `TOOLCALLING.batch.7.d`.
 - **`TOOLCALLING.streamv1.7.e`** Large / deep JSON-edge argument payload. Streaming form of `TOOLCALLING.batch.7.e`.
 - **`TOOLCALLING.streamv1.7.f`** Numeric precision edge preserves integer-like number literal. Streaming form of `TOOLCALLING.batch.7.f`.
-- **`TOOLCALLING.streamv1.7-4`** The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
-- **`TOOLCALLING.streamv1.7-5`** The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
 - **`TOOLCALLING.streamv1.7-6`** Nested members retain declared types through a unique object branch in the request tool schema's `anyOf` or `oneOf`. Integers, booleans, scalar string alternatives, nullable objects, and actual child objects survive incremental parsing. Streaming form of `TOOLCALLING.batch.7-6` (PR #270).
 - **`TOOLCALLING.streamv1.7-7`** Null-only `const: null` and `enum: [null]` alternatives in the request tool schema do not make `anyOf` or `oneOf` object selection ambiguous. The unique object branch keeps its nested `page` field an integer. Streaming form of `TOOLCALLING.batch.7-7` (PR #270).
 - **`TOOLCALLING.streamv1.7-8`** Ambiguous object unions in the request tool schema preserve the existing string fallback for nested scalar values. Streaming form of `TOOLCALLING.batch.7-8` (PR #270).
 - **`TOOLCALLING.streamv1.7-9`** Local parameter references preserve declared object types across chunks. Streaming form of `TOOLCALLING.batch.7-9` (PR #273).
 - **`TOOLCALLING.streamv1.7-10`** Nested properties, array items, and additional properties resolve references before coercion. Streaming form of `TOOLCALLING.batch.7-10` (PR #273).
 - **`TOOLCALLING.streamv1.7-11`** URI-encoded local reference fragments resolve their definitions before coercion. Streaming form of `TOOLCALLING.batch.7-11` (PR #273).
+- **`TOOLCALLING.streamv1.7.g`** Composed scalar schemas preserve integer, number, and boolean argument values. Streaming regression for frontend-crates #248.
+- **`TOOLCALLING.streamv1.7.h`** Family-native string arguments preserve leading and trailing whitespace, whitespace-only text, and empty strings. Streaming regression for frontend-crates #247.
+- **`TOOLCALLING.streamv1.7.i`** GLM argument strings and object values preserve literal XML entity text. Streaming regression for frontend-crates #249.
+- **`TOOLCALLING.streamv1.7.j`** MiniMax M3 preserves nested integer values when an object wins a nullable union. Streaming regression for frontend-crates #270.
+- **`TOOLCALLING.streamv1.7.k`** GLM resolves local schema references before coercing string and integer arguments. This case does not distinguish sibling type intersections. Streaming regression for frontend-crates #271.
+- **`TOOLCALLING.streamv1.7.l`** MiniMax M3 resolves a local parameter reference before parsing object arguments. Streaming regression for frontend-crates #273.
+- **`TOOLCALLING.streamv1.51.a`** Tool-only projection preserves caller-usable reasoning information around a tool call. Delimiter-preserving families retain their native framing; Unified-backed families retain the reasoning body in `normal_text`. Streaming regression for frontend-crates #253.
+- **`TOOLCALLING.streamv1.51.b`** DeepSeek tool-only selection accepts both DSML dialects in one stream. Streaming regression for frontend-crates #255.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.
@@ -75,7 +81,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
-New sub-cases use numeric suffixes (`<num>-<num>` or `<letters/num>-<num>`) rather than letters. Existing lettered IDs remain historical identifiers.
+Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.l`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
 
 ## `TOOLCALLING.streamv1.50` — Partial-token chunking
 

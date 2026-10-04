@@ -6765,3 +6765,87 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  deepseek_v41_json_invocation_body:
+    lifecycle: active
+    scenario: deepseek_v41_json_invocation_body
+    description: 'PR #250: DeepSeek V4.1 accepts a JSON object as the invocation body and preserves marker-looking text inside its string values.'
+    policy:
+    - I7
+    display_id: UNIFIED.deepseek-1
+    historical_ids:
+    - UNIFIED.7-6
+    request:
+      input: '<｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="inspect">
+
+        {"value": " café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}
+
+        </｜DSML｜ invoke>
+
+        <｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: inspect
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+            nested:
+              type: object
+          required:
+          - value
+          - nested
+      - name: done
+        parameters:
+          type: object
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜ invoke name="inspect">
+      - delta_text: '
+
+          {"value": " café 🐈 '
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: ' '
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ' &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}
+
+          '
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜ invoke name="done">
+      - delta_text: '{}'
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments:
+          value: ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"
+
+            '
+          nested:
+            values:
+            - true
+            - 42
+            - -1250
+      - kind: tool_call
+        name: done
+        arguments: {}
