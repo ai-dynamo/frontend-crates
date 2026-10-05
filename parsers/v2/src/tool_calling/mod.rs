@@ -13,6 +13,8 @@ pub mod kimi_k3;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;
+#[cfg(test)]
+mod numeric_tests;
 pub mod qwen3_coder;
 mod registry;
 /// Shared marker-scan core. Crate-visible because `crate::unified` builds on the
