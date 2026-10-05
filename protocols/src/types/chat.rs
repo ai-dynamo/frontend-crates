@@ -34,8 +34,8 @@ pub use async_openai::types::chat::{
     CompletionFinishReason, CompletionTokensDetails, CompletionUsage, FunctionObject,
     FunctionObjectArgs, ImageDetail, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
     PredictionContentContent, Prompt, PromptTokensDetails, ResponseFormat,
-    ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs, WebSearchContextSize,
-    WebSearchLocation, WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
+    ResponseFormatJsonSchema, Role, ServiceTier, WebSearchContextSize, WebSearchLocation,
+    WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
 };
 
 /// OpenAI stop configuration, with Dynamo's token-id stop extension.
@@ -362,6 +362,19 @@ pub struct ChatCompletionRequestToolMessage {
 pub struct ChatChoiceLogprobs {
     pub content: Option<Vec<ChatCompletionTokenLogprob>>,
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
+}
+
+/// Top logprob candidate with an optional backend vocabulary ID.
+///
+/// Different vocabulary IDs may render to the same token string. Retain IDs
+/// supplied by the backend without adding them to ordinary OpenAI responses.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub struct TopLogprobs {
+    pub token: String,
+    pub logprob: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<u32>,
+    pub bytes: Option<Vec<u8>>,
 }
 
 /// Token logprob entry with optional backend token ID.
