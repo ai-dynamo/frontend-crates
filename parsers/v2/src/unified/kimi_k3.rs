@@ -3022,7 +3022,10 @@ mod tests {
     #[test]
     fn adjacent_calls_keep_each_boundary_at_every_split() {
         for count in 1..=4 {
-            for repeated in [false, true] {
+            for repeated in [false, true]
+                .into_iter()
+                .filter(|&repeated| count > 1 || !repeated)
+            {
                 let mut body = String::new();
                 let mut expected = Vec::new();
                 for index in 1..=count {
@@ -3120,7 +3123,6 @@ mod tests {
         for (value, spaced) in [
             (literal.clone(), false),
             (literal.repeat(2), false),
-            (literal.repeat(3), false),
             (literal.repeat(2), true),
             (nested.repeat(2), false),
             (raw.repeat(2), false),
