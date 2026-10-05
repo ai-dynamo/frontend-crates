@@ -539,8 +539,12 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
 
     // Only collapse the literal "null" into JSON null when the schema actually
     // permits null. A `string`-typed parameter keeps the literal value "null".
-    if trimmed.eq_ignore_ascii_case("null") && schemas.permits_null(schema) {
-        return Value::Null;
+    if trimmed.eq_ignore_ascii_case("null") {
+        return if schemas.permits_null(schema) == Some(true) {
+            Value::Null
+        } else {
+            Value::String(value)
+        };
     }
 
     if schemas.has_type(Some(schema), "string") || schemas.has_type(Some(schema), "enum") {
@@ -767,10 +771,10 @@ impl<'a> SchemaWalker<'a> {
         })
     }
 
-    fn permits_null(&mut self, schema: &'a Value) -> bool {
-        self.with_schema(schema, false, |walker, schema| {
+    fn permits_null(&mut self, schema: &'a Value) -> Option<bool> {
+        self.with_schema(schema, None, |walker, schema| {
             if let Some(allowed) = schema.as_bool() {
-                return allowed;
+                return Some(allowed);
             }
             if let Some(ty) = schema.get("type") {
                 let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
@@ -780,7 +784,7 @@ impl<'a> SchemaWalker<'a> {
                         .as_array()
                         .is_some_and(|types| types.iter().any(|ty| ty == "null"))
                 {
-                    return false;
+                    return Some(false);
                 }
             }
             if schema.get("const").is_some_and(|value| !value.is_null())
@@ -789,26 +793,51 @@ impl<'a> SchemaWalker<'a> {
                     .and_then(Value::as_array)
                     .is_some_and(|values| !values.iter().any(Value::is_null))
             {
-                return false;
+                return Some(false);
             }
+            // A remaining reference was not resolved, including refs with siblings.
+            let mut result = if schema.get("$ref").is_some() {
+                None
+            } else {
+                Some(true)
+            };
             for keyword in ["allOf", "anyOf", "oneOf"] {
                 if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let matches = branches
-                        .iter()
-                        .filter(|branch| walker.permits_null(branch))
-                        .count();
-                    if !match keyword {
-                        "allOf" => matches == branches.len(),
-                        "anyOf" => matches > 0,
-                        _ => matches == 1,
-                    } {
-                        return false;
+                    let mut matches = 0;
+                    let mut rejects = 0;
+                    let mut unknown = false;
+                    for branch in branches {
+                        match walker.permits_null(branch) {
+                            Some(true) => matches += 1,
+                            Some(false) => rejects += 1,
+                            None => unknown = true,
+                        }
+                    }
+                    let permitted = match keyword {
+                        "allOf" if rejects > 0 => Some(false),
+                        "anyOf" if matches > 0 => Some(true),
+                        "oneOf" if matches > 1 => Some(false),
+                        _ if unknown => None,
+                        "allOf" => Some(true),
+                        "anyOf" => Some(false),
+                        _ => Some(matches == 1),
+                    };
+                    if permitted == Some(false) {
+                        return Some(false);
+                    }
+                    if permitted.is_none() {
+                        result = None;
                     }
                 }
             }
-            !schema
-                .get("not")
-                .is_some_and(|branch| walker.permits_null(branch))
+            if let Some(branch) = schema.get("not") {
+                match walker.permits_null(branch) {
+                    Some(true) => return Some(false),
+                    Some(false) => {}
+                    None => result = None,
+                }
+            }
+            result
         })
     }
 
@@ -915,6 +944,76 @@ mod tests {
         assert_eq!(
             convert_scalar_value("null", Some(&reference), &root),
             json!(null)
+        );
+    }
+
+    #[test]
+    fn unresolved_null_constraints_remain_unknown() {
+        for unknown in [
+            json!({"$ref": "#/$defs/missing"}),
+            json!({"$ref": "https://example.com/schema"}),
+            json!({"$ref": "#"}),
+            json!({"not": {"$ref": "#"}}),
+        ] {
+            for (schema, expected) in [
+                (unknown.clone(), json!("null")),
+                (
+                    json!({"anyOf": [{"type": "string"}, unknown]}),
+                    json!("null"),
+                ),
+                (json!({"allOf": [true, unknown]}), json!("null")),
+                (json!({"oneOf": [true, unknown]}), json!("null")),
+                (json!({"not": unknown}), json!("null")),
+                (json!({"type": "object", "not": unknown}), json!("null")),
+            ] {
+                assert_eq!(
+                    convert_scalar_value("null", Some(&schema), &schema),
+                    expected,
+                    "{schema}"
+                );
+            }
+        }
+        let unknown = json!({"$ref": "#/$defs/missing"});
+        for (schema, expected) in [
+            (json!({"anyOf": [unknown, true]}), Some(true)),
+            (json!({"allOf": [unknown, false]}), Some(false)),
+            (json!({"oneOf": [true, unknown, true]}), Some(false)),
+            (json!({"not": {"allOf": [unknown, false]}}), Some(true)),
+        ] {
+            assert_eq!(
+                SchemaWalker::new(&schema).permits_null(&schema),
+                expected,
+                "{schema}"
+            );
+        }
+    }
+
+    #[test]
+    fn exhausted_null_constraints_remain_unknown() {
+        for keyword in ["allOf", "anyOf", "oneOf", "not"] {
+            let mut schema = json!({"type": "null"});
+            for _ in 0..=MAX_SCHEMA_DEPTH {
+                schema = if keyword == "not" {
+                    json!({"not": schema})
+                } else {
+                    json!({keyword: [schema]})
+                };
+            }
+            let mut walker = SchemaWalker::new(&schema);
+            assert_eq!(walker.permits_null(&schema), None, "{keyword}");
+            assert!(walker.exhausted);
+            assert_eq!(
+                convert_scalar_value("null", Some(&schema), &schema),
+                json!("null")
+            );
+        }
+        let schema = json!({"not": {"anyOf": vec![json!(false); MAX_SCHEMA_WORK + 1]}});
+        let mut walker = SchemaWalker::new(&schema);
+        assert_eq!(walker.permits_null(&schema), None);
+        assert!(walker.exhausted);
+        assert_eq!(
+            convert_scalar_value("null", Some(&schema), &schema),
+            json!("null")
         );
     }
 
