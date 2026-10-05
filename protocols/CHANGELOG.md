@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [7.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v6.1.0...dynamo-protocols-v7.0.0) - 2026-10-05
+
+### Bug fixes
+
+- *(protocols)* [**breaking**] Bump async-openai to 0.42 ([#258](https://github.com/ai-dynamo/frontend-crates/pull/258))
+
 ## [6.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v6.0.1...dynamo-protocols-v6.1.0) - 2026-09-18
 
 ### Features
