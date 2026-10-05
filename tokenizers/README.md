@@ -135,6 +135,10 @@ Checkpoints that ship only a `tiktoken.model` (Kimi K2/K3) can also encode
 through `fastokens` without a converted `tokenizer.json`:
 `FastTikTokenTokenizer::from_file_auto("/path/to/tiktoken.model")` loads the
 same ranks, regex, and special tokens as `TikTokenTokenizer::from_file_auto`.
+It currently rejects the plain-text prefix cache (`CachedTokenizer::new`
+returns an error): fastokens' plain-text scanner and its regex path disagree
+on the case folding of `(?i:'s)`, so splitting after a special token can change
+ids. Segmented encodes are unaffected.
 
 Entries are admitted and evicted by Moka's W-TinyLFU policy. The byte budget counts
 token-ID payloads, excluding cache metadata and tokenizer objects. Eviction is

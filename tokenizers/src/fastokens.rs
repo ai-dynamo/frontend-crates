@@ -119,6 +119,13 @@ impl Tokenizer for FastTokenizer {
 /// `fastokens` over a bare `tiktoken.model`, for checkpoints such as Kimi K2/K3 that ship no
 /// `tokenizer.json`. Loads the same ranks, regex, and special tokens as
 /// [`TikTokenTokenizer::from_file_auto`](crate::TikTokenTokenizer::from_file_auto).
+///
+/// Plain-text prefix caching ([`CachedTokenizer`](crate::CachedTokenizer)) is rejected for
+/// this backend: `fastokens` pre-tokenizes text that contains a special token with its regex
+/// engine but plain text with a hand-written scanner, and the two disagree on the Unicode
+/// case folding of `(?i:'s)` (`'ſ`, U+017F). Splitting a prompt after a special token
+/// therefore changes ids, which is exactly the invariant the cache relies on. Segmented
+/// encodes are unaffected: every segment is encoded on its own with or without a cache.
 pub struct FastTikTokenTokenizer {
     inner: fastokens::Tokenizer,
     /// Decoding joins raw bytes itself because `fastokens`' decoder returns a lossy `String`,
@@ -211,7 +218,12 @@ impl Decoder for FastTikTokenTokenizer {
 
 impl Tokenizer for FastTikTokenTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
-        Ok(())
+        Err(Error::msg(
+            "fastokens over tiktoken.model does not satisfy the prefix-cache invariant: its \
+             scanner (plain text) and regex path (text containing special tokens) disagree on \
+             the case folding of (?i:'s), so encode(prefix) + encode(suffix) can differ from \
+             encode(prefix + suffix) across a special-token boundary",
+        ))
     }
 
     fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
@@ -463,6 +475,12 @@ mod tiktoken_parity_tests {
         env!("CARGO_MANIFEST_DIR"),
         "/tests/data/sample-models/mock-tiktoken-bpe/tiktoken.model"
     );
+    /// All 256 byte tokens plus the merges ` I` and ` I'`, with the Kimi pattern: the
+    /// smallest vocabulary on which fastokens' scanner and regex paths disagree.
+    const CONTRACTION_PATH: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/data/sample-models/mock-tiktoken-contraction/tiktoken.model"
+    );
 
     fn pair() -> (TikTokenTokenizer, FastTikTokenTokenizer) {
         let reference = TikTokenTokenizer::from_file_auto(TIKTOKEN_PATH).unwrap();
@@ -574,5 +592,48 @@ mod tiktoken_parity_tests {
 
         // Unknown ids are skipped.
         assert_eq!(fast.decode(&[468, 9_999_999], false).unwrap(), decoded);
+    }
+
+    #[test]
+    fn plain_text_prefix_cache_is_rejected() {
+        let fast = FastTikTokenTokenizer::from_file_auto(CONTRACTION_PATH).unwrap();
+        let specials = fast.special_tokens().to_vec();
+        let error = crate::CachedTokenizer::new(std::sync::Arc::new(fast), specials, 1 << 20)
+            .err()
+            .expect("fastokens over tiktoken.model must not be prefix-cached")
+            .to_string();
+        assert!(error.contains("fastokens"), "{error}");
+    }
+
+    /// Canary for the reason `validate_prefix_cache` rejects this backend. The reference
+    /// tokenizer satisfies `encode(special) + encode(suffix) == encode(special + suffix)`;
+    /// fastokens does not, because its scanner does not fold `ſ` into the `'s` contraction
+    /// the way its regex path (and tiktoken) does. When this test starts failing, fastokens
+    /// has fixed the scanner: re-run the cache matrix with this backend and flip
+    /// `validate_prefix_cache` to `Ok(())`.
+    #[test]
+    fn canary_fastokens_scanner_disagrees_with_its_regex_path() {
+        let reference = TikTokenTokenizer::from_file_auto(CONTRACTION_PATH).unwrap();
+        let fast = FastTikTokenTokenizer::from_file_auto(CONTRACTION_PATH).unwrap();
+        let special = "<|end_of_msg|>";
+        let suffix = " I'\u{17f}";
+        let full = format!("{special}{suffix}");
+
+        let ref_full = reference.encode(&full).unwrap().token_ids().to_vec();
+        let ref_suffix = reference.encode(suffix).unwrap().token_ids().to_vec();
+        assert_eq!(
+            ref_full[1..],
+            ref_suffix[..],
+            "tiktoken-rs must be self-consistent"
+        );
+
+        let fast_full = fast.encode(&full).unwrap().token_ids().to_vec();
+        let fast_suffix = fast.encode(suffix).unwrap().token_ids().to_vec();
+        assert_eq!(fast_full, ref_full, "the regex path matches tiktoken-rs");
+        assert_ne!(
+            fast_full[1..],
+            fast_suffix[..],
+            "fastokens' scanner now agrees with its regex path; revisit validate_prefix_cache"
+        );
     }
 }
