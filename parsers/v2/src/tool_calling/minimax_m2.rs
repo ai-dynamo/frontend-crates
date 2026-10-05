@@ -436,6 +436,7 @@ mod tests {
                 for ty in [
                     serde_json::json!(["number", "null"]),
                     serde_json::json!(["integer", "null"]),
+                    serde_json::json!(["number", "string"]),
                 ] {
                     let mut schema = serde_json::json!({"type":ty});
                     schema[keyword] = if keyword == "const" {
@@ -506,6 +507,8 @@ mod tests {
     fn large_fractional_arguments_remain_exact_json_numbers() {
         for raw in [
             "9007199254740992.5",
+            "9007199254740993.1",
+            "9007199254740993.25",
             "9.0071992547409925e15",
             "0.10000000000000000001",
             "-9007199254740992.5",
