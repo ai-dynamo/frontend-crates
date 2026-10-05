@@ -15,6 +15,8 @@ pub mod minimax_m3;
 pub mod muse_glimmer;
 // Spark has different recipient semantics but shares Glimmer's ATEM scanner.
 pub mod muse_spark;
+#[cfg(test)]
+mod numeric_tests;
 pub mod qwen3_coder;
 mod registry;
 /// Shared marker-scan core. Crate-visible because `crate::unified` builds on the
