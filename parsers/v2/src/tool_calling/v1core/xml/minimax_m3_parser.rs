@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use percent_encoding::percent_decode_str;
 use serde_json::{Map, Number, Value};
 use uuid::Uuid;
 
@@ -247,7 +248,11 @@ fn parse_parameters(
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<Map<String, Value>> {
     let parameter_start = parameter_start(config);
-    let param_config = get_arguments_config(function_name, tools);
+    let root_schema = get_arguments_config(function_name, tools).unwrap_or(&Value::Null);
+    let param_config = root_schema
+        .get("properties")
+        .filter(|value| value.is_object())
+        .unwrap_or(root_schema);
     let mut parameters = Map::new();
     let mut cursor = 0;
 
@@ -275,7 +280,7 @@ fn parse_parameters(
         let value_end = value_start + value_end_rel;
         let raw_value = &body[value_start..value_end];
         let schema = param_config.get(parameter_name);
-        let value = parse_parameter_value(raw_value, schema, config);
+        let value = parse_parameter_value(raw_value, schema, root_schema, config);
         insert_parameter(&mut parameters, parameter_name.to_string(), value);
 
         cursor = value_end + parameter_end.len();
@@ -304,24 +309,26 @@ fn insert_parameter(parameters: &mut Map<String, Value>, key: String, value: Val
 fn parse_parameter_value(
     raw: &str,
     schema: Option<&Value>,
+    root_schema: &Value,
     config: &MiniMaxM3ParserConfig,
 ) -> Value {
     if raw.contains(parameter_start(config).as_str()) {
-        parse_nested_minimax_xml(raw, schema.cloned(), config)
+        parse_nested_minimax_xml(raw, schema, root_schema, config)
     } else {
-        convert_scalar_value(raw, schema)
+        convert_scalar_value(raw, schema, root_schema)
     }
 }
 
 // Parses nested parameter bodies such as arrays of `<item>` objects into JSON values.
 fn parse_nested_minimax_xml(
     raw: &str,
-    schema: Option<Value>,
+    schema: Option<&Value>,
+    root_schema: &Value,
     config: &MiniMaxM3ParserConfig,
 ) -> Value {
     let chunks: Vec<&str> = raw.split(config.namespace_token.as_str()).collect();
     let leading_text = chunks.first().copied().unwrap_or_default();
-    let root_value = if schema_has_type(schema.as_ref(), "array")
+    let root_value = if SchemaWalker::new(root_schema).has_type(schema, "array")
         && chunks
             .get(1)
             .is_some_and(|chunk| chunk.starts_with("<item>"))
@@ -341,6 +348,7 @@ fn parse_nested_minimax_xml(
             vec![leading_text.to_string()]
         },
         schema,
+        root_schema,
     }];
 
     for (chunk_index, chunk) in chunks.iter().enumerate().skip(1) {
@@ -374,14 +382,12 @@ fn parse_nested_minimax_xml(
                 .last()
                 .expect("stack has current item")
                 .schema_for_child(tag.as_str());
-            let child_value = if schema_has_type(child_schema.as_ref(), "array")
+            let child_value = if SchemaWalker::new(root_schema).has_type(child_schema, "array")
                 && chunks
                     .get(chunk_index + 1)
                     .is_some_and(|next| next.starts_with("<item>"))
             {
                 Some(StackValue::Array(Vec::new()))
-            } else if schema_has_type(child_schema.as_ref(), "object") {
-                Some(StackValue::Object(Map::new()))
             } else {
                 None
             };
@@ -394,6 +400,7 @@ fn parse_nested_minimax_xml(
                     vec![trailing_text.to_string()]
                 },
                 schema: child_schema,
+                root_schema,
             });
         } else if !chunk.trim().is_empty() {
             stack
@@ -437,18 +444,21 @@ enum StackValue {
 }
 
 #[derive(Debug)]
-struct StackItem {
+struct StackItem<'a> {
     tag: Option<String>,
     value: Option<StackValue>,
     texts: Vec<String>,
-    schema: Option<Value>,
+    schema: Option<&'a Value>,
+    root_schema: &'a Value,
 }
 
-impl StackItem {
+impl<'a> StackItem<'a> {
     // Converts a stack node into the JSON value it represents.
     fn into_value(self) -> Value {
         match self.value {
-            None => convert_scalar_value(self.texts.join("").as_str(), self.schema.as_ref()),
+            None => {
+                convert_scalar_value(self.texts.join("").as_str(), self.schema, self.root_schema)
+            }
             Some(StackValue::Object(mut map)) => {
                 if !self.texts.is_empty() {
                     let mut text_key = "$text".to_string();
@@ -481,63 +491,43 @@ impl StackItem {
     // Adds text to the current node, coercing array items through item schema when available.
     fn append_text(&mut self, text: &str) {
         if let Some(StackValue::Array(values)) = self.value.as_mut() {
-            let item_schema = schema_array_item(self.schema.as_ref());
-            values.push(convert_scalar_value(text, item_schema.as_ref()));
+            let item_schema = SchemaWalker::new(self.root_schema).array_item(self.schema);
+            values.push(convert_scalar_value(text, item_schema, self.root_schema));
         } else {
             self.texts.push(text.to_string());
         }
     }
 
     // Finds the schema that should be used for a nested child tag.
-    fn schema_for_child(&self, tag: &str) -> Option<Value> {
+    fn schema_for_child(&self, tag: &str) -> Option<&'a Value> {
+        let mut schemas = SchemaWalker::new(self.root_schema);
         if tag == "item"
-            && let Some(item_schema) = schema_array_item(self.schema.as_ref())
+            && let Some(item_schema) = schemas.array_item(self.schema)
         {
             return Some(item_schema);
         }
 
-        let schema = self.schema.as_ref()?;
-        if let Some(child_schema) = schema
-            .get("properties")
-            .and_then(|properties| properties.get(tag))
-        {
-            return Some(child_schema.clone());
-        }
-
-        schema
-            .get("additionalProperties")
-            .filter(|additional| additional.is_object())
-            .cloned()
+        self.schema
+            .and_then(|schema| schemas.object_child(schema, tag))
     }
 }
 
 // Looks up the selected tool's parameter schema so parsed strings can be type-coerced.
-fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Map<String, Value> {
-    let Some(tools) = tools else {
-        return Map::new();
-    };
-
-    for tool in tools {
-        if tool.name == func_name {
-            let Some(params) = &tool.parameters else {
-                return Map::new();
-            };
-            if let Some(properties) = params.get("properties").and_then(Value::as_object) {
-                return properties.clone();
-            }
-            if let Some(params_obj) = params.as_object() {
-                return params_obj.clone();
-            }
-            return Map::new();
-        }
+fn get_arguments_config<'a>(
+    func_name: &str,
+    tools: Option<&'a [ToolDefinition]>,
+) -> Option<&'a Value> {
+    let tools = tools?;
+    if let Some(tool) = tools.iter().find(|tool| tool.name == func_name) {
+        return tool.parameters.as_ref();
     }
-
     tracing::warn!("Tool '{}' is not defined in the tools list.", func_name);
-    Map::new()
+    None
 }
 
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
-fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
+fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> Value {
+    let mut schemas = SchemaWalker::new(root_schema);
     let value = html_unescape(raw);
     let trimmed = value.trim();
 
@@ -549,19 +539,19 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
 
     // Only collapse the literal "null" into JSON null when the schema actually
     // permits null. A `string`-typed parameter keeps the literal value "null".
-    if trimmed.eq_ignore_ascii_case("null") && schema_permits_null(schema) {
+    if trimmed.eq_ignore_ascii_case("null") && schemas.permits_null(schema) {
         return Value::Null;
     }
 
-    if schema_has_type(Some(schema), "string") || schema_has_type(Some(schema), "enum") {
+    if schemas.has_type(Some(schema), "string") || schemas.has_type(Some(schema), "enum") {
         return Value::String(value);
     }
-    if schema_has_type(Some(schema), "integer") {
+    if schemas.has_type(Some(schema), "integer") {
         return coerce_integer_literal(trimmed)
             .and_then(|parsed| serde_json::to_value(parsed).ok())
             .unwrap_or(Value::String(value));
     }
-    if schema_has_type(Some(schema), "number") {
+    if schemas.has_type(Some(schema), "number") {
         if let Some(parsed) = coerce_integer_literal(trimmed)
             && let Ok(json) = serde_json::to_value(parsed)
         {
@@ -579,7 +569,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
         }
         return Value::String(value);
     }
-    if schema_has_type(Some(schema), "boolean") {
+    if schemas.has_type(Some(schema), "boolean") {
         return match trimmed.to_ascii_lowercase().as_str() {
             "true" => Value::Bool(true),
             "1" => Value::Bool(true),
@@ -588,7 +578,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
             _ => Value::String(value),
         };
     }
-    if schema_has_type(Some(schema), "object") {
+    if schemas.has_type(Some(schema), "object") {
         if trimmed.is_empty() {
             return Value::Object(Map::new());
         }
@@ -596,7 +586,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
             return json;
         }
     }
-    if schema_has_type(Some(schema), "array") {
+    if schemas.has_type(Some(schema), "array") {
         if trimmed.is_empty() {
             return Value::Array(Vec::new());
         }
@@ -608,66 +598,230 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     Value::String(value)
 }
 
-// Reports whether the schema allows a JSON null, so the literal string "null"
-// may be coerced. An explicit `null` type, `nullable: true`, or a `null` member
-// of an `anyOf`/`oneOf` permits it; so does a schema with no `type` (and no
-// `anyOf`/`oneOf`), which is unconstrained. An explicit `string` type does not.
-fn schema_permits_null(schema: &Value) -> bool {
-    if schema_has_type(Some(schema), "null") {
-        return true;
-    }
-    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
-        return true;
-    }
-    schema.get("type").is_none() && schema.get("anyOf").is_none() && schema.get("oneOf").is_none()
+// Bound graph traversal as well as recursion: shared references can expand
+// exponentially even when there are no cycles. Exhaustion preserves untyped output.
+const MAX_SCHEMA_WORK: usize = 1024;
+const MAX_SCHEMA_DEPTH: usize = 64;
+
+// Each lookup tracks its own schema path: recursive schemas may be revisited
+// after consuming another XML child, but reference/composition cycles cannot loop.
+struct SchemaWalker<'a> {
+    root: &'a Value,
+    path: Vec<&'a Value>,
+    remaining_work: usize,
+    exhausted: bool,
 }
 
-// Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
-fn schema_has_type(schema: Option<&Value>, expected: &str) -> bool {
-    let Some(schema) = schema else {
-        return false;
-    };
-    if let Some(ty) = schema.get("type") {
-        if ty.as_str() == Some(expected) {
-            return true;
-        }
-        if let Some(types) = ty.as_array()
-            && types.iter().any(|ty| ty.as_str() == Some(expected))
-        {
-            return true;
+impl<'a> SchemaWalker<'a> {
+    fn new(root: &'a Value) -> Self {
+        Self {
+            root,
+            path: Vec::new(),
+            remaining_work: MAX_SCHEMA_WORK,
+            exhausted: false,
         }
     }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(options) = schema.get(key).and_then(Value::as_array)
-            && options
+
+    fn spend_work(&mut self) -> bool {
+        if self.exhausted || self.remaining_work == 0 {
+            self.exhausted = true;
+            return false;
+        }
+        self.remaining_work -= 1;
+        true
+    }
+
+    // Leave unknown references and cycles untouched; do not discard sibling constraints.
+    fn resolve_ref(&mut self, schema: &'a Value) -> Option<&'a Value> {
+        let mut current = schema;
+        let mut visited = Vec::new();
+        while let Some(reference) = current.get("$ref").and_then(Value::as_str) {
+            if !self.spend_work() {
+                return None;
+            }
+            if current.as_object().is_some_and(|object| {
+                object.keys().any(|key| {
+                    !matches!(
+                        key.as_str(),
+                        "$ref" | "title" | "description" | "default" | "examples" | "$comment"
+                    )
+                })
+            }) || visited.contains(&reference)
+            {
+                return Some(schema);
+            }
+            let Some(fragment) = reference.strip_prefix('#') else {
+                return Some(schema);
+            };
+            // percent_decode_str preserves invalid escapes, so reject them before lookup.
+            if fragment.as_bytes().iter().enumerate().any(|(index, byte)| {
+                *byte == b'%'
+                    && !fragment
+                        .as_bytes()
+                        .get(index + 1..index + 3)
+                        .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
+            }) {
+                return Some(schema);
+            }
+            let Ok(pointer) = percent_decode_str(fragment).decode_utf8() else {
+                return Some(schema);
+            };
+            let Some(target) = self.root.pointer(&pointer) else {
+                return Some(schema);
+            };
+            visited.push(reference);
+            current = target;
+        }
+        Some(current)
+    }
+
+    fn with_schema<T: Copy>(
+        &mut self,
+        schema: &'a Value,
+        fallback: T,
+        query: impl FnOnce(&mut Self, &'a Value) -> T,
+    ) -> T {
+        if !self.spend_work() || self.path.len() >= MAX_SCHEMA_DEPTH {
+            self.exhausted = true;
+            return fallback;
+        }
+        let Some(schema) = self.resolve_ref(schema) else {
+            return fallback;
+        };
+        if self.path.iter().any(|seen| std::ptr::eq(*seen, schema)) {
+            return fallback;
+        }
+        self.path.push(schema);
+        let result = query(self, schema);
+        self.path.pop();
+        if self.exhausted { fallback } else { result }
+    }
+
+    // Unknown constraints remain possible, preserving object-union ambiguity.
+    fn may_describe_object(&mut self, schema: &'a Value) -> bool {
+        self.with_schema(schema, true, |walker, schema| {
+            if schema == &Value::Bool(false) {
+                return false;
+            }
+            if let Some(ty) = schema.get("type") {
+                let object = ty.as_str() == Some("object")
+                    || ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty == "object"));
+                if !object {
+                    return false;
+                }
+            }
+            if schema.get("const").is_some_and(|value| !value.is_object())
+                || schema
+                    .get("enum")
+                    .and_then(Value::as_array)
+                    .is_some_and(|values| !values.iter().any(Value::is_object))
+            {
+                return false;
+            }
+            for keyword in ["allOf", "anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let possible = if keyword == "allOf" {
+                        branches
+                            .iter()
+                            .all(|branch| walker.may_describe_object(branch))
+                    } else {
+                        branches
+                            .iter()
+                            .any(|branch| walker.may_describe_object(branch))
+                    };
+                    if !possible {
+                        return false;
+                    }
+                }
+            }
+            true
+        })
+    }
+
+    // Nested XML identifies an object, but does not choose among object variants.
+    fn object_child(&mut self, schema: &'a Value, tag: &str) -> Option<&'a Value> {
+        self.with_schema(schema, None, |walker, schema| {
+            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+                return Some(child);
+            }
+            if let Some(additional) = schema
+                .get("additionalProperties")
+                .filter(|value| value.is_object())
+            {
+                return Some(additional);
+            }
+            let branches = match (schema.get("anyOf"), schema.get("oneOf")) {
+                (Some(branches), None) | (None, Some(branches)) => branches.as_array()?,
+                _ => return None,
+            };
+            let mut objects = branches
                 .iter()
-                .any(|option| schema_has_type(Some(option), expected))
-        {
-            return true;
-        }
+                .filter(|branch| walker.may_describe_object(branch));
+            let object = objects.next()?;
+            if objects.next().is_some() {
+                return None;
+            }
+            walker.object_child(object, tag)
+        })
     }
-    false
-}
 
-// Finds the schema for array elements, including schemas wrapped in `anyOf` or `oneOf`.
-fn schema_array_item(schema: Option<&Value>) -> Option<Value> {
-    schema
-        .and_then(|schema| schema.get("items"))
-        .cloned()
-        .or_else(|| {
-            schema.and_then(|schema| {
-                for key in ["anyOf", "oneOf"] {
-                    if let Some(options) = schema.get(key).and_then(Value::as_array) {
-                        for option in options {
-                            if let Some(items) = option.get("items") {
-                                return Some(items.clone());
-                            }
+    fn permits_null(&mut self, schema: &'a Value) -> bool {
+        let Some(schema) = self.resolve_ref(schema) else {
+            return false;
+        };
+        let permitted = self.has_type(Some(schema), "null")
+            || schema.get("nullable").and_then(Value::as_bool) == Some(true)
+            || (schema.get("type").is_none()
+                && schema.get("anyOf").is_none()
+                && schema.get("oneOf").is_none());
+        permitted && !self.exhausted
+    }
+
+    fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
+        let Some(schema) = schema else {
+            return false;
+        };
+        self.with_schema(schema, false, |walker, schema| {
+            if let Some(ty) = schema.get("type")
+                && (ty.as_str() == Some(expected)
+                    || ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected))))
+            {
+                return true;
+            }
+            for key in ["anyOf", "oneOf"] {
+                if let Some(options) = schema.get(key).and_then(Value::as_array)
+                    && options
+                        .iter()
+                        .any(|option| walker.has_type(Some(option), expected))
+                {
+                    return true;
+                }
+            }
+            false
+        })
+    }
+
+    fn array_item(&mut self, schema: Option<&'a Value>) -> Option<&'a Value> {
+        self.with_schema(schema?, None, |walker, schema| {
+            if let Some(items) = schema.get("items") {
+                return Some(items);
+            }
+            for key in ["anyOf", "oneOf"] {
+                if let Some(options) = schema.get(key).and_then(Value::as_array) {
+                    for option in options {
+                        if let Some(items) = walker.array_item(Some(option)) {
+                            return Some(items);
                         }
                     }
                 }
-                None
-            })
+            }
+            None
         })
+    }
 }
 
 // Decodes common XML/HTML entities so tool arguments receive the intended literal text.
@@ -696,7 +850,7 @@ mod tests {
         // Leading whitespace before the first tag and newlines/indent between the
         // sibling tags, exactly as a model would emit when pretty-printing.
         let raw = format!("\n  {TOK}<a>1{TOK}</a>\n  {TOK}<b>2{TOK}</b>\n");
-        let parsed = parse_nested_minimax_xml(&raw, None, &config);
+        let parsed = parse_nested_minimax_xml(&raw, None, &Value::Null, &config);
         assert_eq!(parsed, json!({ "a": "1", "b": "2" }));
         // No `$text` (or `$$text`) key should have been synthesized from whitespace.
         let obj = parsed.as_object().expect("object value");
@@ -713,7 +867,7 @@ mod tests {
         // Whitespace between `</item>` and the next `<item>` previously became an
         // extra array element via the end-tag trailing-text append.
         let raw = format!("\n  {TOK}<item>a{TOK}</item>\n  {TOK}<item>b{TOK}</item>\n");
-        let parsed = parse_nested_minimax_xml(&raw, Some(schema), &config);
+        let parsed = parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config);
         assert_eq!(parsed, json!(["a", "b"]));
     }
 
@@ -722,7 +876,7 @@ mod tests {
     fn string_typed_null_stays_a_string() {
         let schema = json!({ "type": "string" });
         assert_eq!(
-            convert_scalar_value("null", Some(&schema)),
+            convert_scalar_value("null", Some(&schema), &schema),
             json!("null"),
             "a string-typed parameter must keep the literal value \"null\""
         );
@@ -738,7 +892,7 @@ mod tests {
             json!({ "type": "string", "nullable": true }),
         ] {
             assert_eq!(
-                convert_scalar_value("null", Some(&schema)),
+                convert_scalar_value("null", Some(&schema), &schema),
                 Value::Null,
                 "nullable schema {schema} should coerce \"null\" to JSON null"
             );
@@ -748,6 +902,396 @@ mod tests {
     #[test]
     fn schemaless_null_stays_a_string() {
         // With no schema the intended type is unknown, so the literal is preserved.
-        assert_eq!(convert_scalar_value("null", None), json!("null"));
+        assert_eq!(
+            convert_scalar_value("null", None, &Value::Null),
+            json!("null")
+        );
+    }
+
+    #[test]
+    fn nested_union_child_values_preserve_scalar_and_object_shapes() {
+        let tok = "]<]minimax[>[";
+        let config = MiniMaxM3ParserConfig::default();
+        for union in ["anyOf", "oneOf"] {
+            let schema = serde_json::json!({union: [
+                {"type": "object", "properties": {
+                    "mode": {"anyOf": [{"type": "string"}, {"type": "object"}]},
+                    "after": {"type": ["object", "null"]},
+                    "config": {"type": "object", "properties": {"enabled": {"type": "boolean"}}}
+                }},
+                {"type": "null"}
+            ]});
+            let raw = format!(
+                "{tok}<mode>one{tok}</mode>{tok}<after>null{tok}</after>\
+                 {tok}<config>{tok}<enabled>true{tok}</enabled>{tok}</config>"
+            );
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+                serde_json::json!({"mode": "one", "after": null, "config": {"enabled": true}}),
+                "{union}"
+            );
+        }
+    }
+
+    #[test]
+    fn nested_union_object_types_and_ambiguity() {
+        let tok = "]<]minimax[>[";
+        let config = MiniMaxM3ParserConfig::default();
+        // MOD2-167: nullable pagination and the object branch of the stress schema.
+        for union in ["anyOf", "oneOf"] {
+            let schema = serde_json::json!({union: [
+                {"type":"object","properties":{"page":{"type":"integer","minimum":1},"per_page":{"type":"integer","minimum":1,"maximum":100}}},
+                {"type":"null"}
+            ]});
+            let raw = format!("{tok}<page>2{tok}</page>{tok}<per_page>25{tok}</per_page>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+                serde_json::json!({"page":2,"per_page":25})
+            );
+            let object = serde_json::json!({"type":"object","properties":{"enabled":{"type":"boolean"},"mode":{"type":"string","enum":["one","two","three","four"]}},"required":["enabled"]});
+            let schema = serde_json::json!({union:[{"type":"string"},{"type":"array","items":{"type":"string"},"maxItems":20},object]});
+            let raw = format!("{tok}<enabled>true{tok}</enabled>{tok}<mode>one{tok}</mode>");
+            assert_eq!(
+                parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+                serde_json::json!({"enabled":true,"mode":"one"})
+            );
+            // Literal-only and composed non-object branches cannot make the object ambiguous.
+            for alternative in [
+                serde_json::json!({"enum": [null]}),
+                serde_json::json!({"const": null}),
+                serde_json::json!({"enum": [null, "text", 2, []]}),
+                serde_json::json!({"type": ["object", "null"], "const": null}),
+                serde_json::json!({"allOf": [{"enum": [null]}, {}]}),
+                serde_json::json!({"anyOf": [{"const": null}, {"type": "string"}]}),
+                serde_json::json!(false),
+            ] {
+                let schema = serde_json::json!({union: [
+                    {"type":"object","properties":{"page":{"type":"integer"}}}, alternative
+                ]});
+                let raw = format!("{tok}<page>2{tok}</page>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+                    serde_json::json!({"page":2}),
+                    "{union}: {alternative}"
+                );
+            }
+            for alternative in [
+                serde_json::json!({"type":"object"}),
+                serde_json::json!({"enum":[null, {"value":"2"}]}),
+                serde_json::json!({"const":{"value":"2"}}),
+                serde_json::json!(true),
+                serde_json::json!({}),
+                serde_json::json!({"type":"object","properties":{"value":{"type":"string"}}}),
+            ] {
+                let schema = serde_json::json!({union:[{"type":"object","properties":{"value":{"type":"integer"}}}, alternative]});
+                let raw = format!("{tok}<value>2{tok}</value>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+                    serde_json::json!({"value":"2"})
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn local_ref_object_argument_accepts_json_text() {
+        let parameters = serde_json::json!({
+            "$defs": {"Payload": {"type": "object"}},
+            "properties": {"data": {"$ref": "#/$defs/Payload"}}
+        });
+        let tools = vec![ToolDefinition {
+            name: "capture".into(),
+            parameters: Some(parameters),
+        }];
+        let raw = "]<]minimax[>[<data>{\"input\":\"Alex\"}]<]minimax[>[</data>";
+        let actual = parse_parameters(
+            "capture",
+            raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            serde_json::json!({"data":{"input":"Alex"}})
+        );
+    }
+
+    #[test]
+    fn parameter_refs_handle_chains_escaped_names_and_unknown_targets() {
+        let root = serde_json::json!({"$defs":{
+            "alias":{"$ref":"#/$defs/a~1b~0c"},
+            "a/b~c":{"type":"object"},
+            "cycle":{"$ref":"#/$defs/cycle"},
+            "cycle_a":{"$ref":"#/$defs/cycle_b"},
+            "cycle_b":{"$ref":"#/$defs/cycle_a"},
+            "broken":{"$ref":"#/$defs/missing"},
+            "bad%":{"type":"integer"},
+            "bad%0":{"type":"integer"},
+            "bad%GG":{"type":"integer"}
+        }});
+        let chain = serde_json::json!({"$ref":"#/$defs/alias","description":"value"});
+        assert_eq!(
+            SchemaWalker::new(&root).resolve_ref(&chain).unwrap(),
+            &serde_json::json!({"type":"object"})
+        );
+        for schema in [
+            serde_json::json!({"$ref":"#/$defs/missing"}),
+            serde_json::json!({"$ref":"https://example.test/schema"}),
+            serde_json::json!({"$ref":"#/$defs/cycle"}),
+            serde_json::json!({"$ref":"#/$defs/cycle_a"}),
+            serde_json::json!({"$ref":"#/$defs/broken"}),
+            serde_json::json!({"$ref":"#/$defs/bad%"}),
+            serde_json::json!({"$ref":"#/$defs/bad%0"}),
+            serde_json::json!({"$ref":"#/$defs/bad%GG"}),
+            serde_json::json!({"$ref":"#/$defs/%FF"}),
+            serde_json::json!({"$ref":"#/$defs/alias","type":"string"}),
+        ] {
+            assert_eq!(
+                SchemaWalker::new(&root).resolve_ref(&schema).unwrap(),
+                &schema
+            );
+        }
+    }
+    #[test]
+    fn nested_parameter_refs_preserve_types() {
+        let parameters = serde_json::json!({
+            "$defs": {
+                "Count": {"type": "integer"},
+                "Enabled": {"type": "boolean"},
+                "Counts": {"type": "array", "items": {"$ref": "#/$defs/Count"}},
+                "Options": {"type": "object", "properties": {
+                    "count": {"$ref": "#/$defs/Count"},
+                    "enabled": {"$ref": "#/$defs/Enabled"},
+                    "counts": {"$ref": "#/$defs/Counts"}
+                }}
+            },
+            "properties": {"options": {"$ref": "#/$defs/Options"}}
+        });
+        let tools = vec![ToolDefinition {
+            name: "capture".into(),
+            parameters: Some(parameters),
+        }];
+        let tok = "]<]minimax[>[";
+        let raw = format!(
+            "{tok}<options>{tok}<count>2{tok}</count>{tok}<enabled>true{tok}</enabled>\
+             {tok}<counts>{tok}<item>3{tok}</item>{tok}</counts>{tok}</options>"
+        );
+        let actual = parse_parameters(
+            "capture",
+            &raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            serde_json::json!({
+                "options": {"count": 2, "enabled": true, "counts": [3]}
+            })
+        );
+    }
+
+    #[test]
+    fn parameter_refs_decode_uri_fragments_once() {
+        let root = serde_json::json!({"$defs": {
+            "postal code": {"type": "integer"},
+            "a/b~c": {"type": "boolean"},
+            "café": {"type": "string"},
+            "percent%20name": {"type": "array"}
+        }});
+        for (reference, expected) in [
+            ("#/$defs/postal%20code", "integer"),
+            ("#/$defs/a%7E1b%7e0c", "boolean"),
+            ("#/$defs/caf%C3%A9", "string"),
+            ("#/$defs/percent%2520name", "array"),
+        ] {
+            let schema = serde_json::json!({"$ref": reference});
+            assert_eq!(
+                SchemaWalker::new(&root).resolve_ref(&schema).unwrap(),
+                &serde_json::json!({"type": expected}),
+                "{reference}"
+            );
+        }
+    }
+    #[test]
+    fn parameter_refs_follow_array_additional_property_and_union_schemas() {
+        let definitions = serde_json::json!({
+            "Count": {"type": "integer"},
+            "Numbers": {"type": "array", "items": {"$ref": "#/$defs/Count"}},
+            "Page": {"type": "object", "properties": {"count": {"$ref": "#/$defs/Count"}}},
+            "Nothing": {"const": null}
+        });
+        let tok = "]<]minimax[>[";
+        let count = format!("{tok}<count>2{tok}</count>");
+        for (schema, body, expected) in [
+            (
+                serde_json::json!({"type": "object", "additionalProperties": {"$ref": "#/$defs/Count"}}),
+                count.clone(),
+                serde_json::json!({"count": 2}),
+            ),
+            (
+                serde_json::json!({"type": "array", "items": {"$ref": "#/$defs/Page"}}),
+                format!("{tok}<item>{count}{tok}</item>"),
+                serde_json::json!([{"count": 2}]),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"$ref": "#/$defs/Page"}, {"$ref": "#/$defs/Nothing"}]}),
+                count.clone(),
+                serde_json::json!({"count": 2}),
+            ),
+            (
+                serde_json::json!({"oneOf": [{"$ref": "#/$defs/Page"}, {"$ref": "#/$defs/Nothing"}]}),
+                count.clone(),
+                serde_json::json!({"count": 2}),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"$ref": "#/$defs/Page"}, {"type": "object"}]}),
+                count,
+                serde_json::json!({"count": "2"}),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"$ref": "#/$defs/Numbers"}, {"type": "null"}]}),
+                format!("{tok}<item>2{tok}</item>"),
+                serde_json::json!([2]),
+            ),
+            (
+                serde_json::json!({"oneOf": [{"$ref": "#/$defs/Count"}, {"type": "null"}]}),
+                "2".into(),
+                serde_json::json!(2),
+            ),
+            (
+                serde_json::json!({"$ref": "#/$defs/Count", "type": "string"}),
+                "2".into(),
+                serde_json::json!("2"),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "capture".into(),
+                parameters: Some(
+                    serde_json::json!({"$defs": definitions, "properties": {"value": schema}}),
+                ),
+            }];
+            let raw = format!("{tok}<value>{body}{tok}</value>");
+            let actual = parse_parameters(
+                "capture",
+                &raw,
+                &MiniMaxM3ParserConfig::default(),
+                Some(&tools),
+            )
+            .unwrap();
+            assert_eq!(actual["value"], expected, "{schema}");
+        }
+    }
+
+    #[test]
+    fn parameter_refs_allow_finite_recursive_values_and_stop_composition_cycles() {
+        let tok = "]<]minimax[>[";
+        let parameters = serde_json::json!({
+            "$defs": {
+                "Node": {"type": "object", "properties": {
+                    "count": {"type": "integer"},
+                    "child": {"anyOf": [{"$ref": "#/$defs/Node"}, {"type": "null"}]}
+                }},
+                "Loop": {"anyOf": [{"$ref": "#/$defs/Loop"}]}
+            },
+            "properties": {"tree": {"$ref": "#/$defs/Node"}, "loop": {"$ref": "#/$defs/Loop"}}
+        });
+        let tools = vec![ToolDefinition {
+            name: "capture".into(),
+            parameters: Some(parameters),
+        }];
+        let raw = format!(
+            "{tok}<tree>{tok}<count>1{tok}</count>{tok}<child>{tok}<count>2{tok}</count>\
+             {tok}<child>{tok}<count>3{tok}</count>{tok}</child>{tok}</child>{tok}</tree>\
+             {tok}<loop>{tok}<count>4{tok}</count>{tok}</loop>"
+        );
+        let actual = parse_parameters(
+            "capture",
+            &raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            serde_json::json!({
+                "tree": {"count": 1, "child": {"count": 2, "child": {"count": 3}}},
+                "loop": {"count": "4"}
+            })
+        );
+        // A composed cycle may also occur while coercing a scalar, without any XML descent.
+        for keyword in ["allOf", "anyOf", "oneOf", "not"] {
+            let recursive = serde_json::json!({"$ref": "#/$defs/Loop"});
+            let cycle = if keyword == "not" {
+                recursive
+            } else {
+                serde_json::json!([recursive])
+            };
+            let root = serde_json::json!({"$defs": {"Loop": {keyword: cycle}}});
+            let schema = serde_json::json!({"$ref": "#/$defs/Loop"});
+            assert_eq!(
+                convert_scalar_value("2", Some(&schema), &root),
+                serde_json::json!("2")
+            );
+            let _ = convert_scalar_value("null", Some(&schema), &root);
+        }
+    }
+    #[test]
+    fn parameter_ref_expansion_is_bounded_and_preserves_uncertain_types() {
+        let mut definitions = Map::new();
+        definitions.insert("n0".into(), serde_json::json!({"type": "integer"}));
+        for index in 1..=20 {
+            let reference = serde_json::json!({"$ref": format!("#/$defs/n{}", index - 1)});
+            definitions.insert(
+                format!("n{index}"),
+                serde_json::json!({"anyOf": [reference, reference]}),
+            );
+        }
+        let root = serde_json::json!({"$defs": definitions});
+        let schema = serde_json::json!({"$ref": "#/$defs/n20"});
+        let mut walker = SchemaWalker::new(&root);
+        assert!(!walker.has_type(Some(&schema), "string"));
+        assert!(walker.exhausted);
+        assert_eq!(walker.remaining_work, 0);
+        // An inconclusive string lookup must not permit a later integer coercion.
+        assert!(!walker.has_type(Some(&schema), "integer"));
+        assert!(walker.may_describe_object(&schema));
+        assert!(walker.object_child(&schema, "count").is_none());
+        assert_eq!(
+            convert_scalar_value("2", Some(&schema), &root),
+            serde_json::json!("2")
+        );
+        assert_eq!(
+            convert_scalar_value("null", Some(&schema), &root),
+            serde_json::json!("null")
+        );
+    }
+
+    #[test]
+    fn parameter_ref_depth_and_chain_work_are_bounded() {
+        for (composed, length) in [(true, MAX_SCHEMA_DEPTH + 1), (false, MAX_SCHEMA_WORK + 1)] {
+            let mut definitions = Map::new();
+            definitions.insert("n0".into(), serde_json::json!({"type": "integer"}));
+            for index in 1..=length {
+                let reference = serde_json::json!({"$ref": format!("#/$defs/n{}", index - 1)});
+                let next = if composed {
+                    serde_json::json!({"anyOf": [reference]})
+                } else {
+                    reference
+                };
+                definitions.insert(format!("n{index}"), next);
+            }
+            let root = serde_json::json!({"$defs": definitions});
+            let schema = serde_json::json!({"$ref": format!("#/$defs/n{length}")});
+            let mut walker = SchemaWalker::new(&root);
+            assert!(!walker.has_type(Some(&schema), "integer"));
+            assert!(walker.exhausted, "composed: {composed}");
+            assert!(walker.path.is_empty());
+            assert_eq!(
+                convert_scalar_value("2", Some(&schema), &root),
+                serde_json::json!("2")
+            );
+        }
     }
 }

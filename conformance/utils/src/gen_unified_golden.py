@@ -1920,6 +1920,32 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
+# GLM's XML values have no native type marker. Keep these references unresolved
+# in the request so the parser must consult definitions on the parameters root.
+EDGE += [
+    (
+        scenario,
+        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
+                         'the tool parameters root; the referenced definition controls null coercion.'),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            _NULL_TEXT_INPUTS["glm47"],
+            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "get_weather", "parameters": {
+            "type": "object", "$defs": {"City": schema},
+            "properties": {"city": {"$ref": "#/$defs/City"}},
+        }}]},
+    )
+    for scenario, label, schema, value in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    )
+]
+
 EDGE.append((
     "arg_null_mixed_labels",
     'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
@@ -1936,6 +1962,76 @@ EDGE.append((
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
      for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
+
+# These valid-schema reference probes target GLM's untyped XML values. Keep the
+# request refs unresolved and author the expected values separately from the text.
+for scenario, description, parameters, raw_arguments, arguments in (
+    (
+        "glm_ref_object",
+        'PR #271 compatibility control: a local object reference keeps JSON object text as an object.',
+        {"type": "object", "$defs": {"Payload": {
+            "type": "object", "properties": {"x": {"type": "integer"}},
+        }}, "properties": {"payload": {"$ref": "#/$defs/Payload"}}},
+        {"payload": '{"x":1}'},
+        {"payload": {"x": 1}},
+    ),
+    (
+        "glm_ref_encoded_targets",
+        'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.',
+        {"type": "object", "$defs": {
+            "postal code": {"type": "integer"}, "café+": {"type": "integer"},
+            "a/b~c": {"type": "integer"},
+        }, "properties": {
+            "space": {"$ref": "#/$defs/postal%20code"},
+            "utf8_plus": {"$ref": "#/$defs/caf%c3%a9+"},
+            "pointer": {"$ref": "#/$defs/a%7E1b%7E0c"},
+        }},
+        {"space": "42", "utf8_plus": "42", "pointer": "42"},
+        {"space": 42, "utf8_plus": 42, "pointer": 42},
+    ),
+    (
+        "glm_ref_json_looking_strings",
+        'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.',
+        {"type": "object", "$defs": {"Text": {"type": "string"}}, "properties": {
+            "object_text": {"$ref": "#/$defs/Text"},
+            "array_text": {"$ref": "#/$defs/Text"},
+            "quoted_text": {"$ref": "#/$defs/Text"},
+            "inline_text": {"type": "string"},
+        }},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+    ),
+    (
+        "glm_ref_scalar_types",
+        'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union.',
+        {"type": "object", "$defs": {
+            "Integer": {"type": "integer"}, "Number": {"type": "number"},
+            "Boolean": {"type": "boolean"}, "Scalar": {"type": ["string", "integer"]},
+        }, "properties": {
+            "count": {"$ref": "#/$defs/Integer"}, "ratio": {"$ref": "#/$defs/Number"},
+            "flag": {"$ref": "#/$defs/Boolean"},
+            "narrowed": {"$ref": "#/$defs/Scalar", "type": "integer"},
+        }},
+        {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
+        {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
+    ),
+):
+    input_text = "<tool_call>capture_payload" + "".join(
+        f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>"
+        for key, raw in raw_arguments.items()
+    ) + "</tool_call>"
+    EDGE.append((
+        scenario, description, ["I7"],
+        [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            input_text, D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "capture_payload", "parameters": parameters}]},
+    ))
 
 
 def build_cases(fam):

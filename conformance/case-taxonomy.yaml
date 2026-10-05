@@ -94,6 +94,33 @@ suites:
           d: {desc: Nested object + array values, required: true}
           e: {desc: Large / deep argument payload, required: true}
           f: {desc: Numeric precision edge preserves integer-like literal, required: true}
+          "4": {desc: Nullable string schema converts literal null text to JSON null, required: false}
+          "5": {desc: Non-nullable string schema preserves literal null text as a string, required: false}
+          "4.inline": {desc: Inline nullable string schema converts literal null text to JSON null, required: false}
+          "5.inline": {desc: Inline string-only schema preserves literal null text as a string, required: false}
+          "4.ref": {desc: Local schema reference permits JSON null, required: false}
+          "5.ref": {desc: Local schema reference requires the literal null text to remain a string, required: false}
+          "4.anyof": {desc: "The request tool schema declares `city` as `string | null` using anyOf.", required: false}
+          "4.oneof": {desc: "The request tool schema declares `city` as `string | null` using oneOf.", required: false}
+          "4.nullable": {desc: "The request tool schema declares `city` as string with nullable: true.", required: false}
+          "4.const": {desc: "The request tool schema permits `city` to be null through an anyOf const-null branch.", required: false}
+          "5.union": {desc: "The request tool schema permits string or integer through anyOf, but excludes null.", required: false}
+          "5.sibling_anyof": {desc: "The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.", required: false}
+          "5.sibling_oneof": {desc: "The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.", required: false}
+          "5.untyped_branch": {desc: "The request tool schema requires string; an anyOf branch without a type does not remove that requirement.", required: false}
+          "5.const": {desc: 'The request tool schema permits the literal string "null" through const, or an integer.', required: false}
+          "5.enum": {desc: 'The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.', required: false}
+          "5.untyped_const": {desc: 'The request tool schema has const: "null" without a type; JSON null is excluded.', required: false}
+          "5.untyped_enum": {desc: 'The request tool schema has enum: ["null"] without a type; JSON null is excluded.', required: false}
+          "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
+          "6": {desc: Nested members retain declared types through a unique object union branch, required: false}
+          "7": {desc: Null-only const and enum alternatives do not make an object union ambiguous, required: false}
+          "8": {desc: Ambiguous object union branches preserve the existing string fallback, required: false}
+          "9": {desc: Local parameter references preserve declared object types, required: false}
+          "10": {desc: Nested references preserve property and array item types, required: false}
+          "11": {desc: URI-encoded local references resolve before type coercion, required: false}
+          "12": {desc: "Referenced strings preserve JSON-looking object, array, and quoted text", required: false}
+          "13": {desc: "Scalar references retain integer, number, and boolean types while intersecting sibling constraints", required: false}
       "8":
         title: Narration around calls
         required: true
@@ -222,6 +249,12 @@ suites:
           "5.enum": {desc: "The request tool schema requires string alongside an enum containing string \"null\" and JSON null; the type excludes JSON null.", required: false}
           "4.mixed_labels": {desc: Mixed nullable label and note with a literal string field, required: false}
           "4.mixed_grep": {desc: Mixed string pattern and nullable path under a strict tool schema, required: false}
+          "6": {desc: Nested members retain declared types through a unique object union branch, required: false}
+          "7": {desc: Null-only const and enum alternatives do not make an object union ambiguous, required: false}
+          "8": {desc: Ambiguous object union branches preserve the existing string fallback, required: false}
+          "9": {desc: Local parameter references preserve declared object types, required: false}
+          "10": {desc: Nested references preserve property and array item types, required: false}
+          "11": {desc: URI-encoded local references resolve before type coercion, required: false}
       "8":
         title: Narration around calls
         required: true
@@ -375,6 +408,3 @@ suite_exemptions:
 known_gaps:
   toolcalling.stream:
     llama3_json: ["5.b"]
-    minimax_m3: ["2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c", "8.d", "50"]
-  reasoning.stream:
-    minimax_m3: ["4.b", "4.c", "4.d"]

@@ -23,6 +23,8 @@
 //! are atomic in BPE (`special: true, normalized: false`), so splitting there
 //! preserves the invariant `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
 //! No fallback to whitespace or punctuation — better to miss than to corrupt.
+//! Callers must supply actual atomic special tokens recognized by the inner tokenizer;
+//! adding arbitrary strings to the boundary list is unsafe.
 //!
 //! Atomicity alone is insufficient when registered special-token strings can overlap.
 //! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
@@ -48,21 +50,28 @@
 //! - `encode_segments` always passes through to the inner tokenizer without
 //!   caching. Flattening segments for L1 would discard their special-token
 //!   trust boundaries.
-//! - `max_memory_bytes` — L1 byte budget; entries evicted via approximate LRU.
+//! - `max_memory_bytes` — token-ID payload byte budget, excluding keys and metadata.
+//!   Moka shares admission and eviction via W-TinyLFU. Deferred maintenance makes the
+//!   capacity approximate; it is not a limit on total process memory.
+//! - [`CachedTokenizer::new`] owns a private cache. [`CachedTokenizer::new_with_cache`]
+//!   shares storage across wrappers; entries survive a wrapper being dropped while
+//!   shared storage remains alive. Equal namespaces must identify identical tokenizer
+//!   behavior, including tokenizer files, backend, and options that affect token IDs.
 //!
 //! # Provenance
 //!
 //! Adapted from `llm-tokenizer` v1.3.2 (`cache/l1.rs`, `cache/mod.rs`). L0 and
-//! fingerprinting were dropped; L1 alone covers the headline multi-turn-chat
-//! workload, and the in-memory cache lifetime is bound to a single tokenizer
-//! instance so fingerprint-based invalidation is unnecessary.
+//! upstream fingerprinting were dropped; L1 covers the multi-turn-chat workload.
+//! Shared caches use caller-supplied namespaces to separate tokenizer identities.
 
 mod l1;
 
 use std::sync::Arc;
 
 use l1::PrefixLookup;
-pub use l1::{CacheEventFn, L1Cache, L1CacheStats};
+pub use l1::{
+    CacheEventFn, L1Cache, L1CacheStats, SharedTokenizerCache, SharedTokenizerCacheStats,
+};
 
 use crate::{
     EncodeSegment, Encoding, Result, TokenIdType,
@@ -107,7 +116,8 @@ impl CachedTokenizer {
     /// without touching the cache or its counters. An overlapping token set also disables
     /// L1, with a warning, because its boundaries are ambiguous.
     ///
-    /// `max_memory_bytes` is the L1 cache byte budget.
+    /// `max_memory_bytes` is the private token-ID payload byte budget. Moka defers
+    /// eviction, so the budget is approximate and excludes keys and metadata.
     ///
     /// # Errors
     ///
@@ -115,8 +125,40 @@ impl CachedTokenizer {
     /// safely wrapped in the prefix cache.
     pub fn new(
         inner: Arc<dyn Tokenizer>,
-        mut special_tokens: Vec<String>,
+        special_tokens: Vec<String>,
         max_memory_bytes: usize,
+    ) -> Result<Self> {
+        Self::build(inner, special_tokens, |tokens| {
+            L1Cache::new(max_memory_bytes, tokens)
+        })
+    }
+
+    /// Construct a tokenizer using shared storage and a caller-supplied namespace.
+    ///
+    /// Equal namespaces share entries and must describe identical tokenizer behavior,
+    /// including tokenizer files, backend, and encoding options. Different namespaces
+    /// compete for the same byte budget but cannot reuse each other's token IDs.
+    /// Entries survive this wrapper being dropped while the shared cache remains alive.
+    /// The eligibility checks are the same as [`Self::new`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the inner tokenizer's compatibility error if prefix caching is unsafe.
+    pub fn new_with_cache(
+        inner: Arc<dyn Tokenizer>,
+        special_tokens: Vec<String>,
+        shared_cache: SharedTokenizerCache,
+        namespace: &[u8],
+    ) -> Result<Self> {
+        Self::build(inner, special_tokens, |tokens| {
+            L1Cache::new_with_cache(shared_cache, tokens, namespace)
+        })
+    }
+
+    fn build(
+        inner: Arc<dyn Tokenizer>,
+        mut special_tokens: Vec<String>,
+        make_cache: impl FnOnce(Vec<String>) -> L1Cache,
     ) -> Result<Self> {
         inner.validate_prefix_cache()?;
         special_tokens.retain(|token| !token.is_empty());
@@ -145,7 +187,7 @@ impl CachedTokenizer {
         };
         Ok(Self {
             inner,
-            l1: L1Cache::new(max_memory_bytes, cache_tokens),
+            l1: make_cache(cache_tokens),
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
@@ -193,14 +235,15 @@ impl CachedTokenizer {
         }
     }
 
-    /// Snapshot of L1 cache statistics (cumulative hits/misses/entries/memory).
+    /// Wrapper-local hits/misses and namespace-wide entries/token bytes.
+    /// Shared storage statistics scan the namespace; private caches use Moka's totals.
+    /// Results can change under concurrent writes. Disabled wrappers report zeroes.
     pub fn cache_stats(&self) -> L1CacheStats {
-        self.l1.stats()
-    }
-
-    /// Clear all cached entries and reset counters.
-    pub fn clear_cache(&self) {
-        self.l1.clear();
+        if self.l1_enabled {
+            self.l1.stats()
+        } else {
+            L1CacheStats::default()
+        }
     }
 
     /// Access the underlying tokenizer (e.g. for downcasting to a concrete type).
@@ -275,6 +318,11 @@ impl Encoder for CachedTokenizer {
 }
 
 impl Decoder for CachedTokenizer {
+    fn has_unstable_suffix(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> bool {
+        self.inner
+            .has_unstable_suffix(token_ids, skip_special_tokens)
+    }
+
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
         // Decode is not cached — passthrough to inner.
         self.inner.decode(token_ids, skip_special_tokens)

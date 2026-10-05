@@ -289,6 +289,8 @@ pub(crate) struct InvokeScan {
 pub(crate) enum InvokeBoundaryFactory {
     Stateless(InvokeScan),
     Custom(fn() -> Box<dyn InvokeBoundary>),
+    /// Native XML boundaries with a separate guided-prefix grammar.
+    NativeOnly(fn() -> Box<dyn InvokeBoundary>),
 }
 
 #[derive(Clone, Copy)]
@@ -314,7 +316,14 @@ impl InvokeBoundaryFactory {
     pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
         match self {
             Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
-            Self::Custom(create) => create(),
+            Self::Custom(create) | Self::NativeOnly(create) => create(),
+        }
+    }
+
+    pub(crate) fn for_guided(self) -> Option<Self> {
+        match self {
+            Self::NativeOnly(_) => None,
+            other => Some(other),
         }
     }
 

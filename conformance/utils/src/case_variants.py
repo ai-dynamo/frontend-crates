@@ -57,15 +57,18 @@ def leaf_cells(row):
     return leaves
 
 
-def group_null_variants(tab):
-    if tab["id"] not in {"tab-unified", "tab-toolcalling-streamv1"}:
+def group_null_variants(tab: dict) -> None:
+    if tab["id"] not in {"tab-unified", "tab-toolcalling-streamv1", "tab-toolcalling-batch"}:
         return
     columns = tab["columns"]
+    display_labels: dict[str, str] = {}
     for parent, description in NULL_DESCRIPTIONS.items():
         members = [column for column in columns if null_group(column["label"]) == parent]
-        root = next((column for column in members if column["label"] == parent), None)
-        if root is None:
+        if not members:
             continue
+        root = next((column for column in members if column["label"] == parent), members[0])
+        # A corpus may contain only a named variant; keep its fixture identity.
+        display_labels[root["label"]] = parent
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
         mixed = [column for column in columns if column["label"].startswith("7-4.mixed_")]
@@ -87,6 +90,8 @@ def group_null_variants(tab):
                 column["variant_parent"] = parent
     hidden = {column["sub"] for column in columns if "variant_parent" in column}
     tab["columns"] = [column for column in columns if column["sub"] not in hidden]
+    for column in tab["columns"]:
+        column["label"] = display_labels.get(column["label"], column["label"])
     for row in tab["rows"]:
         for sub in hidden:
             row["cells"].pop(sub, None)
@@ -105,6 +110,7 @@ def group_null_variants(tab):
                          na=sum(cell.get("status") == "na" for cell in cells),
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
     for group in tab.get("glossary", []):
-        group["rows"] = [(label, NULL_DESCRIPTIONS.get(label, desc))
+        group["rows"] = [(display_labels.get(label, label),
+                          NULL_DESCRIPTIONS.get(display_labels.get(label, label), desc))
                          for label, desc in group["rows"]
-                         if null_group(label) is None or label in NULL_DESCRIPTIONS]
+                         if null_group(label) is None or label in display_labels]
