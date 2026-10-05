@@ -1362,6 +1362,51 @@ EDGE = [
     ),
 ]
 
+# DeepSeek V4.1 only: a string value that quotes its own parameter terminator.
+# DSML has no escape, so the quoted `</｜DSML｜ parameter>` is byte-identical to
+# the real one; only the markup after each candidate close tells them apart.
+_DSV41_WRITE_TOOLS = [{"name": "write", "parameters": {
+    "type": "object",
+    "properties": {"path": {"type": "string"}, "content": {"type": "string"}, "i": {"type": "string"}},
+}}]
+
+
+def _dsv41_write(content):
+    return ('<｜DSML｜ calls><｜DSML｜ invoke name="write">'
+            '<｜DSML｜ parameter name="path" string="true">docs/format.md</｜DSML｜ parameter>'
+            f'<｜DSML｜ parameter name="content" string="true">{content}</｜DSML｜ parameter>'
+            '<｜DSML｜ parameter name="i" string="true">doc</｜DSML｜ parameter>'
+            '</｜DSML｜ invoke></｜DSML｜ calls>')
+
+
+_DSV41_QUOTED_STRINGS = [
+    ("deepseek_v41_quoted_calls_block_in_string",
+     "DeepSeek V4.1 only: a string value quotes a complete, well-formed calls block, so it contains its own `</｜DSML｜ parameter>` terminator. Taking the quoted close as structure strands the rest of the call after the block (value truncated, `i` dropped, markup leaked as text). The quoted block is data: one call with every parameter intact.",
+     "# Format\n\n```\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"read\">\n"
+     "<｜DSML｜ parameter name=\"path\" string=\"true\">app/main.py</｜DSML｜ parameter>\n"
+     "</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n"),
+    ("deepseek_v41_quoted_mixed_dialect_block_in_string",
+     "DeepSeek V4.1 only: the shape a model emitted when asked to document the call syntax. Unlike `dsv41-1`, the quoted example mixes V4 openers with an attribute-less V4.1 parameter header, and a second quoted example holds a bare `</｜DSML｜ calls>` outside any block. The quoted markup is data: one call with every parameter intact.",
+     "# DeepSeek Tool Call Format\n\n```\n<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"read\">\n"
+     "<｜DSML｜ parameter name=\"path\">app/main.py</｜DSML｜ parameter>\n"
+     "</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n\n"
+     "A broken call with only the closing tags:\n\n```\n</invoke>\n</｜DSML｜ calls>\n```\n"),
+    ("deepseek_v41_quoted_parameter_close_in_string",
+     "DeepSeek V4.1 only: a string value quotes a lone `</｜DSML｜ parameter>`. Taking it as structure leaves text where the next parameter header or the invoke close must follow, which fails the whole call. Only the later close leaves well-formed markup, so the quoted close is data.",
+     "the close tag is </｜DSML｜ parameter> here"),
+]
+
+EDGE += [
+    (name, desc, ["I7"],
+     [{"kind": "tool_call", "name": "write",
+       "arguments": {"path": "docs/format.md", "content": content, "i": "doc"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     OnlyFamilies({"deepseek_v41": (_dsv41_write(content), VLLM_UNCAPTURABLE["deepseek_v41"], M)}),
+     _DSV41_WRITE_TOOLS)
+    for name, desc, content in _DSV41_QUOTED_STRINGS
+]
+
 EDGE += [
     ("kimi_k3_typed_argument_values",
      "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",

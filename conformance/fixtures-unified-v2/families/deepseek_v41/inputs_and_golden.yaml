@@ -6765,3 +6765,318 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  deepseek_v41_quoted_calls_block_in_string:
+    lifecycle: active
+    scenario: deepseek_v41_quoted_calls_block_in_string
+    description: 'DeepSeek V4.1 only: a string value quotes a complete, well-formed calls block, so it contains its own `</｜DSML｜ parameter>` terminator. Taking the quoted close as structure strands the rest of the call after the block (value truncated, `i` dropped, markup leaked as text). The quoted block is data: one call with every parameter intact.'
+    policy:
+    - I7
+    display_id: UNIFIED.dsv41-1
+    historical_ids: []
+    request:
+      input: '<｜DSML｜ calls><｜DSML｜ invoke name="write"><｜DSML｜ parameter name="path" string="true">docs/format.md</｜DSML｜ parameter><｜DSML｜ parameter name="content" string="true"># Format
+
+
+        ```
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="read">
+
+        <｜DSML｜ parameter name="path" string="true">app/main.py</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>
+
+        ```
+
+        </｜DSML｜ parameter><｜DSML｜ parameter name="i" string="true">doc</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: write
+        parameters:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+            i:
+              type: string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="write">
+      - delta_text: <｜DSML｜ parameter name="path" string="true">
+      - delta_text: docs/format.md
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="content" string="true">
+      - delta_text: '# Format
+
+
+          ```
+
+          '
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜ invoke name="read">
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜ parameter name="path" string="true">
+      - delta_text: app/main.py
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '
+
+          ```
+
+          '
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="i" string="true">
+      - delta_text: doc
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write
+        arguments:
+          path: docs/format.md
+          content: '# Format
+
+
+            ```
+
+            <｜DSML｜ calls>
+
+            <｜DSML｜ invoke name="read">
+
+            <｜DSML｜ parameter name="path" string="true">app/main.py</｜DSML｜ parameter>
+
+            </｜DSML｜ invoke>
+
+            </｜DSML｜ calls>
+
+            ```
+
+            '
+          i: doc
+  deepseek_v41_quoted_mixed_dialect_block_in_string:
+    lifecycle: active
+    scenario: deepseek_v41_quoted_mixed_dialect_block_in_string
+    description: 'DeepSeek V4.1 only: the shape a model emitted when asked to document the call syntax. Unlike `dsv41-1`, the quoted example mixes V4 openers with an attribute-less V4.1 parameter header, and a second quoted example holds a bare `</｜DSML｜ calls>` outside any block. The quoted markup is data: one call with every parameter intact.'
+    policy:
+    - I7
+    display_id: UNIFIED.dsv41-2
+    historical_ids: []
+    request:
+      input: '<｜DSML｜ calls><｜DSML｜ invoke name="write"><｜DSML｜ parameter name="path" string="true">docs/format.md</｜DSML｜ parameter><｜DSML｜ parameter name="content" string="true"># DeepSeek Tool Call Format
+
+
+        ```
+
+        <｜DSML｜tool_calls>
+
+        <｜DSML｜invoke name="read">
+
+        <｜DSML｜ parameter name="path">app/main.py</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>
+
+        ```
+
+
+        A broken call with only the closing tags:
+
+
+        ```
+
+        </invoke>
+
+        </｜DSML｜ calls>
+
+        ```
+
+        </｜DSML｜ parameter><｜DSML｜ parameter name="i" string="true">doc</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: write
+        parameters:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+            i:
+              type: string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="write">
+      - delta_text: <｜DSML｜ parameter name="path" string="true">
+      - delta_text: docs/format.md
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="content" string="true">
+      - delta_text: '# DeepSeek Tool Call Format
+
+
+          ```
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜invoke name="read">
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜ parameter name="path">
+      - delta_text: app/main.py
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '
+
+          ```
+
+
+          A broken call with only the closing tags:
+
+
+          ```
+
+          '
+      - delta_text: </invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '
+
+          ```
+
+          '
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="i" string="true">
+      - delta_text: doc
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write
+        arguments:
+          path: docs/format.md
+          content: '# DeepSeek Tool Call Format
+
+
+            ```
+
+            <｜DSML｜tool_calls>
+
+            <｜DSML｜invoke name="read">
+
+            <｜DSML｜ parameter name="path">app/main.py</｜DSML｜ parameter>
+
+            </｜DSML｜ invoke>
+
+            </｜DSML｜ calls>
+
+            ```
+
+
+            A broken call with only the closing tags:
+
+
+            ```
+
+            </invoke>
+
+            </｜DSML｜ calls>
+
+            ```
+
+            '
+          i: doc
+  deepseek_v41_quoted_parameter_close_in_string:
+    lifecycle: active
+    scenario: deepseek_v41_quoted_parameter_close_in_string
+    description: 'DeepSeek V4.1 only: a string value quotes a lone `</｜DSML｜ parameter>`. Taking it as structure leaves text where the next parameter header or the invoke close must follow, which fails the whole call. Only the later close leaves well-formed markup, so the quoted close is data.'
+    policy:
+    - I7
+    display_id: UNIFIED.dsv41-3
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="write"><｜DSML｜ parameter name="path" string="true">docs/format.md</｜DSML｜ parameter><｜DSML｜ parameter name="content" string="true">the close tag is </｜DSML｜ parameter> here</｜DSML｜ parameter><｜DSML｜ parameter name="i" string="true">doc</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: write
+        parameters:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+            i:
+              type: string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="write">
+      - delta_text: <｜DSML｜ parameter name="path" string="true">
+      - delta_text: docs/format.md
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="content" string="true">
+      - delta_text: 'the close tag is '
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: ' here'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="i" string="true">
+      - delta_text: doc
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write
+        arguments:
+          path: docs/format.md
+          content: the close tag is </｜DSML｜ parameter> here
+          i: doc

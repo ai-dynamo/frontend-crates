@@ -134,6 +134,9 @@ UNIFIED_TAX = {
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
     "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
+    "deepseek_v41_quoted_calls_block_in_string": ("dsv41", "1"),
+    "deepseek_v41_quoted_mixed_dialect_block_in_string": ("dsv41", "2"),
+    "deepseek_v41_quoted_parameter_close_in_string": ("dsv41", "3"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -160,6 +163,7 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
+    "dsv41": "DeepSeek V4.1 quoted DSML in string values",
     "gemma": "Gemma 4 guided call-prefix boundaries",
     "glm5": "GLM 5 argument-marker boundaries",
     "kimi": "Kimi K3 XTML",

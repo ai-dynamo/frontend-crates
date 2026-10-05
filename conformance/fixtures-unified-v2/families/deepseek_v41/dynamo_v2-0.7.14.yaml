@@ -1,0 +1,186 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.14
+    git_commit: 1e8901835d189294c84ba4bc01cd0996e0364c2d
+    source_sha256: 935f03bd1bf13d8ce6a24d257e178914ca01163523cdb7b4defb7cc3cd10f714
+document:
+  mode: unified
+changes:
+  deepseek_v41_quoted_calls_block_in_string:
+    case_key: UNIFIED.dsv41-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write
+          arguments:
+            path: docs/format.md
+            content: '# Format
+
+
+              ```
+
+              <｜DSML｜ calls>
+
+              <｜DSML｜ invoke name="read">
+
+              <｜DSML｜ parameter name="path" string="true">app/main.py</｜DSML｜ parameter>
+
+              </｜DSML｜ invoke>
+
+              </｜DSML｜ calls>
+
+              ```
+
+              '
+            i: doc
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write
+            arguments: '{"path":"docs/format.md","content":"# Format\n\n```\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"read\">\n<｜DSML｜ parameter name=\"path\" string=\"true\">app/main.py</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n","i":"doc"}'
+            complete: true
+    stimulus:
+      ref: current
+      semantic_sha256: 173d06e4fd7ed7aeff9442a9daed881f6917929e910565427ef9847cfa08f243
+  deepseek_v41_quoted_mixed_dialect_block_in_string:
+    case_key: UNIFIED.dsv41-2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write
+          arguments:
+            path: docs/format.md
+            content: '# DeepSeek Tool Call Format
+
+
+              ```
+
+              <｜DSML｜tool_calls>
+
+              <｜DSML｜invoke name="read">
+
+              <｜DSML｜ parameter name="path">app/main.py</｜DSML｜ parameter>
+
+              </｜DSML｜ invoke>
+
+              </｜DSML｜ calls>
+
+              ```
+
+
+              A broken call with only the closing tags:
+
+
+              ```
+
+              </invoke>
+
+              </｜DSML｜ calls>
+
+              ```
+
+              '
+            i: doc
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write
+            arguments: '{"path":"docs/format.md","content":"# DeepSeek Tool Call Format\n\n```\n<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"read\">\n<｜DSML｜ parameter name=\"path\">app/main.py</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>\n```\n\nA broken call with only the closing tags:\n\n```\n</invoke>\n</｜DSML｜ calls>\n```\n","i":"doc"}'
+            complete: true
+    stimulus:
+      ref: current
+      semantic_sha256: da3ee9f7013cf3e0c8301a5d7158522ddac59a9ebca342dca3bfb3c4fb977f22
+  deepseek_v41_quoted_parameter_close_in_string:
+    case_key: UNIFIED.dsv41-3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write
+          arguments:
+            path: docs/format.md
+            content: the close tag is </｜DSML｜ parameter> here
+            i: doc
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write
+            arguments: '{"path":"docs/format.md","content":"the close tag is </｜DSML｜ parameter> here","i":"doc"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: ede8591c70685482da0bb409620745847fad07690f91bd3265d341f4dd79db1f
+metadata_changes: {}
+document_overrides: {}
