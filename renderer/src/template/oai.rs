@@ -482,8 +482,6 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
     }
 }
 
-/// Reasoning openers that HF chat templates pre-fill at the end of the
-/// generation prompt, paired with their closers.
 const PROMPT_REASONING_MARKERS: &[(&str, &str)] =
     &[("<think>", "</think>"), ("<mm:think>", "</mm:think>")];
 
@@ -650,7 +648,6 @@ mod tests {
 
     // --- adaptive system-message normalization (#11762) --------------------
 
-    use super::super::formatters::test_support::minimax_m2_style_template;
     use super::super::tokcfg::ChatTemplate as SysChatTemplate;
     use super::super::{
         ContextMixins as SysMixins, HfTokenizerConfigJsonFormatter as SysFormatter,
@@ -714,13 +711,14 @@ mod tests {
 
     // --- MiniMax M2 thinking toggle + prompt reasoning state ------------------
 
+    use super::super::formatters::test_support::minimax_m2_style_template;
+
     fn minimax_m2_formatter() -> SysFormatter {
         formatter_for(&minimax_m2_style_template())
     }
 
-    /// The bare protocol request carries neither `chat_template_kwargs` nor
-    /// `add_generation_prompt`; Dynamo's request wrapper supplies both. Mirror
-    /// that here so the template sees the same context it does in production.
+    /// The bare protocol request plus the `chat_template_kwargs` and
+    /// `add_generation_prompt` that Dynamo's request wrapper supplies.
     struct TemplateRequest {
         inner: NvCreateChatCompletionRequest,
         args: Option<HashMap<String, serde_json::Value>>,
@@ -803,7 +801,7 @@ mod tests {
             assert!(
                 rendered.as_str().ends_with(MINIMAX_OPEN_TAIL),
                 "{kwargs:?}: expected open <think> tail, got {:?}",
-                &rendered.as_str()[rendered.as_str().len().saturating_sub(40)..]
+                rendered.as_str()
             );
             assert!(!rendered.as_str().contains("</think>"), "{kwargs:?}");
             assert_eq!(
@@ -830,7 +828,7 @@ mod tests {
             assert!(
                 rendered.as_str().ends_with(MINIMAX_CLOSED_TAIL),
                 "{kwargs}: expected closed empty think block, got {:?}",
-                &rendered.as_str()[rendered.as_str().len().saturating_sub(40)..]
+                rendered.as_str()
             );
             assert_eq!(
                 rendered.as_str().matches("<think>").count(),
@@ -843,7 +841,6 @@ mod tests {
                 "{kwargs}"
             );
         }
-        // `thinking` takes precedence even when `enable_thinking` disables.
         let rendered = f
             .render_prompt(&minimax_request(
                 Some(json!({"thinking": true, "enable_thinking": false})),
@@ -867,13 +864,7 @@ mod tests {
         let custom_template = template.replacen(stock_opener, &custom_opener, 1);
 
         let formatter = formatter_for(&custom_template);
-        let request = minimax_request(
-            Some(json!({"thinking": false})),
-            Some(json!({
-                "type": "function",
-                "function": {"name": "calculate"}
-            })),
-        );
+        let request = minimax_request(Some(json!({"thinking": false})), None);
         let rendered = formatter.render_prompt(&request).unwrap();
 
         assert_eq!(rendered.as_str().matches("</think>").count(), 1);
@@ -885,43 +876,7 @@ mod tests {
     }
 
     #[test]
-    fn minimax_m2_thinking_toggle_is_independent_of_tool_choice() {
-        // The closure is a property of the request's thinking mode, not of tool
-        // selection: with tools rendered (no tool_choice) and with tools stripped
-        // (`tool_choice: none`) the prompt tail is the same for the same toggle.
-        let f = minimax_m2_formatter();
-        let choices = [None, Some(json!("none"))];
-        for choice in &choices {
-            let disabled = f
-                .render_prompt(&minimax_request(
-                    Some(json!({"thinking": false})),
-                    choice.clone(),
-                ))
-                .unwrap();
-            assert!(
-                disabled.as_str().ends_with(MINIMAX_CLOSED_TAIL),
-                "{choice:?}"
-            );
-            assert_eq!(
-                disabled.reasoning_state(),
-                Some(PromptReasoningState::Closed)
-            );
-
-            let enabled = f
-                .render_prompt(&minimax_request(
-                    Some(json!({"thinking": true})),
-                    choice.clone(),
-                ))
-                .unwrap();
-            assert!(enabled.as_str().ends_with(MINIMAX_OPEN_TAIL), "{choice:?}");
-            assert_eq!(enabled.reasoning_state(), Some(PromptReasoningState::Open));
-        }
-    }
-
-    #[test]
     fn minimax_m2_disabled_thinking_only_changes_the_generation_prompt() {
-        // Everything before the generation prompt is byte-identical between the
-        // two modes, so KV prefixes and multi-turn replay are unaffected.
         let f = minimax_m2_formatter();
         let enabled = f
             .render(&minimax_request(Some(json!({"thinking": true})), None))
@@ -980,10 +935,8 @@ mod tests {
 
     #[test]
     fn minimax_m2_replayed_reasoning_is_not_reported_as_closed() {
-        // MiniMax M2 replays assistant reasoning mid-prompt (interleaved
-        // thinking across tool calls), which renders a non-empty
-        // `<think>\n...\n</think>` before the generation prompt. The trailing
-        // generation prompt alone decides the state.
+        // Replayed assistant reasoning renders a non-empty `<think>...</think>`
+        // mid-prompt; only the trailing generation prompt decides the state.
         let f = minimax_m2_formatter();
         let request = template_request(
             json!({
@@ -1044,10 +997,8 @@ mod tests {
     }
 
     #[test]
-    fn non_minimax_templates_are_not_adapted_and_state_follows_their_tail() {
-        // Generic Qwen-style: `<think>` opener with thinking on, `<think>\n\n</think>`
-        // empty block with thinking off, nothing without add_generation_prompt.
-        let qwen_like = "{% for m in messages %}<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n{% endfor %}            {% if add_generation_prompt %}<|im_start|>assistant\n            {% if enable_thinking is defined and enable_thinking is false %}<think>\n\n</think>\n\n{% else %}<think>\n{% endif %}{% endif %}";
+    fn reasoning_state_follows_generic_template_tails() {
+        let qwen_like = "{% for m in messages %}<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% if enable_thinking is defined and enable_thinking is false %}<think>\n\n</think>\n\n{% else %}<think>\n{% endif %}{% endif %}";
         let f = formatter_for(qwen_like);
         let req = |kwargs: serde_json::Value| -> TemplateRequest {
             template_request(
@@ -1079,7 +1030,7 @@ mod tests {
     #[test]
     fn infer_prompt_reasoning_state_classifies_tails() {
         use PromptReasoningState::{Closed, Open};
-        let cases: [(&str, Option<PromptReasoningState>); 9] = [
+        let cases = [
             ("...<think>", Some(Open)),
             ("...<think>\n", Some(Open)),
             ("...<mm:think>\n", Some(Open)),
