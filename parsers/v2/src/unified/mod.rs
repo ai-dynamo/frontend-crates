@@ -57,6 +57,8 @@ pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod muse_glimmer;
 pub mod qwen3;
+#[cfg(test)]
+mod streaming_checkpoints;
 
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -5612,18 +5614,13 @@ mod tests {
                         for chunk in chunks {
                             parser.parse_into(chunk, &mut out).unwrap();
                         }
-                        let before_finish = out.events.len();
-                        out.append(&mut parser.finish().unwrap());
                         assert_eq!(
                             out.assembled(),
                             want,
-                            "{family} {state:?} {policy:?} named={named} schedule={schedule}"
+                            "tool output must be available before EOF: {family} {state:?} {policy:?} named={named} schedule={schedule}"
                         );
                         assert_eq!(out.events.iter().filter(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), 1);
-                        assert!(
-                            before_finish > 0,
-                            "completed input must make pre-finish progress"
-                        );
+                        assert!(parser.finish().unwrap().events.is_empty());
                         assert!(parser.finish().is_err());
                         assert!(
                             parser

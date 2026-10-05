@@ -582,17 +582,8 @@ impl KimiK3CallBoundary {
         if text.len() < self.scanned {
             self.reset_progress();
         }
-        let ends_at_boundary = SCANNER_MARKERS
-            .iter()
-            .any(|(_, marker)| marker.variants().any(|variant| text.ends_with(variant)));
-        let mut scan_limit = text
-            .len()
-            .saturating_sub((!flush && !ends_at_boundary) as usize * SCANNER_HOLDBACK);
-        while !text.is_char_boundary(scan_limit) {
-            scan_limit -= 1;
-        }
-        while self.scanned < scan_limit {
-            let suffix = &text[self.scanned..scan_limit];
+        while self.scanned < text.len() {
+            let suffix = &text[self.scanned..];
             if !flush && scanner_marker_is_partial(suffix) {
                 break;
             }
@@ -826,8 +817,6 @@ const SCANNER_MARKERS: &[(ScannerToken, Marker)] = &[
     (ScannerToken::EndOfMessage, Marker::single(END_OF_MSG)),
     (ScannerToken::Sep, SEP_MARKER),
 ];
-
-const SCANNER_HOLDBACK: usize = 32;
 
 fn scanner_marker_at(text: &str) -> Option<(ScannerToken, usize)> {
     SCANNER_MARKERS

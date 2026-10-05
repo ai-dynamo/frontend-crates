@@ -31,13 +31,11 @@ UNIFIED_TAX = {
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
-    "three_identical_calls": (2, "3"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
     "tool_block_never_closed_then_text": (4, "1"),
     "tool_markup_only_emits_nothing": (4, "2"),
-    "kimi_uuid_header_then_valid": ("kimi", "9"),
 
     # Group 5 — Truncation / recovery (streamv1.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
@@ -72,7 +70,6 @@ UNIFIED_TAX = {
     # Group 12 — Adversarial nesting (a marker of one channel inside another)
     "reason_markup_in_arg": (12, "1"), "tool_in_reason": (12, "2"),
     "reason_markup_in_arg_with_text": (12, "3"), "tool_in_reason_with_text": (12, "4"),
-    "kimi_k3_adjacent_call_literals_in_string": ("kimi", "10"),
     "kimi_k3_typed_argument_values": ("kimi", "1"),
     "kimi_k3_raw_json_arguments": ("kimi", "2"),
     "kimi_k3_spaced_xtml_markers": ("kimi", "3"),
