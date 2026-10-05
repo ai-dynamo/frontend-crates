@@ -150,19 +150,57 @@ mod tests {
     #[test]
     fn wrapper_is_transparent_passthrough() {
         let tools = weather_tools();
-        let inner = Qwen3CoderToolStreamParser::create(&tools).unwrap();
-        let mut wrapped = DebugToolParser::wrap("qwen3_coder", inner);
-
-        let result = wrapped
-            .parse_complete(
-                "<tool_call> <function=get_weather> \
-<parameter=location> NYC </parameter> </function> </tool_call>",
-            )
-            .unwrap();
-
-        assert_eq!(result.calls.len(), 1);
-        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(result.calls[0].arguments, r#"{"location":" NYC "}"#);
+        for (family, input) in [
+            (
+                "qwen3_coder",
+                "before <tool_call><function=get_weather><parameter=location> NYC </parameter></function></tool_call> after",
+            ),
+            (
+                "minimax_m2",
+                "before <minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\"> NYC </parameter></invoke></minimax:tool_call> after",
+            ),
+        ] {
+            for chunks in super::super::numeric_tests::deliveries(input) {
+                let create = || -> Box<dyn ToolParser> {
+                    match family {
+                        "qwen3_coder" => Qwen3CoderToolStreamParser::create(&tools).unwrap(),
+                        "minimax_m2" => crate::MiniMaxM2ToolStreamParser::create(&tools).unwrap(),
+                        _ => unreachable!(),
+                    }
+                };
+                let mut unwrapped = create();
+                let mut wrapped = DebugToolParser {
+                    family: family.into(),
+                    inner: create(),
+                };
+                assert_eq!(
+                    wrapped.preserve_special_tokens(),
+                    unwrapped.preserve_special_tokens()
+                );
+                assert_eq!(wrapped.prefers_tokens(), unwrapped.prefers_tokens());
+                let mut output = crate::ToolParseResult::default();
+                for chunk in chunks {
+                    let actual = wrapped.push(chunk).unwrap();
+                    assert_eq!(actual, unwrapped.push(chunk).unwrap());
+                    output.append(actual);
+                }
+                let terminal = wrapped.finish().unwrap();
+                assert_eq!(terminal, unwrapped.finish().unwrap());
+                output.append(terminal);
+                let output = output.coalesce_calls();
+                assert_eq!(output.normal_text, "before  after");
+                assert_eq!(output.calls.len(), 1);
+                assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
+                let expected_arguments = match family {
+                    "qwen3_coder" => r#"{"location":" NYC "}"#,
+                    "minimax_m2" => r#"{"location":"NYC"}"#,
+                    _ => unreachable!(),
+                };
+                assert_eq!(output.calls[0].arguments, expected_arguments);
+                assert!(output.calls[0].complete);
+                assert_eq!(wrapped.tool_call_id(0), unwrapped.tool_call_id(0));
+            }
+        }
     }
 
     #[test]
