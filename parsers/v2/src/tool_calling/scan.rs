@@ -135,6 +135,34 @@ where
         .unwrap_or(0)
 }
 
+/// Resumable JSON quote ownership for boundary scans and whitespace projection.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct JsonStringState {
+    inside: bool,
+    escaped: bool,
+}
+
+impl JsonStringState {
+    /// True when this character belongs to a quoted string, including its quotes.
+    pub(crate) fn advance(&mut self, character: char) -> bool {
+        if self.inside {
+            if self.escaped {
+                self.escaped = false;
+            } else if character == '\\' {
+                self.escaped = true;
+            } else if character == '"' {
+                self.inside = false;
+            }
+            true
+        } else if character == '"' {
+            self.inside = true;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// Byte offset just past the first complete top-level JSON value (object or
 /// array) in `text`, skipping leading whitespace before it — or `None` if the
 /// value is absent, not object/array-shaped, or still open (unterminated
@@ -163,21 +191,12 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
     // BEFORE a string that legitimately belongs to the same value, reopening
     // exactly that corruption.
     let mut stack = vec![if first == '{' { '}' } else { ']' }];
-    let mut in_string = false;
-    let mut escape = false;
+    let mut quoted = JsonStringState::default();
     for (idx, c) in chars {
-        if in_string {
-            if escape {
-                escape = false;
-            } else if c == '\\' {
-                escape = true;
-            } else if c == '"' {
-                in_string = false;
-            }
+        if quoted.advance(c) {
             continue;
         }
         match c {
-            '"' => in_string = true,
             '{' => stack.push('}'),
             '[' => stack.push(']'),
             '}' | ']' => {
@@ -573,21 +592,9 @@ pub(crate) fn find_first_outside_strings<'a, I>(text: &str, markers: I) -> Optio
 where
     I: Clone + IntoIterator<Item = &'a str>,
 {
-    let mut in_string = false;
-    let mut escape = false;
+    let mut quoted = JsonStringState::default();
     for (idx, c) in text.char_indices() {
-        if in_string {
-            if escape {
-                escape = false;
-            } else if c == '\\' {
-                escape = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-            continue;
-        }
-        if c == '"' {
-            in_string = true;
+        if quoted.advance(c) {
             continue;
         }
         if let Some((_, len)) = markers

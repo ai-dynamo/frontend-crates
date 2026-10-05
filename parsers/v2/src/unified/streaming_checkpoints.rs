@@ -41,21 +41,25 @@ fn safe_text(input: &str, events: Vec<UnifiedEvent>) -> Phase {
     }
 }
 
+fn echo_tools() -> [Tool; 1] {
+    [Tool {
+        name: "echo".into(),
+        description: None,
+        strict: None,
+        parameters: serde_json::json!({"type":"object","properties":{"value":{"type":"string"}}}),
+    }]
+}
+
 // The conformance table compares final assembly. These checkpoints instead reject
 // output that arrives before ownership is settled or only after a later push/EOF.
 fn assert_checkpoints(
     family: &str,
     init: UnifiedParserInit,
+    tools: &[Tool],
     phases: &[Phase],
     eof: &[UnifiedEvent],
     eof_ids: &[&str],
 ) {
-    let tools = [Tool {
-        name: "echo".into(),
-        description: None,
-        strict: None,
-        parameters: serde_json::json!({"type":"object","properties":{"value":{"type":"string"}}}),
-    }];
     let mut schedules = vec![None, Some((usize::MAX, 0))];
     for (index, phase) in phases.iter().enumerate() {
         schedules.extend(
@@ -65,7 +69,7 @@ fn assert_checkpoints(
         );
     }
     for schedule in schedules {
-        let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+        let mut parser = create_unified_parser_for_family(family, tools).unwrap();
         for reuse in 0..2 {
             parser.initialize_request(init.clone()).unwrap();
             let mut events = Vec::new();
@@ -233,7 +237,14 @@ fn kimi_text_reasoning_checkpoints() {
             phase("<", vec![reasoning("ré界<x"), text("visible é")], &[]),
             phase("x", vec![reasoning("ré界<x"), text("visible é<x")], &[]),
         ];
-        assert_checkpoints(family, UnifiedParserInit::default(), &phases, &[], &[]);
+        assert_checkpoints(
+            family,
+            UnifiedParserInit::default(),
+            &echo_tools(),
+            &phases,
+            &[],
+            &[],
+        );
     }
 }
 
@@ -244,9 +255,7 @@ fn k2_call(index: usize) -> String {
 }
 
 fn k3_call(index: usize, value: &str) -> String {
-    format!(
-        "<|open|>call tool=\"echo\" index=\"{index}\"<|sep|><|open|>argument key=\"value\" type=\"string\"<|sep|>{value}<|close|>argument<|sep|><|close|>call<|sep|>"
-    )
+    k3_named_call("echo", index, &k3_argument("value", "string", value))
 }
 
 #[test]
@@ -269,7 +278,14 @@ fn kimi_k2_recovery_and_repeated_call_checkpoints() {
             &["functions.echo:7", "functions.echo:9", "functions.echo:11"],
         ),
     ];
-    assert_checkpoints("kimi_k2", UnifiedParserInit::default(), &phases, &[], &[]);
+    assert_checkpoints(
+        "kimi_k2",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
 }
 
 #[test]
@@ -302,7 +318,14 @@ fn kimi_k3_repeated_call_checkpoints() {
             &["echo:6", "echo:8", "echo:10"],
         ),
     ];
-    assert_checkpoints("kimi_k3", UnifiedParserInit::default(), &phases, &[], &[]);
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
 }
 
 #[test]
@@ -328,7 +351,14 @@ fn kimi_k3_embedded_call_checkpoints() {
             &["echo:0", "echo:1"],
         ),
     ];
-    assert_checkpoints("kimi_k3", UnifiedParserInit::default(), &phases, &[], &[]);
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
 }
 
 #[test]
@@ -348,7 +378,7 @@ fn kimi_guided_tool_checkpoints() {
             };
             let mut checkpoint = phase(payload, vec![call("é")], &[]);
             checkpoint.ids.push(None);
-            assert_checkpoints(family, init, &[checkpoint], &[], &[]);
+            assert_checkpoints(family, init, &echo_tools(), &[checkpoint], &[], &[]);
         }
     }
 }
@@ -364,7 +394,14 @@ fn kimi_k3_malformed_then_valid_checkpoints() {
         phase(k3_call(2, "é"), vec![], &[]),
         phase("<|close|>tools<|sep|>", vec![call("é")], &["echo:1"]),
     ];
-    assert_checkpoints("kimi_k3", UnifiedParserInit::default(), &phases, &[], &[]);
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
 }
 
 #[test]
@@ -387,6 +424,7 @@ fn kimi_k3_unmatched_embedded_header_waits_for_eof() {
     assert_checkpoints(
         "kimi_k3",
         UnifiedParserInit::default(),
+        &echo_tools(),
         &phases,
         &[call(value), call("é")],
         &["echo:0", "echo:1"],
@@ -421,6 +459,334 @@ fn kimi_k3_open_response_checkpoints() {
             phase("<|close|>response<|sep|", vec![text("visible é界<x")], &[]),
             phase(">", vec![text("visible é界<x")], &[]),
         ];
-        assert_checkpoints("kimi_k3", init, &phases, &[], &[]);
+        assert_checkpoints("kimi_k3", init, &echo_tools(), &phases, &[], &[]);
+    }
+}
+
+fn k3_argument(key: &str, kind: &str, value: &str) -> String {
+    format!("<|open|>argument key=\"{key}\" type=\"{kind}\"<|sep|>{value}<|close|>argument<|sep|>")
+}
+
+fn k3_named_call(name: &str, index: usize, body: &str) -> String {
+    format!("<|open|>call tool=\"{name}\" index=\"{index}\"<|sep|>{body}<|close|>call<|sep|>")
+}
+
+fn weather_call() -> UnifiedEvent {
+    UnifiedEvent::ToolCall {
+        name: "get_weather".into(),
+        arguments: serde_json::json!({"city":"Paris"}),
+    }
+}
+
+fn review_tools() -> Vec<Tool> {
+    [
+        ("search", serde_json::json!({"q":{"type":"string"}})),
+        ("get_weather", serde_json::json!({"city":{"type":"string"}})),
+        ("write_file", serde_json::json!({"path":{"type":"string"},"data":{"type":"object"},"content":{"type":"string"}})),
+    ].into_iter().map(|(name, properties)| Tool {
+        name: name.into(), description: None, strict: None,
+        parameters: serde_json::json!({"type":"object","properties":properties}),
+    }).collect()
+}
+
+#[test]
+fn kimi_k3_prose_between_calls_resolves_at_channel_fence() {
+    let first = k3_named_call("search", 1, &k3_argument("q", "string", "Paris"));
+    let second = k3_named_call("get_weather", 2, &k3_argument("city", "string", "Paris"));
+    let header_end = second.find("<|sep|>").unwrap() + "<|sep|>".len();
+    let first_event = UnifiedEvent::ToolCall {
+        name: "search".into(),
+        arguments: serde_json::json!({"q":"Paris"}),
+    };
+    for (channel, starting_state) in [
+        ("tools", UnifiedParserStartingState::None),
+        ("response", UnifiedParserStartingState::None),
+        ("response", UnifiedParserStartingState::Response),
+        ("think", UnifiedParserStartingState::None),
+        ("think", UnifiedParserStartingState::Reasoning),
+    ] {
+        let mut expected = vec![first_event.clone()];
+        if channel != "tools" {
+            expected.push(if channel == "think" {
+                reasoning("between é")
+            } else {
+                text("between é")
+            });
+        }
+        expected.push(weather_call());
+        let start = if starting_state == UnifiedParserStartingState::None {
+            format!("<|open|>{channel}<|sep|>{first}")
+        } else {
+            first.clone()
+        };
+        let phases = [
+            phase(start, vec![], &[]),
+            phase("between é", vec![], &[]),
+            phase(&second[..header_end], vec![], &[]),
+            phase(&second[header_end..], vec![], &[]),
+            phase(
+                format!("<|close|>{channel}<|sep|>"),
+                expected.clone(),
+                &["search:0", "get_weather:1"],
+            ),
+        ];
+        assert_checkpoints(
+            "kimi_k3",
+            UnifiedParserInit {
+                starting_state,
+                tool_output_mode: UnifiedToolOutputMode::Native,
+                ..Default::default()
+            },
+            &review_tools(),
+            &phases,
+            &[],
+            &[],
+        );
+    }
+}
+
+#[test]
+fn kimi_k3_json_markers_and_nested_calls_keep_payload_ownership() {
+    let marker = "<|close|>call<|sep|><|open|>call<|sep|>";
+    let pair = "<|close|>argument<|sep|><|close|>call<|sep|>";
+    let second = k3_named_call("get_weather", 2, &k3_argument("city", "string", "Paris"));
+    for data in [
+        serde_json::json!({"text":marker}),
+        serde_json::json!({"text":format!("before{pair}after")}),
+        serde_json::json!({"text":format!("quote \\\" é {marker}")}),
+    ] {
+        let raw = serde_json::to_string(&data).unwrap();
+        for body in [
+            k3_argument("data", "object", &raw),
+            format!(
+                "{}{}",
+                k3_argument("path", "string", "a.json"),
+                k3_argument("data", "object", &raw)
+            ),
+        ] {
+            let first = k3_named_call("write_file", 1, &body);
+            let arguments = if body.contains("key=\"path\"") {
+                serde_json::json!({"path":"a.json","data":data})
+            } else {
+                serde_json::json!({"data":data})
+            };
+            let expected = vec![
+                UnifiedEvent::ToolCall {
+                    name: "write_file".into(),
+                    arguments,
+                },
+                weather_call(),
+            ];
+            let input = format!("<|open|>tools<|sep|>{first}{second}<|close|>tools<|sep|>");
+            assert_checkpoints(
+                "kimi_k3",
+                UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::Native,
+                    ..Default::default()
+                },
+                &review_tools(),
+                &[phase(
+                    &input,
+                    expected.clone(),
+                    &["write_file:0", "get_weather:1"],
+                )],
+                &[],
+                &[],
+            );
+        }
+        let nested = k3_named_call("write_file", 8, &k3_argument("data", "object", &raw));
+        for count in 1..=2 {
+            let value = format!("before{}after", nested.repeat(count));
+            let input = format!(
+                "<|open|>tools<|sep|>{}{}<|close|>tools<|sep|>",
+                k3_call(1, &value),
+                k3_call(2, "é")
+            );
+            assert_checkpoints(
+                "kimi_k3",
+                UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::Native,
+                    ..Default::default()
+                },
+                &echo_tools(),
+                &[phase(
+                    &input,
+                    vec![call(&value), call("é")],
+                    &["echo:0", "echo:1"],
+                )],
+                &[],
+                &[],
+            );
+        }
+    }
+}
+
+#[test]
+fn kimi_k3_json_open_in_string_does_not_own_closing_markers() {
+    for suffix in ["\"unfinished", "{\"x\":\"unfinished", "[\"unfinished"] {
+        let value = format!("before<|open|>json<|sep|>{suffix}");
+        let phases = [
+            phase(
+                format!("<|open|>tools<|sep|>{}", k3_call(1, &value)),
+                vec![],
+                &[],
+            ),
+            phase(
+                format!("{}<|close|>tools<|sep|>", k3_call(2, "é")),
+                vec![call(&value), call("é")],
+                &["echo:0", "echo:1"],
+            ),
+        ];
+        assert_checkpoints(
+            "kimi_k3",
+            UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::Native,
+                ..Default::default()
+            },
+            &echo_tools(),
+            &phases,
+            &[],
+            &[],
+        );
+    }
+}
+
+#[test]
+fn kimi_k3_missing_call_close_recovers_before_eof_without_borrowing_next_call() {
+    let first = format!(
+        "<|open|>call tool=\"search\" index=\"1\"<|sep|>{}",
+        k3_argument("q", "string", "Paris")
+    );
+    let second = k3_named_call("get_weather", 2, &k3_argument("city", "string", "Paris"));
+    let phases = [
+        phase(format!("<|open|>tools<|sep|>{first}"), vec![], &[]),
+        phase(second, vec![], &[]),
+        phase(
+            "<|close|>tools<|sep|>",
+            vec![
+                UnifiedEvent::ToolCall {
+                    name: "search".into(),
+                    arguments: serde_json::json!({"q":"Paris"}),
+                },
+                weather_call(),
+            ],
+            &["search:0", "get_weather:1"],
+        ),
+    ];
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit {
+            tool_output_mode: UnifiedToolOutputMode::Native,
+            ..Default::default()
+        },
+        &review_tools(),
+        &phases,
+        &[],
+        &[],
+    );
+}
+
+#[test]
+fn kimi_k3_balanced_literal_calls_before_narration_remain_argument_data() {
+    let literal = k3_named_call("quoted", 8, &k3_argument("value", "string", "Zurich"));
+    for count in 1..=2 {
+        for prefix in ["", "<|close|>argument<|sep|><|close|>call<|sep|>prose"] {
+            let value = format!("{prefix}{}", literal.repeat(count));
+            let phases = [
+                phase(
+                    format!("<|open|>tools<|sep|>{}", k3_call(1, &value)),
+                    vec![],
+                    &[],
+                ),
+                phase(" narration ", vec![], &[]),
+                phase(
+                    format!("{}<|close|>tools<|sep|>", k3_call(2, "é")),
+                    vec![call(&value), call("é")],
+                    &["echo:0", "echo:1"],
+                ),
+            ];
+            assert_checkpoints(
+                "kimi_k3",
+                UnifiedParserInit::default(),
+                &echo_tools(),
+                &phases,
+                &[],
+                &[],
+            );
+        }
+    }
+}
+
+#[test]
+fn kimi_k3_guided_native_wrappers_release_json_before_eof() {
+    let object = serde_json::json!({"text":"<|close|>call<|sep|><|open|>call<|sep|>"}).to_string();
+    let wrappers = [
+        format!("{} narration {}", k3_call(1, "Paris"), k3_call(2, "é")),
+        k3_named_call("write_file", 1, &k3_argument("data", "object", &object)),
+        k3_call(1, "before<|open|>json<|sep|>\"unfinished"),
+    ];
+    for (index, wrapper) in wrappers.into_iter().enumerate() {
+        for named in [false, true] {
+            let payload = if named {
+                "{\"value\":\"é\"}"
+            } else {
+                "[{\"name\":\"echo\",\"arguments\":{\"value\":\"é\"}}]"
+            };
+            let mut output = phase(payload, vec![call("é")], &[]);
+            output.ids.push(None);
+            let prefix = if index == 0 {
+                vec![text(" narration ")]
+            } else {
+                vec![]
+            };
+            output.events.splice(0..0, prefix.clone());
+            let phases = [
+                phase(
+                    format!("<|open|>tools<|sep|>{wrapper}<|close|>tools<|sep|>"),
+                    prefix,
+                    &[],
+                ),
+                output,
+            ];
+            assert_checkpoints(
+                "kimi_k3",
+                UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                        named_tool: named.then(|| "echo".into()),
+                    },
+                    ..Default::default()
+                },
+                &echo_tools(),
+                &phases,
+                &[],
+                &[],
+            );
+        }
+    }
+}
+
+#[test]
+fn kimi_k3_malformed_json_in_literal_call_recovers_at_eof() {
+    // A quoted native passage may contain invalid JSON. Its unmatched quote
+    // cannot seize the outer argument; EOF permits recovery without dispatching it.
+    for body in [
+        "<|open|>json<|sep|>{\"x\":\"unfinished<|close|>json<|sep|>".to_string(),
+        k3_argument("data", "object", "{\"x\":\"unfinished"),
+        k3_argument("data", "array", "[\"unfinished"),
+    ] {
+        let value = k3_named_call("quoted", 8, &body);
+        let input = format!(
+            "<|open|>tools<|sep|>{}{}<|close|>tools<|sep|>",
+            k3_call(1, &value),
+            k3_call(2, "é")
+        );
+        assert_checkpoints(
+            "kimi_k3",
+            UnifiedParserInit::default(),
+            &echo_tools(),
+            &[phase(input, vec![], &[])],
+            &[call(&value), call("é")],
+            &["echo:0", "echo:1"],
+        );
     }
 }
