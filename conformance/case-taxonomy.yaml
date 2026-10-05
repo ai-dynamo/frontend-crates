@@ -408,6 +408,3 @@ suite_exemptions:
 known_gaps:
   toolcalling.stream:
     llama3_json: ["5.b"]
-    minimax_m3: ["2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c", "8.d", "50"]
-  reasoning.stream:
-    minimax_m3: ["4.b", "4.c", "4.d"]
