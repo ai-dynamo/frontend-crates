@@ -135,9 +135,9 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 94 of the 114 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 94 of the 115 taxonomy cases for this family.
 - Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 20 omitted cases are `kimi-9`, which requires Kimi K2 native call headers; `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
+- The 21 omitted cases are `kimi-9`, which requires Kimi K2 native call headers; `kimi-1` through `kimi-8` and `kimi-10`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
 <!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
@@ -339,6 +339,8 @@ The marker-free prefilled-Response variants were removed because they emitted th
 - **`glm5-1`** (`glm47_parameterless_call_shape_inside_argument`) places an offered parameterless-call shape inside an open GLM argument value. The embedded close/open markers remain argument data and must not dispatch a second call.
 
 ### Kimi-specific
+
+- **`kimi-10`** (`kimi_k3_adjacent_call_literals_in_string`) In Native mode, adjacent balanced call envelopes inside an open Kimi K3 typed string remain literal data. Preserve the enclosing arguments and dispatch only the enclosing call and the real sibling. Other families do not use Kimi K3 XTML typed arguments.
 
 - **`kimi-9`** (`kimi_uuid_header_then_valid`) A UUID-only Kimi K2 header supplies no function name. Suppress the malformed envelope, retain surrounding text and reasoning, and recover the next valid call.
 - **`kimi-1`** through **`kimi-8`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.

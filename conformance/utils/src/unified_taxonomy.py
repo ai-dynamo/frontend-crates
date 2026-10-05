@@ -72,6 +72,7 @@ UNIFIED_TAX = {
     # Group 12 — Adversarial nesting (a marker of one channel inside another)
     "reason_markup_in_arg": (12, "1"), "tool_in_reason": (12, "2"),
     "reason_markup_in_arg_with_text": (12, "3"), "tool_in_reason_with_text": (12, "4"),
+    "kimi_k3_adjacent_call_literals_in_string": ("kimi", "10"),
     "kimi_k3_typed_argument_values": ("kimi", "1"),
     "kimi_k3_raw_json_arguments": ("kimi", "2"),
     "kimi_k3_spaced_xtml_markers": ("kimi", "3"),

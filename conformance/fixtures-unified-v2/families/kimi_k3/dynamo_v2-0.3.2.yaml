@@ -360,5 +360,14 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_adjacent_call_literals_in_string:
+    case_key: UNIFIED.kimi-10
+    stimulus:
+      ref: current
+      semantic_sha256: 57a15cc705338931e8db68d62d12eac6a2772cc370c92da7bd036e319d348f69
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
 metadata_changes: {}
 document_overrides: {}

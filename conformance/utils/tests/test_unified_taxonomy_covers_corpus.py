@@ -76,6 +76,9 @@ def test_repeated_calls_are_shared_and_uuid_headers_are_kimi_only(family):
     scoped = [key for key in cases if "kimi_uuid_header_then_valid" in key]
     assert bool(scoped) == (family == "kimi_k2")
     assert numbered_id("kimi_uuid_header_then_valid") == "UNIFIED.kimi-9"
+    literal = [key for key in cases if "kimi_k3_adjacent_call_literals_in_string" in key]
+    assert bool(literal) == (family == "kimi_k3")
+    assert numbered_id("kimi_k3_adjacent_call_literals_in_string") == "UNIFIED.kimi-10"
     assert "UNIFIED.4-3" not in {numbered_id(scenario) for scenario in corpus_scenarios()}
 
 
@@ -85,12 +88,20 @@ def test_new_case_ids_and_calls_reach_the_committed_store():
         cases = store.families[family].cases
         assert cases["three_identical_calls"]["display_id"] == "UNIFIED.2-3"
         assert ("kimi_uuid_header_then_valid" in cases) == (family == "kimi_k2")
+        assert ("kimi_k3_adjacent_call_literals_in_string" in cases) == (family == "kimi_k3")
         assert "UNIFIED.4-3" not in {case["display_id"] for case in cases.values()}
         history = store.histories[(family, "dynamo_v2")]
-        resolved = history.resolve("dynamo_v2-0.7.12")
+        resolved = history.resolve(history.ordered_capture_ids()[-1])
         assert resolved["three_identical_calls"]["observation"]["value"]["assembled"] == [
             {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
         ] * 3
+        if family == "kimi_k3":
+            literal = "kimi_k3_adjacent_call_literals_in_string"
+            assert cases[literal]["display_id"] == "UNIFIED.kimi-10"
+            assert resolved[literal]["observation"]["value"]["assembled"] == [
+                {"kind": "tool_call", "name": "run", "arguments": {"cmd": G.K3_LITERAL_CALLS}},
+                {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+            ]
         for capture in history.captures.values():
             for change in capture["changes"].values():
                 assert change.get("case_key") != "UNIFIED.4-3"
@@ -766,19 +777,19 @@ def test_unified_case_counts_match_the_generator():
             "gemma4": 96,
             "glm47": 101,
             "kimi_k2": 95,
-            "kimi_k3": 102,
+            "kimi_k3": 103,
             "muse_glimmer": 95,
             "qwen3": 94,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 771
+    assert sum(per_family.values()) == 772
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 114
+    assert len(UNIFIED_TAX) == 115
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1060,6 +1071,62 @@ def _json_values(raw):
     return values
 
 
+_K3_CALL_HEADER = re.compile(r'<\|open\|>\s*call tool="([^"]+)" index="\d+"\s*<\|sep\|>')
+_K3_CALL_CLOSE = re.compile(r'<\|close\|>\s*call\s*<\|sep\|>')
+_K3_ARGUMENT_HEADER = re.compile(r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>')
+_K3_ARGUMENT_CLOSE = re.compile(r'<\|close\|>\s*argument\s*<\|sep\|>')
+
+
+def _kimi_k3_input_calls(raw):
+    # Balanced embedded call spans belong to their containing argument. This
+    # independent fixture reader has no runtime resync or EOF-dispatch policy.
+    stack = []
+    embedded_ends = {}
+    delimiters = sorted(
+        [(match.start(), True, match) for match in _K3_CALL_HEADER.finditer(raw)]
+        + [(match.start(), False, match) for match in _K3_CALL_CLOSE.finditer(raw)]
+    )
+    for at, opening, match in delimiters:
+        if opening:
+            stack.append(at)
+        elif stack:
+            embedded_ends[stack.pop()] = match.end()
+
+    calls = []
+    cursor = 0
+    while (header := _K3_CALL_HEADER.search(raw, cursor)) is not None:
+        cursor = header.end()
+        body_start = cursor
+        arguments = {}
+        while True:
+            argument = _K3_ARGUMENT_HEADER.search(raw, cursor)
+            next_call = _K3_CALL_HEADER.search(raw, cursor)
+            if argument is None or (next_call is not None and next_call.start() < argument.start()):
+                body_end = next_call.start() if next_call is not None else len(raw)
+                if not arguments and re.match(r'<\|open\|>\s*json ', raw[body_start:body_end]):
+                    values = _json_values(raw[body_start:body_end])
+                    if values:
+                        arguments = values[0]
+                cursor = body_end
+                break
+            value_start = argument.end()
+            value_cursor = value_start
+            while (close := _K3_ARGUMENT_CLOSE.search(raw, value_cursor)) is not None:
+                nested = _K3_CALL_HEADER.search(raw, value_cursor, close.start())
+                if nested is not None and nested.start() in embedded_ends:
+                    value_cursor = embedded_ends[nested.start()]
+                    continue
+                value = raw[value_start:close.start()]
+                arguments[argument[1]] = value if argument[2] == "string" else json.loads(value)
+                cursor = close.end()
+                break
+            else:
+                cursor = len(raw)
+                break
+        calls.append({"kind": "tool_call", "name": header[1], "arguments": arguments})
+    return calls
+
+
 def _native_input_calls(family, raw):
     """Read authored complete argument fields, not runtime recovery decisions.
 
@@ -1067,6 +1134,8 @@ def _native_input_calls(family, raw):
     body is not evidence that the parser must dispatch it. The caller keeps DSML's
     empty-output EOF contract separate.
     """
+    if family == "kimi_k3":
+        return _kimi_k3_input_calls(raw)
     if family == "glm47":
         calls = []
         cursor = 0
@@ -1107,7 +1176,6 @@ def _native_input_calls(family, raw):
         "muse_glimmer": r'<atem:invoke name="([^"]+)">',
         "gemma4": r'call:([\w.-]+)\{',
         "kimi_k2": r'<\|tool_call_begin\|>(?:functions\.)?([\w.-]+):\d+<\|tool_call_argument_begin\|>',
-        "kimi_k3": r'<\|open\|>\s*call tool="([^"]+)" index="\d+"\s*<\|sep\|>',
     }
     found = list(re.finditer(headers[family], raw))
     calls = []
@@ -1135,16 +1203,23 @@ def _native_input_calls(family, raw):
             arguments.update({key: None for key in re.findall(r'(\w+):null(?=[,}])', unquoted)})
         elif family == "kimi_k2":
             arguments, _ = json.JSONDecoder().raw_decode(body)
-        else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
-            for key, kind, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if kind == "string" else json.loads(value)
-            if not arguments and re.match(r'<\|open\|>\s*json ', body):
-                values = _json_values(body)
-                if values:
-                    arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
     return calls
+
+
+@pytest.mark.parametrize("changed_surface", ["input", "golden"])
+def test_kimi_k3_literal_fixture_projection_rejects_payload_mutation(changed_surface):
+    scenario = "kimi_k3_adjacent_call_literals_in_string"
+    case = build_cases("kimi_k3")[f"UNIFIED.{scenario}.kimi_k3"]
+    _assert_input_carries_events("kimi_k3", scenario, case)
+    assert _native_input_calls("kimi_k3", case["input"]) == case["golden"]
+    mutated = json.loads(json.dumps(case))
+    if changed_surface == "input":
+        mutated["input"] = mutated["input"].replace("literal", "changed", 1)
+    else:
+        mutated["golden"][0]["arguments"]["cmd"] = mutated["golden"][0]["arguments"]["cmd"].replace("literal", "changed", 1)
+    with pytest.raises(AssertionError, match="input call differs from golden"):
+        _assert_input_carries_events("kimi_k3", scenario, mutated)
 
 
 @pytest.mark.parametrize("header,name", [

@@ -3374,6 +3374,98 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  kimi_k3_adjacent_call_literals_in_string:
+    case_key: UNIFIED.kimi-10
+    stimulus:
+      ref: current
+      semantic_sha256: 57a15cc705338931e8db68d62d12eac6a2772cc370c92da7bd036e319d348f69
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before<|open|>call tool="run" index="8"<|sep|><|open|>argument key="cmd" type="string"<|sep|>literal
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: literal<|close|>argument<|sep|><|close|>call<|sep|>after
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"before<|open|>call tool=\"run\" index=\"8\"<|sep|><|open|>argument key=\"cmd\" type=\"string\"<|sep|>literal"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"literal<|close|>argument<|sep|><|close|>call<|sep|>after"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
 metadata_changes:
   arg_marker_in_string: {}
   arg_unicode: {}

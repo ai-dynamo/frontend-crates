@@ -235,6 +235,14 @@ struct KimiK3CallBoundary {
     root_call_open: Option<usize>,
     pending_call_open: Option<usize>,
     complete_call_opens: Vec<usize>,
+    pending_call_is_literal: bool,
+    literal_call_opens: Vec<usize>,
+    outer_call_closed: bool,
+    provisional_string_close: bool,
+    literal_argument_depths: Vec<usize>,
+    pending_argument_open: Option<usize>,
+    string_argument: bool,
+    argument_close_pending: bool,
     call_closes: Vec<TokenHit>,
     arg_opens: Vec<TokenHit>,
     arg_closes: Vec<TokenHit>,
@@ -261,6 +269,14 @@ impl KimiK3CallBoundary {
             root_call_open: None,
             pending_call_open: None,
             complete_call_opens: Vec::new(),
+            pending_call_is_literal: false,
+            literal_call_opens: Vec::new(),
+            outer_call_closed: false,
+            provisional_string_close: false,
+            literal_argument_depths: Vec::new(),
+            pending_argument_open: None,
+            string_argument: false,
+            argument_close_pending: false,
             call_closes: Vec::new(),
             arg_opens: Vec::new(),
             arg_closes: Vec::new(),
@@ -293,12 +309,16 @@ impl KimiK3CallBoundary {
             };
         };
 
-        for next_call in self
-            .complete_call_opens
-            .clone()
-            .into_iter()
-            .filter(|at| *at > header_len)
-        {
+        // An unmatched embedded header may borrow the outer argument/call closers.
+        // Unescaped channel markers can also be string data, so only EOF permits
+        // best-effort recovery of that ambiguous prefix and its following calls.
+        let recover_literal = !self.outer_call_closed && flush;
+        let call_opens = if recover_literal {
+            &self.literal_call_opens
+        } else {
+            &self.complete_call_opens
+        };
+        for next_call in call_opens.clone().into_iter().filter(|at| *at > header_len) {
             if let Some(call_close) = self
                 .call_closes
                 .iter()
@@ -340,6 +360,10 @@ impl KimiK3CallBoundary {
             if self.body_kind == CallBodyKind::Malformed {
                 return CallBoundary::Resync { at: next_call };
             }
+        }
+
+        if !flush && !self.outer_call_closed && !self.literal_call_opens.is_empty() {
+            return CallBoundary::Pending;
         }
 
         if let Some((call_close, arguments)) = self.structural_call_close(text, header_len, flush) {
@@ -595,6 +619,18 @@ impl KimiK3CallBoundary {
             {
                 self.body_kind = CallBodyKind::Malformed;
             }
+            if !character.is_whitespace()
+                && self.pending_call_open.is_none()
+                && self.pending_argument_open.is_none()
+                && self.literal_argument_depths.is_empty()
+            {
+                self.argument_close_pending = false;
+                if self.provisional_string_close {
+                    self.string_argument = true;
+                    self.outer_call_closed = false;
+                    self.provisional_string_close = false;
+                }
+            }
             self.scanned += character.len_utf8();
             #[cfg(test)]
             {
@@ -614,10 +650,13 @@ impl KimiK3CallBoundary {
 
     fn note_token(&mut self, text: &str, kind: ScannerToken, hit: TokenHit) {
         if kind == ScannerToken::CallOpen {
+            self.provisional_string_close = false;
             if self.root_call_open.is_none() {
                 self.root_call_open = Some(hit.at);
             } else {
                 self.pending_call_open = Some(hit.at);
+                self.pending_call_is_literal =
+                    !self.literal_argument_depths.is_empty() || self.string_argument;
             }
         }
         if kind == ScannerToken::Sep {
@@ -632,8 +671,60 @@ impl KimiK3CallBoundary {
                 && let Some((_, len)) = parse_call_header(&text[at..])
                 && at + len == hit.end()
             {
-                self.complete_call_opens.push(at);
+                if self.pending_call_is_literal {
+                    self.literal_argument_depths.push(0);
+                    self.literal_call_opens.push(at);
+                } else {
+                    self.complete_call_opens.push(at);
+                }
                 self.pending_call_open = None;
+            }
+        }
+
+        // Native and Guided share the distinction between literal nested envelopes
+        // and an argument close followed by its owning call close.
+        let mut literal = !self.literal_argument_depths.is_empty();
+        if let Some(depth) = self.literal_argument_depths.last_mut() {
+            match kind {
+                ScannerToken::ArgumentOpen => *depth += 1,
+                ScannerToken::ArgumentClose if *depth == 0 => {
+                    self.literal_argument_depths.clear();
+                    literal = false;
+                }
+                ScannerToken::ArgumentClose => *depth -= 1,
+                ScannerToken::CallClose => {
+                    self.literal_argument_depths.pop();
+                }
+                _ => {}
+            }
+        }
+        if !literal {
+            if kind == ScannerToken::ArgumentOpen
+                && (!self.string_argument || self.argument_close_pending)
+            {
+                self.pending_argument_open = Some(hit.at);
+            }
+            if kind == ScannerToken::Sep
+                && let Some(at) = self.pending_argument_open
+                && let Some((attrs, len)) = parse_tag_header(&text[at..], ARG_OPEN)
+                && at + len == hit.end()
+            {
+                self.string_argument = attr_value(&attrs, "type").unwrap_or("string") == "string";
+                self.argument_close_pending = false;
+                self.pending_argument_open = None;
+            }
+            if kind == ScannerToken::ArgumentClose {
+                self.argument_close_pending = true;
+            }
+            if kind == ScannerToken::CallClose
+                && (!self.string_argument || self.argument_close_pending)
+            {
+                // Following prose makes a paired argument/call close literal;
+                // only the next structural boundary commits this ownership.
+                self.provisional_string_close = self.string_argument;
+                self.string_argument = false;
+                self.argument_close_pending = false;
+                self.outer_call_closed = true;
             }
         }
 
@@ -651,6 +742,14 @@ impl KimiK3CallBoundary {
         }
         if hit.at < header_len {
             return;
+        }
+        if matches!(
+            kind,
+            ScannerToken::ToolsClose | ScannerToken::MessageClose | ScannerToken::EndOfMessage
+        ) || kind == ScannerToken::ThinkClose && self.return_channel == Mode::Reasoning
+            || kind == ScannerToken::ResponseClose && self.return_channel == Mode::Response
+        {
+            self.provisional_string_close = false;
         }
         match kind {
             ScannerToken::CallClose => self.call_closes.push(hit),
@@ -2954,60 +3053,171 @@ mod tests {
 
     #[test]
     fn typed_string_header_candidates_do_not_hide_later_calls() {
-        let value = format!(
-            "before{}after",
-            call("quoted", "8", &arg("nested", "string", "literal"))
+        let literal = call("quoted", "8", &arg("nested", "string", "Zürich"));
+        let nested = call("quoted", "9", &arg("nested", "string", &literal));
+        let raw = call(
+            "quoted",
+            "10",
+            "<|open|>json<|sep|>{\"x\":1}<|close|>json<|sep|>",
         );
-        let first = call("echo", "1", &arg("value", "string", &value));
-        let rest = format!(
-            "{}{}",
-            call("echo", "2", &arg("value", "string", "second")),
-            call("echo", "3", &arg("value", "string", "third"))
-        );
-        let input = format!(
-            "{}{first}{rest}{}",
-            TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical
-        );
-        assert_native_fragmentations(
-            &input,
-            &[
+        for (value, spaced) in [
+            (literal.clone(), false),
+            (literal.repeat(2), false),
+            (literal.repeat(3), false),
+            (literal.repeat(2), true),
+            (nested.repeat(2), false),
+            (raw.repeat(2), false),
+            (format!("{}{literal}{literal}", ARG_CLOSE.canonical), false),
+            (format!("{}{literal}{literal}", CALL_CLOSE.canonical), false),
+            (format!("{}{literal}{literal}", TOOLS_CLOSE.canonical), false),
+            (format!("{}{}after{literal}{literal}", ARG_CLOSE.canonical, CALL_CLOSE.canonical), false),
+            (format!("{}{}after{literal}{literal}", ARG_CLOSE.canonical, CALL_CLOSE.canonical), true),
+            (format!("<|open|>argument key=\"nested\" type=\"number\"<|sep|>{literal}{literal}"), false),
+            ("<|open|>call tool=\"quoted\" index=\"8\"<|sep|><|open|>argument key=\"value\" type=\"string\"<|sep|>unfinished".into(), false),
+            (
+                "<|open|>call tool=\"quoted\" index=\"8\"<|sep|>".into(),
+                false,
+            ),
+            ("<|open|>call tool=\"quoted\"".into(), false),
+        ] {
+            let value = format!("before{value}after");
+            let value = if spaced {
+                value
+                    .replace("<|open|>", "<|open|> ")
+                    .replace("<|close|>", "<|close|> ")
+                    .replace("<|sep|>", " <|sep|>")
+            } else {
+                value
+            };
+            let arguments = serde_json::json!({"first":1, "value":value, "last":true});
+            let body = format!(
+                "{}{}{}",
+                arg("first", "number", "1"),
+                arg("value", "string", &value),
+                arg("last", "boolean", "true")
+            );
+            let first = call("echo", "1", &body);
+            let rest = format!(
+                "{}{}",
+                call("echo", "2", &arg("value", "string", "second")),
+                call("echo", "3", &arg("value", "string", "third"))
+            );
+            let input = format!(
+                "{}{first}{rest}{}",
+                TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical
+            );
+            let expected = [
                 UnifiedEvent::ToolCall {
                     name: "echo".into(),
-                    arguments: serde_json::json!({"value": value}),
+                    arguments: arguments.clone(),
                 },
                 UnifiedEvent::ToolCall {
                     name: "echo".into(),
-                    arguments: serde_json::json!({"value": "second"}),
+                    arguments: serde_json::json!({"value":"second"}),
                 },
                 UnifiedEvent::ToolCall {
                     name: "echo".into(),
-                    arguments: serde_json::json!({"value": "third"}),
+                    arguments: serde_json::json!({"value":"third"}),
                 },
-            ],
-        );
-        for context in [CallBoundaryContext::Native, CallBoundaryContext::Guided] {
-            let mut boundary = KimiK3CallBoundary::new(context);
-            let (_, header_len) = parse_call_header(&first).unwrap();
-            boundary.begin(header_len, Mode::Tools);
-            assert_eq!(
-                boundary.advance(&format!("{first}{rest}"), false),
-                CallBoundary::Complete {
-                    body_end: first.len() - CALL_CLOSE.canonical.len(),
-                    consumed: first.len(),
+            ];
+            assert_native_fragmentations(&input, &expected);
+            if value.contains("unfinished") {
+                assert_native_fragmentations(&format!("{first}{rest}"), &expected);
+            }
+            let guided = format!("{input}[{{\"name\":\"tail\",\"arguments\":{{}}}}]");
+            assert_guided_all_utf8_fragmentations(
+                &guided,
+                UnifiedParserStartingState::None,
+                &[UnifiedEvent::ToolCall {
+                    name: "tail".into(),
+                    arguments: serde_json::json!({}),
+                }],
+            );
+            for context in [CallBoundaryContext::Native, CallBoundaryContext::Guided] {
+                let mut boundary = KimiK3CallBoundary::new(context);
+                let (_, header_len) = parse_call_header(&first).unwrap();
+                for _ in 0..2 {
+                    boundary.begin(header_len, Mode::Tools);
+                    let boundary_input = format!("{first}{rest}");
+                    let recover_at_eof = value.contains("unfinished");
+                    if recover_at_eof {
+                        assert_eq!(boundary.advance(&boundary_input, false), CallBoundary::Pending);
+                        assert_eq!(
+                            boundary.advance(&format!("{boundary_input}{}", TOOLS_CLOSE.canonical), false),
+                            CallBoundary::Pending
+                        );
+                    }
+                    assert_eq!(
+                        boundary.advance(&boundary_input, recover_at_eof),
+                        CallBoundary::Complete {
+                            body_end: first.len() - CALL_CLOSE.canonical.len(),
+                            consumed: first.len()
+                        }
+                    );
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(
+                            &boundary.take_arguments().unwrap()
+                        )
+                        .unwrap(),
+                        arguments
+                    );
                 }
-            );
-            assert_eq!(
-                boundary.take_arguments().unwrap(),
-                serde_json::json!({"value": value}).to_string()
-            );
-            boundary.begin(header_len, Mode::Tools);
-            assert_eq!(
-                boundary.advance(&first, true),
-                CallBoundary::Complete {
-                    body_end: first.len() - CALL_CLOSE.canonical.len(),
-                    consumed: first.len(),
+            }
+        }
+    }
+
+    #[test]
+    fn embedded_call_ownership_drops_at_eof_and_resets_during_a_literal() {
+        let partial = format!(
+            "{}{}{}{}{}",
+            TOOLS_OPEN.canonical,
+            "<|open|>call tool=\"echo\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"value\" type=\"string\"<|sep|>",
+            "<|open|>call tool=\"quoted\" index=\"8\"<|sep|>",
+            "<|open|>argument key=\"value\" type=\"string\"<|sep|>unfinished"
+        );
+        for guided in [false, true] {
+            for finish in [false, true] {
+                let mut parser = kimi_k3_unified(&[]);
+                let init = UnifiedParserInit {
+                    tool_output_mode: if guided {
+                        UnifiedToolOutputMode::GuidedJson { named_tool: None }
+                    } else {
+                        UnifiedToolOutputMode::Native
+                    },
+                    ..UnifiedParserInit::default()
+                };
+                parser.initialize_request(init.clone()).unwrap();
+                assert!(parser.push(&partial).unwrap().is_empty());
+                if finish {
+                    if guided {
+                        assert!(parser.finish().is_err());
+                    } else {
+                        assert!(parser.finish().unwrap().events.is_empty());
+                    }
                 }
-            );
+                parser.reset();
+                parser.initialize_request(init).unwrap();
+                let input = if guided {
+                    "[{\"name\":\"echo\",\"arguments\":{\"value\":\"ok\"}}]".into()
+                } else {
+                    format!(
+                        "{}{}{}",
+                        TOOLS_OPEN.canonical,
+                        call("echo", "1", &arg("value", "string", "ok")),
+                        TOOLS_CLOSE.canonical
+                    )
+                };
+                let mut events = parser.push(&input).unwrap();
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(
+                    assemble(&events),
+                    vec![UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value":"ok"})
+                    }]
+                );
+            }
         }
     }
 

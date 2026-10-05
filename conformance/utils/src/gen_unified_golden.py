@@ -1380,7 +1380,21 @@ EDGE += [
          D("UNSUPPORTED", "Malformed native header recovery and surrounding-text preservation are not established by the existing peer captures."), M)})),
 ]
 
+K3_LITERAL_CALLS = "before" + k3_call("run", 8, k3_argument("cmd", "string", "literal")) * 2 + "after"
+
 EDGE += [
+    ("kimi_k3_adjacent_call_literals_in_string",
+     "In Kimi K3 Native mode, adjacent balanced call envelopes inside an open typed string argument remain literal data; only the enclosing call and the following real sibling dispatch.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": K3_LITERAL_CALLS}},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({"kimi_k3": (
+         k3_tools(k3_call("run", 1, k3_argument("cmd", "string", K3_LITERAL_CALLS))
+                  + k3_call("get_weather", 2, k3_argument("city", "string", "Paris"))),
+         VLLM_UNCAPTURABLE["kimi_k3"], M,
+     )})),
+
     ("kimi_k3_typed_argument_values",
      "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
      ["I7"],
