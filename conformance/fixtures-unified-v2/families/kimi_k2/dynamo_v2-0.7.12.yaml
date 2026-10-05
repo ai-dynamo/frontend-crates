@@ -53,7 +53,7 @@ changes:
             complete: true
         - expected: []
         - expected: []
-    case_key: UNIFIED.4-3
+    case_key: UNIFIED.kimi-9
   three_identical_calls:
     stimulus:
       ref: current

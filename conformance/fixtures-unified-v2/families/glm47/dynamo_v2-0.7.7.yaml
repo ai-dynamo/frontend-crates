@@ -237,5 +237,14 @@ changes:
             complete: true
         - expected: []
     case_key: UNIFIED.7-5.ref
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: 30d036c81f22ceff214e7cd3623d26501c5e0d86d0bb0143db6786eb8072035c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Historical producer identity cannot be reconstructed: immutable source archive at da34ba9aeaffd8c92a61b9697dfbec4c8ebf4f85 (already version 0.7.7) hashes to e66cf0d1097d98355ce03403e46ce6f598b844ab883422628c9bb58a41aef638, not recorded origin d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38. Capture rejected before parser execution; no substitute output recorded.'
 metadata_changes: {}
 document_overrides: {}

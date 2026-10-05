@@ -965,6 +965,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: 22ea1eb1fb963b91667352171719cb3fe7a2969a790d051fa7f2e255a22c602b
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
 metadata_changes:
   arg_marker_in_string:
     init:

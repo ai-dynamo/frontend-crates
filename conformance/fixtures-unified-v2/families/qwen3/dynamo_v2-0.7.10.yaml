@@ -365,5 +365,14 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 9732b6945959ed7895a88e2344b2420012d97b427299eeb61e2f064010d9c7af
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: e96c0e6640d8d643cb43efa0f1b6c39cbe30030ea72234a0cd97c29392a64527
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer source cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally and from upstream; this checkpoint cannot be back-captured from its recorded producer.
 metadata_changes: {}
 document_overrides: {}

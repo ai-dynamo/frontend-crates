@@ -1009,6 +1009,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: 0898ac86f881cd23f50bfde5a3fbbbf6621f83db064cfba4d72908fc81871133
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
 metadata_changes:
   arg_marker_in_string:
     init:

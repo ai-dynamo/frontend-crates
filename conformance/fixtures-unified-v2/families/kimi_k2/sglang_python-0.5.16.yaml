@@ -1639,5 +1639,163 @@ changes:
             arguments: '{"city": "Tokyo"}'
         - expected: []
         - expected: []
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      inline:
+        input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:2<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:0
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"city": "Paris"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:1
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"city": "Paris"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:2
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"city": "Paris"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+      semantic_sha256: c668326bf51dbecf6435044cfaa0486c5264f9a62974b11b7a7415be948e8ffe
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.
+  kimi_uuid_header_then_valid:
+    case_key: UNIFIED.kimi-9
+    stimulus:
+      inline:
+        input: '<think>check</think>before <|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{"city":"Paris"}<|tool_call_end|><|tool_calls_section_end|> after <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:7<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <think>
+        - delta_text: check
+        - delta_text: </think>
+        - delta_text: 'before '
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"city":"Paris"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ' after '
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:7
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: '{"city": "Paris"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+      semantic_sha256: 209a985feab673c208742b19be05bf1e17cde2ee00ad828e4b4eae0e5afa9a33
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.
 metadata_changes: {}
 document_overrides: {}

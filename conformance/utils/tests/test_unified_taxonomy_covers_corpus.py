@@ -60,6 +60,42 @@ def corpus_scenarios() -> list[str]:
     return [spec[0] for spec in (*CLEAN, *EDGE)]
 
 
+@pytest.mark.parametrize("family", FAMILIES)
+def test_repeated_calls_are_shared_and_uuid_headers_are_kimi_only(family):
+    cases = build_cases(family)
+    repeated = [case for key, case in cases.items() if "three_identical_calls" in key]
+    assert len(FAMILIES) == 8
+    assert len(repeated) == 1
+    assert numbered_id("three_identical_calls") == "UNIFIED.2-3"
+    assert repeated[0]["golden"] == [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+    ] * 3
+    assert repeated[0]["input"] == G.render_input(
+        family, [("tool", "get_weather", "city", "Paris")] * 3
+    )
+    scoped = [key for key in cases if "kimi_uuid_header_then_valid" in key]
+    assert bool(scoped) == (family == "kimi_k2")
+    assert numbered_id("kimi_uuid_header_then_valid") == "UNIFIED.kimi-9"
+    assert "UNIFIED.4-3" not in {numbered_id(scenario) for scenario in corpus_scenarios()}
+
+
+def test_new_case_ids_and_calls_reach_the_committed_store():
+    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+    for family in FAMILIES:
+        cases = store.families[family].cases
+        assert cases["three_identical_calls"]["display_id"] == "UNIFIED.2-3"
+        assert ("kimi_uuid_header_then_valid" in cases) == (family == "kimi_k2")
+        assert "UNIFIED.4-3" not in {case["display_id"] for case in cases.values()}
+        history = store.histories[(family, "dynamo_v2")]
+        resolved = history.resolve("dynamo_v2-0.7.12")
+        assert resolved["three_identical_calls"]["observation"]["value"]["assembled"] == [
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+        ] * 3
+        for capture in history.captures.values():
+            for change in capture["changes"].values():
+                assert change.get("case_key") != "UNIFIED.4-3"
+
+
 def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
     unmapped = sorted(s for s in corpus_scenarios() if s not in UNIFIED_TAX)
     assert not unmapped, (
@@ -725,17 +761,17 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 93,
-            "deepseek_v41": 93,
-            "gemma4": 95,
-            "glm47": 100,
+            "deepseek_v4": 94,
+            "deepseek_v41": 94,
+            "gemma4": 96,
+            "glm47": 101,
             "kimi_k2": 95,
-            "kimi_k3": 101,
-            "muse_glimmer": 94,
-            "qwen3": 93,
+            "kimi_k3": 102,
+            "muse_glimmer": 95,
+            "qwen3": 94,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 764
+    assert sum(per_family.values()) == 771
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():

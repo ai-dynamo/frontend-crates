@@ -220,5 +220,14 @@ changes:
         - expected:
           - kind: text
             text: done
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: e96c0e6640d8d643cb43efa0f1b6c39cbe30030ea72234a0cd97c29392a64527
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Pinned vLLM 0.26.0 Python parser import failed: ModuleNotFoundError: vllm._C_stable_libtorch. Available container installs vLLM 0.27.1; no newer parser output was substituted.'
 metadata_changes: {}
 document_overrides: {}

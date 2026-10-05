@@ -1364,10 +1364,11 @@ EDGE = [
 
 EDGE += [
     ("three_identical_calls",
-     "Kimi preserves three calls with identical names and arguments in emission order; repeated calls are not deduplicated.",
+     "Preserve three separate calls with identical names and arguments in emission order; repeated calls are not deduplicated.",
      [], [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}} for _ in range(3)],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({"kimi_k2": ("".join(r_tool("kimi_k2", "get_weather", "city", "Paris", index) for index in range(3)), M, M)})),
+     {family: (render_input(family, [("tool", "get_weather", "city", "Paris")] * 3),
+               VLLM_UNCAPTURABLE.get(family, M), M) for family in FAMILIES}),
     ("kimi_uuid_header_then_valid",
      "A UUID-only Kimi header has no native function name. Suppress the malformed call without leaking its envelope, preserve surrounding reasoning and text, and recover the following valid call.",
      [], [{"kind": "reasoning", "text": "check"}, {"kind": "text", "text": "before  after "},

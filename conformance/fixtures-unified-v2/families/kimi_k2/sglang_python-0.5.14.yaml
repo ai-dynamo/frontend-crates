@@ -1004,5 +1004,23 @@ changes:
         - expected:
           - kind: text
             text: done
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: fa1e0629361915361aa967a6f4228f50d6b0522293f10fb869ec44f3185d7b55
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness. No SGLang 0.5.14 detector execution is claimed.
+  kimi_uuid_header_then_valid:
+    case_key: UNIFIED.kimi-9
+    stimulus:
+      ref: current
+      semantic_sha256: b6ab26a2b0f77c1a0ba9616041eaf2c0cca4be665ea9f2990f82f8d92787aeeb
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness. No SGLang 0.5.14 detector execution is claimed.
 metadata_changes: {}
 document_overrides: {}

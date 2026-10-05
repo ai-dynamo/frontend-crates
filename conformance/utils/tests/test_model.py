@@ -819,6 +819,15 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                     "not captured at" in reason
                     or "has no parser" in reason
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
+                    or (
+                        scenario in {"three_identical_calls", "kimi_uuid_header_then_valid"}
+                        and key in {"vllm", "vllm_python@0.26.0"}
+                        and reason == (
+                            f"Pinned vLLM {peer['version']} Python parser import failed: "
+                            "ModuleNotFoundError: vllm._C_stable_libtorch. Available container installs "
+                            "vLLM 0.27.1; no newer parser output was substituted."
+                        )
+                    )
                 ), reason
                 assert "events" not in peer["block"]
                 comparison = leaf_cells(row)[scenario]["cmp"][key]

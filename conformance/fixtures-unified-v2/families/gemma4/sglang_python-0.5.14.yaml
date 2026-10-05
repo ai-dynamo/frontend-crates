@@ -1014,5 +1014,14 @@ changes:
         - expected:
           - kind: text
             text: done
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: d028960ef73247d48bfcecc7dc457a8387c43e3eefa0f60342e1c1b23f105942
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness. No SGLang 0.5.14 detector execution is claimed.
 metadata_changes: {}
 document_overrides: {}

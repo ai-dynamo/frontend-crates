@@ -1,0 +1,161 @@
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.16
+document:
+  mode: unified
+changes:
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      inline:
+        input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant to=get_weather
+        - delta_text: <|message|>
+        - delta_text: <atem:function_calls>
+        - delta_text: '
+
+            '
+        - delta_text: <atem:invoke name="get_weather">
+        - delta_text: '
+
+            '
+        - delta_text: <atem:parameter name="city">
+        - delta_text: Paris
+        - delta_text: </atem:parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:invoke>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:function_calls>
+        - delta_text: <|eom|>
+        - delta_text: <|start|>
+        - delta_text: assistant to=get_weather
+        - delta_text: <|message|>
+        - delta_text: <atem:function_calls>
+        - delta_text: '
+
+            '
+        - delta_text: <atem:invoke name="get_weather">
+        - delta_text: '
+
+            '
+        - delta_text: <atem:parameter name="city">
+        - delta_text: Paris
+        - delta_text: </atem:parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:invoke>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:function_calls>
+        - delta_text: <|eom|>
+        - delta_text: <|start|>
+        - delta_text: assistant to=get_weather
+        - delta_text: <|message|>
+        - delta_text: <atem:function_calls>
+        - delta_text: '
+
+            '
+        - delta_text: <atem:invoke name="get_weather">
+        - delta_text: '
+
+            '
+        - delta_text: <atem:parameter name="city">
+        - delta_text: Paris
+        - delta_text: </atem:parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:invoke>
+        - delta_text: '
+
+            '
+        - delta_text: </atem:function_calls>
+        - delta_text: <|eom|>
+      semantic_sha256: f307a7d02a0de049c5d6244b90047c96f94056c88df1f1eba0e3681e715e8726
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.
+metadata_changes: {}
+document_overrides: {}

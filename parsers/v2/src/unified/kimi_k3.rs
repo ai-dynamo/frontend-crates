@@ -234,7 +234,7 @@ struct KimiK3CallBoundary {
     body_kind: CallBodyKind,
     root_call_open: Option<usize>,
     pending_call_open: Option<usize>,
-    complete_call_open: Option<usize>,
+    complete_call_opens: Vec<usize>,
     call_closes: Vec<TokenHit>,
     arg_opens: Vec<TokenHit>,
     arg_closes: Vec<TokenHit>,
@@ -260,7 +260,7 @@ impl KimiK3CallBoundary {
             body_kind: CallBodyKind::Unknown,
             root_call_open: None,
             pending_call_open: None,
-            complete_call_open: None,
+            complete_call_opens: Vec::new(),
             call_closes: Vec::new(),
             arg_opens: Vec::new(),
             arg_closes: Vec::new(),
@@ -293,7 +293,12 @@ impl KimiK3CallBoundary {
             };
         };
 
-        if let Some(next_call) = self.complete_call_open.filter(|at| *at > header_len) {
+        for next_call in self
+            .complete_call_opens
+            .clone()
+            .into_iter()
+            .filter(|at| *at > header_len)
+        {
             if let Some(call_close) = self
                 .call_closes
                 .iter()
@@ -627,7 +632,7 @@ impl KimiK3CallBoundary {
                 && let Some((_, len)) = parse_call_header(&text[at..])
                 && at + len == hit.end()
             {
-                self.complete_call_open = Some(at);
+                self.complete_call_opens.push(at);
                 self.pending_call_open = None;
             }
         }
@@ -2856,6 +2861,154 @@ mod tests {
                 arguments: serde_json::json!({"value": value}),
             }],
         );
+    }
+
+    #[test]
+    fn adjacent_calls_keep_each_boundary_at_every_split() {
+        for count in 1..=4 {
+            for repeated in [false, true] {
+                let mut body = String::new();
+                let mut expected = Vec::new();
+                for index in 1..=count {
+                    let value = if repeated {
+                        "Paris".into()
+                    } else {
+                        format!("city{index}")
+                    };
+                    body.push_str(&call(
+                        "get_weather",
+                        &index.to_string(),
+                        &arg("city", "string", &value),
+                    ));
+                    expected.push(UnifiedEvent::ToolCall {
+                        name: "get_weather".into(),
+                        arguments: serde_json::json!({"city": value}),
+                    });
+                }
+                let input = format!("{}{body}{}", TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical);
+                assert_native_fragmentations(&input, &expected);
+            }
+        }
+    }
+
+    #[test]
+    fn grouped_calls_progress_before_finish_and_survive_public_reuse() {
+        let body = (1..=3)
+            .map(|index| {
+                call(
+                    "weather",
+                    &index.to_string(),
+                    &arg("city", "string", "Paris"),
+                )
+            })
+            .collect::<String>();
+        let envelope = format!("{}{body}{}", TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical);
+        let expected = vec![
+            UnifiedEvent::ToolCall {
+                name: "weather".into(),
+                arguments: serde_json::json!({"city":"Paris"}),
+            };
+            3
+        ];
+        for guided in [false, true] {
+            let input = if guided {
+                format!(
+                    "{envelope}[{{\"name\":\"weather\",\"arguments\":{{\"city\":\"Paris\"}}}},{{\"name\":\"weather\",\"arguments\":{{\"city\":\"Paris\"}}}},{{\"name\":\"weather\",\"arguments\":{{\"city\":\"Paris\"}}}}]"
+                )
+            } else {
+                envelope.clone()
+            };
+            let mut parser = kimi_k3_unified(&[]);
+            for _ in 0..2 {
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        tool_output_mode: if guided {
+                            UnifiedToolOutputMode::GuidedJson { named_tool: None }
+                        } else {
+                            UnifiedToolOutputMode::Native
+                        },
+                        ..UnifiedParserInit::default()
+                    })
+                    .unwrap();
+                let mut events = parser.push(&input).unwrap();
+                assert_eq!(
+                    assemble(&events),
+                    expected,
+                    "progress before finish, guided={guided}"
+                );
+                if !guided {
+                    for index in 0..3 {
+                        assert_eq!(
+                            parser.tool_call_id(index),
+                            Some(format!("weather:{index}").as_str())
+                        );
+                    }
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(assemble(&events), expected);
+                assert_eq!(parser.reset(), "");
+                assert_eq!(parser.tool_call_id(0), None);
+            }
+        }
+    }
+
+    #[test]
+    fn typed_string_header_candidates_do_not_hide_later_calls() {
+        let value = format!(
+            "before{}after",
+            call("quoted", "8", &arg("nested", "string", "literal"))
+        );
+        let first = call("echo", "1", &arg("value", "string", &value));
+        let rest = format!(
+            "{}{}",
+            call("echo", "2", &arg("value", "string", "second")),
+            call("echo", "3", &arg("value", "string", "third"))
+        );
+        let input = format!(
+            "{}{first}{rest}{}",
+            TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical
+        );
+        assert_native_fragmentations(
+            &input,
+            &[
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": value}),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "second"}),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "third"}),
+                },
+            ],
+        );
+        for context in [CallBoundaryContext::Native, CallBoundaryContext::Guided] {
+            let mut boundary = KimiK3CallBoundary::new(context);
+            let (_, header_len) = parse_call_header(&first).unwrap();
+            boundary.begin(header_len, Mode::Tools);
+            assert_eq!(
+                boundary.advance(&format!("{first}{rest}"), false),
+                CallBoundary::Complete {
+                    body_end: first.len() - CALL_CLOSE.canonical.len(),
+                    consumed: first.len(),
+                }
+            );
+            assert_eq!(
+                boundary.take_arguments().unwrap(),
+                serde_json::json!({"value": value}).to_string()
+            );
+            boundary.begin(header_len, Mode::Tools);
+            assert_eq!(
+                boundary.advance(&first, true),
+                CallBoundary::Complete {
+                    body_end: first.len() - CALL_CLOSE.canonical.len(),
+                    consumed: first.len(),
+                }
+            );
+        }
     }
 
     #[test]

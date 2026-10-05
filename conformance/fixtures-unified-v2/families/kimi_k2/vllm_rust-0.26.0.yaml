@@ -207,5 +207,55 @@ changes:
         - expected:
           - kind: text
             text: done
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      ref: current
+      semantic_sha256: fa1e0629361915361aa967a6f4228f50d6b0522293f10fb869ec44f3185d7b55
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  kimi_uuid_header_then_valid:
+    case_key: UNIFIED.kimi-9
+    stimulus:
+      ref: current
+      semantic_sha256: b6ab26a2b0f77c1a0ba9616041eaf2c0cca4be665ea9f2990f82f8d92787aeeb
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{\\\"city\\\":\\\"Pa\": " })'
 metadata_changes: {}
 document_overrides: {}

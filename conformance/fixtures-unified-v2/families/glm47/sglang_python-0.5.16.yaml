@@ -1,0 +1,95 @@
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.16
+document:
+  mode: unified
+changes:
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      inline:
+        input: <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <tool_call>
+        - delta_text: get_weather
+        - delta_text: <arg_key>
+        - delta_text: city
+        - delta_text: </arg_key>
+        - delta_text: <arg_value>
+        - delta_text: Paris
+        - delta_text: </arg_value>
+        - delta_text: </tool_call>
+        - delta_text: <tool_call>
+        - delta_text: get_weather
+        - delta_text: <arg_key>
+        - delta_text: city
+        - delta_text: </arg_key>
+        - delta_text: <arg_value>
+        - delta_text: Paris
+        - delta_text: </arg_value>
+        - delta_text: </tool_call>
+        - delta_text: <tool_call>
+        - delta_text: get_weather
+        - delta_text: <arg_key>
+        - delta_text: city
+        - delta_text: </arg_key>
+        - delta_text: <arg_value>
+        - delta_text: Paris
+        - delta_text: </arg_value>
+        - delta_text: </tool_call>
+      semantic_sha256: 055adf3c44705d0456c38fa6aae33d9f31671da89a09c70cfaf12b21cb7af3af
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.
+metadata_changes: {}
+document_overrides: {}

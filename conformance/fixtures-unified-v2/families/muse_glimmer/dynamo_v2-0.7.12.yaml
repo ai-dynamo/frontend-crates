@@ -1,23 +1,14 @@
 provenance:
-  status: legacy
-  captured_with:
-    dynamo_v2: 0.3.3
+  status: captured
+  origin:
+    crate_version: 0.7.12
+    git_commit: c66f1fa5ae90ee27dcec16f4153e4a34153c2f47
+    source_sha256: 645312b5fefdaa20ad98e247c5723845511e15037548ba5675dceecb91f80a7a
 document:
   mode: unified
 changes:
-  retired__4_c:
-    absent: true
-  retired__4_d:
-    absent: true
-  retired__4_e:
-    absent: true
-  retired__4_f:
-    absent: true
   three_identical_calls:
     case_key: UNIFIED.2-3
-    stimulus:
-      ref: current
-      semantic_sha256: d028960ef73247d48bfcecc7dc457a8387c43e3eefa0f60342e1c1b23f105942
     observation:
       value:
         assembled:
@@ -40,12 +31,6 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -55,7 +40,15 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -66,6 +59,32 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"Paris"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: cbf1cf461cc83766d6a35dd6133d3dca0f17b1e4cc9626bb70c8fee57ff91573
 metadata_changes: {}
 document_overrides: {}

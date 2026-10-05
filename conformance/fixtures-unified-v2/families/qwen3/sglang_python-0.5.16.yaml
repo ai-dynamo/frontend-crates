@@ -774,5 +774,169 @@ changes:
         assembled: []
         chunks:
         - expected: []
+  three_identical_calls:
+    case_key: UNIFIED.2-3
+    stimulus:
+      inline:
+        input: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          </function>
+
+          </tool_call><tool_call>
+
+          <function=get_weather>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          </function>
+
+          </tool_call><tool_call>
+
+          <function=get_weather>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <tool_call>
+        - delta_text: '
+
+            '
+        - delta_text: <function=get_weather>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=city>
+        - delta_text: '
+
+            Paris
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </function>
+        - delta_text: '
+
+            '
+        - delta_text: </tool_call>
+        - delta_text: <tool_call>
+        - delta_text: '
+
+            '
+        - delta_text: <function=get_weather>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=city>
+        - delta_text: '
+
+            Paris
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </function>
+        - delta_text: '
+
+            '
+        - delta_text: </tool_call>
+        - delta_text: <tool_call>
+        - delta_text: '
+
+            '
+        - delta_text: <function=get_weather>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=city>
+        - delta_text: '
+
+            Paris
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </function>
+        - delta_text: '
+
+            '
+        - delta_text: </tool_call>
+      semantic_sha256: 22fb072ccbf8546ae52fda6153f57157bd11e458e7a0ccd05482c4e16cdd8aff
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.
 metadata_changes: {}
 document_overrides: {}

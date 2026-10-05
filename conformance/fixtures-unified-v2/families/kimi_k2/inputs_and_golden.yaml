@@ -6881,7 +6881,7 @@ cases:
   three_identical_calls:
     lifecycle: active
     scenario: three_identical_calls
-    description: Kimi preserves three calls with identical names and arguments in emission order; repeated calls are not deduplicated.
+    description: Preserve three separate calls with identical names and arguments in emission order; repeated calls are not deduplicated.
     policy: []
     display_id: UNIFIED.2-3
     historical_ids: []
@@ -6977,8 +6977,9 @@ cases:
     scenario: kimi_uuid_header_then_valid
     description: A UUID-only Kimi header has no native function name. Suppress the malformed call without leaking its envelope, preserve surrounding reasoning and text, and recover the following valid call.
     policy: []
-    display_id: UNIFIED.4-3
-    historical_ids: []
+    display_id: UNIFIED.kimi-9
+    historical_ids:
+    - UNIFIED.4-3
     request:
       input: '<think>check</think>before <|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{"city":"Paris"}<|tool_call_end|><|tool_calls_section_end|> after <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:7<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
       init:

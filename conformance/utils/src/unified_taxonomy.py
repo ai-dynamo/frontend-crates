@@ -37,7 +37,7 @@ UNIFIED_TAX = {
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
     "tool_block_never_closed_then_text": (4, "1"),
     "tool_markup_only_emits_nothing": (4, "2"),
-    "kimi_uuid_header_then_valid": (4, "3"),
+    "kimi_uuid_header_then_valid": ("kimi", "9"),
 
     # Group 5 — Truncation / recovery (streamv1.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
