@@ -702,7 +702,7 @@ def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mod
     monkeypatch.setattr(table, "_dynamo_v2_producer", lambda: producer)
     mode = "stream, Combined & Unified"
     label = table._full_label("dynamo_v2", "0.7.9", input_mode)
-    assert label == f"Dynamo v2 Rust 0.7.9 ({mode})"
+    assert label == f"Dynamo v2 Rust 0.7.9 [unpublished] ({mode})"
     previous = table._full_label("dynamo_v2", "0.7.8", input_mode)
     assert previous == f"Dynamo v2 Rust 0.7.8 ({mode})"
     assert table._candidate_name_key(label) == table._candidate_name_key(previous) == "dynamo v2 rust"
@@ -722,7 +722,8 @@ def test_unified_dynamo_labels_identify_stream_combined_and_unified(model_v2):
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     expected = producer["crate_version"]
-    full_label = f"Dynamo v2 Rust {expected} (stream, Combined & Unified)"
+    suffix = " [unpublished]" if producer["kind"] == "unpublished" else ""
+    full_label = f"Dynamo v2 Rust {expected}{suffix} (stream, Combined & Unified)"
     assert reference["label"] == full_label
     assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]

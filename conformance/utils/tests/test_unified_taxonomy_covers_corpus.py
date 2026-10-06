@@ -781,24 +781,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 114,
-            "deepseek_v41": 114,
-            "gemma4": 115,
-            "glm47": 117,
-            "kimi_k2": 113,
-            "kimi_k3": 121,
-            "muse_glimmer": 117,
-            "qwen3": 114,
+            "deepseek_v4": 121,
+            "deepseek_v41": 121,
+            "gemma4": 122,
+            "glm47": 124,
+            "kimi_k2": 120,
+            "kimi_k3": 128,
+            "muse_glimmer": 124,
+            "qwen3": 133,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 925 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 993 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 134 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 153 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1133,7 +1133,7 @@ def _json_values(raw):
     return values
 
 
-def _parse_gemma_value(raw, index=0):
+def _parse_gemma_value(raw, index=0, *, exact_numbers=False):
     while index < len(raw) and raw[index].isspace():
         index += 1
     if raw.startswith('<|"|>', index):
@@ -1156,17 +1156,17 @@ def _parse_gemma_value(raw, index=0):
                 assert key is not None, ("invalid Gemma object key", raw[index:])
                 index += key.end()
                 assert index < len(raw) and raw[index] == ":", ("missing Gemma key separator", raw)
-                value, index = _parse_gemma_value(raw, index + 1)
+                value, index = _parse_gemma_value(raw, index + 1, exact_numbers=exact_numbers)
                 values[key[0]] = value
             else:
-                value, index = _parse_gemma_value(raw, index)
+                value, index = _parse_gemma_value(raw, index, exact_numbers=exact_numbers)
                 values.append(value)
     token = re.match(r"(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", raw[index:])
     assert token is not None, ("unsupported Gemma value", raw[index:])
-    return json.loads(token[0]), index + token.end()
+    return json.loads(token[0], parse_float=Decimal if exact_numbers else float), index + token.end()
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present

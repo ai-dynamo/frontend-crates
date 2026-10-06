@@ -982,6 +982,10 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
     if impl == BASELINE_STREAM_IMPL and mode == "stream":
         mode = "stream, Combined & Unified"
+    if impl == BASELINE_STREAM_IMPL:
+        producer = _dynamo_v2_producer()
+        if version == producer["crate_version"] and producer["kind"] == "unpublished":
+            version = f"{version} [unpublished]"
     # The v1/v2 generation is part of the impl key (dynamo_v1/dynamo_v2), so the
     # display already reads "Dynamo v1 Rust 3.0.0 (batch)" / "Dynamo v2 Rust
     # 0.1.11 (stream, Combined & Unified)". The one remaining special case: v1 run against stream
@@ -1051,7 +1055,7 @@ def _candidate_name_key(label: str) -> str:
 
 # Publication status belongs to display provenance, not the capture version key.
 _CANDIDATE_VERSION_RE = re.compile(
-    r"\s(\d[\w.+]*)\s*(?:\[unpublished sha256:[a-f0-9]+\]\s*)?(?:\([^)]*\))?\s*$"
+    r"\s(\d[\w.+]*)\s*(?:\[unpublished(?: sha256:[a-f0-9]+)?\]\s*)?(?:\([^)]*\))?\s*$"
 )
 
 
