@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
+use super::glm47_parser::{has_unsupported_schema_ref_scope, resolve_local_schema_ref};
 use super::parsed_value::{
     ParsedValue, coerce_integer_literal, is_integer_literal, raw_number_literal,
 };
@@ -442,14 +443,14 @@ fn get_arguments_config(
                     if let Some(props_obj) = properties.as_object() {
                         return props_obj
                             .iter()
-                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .map(|(k, v)| (k.clone(), schema_for_coercion(v, params, 0, &mut 4096)))
                             .collect();
                     }
                 } else if let Some(params_obj) = params.as_object() {
                     // If no "properties" field, treat the whole thing as the config
                     return params_obj
                         .iter()
-                        .map(|(k, v)| (k.clone(), v.clone()))
+                        .map(|(k, v)| (k.clone(), schema_for_coercion(v, params, 0, &mut 4096)))
                         .collect();
                 }
             }
@@ -459,6 +460,65 @@ fn get_arguments_config(
 
     tracing::warn!("Tool '{}' is not defined in the tools list.", func_name);
     HashMap::new()
+}
+
+// Keep references and their siblings as intersecting constraints. This is only
+// a coercion hint: cycles, remote references and changed URI scopes stay unknown.
+fn schema_for_coercion(schema: &Value, root: &Value, depth: usize, budget: &mut usize) -> Value {
+    if depth >= 16
+        || *budget == 0
+        || has_unsupported_schema_ref_scope(root)
+        || has_unsupported_schema_ref_scope(schema)
+    {
+        return schema.clone();
+    }
+    *budget -= 1;
+    let Some(object) = schema.as_object() else {
+        return schema.clone();
+    };
+    let mut siblings = object.clone();
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = siblings.get_mut(keyword).and_then(Value::as_array_mut) {
+            for branch in branches {
+                *branch = schema_for_coercion(branch, root, depth + 1, budget);
+            }
+        }
+    }
+    if let Some(target) = object
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|reference| resolve_local_schema_ref(reference, root))
+    {
+        siblings.remove("$ref");
+        let nullable = siblings
+            .remove("nullable")
+            .and_then(|value| value.as_bool());
+        let mut target = schema_for_coercion(target, root, depth + 1, budget);
+        if nullable == Some(true) {
+            make_type_nullable(&mut target);
+        }
+        serde_json::json!({"allOf": [target, Value::Object(siblings)]})
+    } else {
+        Value::Object(siblings)
+    }
+}
+
+// OpenAPI nullable extends type hints, not enum/const constraints on the target.
+fn make_type_nullable(schema: &mut Value) {
+    if let Some(ty) = schema.get_mut("type") {
+        if ty.is_string() {
+            *ty = serde_json::json!([ty.clone(), "null"]);
+        } else if let Some(types) = ty.as_array_mut() {
+            types.push(Value::String("null".into()));
+        }
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = schema.get_mut(keyword).and_then(Value::as_array_mut) {
+            for branch in branches {
+                make_type_nullable(branch);
+            }
+        }
+    }
 }
 
 /// Convert parameter value based on its type in the schema.
@@ -585,6 +645,7 @@ fn convert_prepared_param_value(
     // Get the type from schema.
     let param_schema = param_config.get(param_name);
     let direct_type = param_schema
+        .filter(|schema| schema.get("allOf").is_none())
         .and_then(|v| v.get("type"))
         .and_then(|t| t.as_str())
         .map(|t| t.to_lowercase());
@@ -808,6 +869,9 @@ fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
                 constraints.push(alternatives.into_iter().flatten().collect());
             }
         }
+    }
+    if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
+        constraints.extend(branches.iter().filter_map(collect_type_constraints));
     }
     constraints.into_iter().reduce(|mut left, right| {
         left.retain(|ty| right.contains(ty));

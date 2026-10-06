@@ -316,3 +316,114 @@ metadata_changes:
   native_single_quoted_word_control: {}
   native_unmatched_quote_then_call: {}
 document_overrides: {}
+  glm_ref_encoded_targets:
+    stimulus:
+      ref: current
+      semantic_sha256: f582b3f376272f65aa5f599f505bce1c579d28b167314daba15399c4076f74c9
+    case_key: UNIFIED.7-11
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    stimulus:
+      ref: current
+      semantic_sha256: 7d966e5484a437b6f987c515709d55f2233fb7bdc2c2f467dc95903ff866f104
+    case_key: UNIFIED.7-12
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_object:
+    stimulus:
+      ref: current
+      semantic_sha256: e16f0450c76a910f8a69480e67c5966fb573d1e7ee59195d7120f6cad0e0f331
+    case_key: UNIFIED.7-9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload":{"x":1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    stimulus:
+      ref: current
+      semantic_sha256: 78b6dcc7423ac720120817b4072861093666cbdab98c0283cdfd30b74c366fbe
+    case_key: UNIFIED.7-13
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

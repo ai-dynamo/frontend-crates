@@ -973,6 +973,27 @@ def _assert_retained_capture_coverage(captured, expected):
     assert expected <= captured, f"missing retained captures {sorted(expected - captured)}"
 
 
+def _assert_reference_measurements_start_at_introduction(store):
+    shared_ids = {f"UNIFIED.{number}" for number in ("7-9", "7-11", "7-12", "7-13")}
+    for (family, implementation), history in store.histories.items():
+        if implementation != "dynamo_v2" or family == "glm47":
+            continue
+        for capture_id in history.ordered_capture_ids():
+            measured = {
+                history.family.cases[case_id]["display_id"]
+                for case_id in history.resolve(capture_id)
+            }
+            version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
+            if version < (0, 7, 16):
+                assert not measured & shared_ids, f"retrospective measurements in {family}/{capture_id}"
+            else:
+                assert shared_ids <= measured, f"missing current measurements in {family}/{capture_id}"
+
+
+def test_shared_reference_cases_start_at_their_introduction():
+    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+    _assert_reference_measurements_start_at_introduction(store)
+
 def test_retained_unified_captures_cover_the_current_corpus():
     store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
     captured = set()

@@ -1200,6 +1200,19 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
         expected_color = "green" if measured["events"] == events else "red"
         assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == expected_color
         assert "without proving reference resolution" in shared["tooltip"]["description"]
+        if family != "glm47":
+            for candidate in shared["tooltip"]["candidates"]:
+                if not candidate["key"].startswith("dynamo@"):
+                    continue
+                version = tuple(map(int, candidate["key"].split("@", 1)[1].split(".")))
+                if version < (0, 7, 16):
+                    assert "unavailable" in candidate["block"]
+                    assert "not captured at" in candidate["block"]["unavailable"]
+                    assert "events" not in candidate["block"]
+                    state, reason = cell_state(shared, candidate)
+                    assert state == "empty"
+                    assert "has no captured result" in reason
+
 
 
 def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
