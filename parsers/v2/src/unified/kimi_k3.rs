@@ -210,6 +210,7 @@ impl KimiK3HeaderScan {
 enum CallBoundary {
     Complete { body_end: usize, consumed: usize },
     Recover { body_end: usize },
+    SkipMalformed { consumed: usize },
     Resync { at: usize },
     Pending,
     Malformed,
@@ -308,14 +309,23 @@ impl KimiK3CallBoundary {
     }
 
     fn advance(&mut self, text: &str, flush: bool) -> CallBoundary {
-        self.scan_appended(text, flush);
+        self.scan_appended(text, flush, false);
+        let reconsider_unterminated_json =
+            flush && self.json_argument.is_some() && !self.literal_json_argument;
+        if reconsider_unterminated_json {
+            // An unterminated JSON string can hide the structural close and the
+            // next call. At EOF, reuse this tracker with JSON string ownership
+            // disabled so only a structurally complete later call can resync.
+            self.reset_progress();
+            self.scan_appended(text, true, true);
+        }
         if flush && self.literal_json_argument && self.json_argument.is_some() {
             // Invalid JSON in a quoted native passage is still outer string data.
             // Only EOF proves its unmatched quote cannot later close; rescan the
             // literal envelope without letting that quote swallow outer syntax.
             self.reset_progress();
             self.ignore_literal_json = true;
-            self.scan_appended(text, true);
+            self.scan_appended(text, true, false);
         }
         let Some(header_len) = self.header_len else {
             return if flush {
@@ -324,6 +334,13 @@ impl KimiK3CallBoundary {
                 CallBoundary::Pending
             };
         };
+
+        if reconsider_unterminated_json
+            && self.context == CallBoundaryContext::Guided
+            && let Some(consumed) = self.guided_malformed_envelope_end(text, header_len)
+        {
+            return CallBoundary::SkipMalformed { consumed };
+        }
 
         // A channel fence settles balanced candidates without waiting for EOF.
         // An unmatched embedded header may borrow the outer closers, so that
@@ -614,11 +631,47 @@ impl KimiK3CallBoundary {
         })
     }
 
+    fn guided_malformed_envelope_end(&mut self, text: &str, header_len: usize) -> Option<usize> {
+        if self.body_kind != CallBodyKind::RawJson {
+            return None;
+        }
+        let call_closes: Vec<_> = self
+            .call_closes
+            .iter()
+            .filter(|close| !close.literal)
+            .map(|close| close.hit)
+            .collect();
+        let first_close = *call_closes.first()?;
+        if self.parse_body(&text[header_len..first_close.at]).is_some() {
+            return None;
+        }
+        for close in call_closes {
+            let Some(outer) = self
+                .outer_closes
+                .iter()
+                .copied()
+                .find(|outer| outer.at >= close.end())
+            else {
+                continue;
+            };
+            let suffix = text[outer.end()..].trim_start();
+            let Some(end) = json_value_end(suffix) else {
+                continue;
+            };
+            if serde_json::from_str::<Value>(&suffix[..end]).is_ok()
+                && suffix[end..].trim().is_empty()
+            {
+                return Some(outer.end());
+            }
+        }
+        None
+    }
+
     fn take_arguments(&mut self) -> Option<String> {
         self.completed_arguments.take()
     }
 
-    fn scan_appended(&mut self, text: &str, flush: bool) {
+    fn scan_appended(&mut self, text: &str, flush: bool, ignore_json_strings: bool) {
         if text.len() < self.scanned {
             self.reset_progress();
         }
@@ -628,6 +681,7 @@ impl KimiK3CallBoundary {
             if self
                 .json_argument
                 .as_mut()
+                .filter(|_| !ignore_json_strings)
                 .is_some_and(|quoted| quoted.advance(character))
             {
                 self.scanned += character.len_utf8();
@@ -645,7 +699,7 @@ impl KimiK3CallBoundary {
                     at: self.scanned,
                     len,
                 };
-                self.note_token(text, kind, hit);
+                self.note_token(text, kind, hit, ignore_json_strings);
                 self.scanned += len;
                 #[cfg(test)]
                 {
@@ -669,9 +723,15 @@ impl KimiK3CallBoundary {
             {
                 self.argument_close_pending = false;
                 if self.provisional_string_close {
-                    self.string_argument = true;
-                    self.outer_call_closed = false;
-                    self.provisional_string_close = false;
+                    if matches!(self.return_channel, Mode::Response | Mode::Reasoning) {
+                        // Keep the close provisional until a later argument close
+                        // proves it was literal or a channel fence settles it.
+                        self.outer_call_closed = false;
+                    } else {
+                        self.string_argument = true;
+                        self.outer_call_closed = false;
+                        self.provisional_string_close = false;
+                    }
                 }
             }
             self.scanned += character.len_utf8();
@@ -691,9 +751,29 @@ impl KimiK3CallBoundary {
         self.header_len = header_len;
     }
 
-    fn note_token(&mut self, text: &str, kind: ScannerToken, hit: TokenHit) {
-        if kind == ScannerToken::CallOpen {
+    fn note_token(
+        &mut self,
+        text: &str,
+        kind: ScannerToken,
+        hit: TokenHit,
+        ignore_json_strings: bool,
+    ) {
+        if kind == ScannerToken::ArgumentClose
+            && self.provisional_string_close
+            && matches!(self.return_channel, Mode::Response | Mode::Reasoning)
+        {
+            // A later argument close proves the earlier paired markers were
+            // inside the quoted value, so resume string ownership there.
             self.provisional_string_close = false;
+            self.string_argument = true;
+            self.outer_call_closed = false;
+        }
+        if kind == ScannerToken::CallOpen {
+            let provisional_response_close = self.provisional_string_close
+                && matches!(self.return_channel, Mode::Response | Mode::Reasoning);
+            if !provisional_response_close {
+                self.provisional_string_close = false;
+            }
             if self.root_call_open.is_none() {
                 self.root_call_open = Some(hit.at);
             } else {
@@ -706,8 +786,9 @@ impl KimiK3CallBoundary {
                     self.literal_before_outer_close = true;
                 }
                 self.pending_call_open = Some(hit.at);
-                self.pending_call_is_literal =
-                    !self.literal_argument_depths.is_empty() || self.string_argument;
+                self.pending_call_is_literal = !self.literal_argument_depths.is_empty()
+                    || self.string_argument
+                    || provisional_response_close;
             }
         }
         if kind == ScannerToken::Sep {
@@ -771,6 +852,7 @@ impl KimiK3CallBoundary {
         }
         if kind == ScannerToken::JsonOpen
             && (!self.string_argument || literal && !self.ignore_literal_json)
+            && !ignore_json_strings
         {
             self.json_argument = Some(JsonStringState::default());
             self.literal_json_argument = literal;
@@ -988,6 +1070,7 @@ impl InvokeBoundary for KimiK3CallBoundary {
         match self.advance(candidate, flush) {
             CallBoundary::Complete { consumed, .. } => Some(consumed),
             CallBoundary::Recover { body_end } => Some(body_end),
+            CallBoundary::SkipMalformed { consumed } => Some(consumed),
             CallBoundary::Resync { .. } => None,
             CallBoundary::Pending | CallBoundary::Malformed => None,
         }
@@ -1019,6 +1102,7 @@ impl InvokeBoundary for KimiK3CallBoundary {
             CallBoundary::Resync { at } => Some(at),
             CallBoundary::Complete { .. }
             | CallBoundary::Recover { .. }
+            | CallBoundary::SkipMalformed { .. }
             | CallBoundary::Pending
             | CallBoundary::Malformed => None,
         }
@@ -1249,6 +1333,19 @@ impl KimiK3Native {
                     "dropping malformed Kimi K3 call and resuming at the next call"
                 );
                 self.buffer.drain(..at);
+                self.active_call = None;
+                self.call_header_scan = None;
+                self.call_boundary.reset();
+                self.mode = Mode::Tools;
+                true
+            }
+            CallBoundary::SkipMalformed { consumed } => {
+                tracing::warn!(
+                    why = "kimi_k3_malformed_call_body",
+                    skipped_bytes = consumed,
+                    "dropping malformed Kimi K3 call before guided JSON"
+                );
+                self.buffer.drain(..consumed);
                 self.active_call = None;
                 self.call_header_scan = None;
                 self.call_boundary.reset();
@@ -1582,7 +1679,10 @@ impl NativeUnified for KimiK3Native {
         match self.mode {
             Mode::Idle | Mode::Response => output.push_text(std::mem::take(&mut self.buffer)),
             Mode::Reasoning => output.push_reasoning(std::mem::take(&mut self.buffer)),
-            Mode::Tools | Mode::Call | Mode::Done => self.buffer.clear(),
+            Mode::Tools | Mode::Call | Mode::Done => {
+                self.buffer.clear();
+                self.tools_open.clear();
+            }
         }
         self.mode = Mode::Idle;
         self.active_call = None;

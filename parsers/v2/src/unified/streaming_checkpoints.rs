@@ -405,6 +405,152 @@ fn kimi_k3_malformed_then_valid_checkpoints() {
 }
 
 #[test]
+fn kimi_k3_malformed_json_calls_resync_only_at_eof() {
+    let malformed_object = r#"{"value":"unfinished\"#;
+    let malformed_array = r#"["unfinished é"#;
+    let raw_json =
+        format!("<|open|>json type=\"object\"<|sep|>{malformed_object}<|close|>json<|sep|>");
+    let mut malformed_bodies = vec![(raw_json, None)];
+    for kind in ["object", "array"] {
+        let malformed_value = if kind == "object" {
+            malformed_object
+        } else {
+            malformed_array
+        };
+        for position in 0..3 {
+            let mut fields = Vec::new();
+            let mut arguments = serde_json::Map::new();
+            for index in 0..position {
+                let key = format!("before{index}");
+                let value = format!("pré{index}");
+                fields.push(k3_argument(&key, "string", &value));
+                arguments.insert(key, serde_json::Value::String(value));
+            }
+            fields.push(k3_argument("payload", kind, malformed_value));
+            arguments.insert(
+                "payload".into(),
+                serde_json::Value::String(malformed_value.into()),
+            );
+            for index in position..2 {
+                let key = format!("after{index}");
+                let value = format!("Café{index}");
+                fields.push(k3_argument(&key, "string", &value));
+                arguments.insert(key, serde_json::Value::String(value));
+            }
+            malformed_bodies.push((fields.concat(), Some(serde_json::Value::Object(arguments))));
+        }
+    }
+    for (body, fallback) in malformed_bodies {
+        for count in 1..=2 {
+            let malformed = k3_named_call("bad", 1, &body);
+            let valid: Vec<_> = ["é", "Café"]
+                .into_iter()
+                .take(count)
+                .enumerate()
+                .map(|(offset, value)| {
+                    k3_named_call("echo", offset + 2, &k3_argument("value", "string", value))
+                })
+                .collect();
+            let phases = [
+                phase(format!("<|open|>tools<|sep|>{malformed}"), vec![], &[]),
+                phase(
+                    format!("{}<|close|>tools<|sep|>", valid.concat()),
+                    vec![],
+                    &[],
+                ),
+            ];
+            let mut eof = Vec::new();
+            let mut eof_ids = Vec::new();
+            if let Some(fallback) = &fallback {
+                eof.push(UnifiedEvent::ToolCall {
+                    name: "bad".into(),
+                    arguments: fallback.clone(),
+                });
+                eof_ids.push("bad:0");
+            }
+            for value in ["é", "Café"].into_iter().take(count) {
+                eof.push(call(value));
+                eof_ids.push(if value == "é" { "echo:1" } else { "echo:2" });
+            }
+            assert_checkpoints(
+                "kimi_k3",
+                UnifiedParserInit::default(),
+                &echo_tools(),
+                &phases,
+                &eof,
+                &eof_ids,
+            );
+        }
+    }
+}
+
+#[test]
+fn kimi_k3_unfinished_json_string_markers_alone_never_dispatch() {
+    for suffix in [
+        "<|close|>call<|sep|>",
+        "<|open|>call tool=\"ghost\" index=\"8\"<|sep|>incomplete",
+    ] {
+        let malformed = format!(
+            "<|open|>tools<|sep|><|open|>call tool=\"bad\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|>{{\"value\":\"unfinished{suffix}"
+        );
+        assert_checkpoints(
+            "kimi_k3",
+            UnifiedParserInit::default(),
+            &echo_tools(),
+            &[phase(malformed, vec![], &[])],
+            &[],
+            &[],
+        );
+    }
+}
+
+#[test]
+fn kimi_k3_unfinished_json_string_keeps_complete_literal_calls_inert() {
+    let malformed = format!(
+        "<|open|>tools<|sep|>{}<|open|>json type=\"object\"<|sep|>{{\"value\":\"unfinished{}{}<|close|>json<|sep|><|close|>call<|sep|>",
+        "<|open|>call tool=\"bad\" index=\"1\"<|sep|>",
+        k3_call(8, "literal"),
+        k3_call(9, "literal2"),
+    );
+    let valid = k3_call(2, "real");
+    let phases = [
+        phase(malformed, vec![], &[]),
+        phase(format!("{valid}<|close|>tools<|sep|>"), vec![], &[]),
+    ];
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[call("real")],
+        &["echo:1"],
+    );
+}
+
+#[test]
+fn kimi_k3_malformed_json_recovers_calls_after_the_wrapper_boundary() {
+    let malformed = "<|open|>tools<|sep|><|open|>call tool=\"bad\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|>{\"value\":\"unfinished<|close|>json<|sep|><|close|>call<|sep|>";
+    let later_calls = [
+        k3_call(8, "literal"),
+        k3_call(9, "literal2"),
+        k3_call(2, "real"),
+    ]
+    .concat();
+    let phases = [
+        phase(malformed, vec![], &[]),
+        phase(format!("{later_calls}<|close|>tools<|sep|>"), vec![], &[]),
+    ];
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[call("literal"), call("literal2"), call("real")],
+        &["echo:7", "echo:8", "echo:1"],
+    );
+}
+
+#[test]
 fn kimi_k3_unmatched_embedded_header_waits_for_eof() {
     // An unmatched quoted header can borrow the outer closers. Only EOF permits
     // best-effort recovery; the ordinary balanced case above must progress sooner.
@@ -543,6 +689,101 @@ fn kimi_k3_prose_between_calls_resolves_at_channel_fence() {
             &[],
         );
     }
+}
+
+#[test]
+fn kimi_k3_call_close_survives_response_or_reasoning_prose() {
+    for (starting_state, channel_close, prose) in [
+        (
+            UnifiedParserStartingState::Response,
+            "<|close|>response<|sep|>",
+            text("ordinary response prose"),
+        ),
+        (
+            UnifiedParserStartingState::Reasoning,
+            "<|close|>think<|sep|>",
+            reasoning("ordinary reasoning prose"),
+        ),
+    ] {
+        let phases = [
+            phase(
+                k3_named_call("echo", 1, &k3_argument("value", "string", "é")),
+                vec![],
+                &[],
+            ),
+            phase(
+                match prose.clone() {
+                    UnifiedEvent::Text { text } | UnifiedEvent::Reasoning { text } => text,
+                    _ => unreachable!(),
+                },
+                vec![],
+                &[],
+            ),
+            phase(channel_close, vec![call("é"), prose], &["echo:0"]),
+        ];
+        assert_checkpoints(
+            "kimi_k3",
+            UnifiedParserInit {
+                starting_state,
+                tool_output_mode: UnifiedToolOutputMode::Native,
+                ..Default::default()
+            },
+            &echo_tools(),
+            &phases,
+            &[],
+            &[],
+        );
+    }
+}
+
+#[test]
+fn kimi_k3_response_string_keeps_complete_literal_call_passages() {
+    let literal = k3_named_call("quoted", 8, &k3_argument("value", "string", "literal"));
+    let value = format!("before{literal}after");
+    let phases = [
+        phase(
+            k3_named_call("echo", 1, &k3_argument("value", "string", &value)),
+            vec![],
+            &[],
+        ),
+        phase("<|close|>response<|sep|>", vec![call(&value)], &["echo:0"]),
+    ];
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Response,
+            tool_output_mode: UnifiedToolOutputMode::Native,
+            ..Default::default()
+        },
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
+}
+
+#[test]
+fn kimi_k3_json_string_keeps_complete_literal_call_passages() {
+    let literal = k3_named_call("quoted", 8, &k3_argument("value", "string", "literal"));
+    let value = format!("before{literal}after");
+    let json = serde_json::json!({"value": value}).to_string();
+    let body = format!("<|open|>json type=\"object\"<|sep|>{json}<|close|>json<|sep|>");
+    let phases = [
+        phase(
+            format!("<|open|>tools<|sep|>{}", k3_named_call("echo", 1, &body)),
+            vec![],
+            &[],
+        ),
+        phase("<|close|>tools<|sep|>", vec![call(&value)], &["echo:0"]),
+    ];
+    assert_checkpoints(
+        "kimi_k3",
+        UnifiedParserInit::default(),
+        &echo_tools(),
+        &phases,
+        &[],
+        &[],
+    );
 }
 
 #[test]
@@ -762,6 +1003,76 @@ fn kimi_k3_guided_native_wrappers_release_json_before_eof() {
                 &[],
             );
         }
+    }
+}
+
+#[test]
+fn kimi_k3_guided_malformed_raw_json_recovers_later_payload_at_eof() {
+    let malformed = k3_named_call(
+        "bad",
+        1,
+        "<|open|>json type=\"object\"<|sep|>{\"value\":\"unfinished<|close|>json<|sep|>",
+    );
+    for named in [false, true] {
+        let (payload, expected) = if named {
+            ("{\"value\":\"é\"}".to_string(), vec![call("é")])
+        } else {
+            (
+                "[{\"name\":\"echo\",\"arguments\":{\"value\":\"é\"}},{\"name\":\"echo\",\"arguments\":{\"value\":\"Café\"}}]".to_string(),
+                vec![call("é"), call("Café")],
+            )
+        };
+        let input = format!("<|open|>tools<|sep|>{malformed}<|close|>tools<|sep|>{payload}");
+        let splits: Vec<_> = input
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain([input.len()])
+            .collect();
+        for split in splits {
+            let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                        named_tool: named.then(|| "echo".into()),
+                    },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..Default::default()
+                })
+                .unwrap();
+            let mut events = parser.push(&input[..split]).unwrap();
+            assert!(events.is_empty(), "premature guided dispatch before EOF");
+            events.extend(parser.push(&input[split..]).unwrap());
+            assert!(events.is_empty(), "premature guided dispatch before EOF");
+            assert_eq!(assemble(&parser.finish().unwrap().events), expected);
+            assert_eq!(parser.tool_call_id(0), None);
+            assert_eq!(parser.tool_call_id(1), None);
+            assert!(parser.finish().is_err());
+            assert!(parser.reset().is_empty());
+        }
+
+        let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+        parser
+            .initialize_request(UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                    named_tool: named.then(|| "echo".into()),
+                },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..Default::default()
+            })
+            .unwrap();
+        for (at, character) in input.char_indices() {
+            assert!(
+                parser
+                    .push(&input[at..at + character.len_utf8()])
+                    .unwrap()
+                    .is_empty()
+            );
+        }
+        assert_eq!(assemble(&parser.finish().unwrap().events), expected);
+        assert_eq!(parser.tool_call_id(0), None);
+        assert_eq!(parser.tool_call_id(1), None);
+        assert!(parser.finish().is_err());
+        assert!(parser.reset().is_empty());
     }
 }
 
