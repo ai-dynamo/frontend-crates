@@ -164,6 +164,14 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
         fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
             writer.write_all(b": ")
         }
+
+        fn write_f64<W: ?Sized + io::Write>(
+            &mut self,
+            writer: &mut W,
+            value: f64,
+        ) -> io::Result<()> {
+            writer.write_all(python_float_repr(value).as_bytes())
+        }
     }
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
@@ -606,8 +614,91 @@ pub(crate) fn inject_tools_and_response_format(
     Ok(())
 }
 
+/// Python's `repr(float)`, which `json.dumps` uses: the shortest round-trip digits,
+/// fixed notation for exponents in [-4, 16) (always with a fraction, `100.0`),
+/// otherwise scientific with a signed, two-digit exponent (`1e-06`, `1e+16`).
+fn python_float_repr(value: f64) -> String {
+    // serde_json's ryu picks the same shortest digits as Python, halfway ties
+    // included (`{:e}` breaks some differently); only the notation is respelled.
+    let shortest = serde_json::Number::from_f64(value)
+        .expect("JSON floats are finite")
+        .to_string();
+    let (sign, unsigned) = match shortest.strip_prefix('-') {
+        Some(unsigned) => ("-", unsigned),
+        None => ("", shortest.as_str()),
+    };
+    let (mantissa, exponent) = match unsigned.split_once('e') {
+        Some((mantissa, exponent)) => (mantissa, exponent.parse().expect("ryu exponent")),
+        None => (unsigned, 0),
+    };
+    let (integer, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let all_digits = format!("{integer}{fraction}");
+    let significant = all_digits.trim_start_matches('0');
+    let digits = significant.trim_end_matches('0');
+    if digits.is_empty() {
+        return format!("{sign}0.0");
+    }
+    let leading_zeros = (all_digits.len() - significant.len()) as i32;
+    let exponent: i32 = exponent + integer.len() as i32 - 1 - leading_zeros;
+    if (-4..16).contains(&exponent) {
+        let point = exponent + 1;
+        let fixed = if point <= 0 {
+            format!("0.{}{digits}", "0".repeat(point.unsigned_abs() as usize))
+        } else if point as usize >= digits.len() {
+            format!("{digits}{}.0", "0".repeat(point as usize - digits.len()))
+        } else {
+            format!(
+                "{}.{}",
+                &digits[..point as usize],
+                &digits[point as usize..]
+            )
+        };
+        format!("{sign}{fixed}")
+    } else {
+        let (head, tail) = digits.split_at(1);
+        let mantissa = if tail.is_empty() {
+            head.to_string()
+        } else {
+            format!("{head}.{tail}")
+        };
+        let exponent_sign = if exponent < 0 { '-' } else { '+' };
+        format!(
+            "{sign}{mantissa}e{exponent_sign}{:02}",
+            exponent.unsigned_abs()
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn floats_match_python_json_dumps() {
+        for (value, python) in [
+            (0.000001, "1e-06"),
+            (0.0001, "0.0001"),
+            (0.00001234, "1.234e-05"),
+            (1e16, "1e+16"),
+            (1e15, "1000000000000000.0"),
+            (1.5e-7, "1.5e-07"),
+            (2.5, "2.5"),
+            (100.0, "100.0"),
+            (0.1, "0.1"),
+            (-0.0, "-0.0"),
+            (0.0, "0.0"),
+            (-123.456, "-123.456"),
+            (1.7976931348623157e308, "1.7976931348623157e+308"),
+            (5e-324, "5e-324"),
+            // Exactly halfway between two shortest candidates.
+            (1e15 + 0.25, "1000000000000000.2"),
+            (1e14 + 0.125, "100000000000000.12"),
+        ] {
+            assert_eq!(python_float_repr(value), python, "{value:?}");
+        }
+        let value = serde_json::json!({"a": 0.000001, "b": [1e16, 3]});
+        assert_eq!(to_json(&value), r#"{"a": 1e-06, "b": [1e+16, 3]}"#);
+    }
+
     use super::*;
     use serde_json::json;
 
