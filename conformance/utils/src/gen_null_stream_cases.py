@@ -17,20 +17,33 @@ from null_cases import (
 
 
 def native_call(family, name, arguments):
-    value = next(iter(arguments.values()))
-    raw = str(value) if isinstance(value, NumericLiteral) else "null"
+    def raw_value(value):
+        return str(value) if isinstance(value, NumericLiteral) else "null"
+
     if family == "minimax_m2":
-        parameters = "".join(f'<parameter name="{key}">{raw}</parameter>' for key in arguments)
+        parameters = "".join(
+            f'<parameter name="{key}">{raw_value(value)}</parameter>'
+            for key, value in arguments.items()
+        )
         return f'<minimax:tool_call><invoke name="{name}">{parameters}</invoke></minimax:tool_call>'
     if family == "minimax_m3":
         marker = "]<]minimax[>["
-        parameters = "".join(f"{marker}<{key}>{raw}{marker}</{key}>" for key in arguments)
+        parameters = "".join(
+            f"{marker}<{key}>{raw_value(value)}{marker}</{key}>"
+            for key, value in arguments.items()
+        )
         return f'{marker}<tool_call>{marker}<invoke name="{name}">{parameters}{marker}</invoke>{marker}</tool_call>'
     if family == "glm47":
-        parameters = "".join(f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>" for key in arguments)
+        parameters = "".join(
+            f"<arg_key>{key}</arg_key><arg_value>{raw_value(value)}</arg_value>"
+            for key, value in arguments.items()
+        )
         return f"<tool_call>{name}{parameters}</tool_call>"
     if family == "qwen3_coder":
-        parameters = "".join(f"<parameter={key}>{raw}</parameter>" for key in arguments)
+        parameters = "".join(
+            f"<parameter={key}>{raw_value(value)}</parameter>"
+            for key, value in arguments.items()
+        )
         return f"<tool_call><function={name}>{parameters}</function></tool_call>"
     key, value = next(iter(arguments.items()))
     assert len(arguments) == 1

@@ -146,10 +146,11 @@ fn large_fractional_arguments_remain_exact_json_numbers() {
         "0.10000000000000000001",
         "-9007199254740992.5",
     ] {
+        let literal: serde_json::Value = serde_json::from_str(raw).expect("numeric schema value");
         for schema in [
             serde_json::json!({"type":"number"}),
-            serde_json::json!({"type":["number","null"],"const":serde_json::from_str::<serde_json::Value>(raw).unwrap()}),
-            serde_json::json!({"type":["number","null"],"enum":[serde_json::from_str::<serde_json::Value>(raw).unwrap()]}),
+            serde_json::json!({"type":["number","null"], "const":literal.clone()}),
+            serde_json::json!({"type":["number","null"], "enum":[literal]}),
         ] {
             assert_numeric_case(&schema, raw, raw);
         }
