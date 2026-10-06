@@ -197,7 +197,7 @@ fn minimax_m3_required_stream_cases_have_captured_expectations() {
 }
 
 #[test]
-fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
+fn stream_dynamo_dirs_keep_the_previous_release_before_current() {
     let root = std::env::temp_dir().join(format!(
         "dynamo-stream-dirs-{}-{}",
         std::process::id(),
@@ -208,6 +208,8 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
     ));
     std::fs::create_dir_all(root.join("dynamo_v2-0.3.1")).unwrap();
     std::fs::create_dir_all(root.join("dynamo_v2-0.3.4+historical")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-0.7.13")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-0.7.14")).unwrap();
     std::fs::create_dir_all(root.join(common::STREAM_DYNAMO_V2_CURRENT_CAPTURE)).unwrap();
 
     let names: Vec<_> = stream_dynamo_dirs(&root)
@@ -216,7 +218,12 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
         .collect();
     assert_eq!(
         names,
-        ["dynamo_v2-0.3.1", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
+        [
+            "dynamo_v2-0.3.1",
+            "dynamo_v2-0.7.13",
+            common::STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+        ]
+        .map(std::ffi::OsString::from)
     );
 
     std::fs::remove_dir_all(root).unwrap();
