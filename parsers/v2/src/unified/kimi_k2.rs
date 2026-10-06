@@ -559,6 +559,78 @@ mod tests {
     }
 
     #[test]
+    fn malformed_uuid_header_and_repeated_calls_keep_native_ids_across_reuse() {
+        let malformed = "<|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{\"city\":\"Paris\"}<|tool_call_end|><|tool_calls_section_end|>";
+        for state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+        ] {
+            for valid_count in [0, 1, 3] {
+                let reason = if state == UnifiedParserStartingState::Reasoning {
+                    "check</think>"
+                } else {
+                    "<think>check</think>"
+                };
+                let mut input = format!("{reason}before {malformed} after ");
+                for index in 0..valid_count {
+                    input.push_str(&format!("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:{}<|tool_call_argument_begin|>{{\"city\":\"Paris\"}}<|tool_call_end|><|tool_calls_section_end|>", 7 + index * 2));
+                }
+                let mut expected = vec![
+                    UnifiedEvent::Reasoning {
+                        text: "check".into(),
+                    },
+                    UnifiedEvent::Text {
+                        text: "before  after ".into(),
+                    },
+                ];
+                for _ in 0..valid_count {
+                    expected.push(UnifiedEvent::ToolCall {
+                        name: "get_weather".into(),
+                        arguments: serde_json::json!({"city":"Paris"}),
+                    });
+                }
+                for split in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+                    let mut parser = kimi_k2_unified(&tools());
+                    for _ in 0..2 {
+                        parser
+                            .initialize_request(UnifiedParserInit {
+                                starting_state: state,
+                                ..Default::default()
+                            })
+                            .unwrap();
+                        let mut events = parser.push(&input[..split]).unwrap();
+                        events.extend(parser.push(&input[split..]).unwrap());
+                        assert_eq!(
+                            assemble(&events),
+                            expected,
+                            "state {state:?}, split {split}"
+                        );
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(assemble(&events), expected);
+                        let calls: Vec<_> = events
+                            .iter()
+                            .filter_map(|event| match event {
+                                UnifiedParserEvent::ToolCall(call) => Some(call),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(calls.len(), valid_count);
+                        for (index, call) in calls.iter().enumerate() {
+                            assert_eq!(call.tool_index, index);
+                            assert_eq!(
+                                parser.tool_call_id(index),
+                                Some(format!("functions.get_weather:{}", 7 + index * 2).as_str())
+                            );
+                        }
+                        parser.reset();
+                        assert_eq!(parser.tool_call_id(0), None);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn native_tool_call_id_survives_the_guided_router() {
         let input = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>";
         let mut parser = kimi_k2_unified(&tools());

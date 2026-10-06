@@ -979,6 +979,10 @@ _ENGINE_RUNTIME = {
 
 def _full_label(impl: str, version: object, mode: str) -> str:
     base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
+    if impl == BASELINE_STREAM_IMPL:
+        producer = _dynamo_v2_producer()
+        if version == producer["crate_version"] and producer["kind"] == "unpublished":
+            version = f"{version} [unpublished {producer['source_id']}]"
     # The v1/v2 generation is part of the impl key (dynamo_v1/dynamo_v2), so the
     # display already reads "Dynamo v1 Rust 3.0.0 (batch)" / "Dynamo v2 Rust
     # 0.1.11 (stream)". The one remaining special case: v1 run against stream
@@ -1041,14 +1045,15 @@ def _candidate_name_key(label: str) -> str:
     """Parser name for ordering: the display label minus its trailing version token and
     "(mode)" suffix. "vLLM Rust 0.25.1 (stream)" -> "vllm rust". Sorting candidates on
     this puts PARSERS alphabetically (Dynamo < SGLang < vLLM Python < vLLM Rust)."""
-    base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"/"(jail+batch)"
-    base = re.sub(r"\s+\d[\w.+]*$", "", base)          # drop the trailing version token
+    match = _CANDIDATE_VERSION_RE.search(label)
+    base = label[:match.start()] if match else re.sub(r"\s*\([^)]*\)\s*$", "", label)
     return base.lower()
 
 
-# The version token may contain a `+` for non-Unified legacy candidates, but
-# Unified capture producers reject change-qualified labels before rendering.
-_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+]*)\s*(?:\([^)]*\))?\s*$")
+# Publication status belongs to display provenance, not the capture version key.
+_CANDIDATE_VERSION_RE = re.compile(
+    r"\s(\d[\w.+]*)\s*(?:\[unpublished sha256:[a-f0-9]+\]\s*)?(?:\([^)]*\))?\s*$"
+)
 
 
 def _sort_candidates(items: list[dict]) -> list[dict]:
@@ -1060,8 +1065,8 @@ def _sort_candidates(items: list[dict]) -> list[dict]:
     Reference (bucket A) stays first because Dynamo sorts ahead of the peers. Keys and
     default_bucket flags are untouched; only display order moves."""
     def _ver_key(it: dict):
-        m = _CANDIDATE_VERSION_RE.search(it["label"])
-        return fixtures._version_sort_key(m.group(1)) if m else ()
+        version = _version_of_label(it["label"])
+        return fixtures._version_sort_key(version) if version else ()
     ordered = sorted(items, key=_ver_key, reverse=True)
     return sorted(ordered, key=lambda it: _candidate_name_key(it["label"]))
 
@@ -2121,7 +2126,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     return "LOSS"
 
 
-def _assemble_stream(chunk_deltas: list) -> list:
+def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = None) -> list:
     """Assemble the FINAL ordered event list from a parser's per-chunk STREAMED deltas
     (not its batch final message). Coalesces consecutive reasoning/text runs and joins
     per-call tool-argument fragments (a delta with a name starts a new call; nameless
@@ -2160,7 +2165,8 @@ def _assemble_stream(chunk_deltas: list) -> list:
                 if cur_tool is not None and dl.get("complete", True):
                     events[cur_tool]["_complete"] = True
     events = [e for e in events if e.get("kind") != "tool_call" or e.get("_complete", True)]
-    for e in events:
+    malformed = set()
+    for position, e in enumerate(events):
         if e["kind"] == "tool_call":
             raw = e.pop("_raw", "")
             e.pop("_complete", None)
@@ -2172,7 +2178,23 @@ def _assemble_stream(chunk_deltas: list) -> list:
                 try:
                     e["arguments"] = json.loads(raw)
                 except (ValueError, TypeError):
+                    malformed.add(position)
                     e["arguments"] = raw
+    if malformed and recorded_assembly is not None:
+        calls = [(position, event) for position, event in enumerate(events) if event["kind"] == "tool_call"]
+        recorded = [event for event in recorded_assembly if event["kind"] == "tool_call"]
+        # Native P3 uses {}, but split-era captures preserve invalid JSON bytes.
+        # Require the entire call sequence to align before using recorded fallbacks;
+        # split batch assembly can differ from stream order and must not replace it.
+        if len(calls) == len(recorded) and all(
+            event["name"] == observed["name"] and (
+                event["arguments"] == observed["arguments"] or
+                position in malformed and observed["arguments"] == {}
+            ) for (position, event), observed in zip(calls, recorded)
+        ):
+            for (position, event), observed in zip(calls, recorded):
+                if position in malformed:
+                    event["arguments"] = observed["arguments"]
     return events
 
 
@@ -2213,14 +2235,20 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_dynamo_label() -> str:
+@functools.cache
+def _dynamo_v2_producer() -> dict:
     # The renderer is copied into /tmp; the checker must inspect the source checkout.
     source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
-    return subprocess.run(
+    result = subprocess.run(
         [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
-         "--repo-root", str(source_root), "--format", "label"],
+         "--repo-root", str(source_root), "--format", "json"],
         check=True, capture_output=True, text=True,
-    ).stdout.strip()
+    )
+    return json.loads(result.stdout)
+
+
+def _unified_dynamo_label() -> str:
+    return _dynamo_v2_producer()["crate_version"]
 
 
 def _unified_capture_failure(record: dict) -> dict:
@@ -2679,7 +2707,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
-            dyn = _assemble_stream(dyn_chunk_deltas)
+            dyn = _assemble_stream(dyn_chunk_deltas, recorded_assembly=c.get("dynamo"))
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
             if dynamo_failure:
@@ -2746,7 +2774,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     )
                     prev_chunks_by_ver[pv] = []
                     continue
-                pevents = _assemble_stream(pchunks)
+                pevents = _assemble_stream(pchunks, recorded_assembly=pdoc.get("assembled"))
                 pverd = _unified_classify(f, gold, pevents)
                 cmp[f"dynamo@{pv}"] = markers.cmp_entry(
                     _sig(pevents), leak=1 if pverd == "LEAK" else 0
@@ -2827,10 +2855,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
                                else (_unified_capture_failure(prev_by_ver[pv]) or {
-                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled")),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [])),
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled"))),
                                      "explanation": (
                                          f"Inherited unchanged from Dynamo v2 {prev_by_ver[pv].get('inherited_from')}."
                                          if prev_by_ver[pv].get("inherited_from") else None

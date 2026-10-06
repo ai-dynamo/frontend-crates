@@ -1836,6 +1836,53 @@ def _edge_case_family_policy(edge_case):
     return edge_case[-2] if len(edge_case) == 8 else edge_case[-1]
 
 
+RECOVERY_RAW = '{"x":"unfinished'
+RECOVERY_TOOLS = [
+    {"name": "bad", "parameters": {"type": "object", "properties": {"value": {"type": "object"}}}},
+    {"name": "echo", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}},
+]
+
+
+def malformed_json_recovery(fam):
+    following = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
+    if fam == "kimi_k3":
+        inp = k3_tools(k3_call("bad", 1, k3_json(RECOVERY_RAW)) + "".join(
+            k3_call("echo", index, k3_argument("value", "string", value))
+            for index, value in ((2, "é"), (3, "Café"))))
+        golden = following
+    elif fam == "kimi_k2":
+        inp = ("<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0"
+               f"<|tool_call_argument_begin|>{RECOVERY_RAW}<|tool_call_end|><|tool_calls_section_end|>")
+        golden = [{"kind": "tool_call", "name": "bad", "arguments": {}}] + following
+    elif fam == "gemma4":
+        inp = '<|tool_call>call:bad{value:{x:<|"|>unfinished}}<tool_call|>'
+        golden = following
+    else:
+        inp = r_tool(fam, "bad", "value", RECOVERY_RAW, 0)
+        if fam in ("deepseek_v4", "deepseek_v41"):
+            inp = inp.replace('string="true"', 'string="false"')
+        golden = ([{"kind": "tool_call", "name": "bad", "arguments": {"value": RECOVERY_RAW}}]
+                  if fam != "deepseek_v41" else []) + following
+    if fam != "kimi_k3":
+        inp += "".join(r_tool(fam, "echo", "value", value, index)
+                       for index, value in ((1, "é"), (2, "Café")))
+    return inp, golden
+
+
+EDGE.append((
+    "malformed_json_then_two_valid_calls",
+    "An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.",
+    ["I2", "I7", "P2"], [],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "single_chunk": True},
+    {fam: (malformed_json_recovery(fam)[0], D("UNSUPPORTED", "No peer capture recorded."),
+           D("LOSS" if fam == "gemma4" else "ERROR", "Known malformed-call recovery defect; later calls must survive.")
+           if fam in ("gemma4", "deepseek_v41") else M, malformed_json_recovery(fam)[1])
+     for fam in FAMILIES},
+    RECOVERY_TOOLS,
+))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
@@ -2034,6 +2081,127 @@ for scenario, description, parameters, raw_arguments, arguments in (
     ))
 
 
+
+
+_NATIVE_QUOTED_CONTROL = {
+    "deepseek_v4": "<｜DSML｜tool_calls>",
+    "deepseek_v41": "<｜DSML｜ calls>",
+    "gemma4": "<|tool_call>",
+    "glm47": "<tool_call>",
+    "kimi_k2": "<|tool_calls_section_begin|>",
+    "kimi_k3": "<|open|>call",
+    "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
+    "qwen3": "<tool_call>",
+}
+
+
+def _native_quoted_control_cases():
+    for scenario, state, prefix_kind, suffix_call in (
+        ("native_quoted_control_in_response", "Response", "text", False),
+        ("native_quoted_control_in_reasoning", "Reasoning", "reasoning", False),
+        ("native_single_quoted_word_control", "Response", "text", False),
+        ("native_single_quote_contraction_response", "Response", "text", False),
+        ("native_single_quote_contraction_reasoning", "Reasoning", "reasoning", False),
+        ("native_quoted_incomplete_header", "Response", "text", False),
+        ("native_quoted_control_then_call", "Response", "text", True),
+        ("native_unmatched_quote_then_call", "Response", "text", True),
+    ):
+        families = {}
+        for family, marker in _NATIVE_QUOTED_CONTROL.items():
+            if scenario == "native_single_quoted_word_control":
+                prose = f"The literal 'example {marker} marker' is part of the explanation."
+            elif scenario.startswith("native_single_quote_contraction_"):
+                prose = f"The literal 'doesn't {marker} marker' stays quoted."
+            elif scenario == "native_quoted_incomplete_header":
+                header = r_tool(family, "get_weather", "city", "Paris", 0).split("Paris", 1)[0]
+                prose = f"The literal `{header}` header is part of the explanation."
+            elif scenario == "native_unmatched_quote_then_call":
+                prose = 'He said "maybe'
+            else:
+                prose = f'The literal "{marker}" marker is part of the explanation.'
+            golden = [{"kind": prefix_kind, "text": prose}]
+            raw = prose
+            if suffix_call:
+                raw += r_tool(family, "get_weather", "city", "Paris", 0)
+                golden.append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+            families[family] = (raw, M, M, golden)
+        yield (
+            scenario,
+            "Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.",
+            ["I7", "P2"], [],
+            {"starting_state": state, "tool_output_mode": "Native", "named_tool": None},
+            OnlyFamilies(families),
+        )
+
+
+EDGE += list(_native_quoted_control_cases())
+
+
+EDGE.append((
+    "guided_response_rejected_header_quote_ownership",
+    "DeepSeek V4 prefilled guided Response rejects an incomplete invoke header, then strips its parameter markup; the rejected attribute quote cannot become a prose quote and protect that markup.",
+    ["P2"],
+    [{"kind": "text", "text": 'f"x'}, {"kind": "tool_call", "name": "f", "arguments": {"x": "ok"}}],
+    {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({"deepseek_v4": (
+        '<｜DSML｜invoke name="f"<｜DSML｜parameter name="x" string="true">x[{"name":"f","arguments":{"x":"ok"}}]', M, M,
+    )}),
+    {"deepseek_v4": [{"name": "f", "parameters": {"type": "object", "properties": {"x": {"type": "string"}}}}]},
+))
+
+
+for _named in (False, True):
+    _families = {}
+    for _family in FAMILIES:
+        _closer = control_tokens(_family)[1]
+        _reasoning = f"The literal 'doesn't {_closer} marker' stays quoted."
+        _payload = json.dumps({"city": "Paris"} if _named else {"name": "get_weather", "arguments": {"city": "Paris"}})
+        _families[_family] = (
+            _reasoning + _closer + _payload, M, M,
+            [{"kind": "reasoning", "text": _reasoning},
+             {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+        )
+    EDGE.append((
+        "guided_quoted_reasoning_closer_" + ("named" if _named else "required"),
+        "Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.",
+        ["I7"], [],
+        {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": "get_weather" if _named else None},
+        OnlyFamilies(_families),
+    ))
+
+for _named in (False, True):
+    _families = {}
+    for _family, _marker in _NATIVE_QUOTED_CONTROL.items():
+        _prose = f'The literal "{_marker} {{ example }}" stays visible. '
+        _payload = json.dumps({"city": "Paris"} if _named else {"name": "get_weather", "arguments": {"city": "Paris"}})
+        _families[_family] = (
+            _prose + _payload, M, M,
+            [{"kind": "text", "text": _prose},
+             {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+        )
+    EDGE.append((
+        "guided_response_quoted_control_braces_" + ("named" if _named else "required"),
+        "Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.",
+        ["I7"], [],
+        {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": "get_weather" if _named else None},
+        OnlyFamilies(_families),
+    ))
+
+
+for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|start|>")):
+    _value = f'a"{_marker}"b'
+    EDGE.append((
+        f"muse_quoted_reserved_{_suffix}_argument",
+        "A balanced quotation in a Muse parameter value names a reserved channel token; preserve that literal value and the real call.",
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": _value}}],
+        {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+        OnlyFamilies({"muse_glimmer": (r_tool("muse_glimmer", "get_weather", "city", _value, 0), V_MUSE, M)}),
+    ))
+
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -2052,6 +2220,9 @@ def build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if fam in ("gemma4", "deepseek_v41"):
+        case = cases[f"UNIFIED.malformed_json_then_two_valid_calls.{fam}"]
+        case["expect"]["dynamo_current"] = case["expect"]["dynamo"]
     if fam == "deepseek_v41":
         case = cases[f"UNIFIED.reason_unterminated.{fam}"]
         case["input"] = case["input"].removeprefix("<think>")
@@ -2153,6 +2324,8 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if stream_config.get("single_chunk"):
+            case["input_chunks"] = [inp]
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
         cases[cid] = case
@@ -2217,6 +2390,11 @@ def emit_yaml(fam):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
+        if "input_chunks" in c:
+            chunks = c["input_chunks"]
+            if not isinstance(chunks, list) or any(not isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != c["input"]:
+                raise ValueError(f"{cid}: input_chunks must concatenate to input")
+            lines.append(f"    input_chunks: {json.dumps(chunks, ensure_ascii=False)}")
         if c.get("tools") is not None:
             lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
     return "\n".join(lines) + "\n"

@@ -558,3 +558,32 @@ def test_no_doubled_assembled_call_names_in_dom(driver):
         """
     )
     assert not dupes, f"doubled assembled call names in the DOM: {dupes[:3]}"
+
+
+def test_unified_recovery_colors_follow_selected_reference(driver):
+    driver.execute_script("document.querySelector('[data-tab-target=tab-unified]').click()")
+    try:
+        for version in ("dynamo", "dynamo@0.7.13"):
+            _select(driver, version, [])
+            cells = driver.execute_script("""
+                const model = JSON.parse(document.getElementById('conformance-model').textContent);
+                const tab = model.tabs.find(t => t.id === 'tab-unified');
+                return tab.rows.map(row => {
+                    const expected = row.cells.malformed_json_then_two_valid_calls.cmp;
+                    const cell = [...document.querySelectorAll('#tab-unified td.cell[data-cmp]')]
+                        .find(cell => cell.dataset.family === row.family &&
+                            cell.dataset.cmp === JSON.stringify(expected));
+                    return {family: row.family, classes: cell.className,
+                        marker: cell.querySelector('.marker-text').textContent};
+                });
+            """)
+            assert len(cells) == 8
+            for cell in cells:
+                red = cell["family"] in {"gemma4", "deepseek_v41"} or (
+                    version == "dynamo@0.7.13" and cell["family"] == "kimi_k3")
+                assert ("cmp-leak" if red else "cmp-eq") in cell["classes"], cell
+                if red:
+                    assert cell["marker"] == "✗", cell
+    finally:
+        _select(driver, "dynamo", [])
+        _open_stream_tab(driver)

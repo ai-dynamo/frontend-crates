@@ -31,6 +31,10 @@ When adding or converting a parser, or changing its captured behavior, manually 
 
 The release workflow honors this [manual version override](../RELEASING.md#manual-version-peg-fixture-synced-releases): it checks compatibility and publishes the explicitly pinned version without another automatic bump. For #234, GLM Unified and its pending release are both `0.7.0`; GLM Unified has no `0.6.x` captures. Unchanged families continue to inherit their existing captures.
 
+## Case applicability
+
+Before adding a conformance case, inspect every registered family. Shared behaviors need family-native inputs and authored expected outputs for every applicable family. Explain genuine exclusions using the grammar or request-mode limitation; discovering a bug in one family does not justify limiting its coverage to that family. Use numeric Unified groups for shared behaviors and named family sections for cases tied to one family's grammar. Preserve previously published IDs. List every newly added conformance ID, its meaning, applicable families, and intentional exclusions in the PR description.
+
 ## Ownership
 
 Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
@@ -155,6 +159,8 @@ The commands below cover both the older archive-backed tests and Unified. Apply 
 5. **Verify the new version shows on ALL tabs.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh` and confirm the new version is a Reference/Compare candidate on all four tabs (grep the rendered HTML), then `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. `test_model.py::test_v2_reasoning_uses_current_peers` specifically guards that the Reasoning tab surfaces every peer version dir — if it fails after you add a version, the tab lost multi-version rendering.
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
+
+For each conformance fix, add a regression test column that shows red for the previous (before) version and green for the fixed (after) version in the rendered report. Capture both versions using the same input, tools, initialization, and chunk schedule, and compare both against the same authored GOLDEN. Preserve the delivery pattern that triggers the bug, including single-chunk input when chunking affects the failure.
 
 1. Fix the code under `parsers/v1/` or `parsers/v2/`.
 2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.

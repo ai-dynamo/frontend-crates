@@ -33,7 +33,7 @@ def matches_schema(
 ) -> bool:
     root_schema = schema if root_schema is None else root_schema
     assert schema.keys() <= {"type", "properties", "items", "anyOf", "oneOf", "const",
-                             "enum", "nullable", "minLength", "$ref", "$defs", "definitions"}, schema
+                             "enum", "nullable", "minLength", "required", "$ref", "$defs", "definitions"}, schema
     if "$ref" in schema:
         reference = schema["$ref"]
         assert reference not in _references, ("cyclic schema reference", reference)
@@ -64,6 +64,8 @@ def matches_schema(
     if isinstance(value, str) and len(value) < schema.get("minLength", 0):
         return False
     if isinstance(value, dict):
+        if not set(schema.get("required", [])) <= value.keys():
+            return False
         properties = schema.get("properties", {})
         return all(matches_schema(item, properties[key], root_schema, _references) for key, item in value.items() if key in properties)
     if isinstance(value, list) and "items" in schema:
