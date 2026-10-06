@@ -29,11 +29,23 @@ def test_refresh_stream_preserves_canonical_dynamo_unavailable(tmp_path, monkeyp
     monkeypatch.setattr(refresh, "ensure_tree", lambda _name: tree)
     monkeypatch.setattr(refresh, "V2_FAMILIES", ["deepseek_v4"])
     monkeypatch.setattr(refresh, "run_bin", lambda *_args: json.dumps({}))
+    origin = {"crate_version": "0.5.1", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    producer = {"label": "current", **origin}
+    validations = []
+    monkeypatch.setattr(refresh, "dynamo_v2_provenance", lambda _root: producer)
+
+    def validate(_root, recorded):
+        validations.append(recorded)
+        return origin
+
+    monkeypatch.setattr(refresh, "validate_capture_provenance", validate)
 
     refresh.refresh_stream("0.5.1")
 
     output = tree / "dynamo_v2-0.5.1" / "deepseek_v4" / source.name
     assert "unavailable: DSML has one tool-name owner." in output.read_text()
+    assert yaml.safe_load(output.read_text())["capture_origin"] == origin
+    assert validations == [producer, producer]
 
 
 def test_build_sources_preserves_reasoned_unavailable_cases(tmp_path):

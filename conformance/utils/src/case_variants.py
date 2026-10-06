@@ -7,6 +7,13 @@ import hashlib
 import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
+from numeric_cases import NUMERIC_DESCRIPTIONS, applicable as numeric_applicable, numeric_group
+
+VARIANT_DESCRIPTIONS = {**NULL_DESCRIPTIONS, **NUMERIC_DESCRIPTIONS}
+
+
+def variant_group(label):
+    return null_group(label) or numeric_group(label)
 
 
 def aggregate_cells(cells, parent, description):
@@ -62,8 +69,8 @@ def group_null_variants(tab: dict) -> None:
         return
     columns = tab["columns"]
     display_labels: dict[str, str] = {}
-    for parent, description in NULL_DESCRIPTIONS.items():
-        members = [column for column in columns if null_group(column["label"]) == parent]
+    for parent, description in VARIANT_DESCRIPTIONS.items():
+        members = [column for column in columns if variant_group(column["label"]) == parent]
         if not members:
             continue
         root = next((column for column in members if column["label"] == parent), members[0])
@@ -77,6 +84,32 @@ def group_null_variants(tab: dict) -> None:
         for row in tab["rows"]:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
+            inapplicable = []
+            if numeric_group(parent) == "7-14" and not numeric_applicable(row["family"], parent):
+                prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
+                for column in members:
+                    cell = row["cells"].get(column["sub"])
+                    if cell is None:
+                        continue
+                    case_id = f"{prefix}.{column['label']}"
+                    cell.update(
+                        kind="cell",
+                        case_id=case_id,
+                        status="na",
+                        red_on_diff=False,
+                        cmp={
+                            candidate["key"]: {"sig": 0, "na": 1, "err": 0, "leak": 0}
+                            for candidate in tab["candidates"]
+                        },
+                    )
+                    tooltip = copy.deepcopy(cell.get("tooltip") or {})
+                    tooltip.update(
+                        head=f"{case_id} — {row['family']}",
+                        description=description,
+                        na_note="This family does not use the shared integral-decimal conversion contract.",
+                    )
+                    cell["tooltip"] = tooltip
+                    inapplicable.append(cell)
             children = [row["cells"][column["sub"]] for column in referenced
                         if (column["label"] not in MIXED_CASE_FAMILIES
                             or row["family"] in MIXED_CASE_FAMILIES[column["label"]])
@@ -85,6 +118,26 @@ def group_null_variants(tab: dict) -> None:
                         and row["cells"][column["sub"]].get("status") != "na"]
             if len(children) > 1:
                 row["cells"][root["sub"]] = aggregate_cells(children, parent, description)
+            elif inapplicable:
+                grouped = copy.deepcopy(inapplicable[0])
+                grouped.update(
+                    sub=root["sub"],
+                    case_id=f"{prefix}.{parent}",
+                    kind="cell",
+                    status="na",
+                    red_on_diff=False,
+                    variants=copy.deepcopy(inapplicable),
+                )
+                grouped["tooltip"] = {
+                    "head": f"{grouped['case_id']} — {row['family']}",
+                    "description": description,
+                    "input": {"kind": None},
+                    "init": None,
+                    "candidates": [],
+                    "variants": [cell["tooltip"] for cell in inapplicable],
+                    "na_note": "This family does not use the shared integral-decimal conversion contract.",
+                }
+                row["cells"][root["sub"]] = grouped
         for column in members:
             if column is not root:
                 column["variant_parent"] = parent
@@ -111,6 +164,6 @@ def group_null_variants(tab: dict) -> None:
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
     for group in tab.get("glossary", []):
         group["rows"] = [(display_labels.get(label, label),
-                          NULL_DESCRIPTIONS.get(display_labels.get(label, label), desc))
+                          VARIANT_DESCRIPTIONS.get(display_labels.get(label, label), desc))
                          for label, desc in group["rows"]
-                         if null_group(label) is None or label in display_labels]
+                         if variant_group(label) is None or label in display_labels]

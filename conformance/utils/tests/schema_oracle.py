@@ -3,6 +3,7 @@
 """Independent value validator for the schema keywords authored by this corpus."""
 
 import re
+from decimal import Decimal
 from urllib.parse import unquote
 
 
@@ -45,8 +46,8 @@ def matches_schema(
     if schema.get("nullable") is True:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
-             "number": type(value) in (int, float),
-             "integer": type(value) is int or (type(value) is float and value.is_integer()),
+             "number": type(value) in (int, float, Decimal),
+             "integer": type(value) is int or (type(value) is float and value.is_integer()) or (type(value) is Decimal and value == value.to_integral_value()),
              "boolean": type(value) is bool,
              "object": isinstance(value, dict), "array": isinstance(value, list)}
     # Reject unknown types even when another union member matches the value.

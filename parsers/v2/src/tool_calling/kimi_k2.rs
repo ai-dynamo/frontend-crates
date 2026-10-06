@@ -306,9 +306,8 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
     // section-end guard) instead of taking the well-formed path at all --
     // one owner for "is this argument actually usable as JSON", not a
     // patchwork of per-branch checks.
-    let valid_json_len = json_value_end(after_args).filter(|&json_len| {
-        serde_json::from_str::<serde_json::Value>(&after_args[..json_len]).is_ok()
-    });
+    let valid_json_len = json_value_end(after_args)
+        .filter(|&json_len| crate::arguments::valid_json(&after_args[..json_len]));
     let Some(json_len) = valid_json_len else {
         // `json_value_end` returning `None` does NOT mean "malformed" --
         // most of the time it means "not balanced YET", e.g. a chunk split

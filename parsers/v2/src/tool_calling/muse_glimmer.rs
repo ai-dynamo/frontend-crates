@@ -652,7 +652,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
             .strip_suffix(INVOKE_CLOSE)
             .unwrap_or_default();
 
-        let mut arguments = serde_json::Map::new();
+        let mut arguments = crate::arguments::Object::new();
         let mut source_names = Vec::new();
         for param in parameter_re().captures_iter(body) {
             let key = param.name("key").expect("regex requires key").as_str();
@@ -680,8 +680,9 @@ impl InvokeEmitter for MuseInvokeEmitter {
 /// spec's `value_parser: json` with `allow_non_json: true`. The raw fallback is
 /// byte-preserving (NOT trimmed): both engines keep surrounding whitespace in
 /// non-JSON string values.
-fn decode_value(raw: &str) -> serde_json::Value {
-    serde_json::from_str(raw).unwrap_or_else(|_| serde_json::Value::String(raw.to_string()))
+fn decode_value(raw: &str) -> crate::arguments::ParsedValue {
+    crate::arguments::parse_json(raw)
+        .unwrap_or_else(|_| crate::arguments::ParsedValue::String(raw.to_string()))
 }
 
 /// Collapse the chat template's doubled namespace (`get_weather.get_weather` ->

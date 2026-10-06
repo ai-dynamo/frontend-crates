@@ -8311,48 +8311,22 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
-  malformed_json_then_two_valid_calls:
+  arg_numeric_14_const_decimal:
     lifecycle: active
-    scenario: malformed_json_then_two_valid_calls
-    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    scenario: arg_numeric_14_const_decimal
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0; expected 42.'
     policy:
-    - I2
     - I7
-    - P2
-    display_id: UNIFIED.5-4
+    display_id: UNIFIED.7-14.const_decimal
     historical_ids: []
     request:
       input: '<tool_call>
 
-        <function=bad>
+        <function=get_weather>
 
         <parameter=value>
 
-        {"x":"unfinished
-
-        </parameter>
-
-        </function>
-
-        </tool_call><tool_call>
-
-        <function=echo>
-
-        <parameter=value>
-
-        é
-
-        </parameter>
-
-        </function>
-
-        </tool_call><tool_call>
-
-        <function=echo>
-
-        <parameter=value>
-
-        Café
+        42.0
 
         </parameter>
 
@@ -8365,70 +8339,1221 @@ cases:
         named_tool: null
       finish_reason: stop
       tools:
-      - name: bad
+      - name: get_weather
         parameters:
           type: object
           properties:
             value:
-              type: object
-      - name: echo
-        parameters:
-          type: object
-          properties:
-            value:
-              type: string
-          required:
-          - value
+              type:
+              - integer
+              - 'null'
+              const: 42
       chunks:
-      - delta_text: '<tool_call>
+      - delta_text: <tool_call>
+      - delta_text: '
 
-          <function=bad>
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
 
-          <parameter=value>
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
 
-          {"x":"unfinished
+          42.0
 
-          </parameter>
+          '
+      - delta_text: </parameter>
+      - delta_text: '
 
-          </function>
+          '
+      - delta_text: </function>
+      - delta_text: '
 
-          </tool_call><tool_call>
-
-          <function=echo>
-
-          <parameter=value>
-
-          é
-
-          </parameter>
-
-          </function>
-
-          </tool_call><tool_call>
-
-          <function=echo>
-
-          <parameter=value>
-
-          Café
-
-          </parameter>
-
-          </function>
-
-          </tool_call>'
+          '
+      - delta_text: </tool_call>
       - delta_text: ‹finish›
     golden:
       assembled:
       - kind: tool_call
-        name: bad
-        arguments:
-          value: '{"x":"unfinished'
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_const_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_const_exponent
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.const_exponent
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        4.2e1
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          4.2e1
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
       - kind: tool_call
-        name: echo
-        arguments:
-          value: é
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_enum_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_decimal
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.enum_decimal
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        42.0
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          42.0
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
       - kind: tool_call
-        name: echo
-        arguments:
-          value: Café
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_enum_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_exponent
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.enum_exponent
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        4.2e1
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          4.2e1
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_fraction_fallback:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_fallback
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.5; expected "42.5".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.fraction_fallback
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        42.5
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          42.5
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"42.5"}'
+  arg_numeric_14_fraction_near_integer:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_near_integer
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0000000000000001; expected "42.0000000000000001".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.fraction_near_integer
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        42.0000000000000001
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          42.0000000000000001
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"42.0000000000000001"}'
+  arg_numeric_14_fraction_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_underflow
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 1e-400; expected "1e-400".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.fraction_underflow
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        1e-400
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          1e-400
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"1e-400"}'
+  arg_numeric_14_large_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_large_decimal
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.large_decimal
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9007199254740993.0
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9007199254740993.0
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993}'
+  arg_numeric_14_large_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_large_exponent
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.large_exponent
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9.007199254740993e15
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9.007199254740993e15
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993}'
+  arg_numeric_14_negative:
+    lifecycle: active
+    scenario: arg_numeric_14_negative
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.negative
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        -4.2E+1
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          -4.2E+1
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-42}'
+  arg_numeric_14_negative_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_negative_exponent
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4200e-2; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.negative_exponent
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        4200e-2
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          4200e-2
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_zero_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_zero_underflow
+    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.zero_underflow
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        0.0e-400
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          0.0e-400
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0}'
+  arg_numeric_15_exponent:
+    lifecycle: active
+    scenario: arg_numeric_15_exponent
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.exponent
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9.0071992547409925e15
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9.0071992547409925e15
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.0071992547409925e15}'
+  arg_numeric_15_negative:
+    lifecycle: active
+    scenario: arg_numeric_15_negative
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.negative
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        -9007199254740992.5
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          -9007199254740992.5
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-9007199254740992.5}'
+  arg_numeric_15_ordinary:
+    lifecycle: active
+    scenario: arg_numeric_15_ordinary
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.ordinary
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        42.5
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          42.5
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.5}'
+  arg_numeric_15_quarter:
+    lifecycle: active
+    scenario: arg_numeric_15_quarter
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.quarter
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9007199254740993.25
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9007199254740993.25
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.25}'
+  arg_numeric_15_round_down:
+    lifecycle: active
+    scenario: arg_numeric_15_round_down
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.round_down
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9007199254740992.5
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9007199254740992.5
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740992.5}'
+  arg_numeric_15_round_up:
+    lifecycle: active
+    scenario: arg_numeric_15_round_up
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.round_up
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        9007199254740993.1
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          9007199254740993.1
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.1}'
+  arg_numeric_15_small:
+    lifecycle: active
+    scenario: arg_numeric_15_small
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.small
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=value>
+
+        0.10000000000000000001
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          0.10000000000000000001
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.10000000000000000001}'

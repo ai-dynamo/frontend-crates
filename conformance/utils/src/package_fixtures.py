@@ -72,6 +72,34 @@ def sha256_file(path):
     return h.hexdigest()
 
 
+def _archive_extends(previous, candidate):
+    """Allow a same-version archive to gain files without changing old evidence."""
+    if not previous.is_file() or not candidate.is_file():
+        return False
+    try:
+        with tarfile.open(previous, "r:gz") as old_tar, tarfile.open(candidate, "r:gz") as new_tar:
+            old_list, new_list = old_tar.getmembers(), new_tar.getmembers()
+            old_members = {member.name: member for member in old_list}
+            new_members = {member.name: member for member in new_list}
+            if len(old_members) != len(old_list) or len(new_members) != len(new_list):
+                return False
+            if not old_members.keys() <= new_members.keys():
+                return False
+            for name, old_member in old_members.items():
+                new_member = new_members[name]
+                if old_member.isdir() and new_member.isdir():
+                    continue
+                if not old_member.isfile() or not new_member.isfile():
+                    return False
+                old_data = old_tar.extractfile(old_member).read()
+                new_data = new_tar.extractfile(new_member).read()
+                if old_data != new_data:
+                    return False
+            return old_members.keys() < new_members.keys()
+    except (OSError, tarfile.TarError):
+        return False
+
+
 def read_versions():
     """Read crate versions from Cargo.toml files and peer versions from pyproject.stub.toml."""
     crates = {}
@@ -321,7 +349,10 @@ def sync_store(
             continue
         destination = fixtures_dir / shard["path"]
         if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
-            if sha256_file(destination) != shard["sha256"]:
+            candidate = blobs_dir / shard["path"]
+            if sha256_file(destination) != shard["sha256"] and not _archive_extends(
+                destination, candidate
+            ):
                 raise ValueError(f"versioned capture is immutable; use a new semantic version: {shard['path']}")
     stale = [
         p

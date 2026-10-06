@@ -1202,12 +1202,14 @@ def test_stream_null_columns_match_unified_numbers(model_v2):
 @pytest.mark.parametrize("mode", ["batch", "streamv1"])
 def test_numbered_cases_keep_argument_group_and_natural_fallback_order(mode: str) -> None:
     cases = {("minimax_m3", sub): {} for sub in (
-        "13-10", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
+        "13-10", "7-15.ordinary", "7-14.const_decimal", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
     )}
     assert table.fixtures._discover_sub_cases(mode, cases) == [
-        "7.a", "7-5", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
+        "7.a", "7-5", "7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
     ]
-    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8"))
+    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary"))
+    assert table.fixtures._subcase_band_class(mode, "7-14.const_decimal") == table.fixtures._subcase_band_class(mode, "7.a")
+    assert table.fixtures._subcase_band_class(mode, "7-15.ordinary") == table.fixtures._subcase_band_class(mode, "7.a")
 
 
 @pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5", "7-6", "7-7", "7-8"])
@@ -1298,3 +1300,21 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, t
                     for key in ("dynamo_v1-9-1-0", "dynamo_v2-0-7-4"):
                         assert leaf["cmp"][key]["na"] == 0
         assert len(groups[0] & groups[1]) == int(mixed)
+
+
+def test_numeric_columns_share_argument_heading_and_band(model_v2):
+    for tab_id, heading in [("tab-unified", "TC Argument fidelity"),
+                            ("tab-toolcalling-streamv1", "Args")]:
+        tab = _tab(model_v2, tab_id)
+        columns = tab["columns"]
+        numeric = [column for column in columns if column["label"] in {"7-14", "7-15"}]
+        assert [column["label"] for column in numeric] == ["7-14", "7-15"]
+        previous = next(column for column in columns
+                        if column["group_key"] == numeric[0]["group_key"]
+                        and column["label"] not in {"7-14", "7-15"})
+        assert all(column["group_key"] == previous["group_key"] for column in numeric)
+        assert all(column["band"] == previous["band"] for column in numeric)
+        groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
+        assert len(groups) == 1
+        assert groups[0]["label"] == heading
+        assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)

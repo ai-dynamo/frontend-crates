@@ -1,0 +1,144 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.16
+    git_commit: f279dcc139f9f00e056d78defde4a4d4e962d679
+    source_sha256: a887e96590fd44c495b8405dd16714b5dc9fdfeb409b31df972a3378433054b4
+document:
+  mode: unified
+changes:
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 699b4bacb5625075c51fd7d8988972212349d761e40ff772dc384a9f825116fc
+    case_key: UNIFIED.7-15.exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.0071992547409925e15}'
+            complete: true
+        - expected: []
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 7dc8b8556e1dcd3f4563509f52d7c5f5a86cdb24f3fd73c61ae9bc4a852a0e76
+    case_key: UNIFIED.7-15.negative
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: f15dab651ffa413692553b0e5c7890851104cd84b3f79371fd5b9111042f237e
+    case_key: UNIFIED.7-15.quarter
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.25}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: b2cac1c1874147c4f53c909cd714f6ee20fd644c9aa8fb6678895e429a47a411
+    case_key: UNIFIED.7-15.round_down
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: ca5ebc5aaa5277376a60f5e5cf4fafd067e29b73c9311880c952641359ddd358
+    case_key: UNIFIED.7-15.round_up
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.1}'
+            complete: true
+        - expected: []
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: 27e00c09b5100992136f5f919c353877ac6dff6f537081439c5fb621b0061e21
+    case_key: UNIFIED.7-15.small
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.10000000000000000001}'
+            complete: true
+        - expected: []
+metadata_changes:
+  arg_numeric_15_exponent: {}
+  arg_numeric_15_negative: {}
+  arg_numeric_15_ordinary: {}
+  arg_numeric_15_quarter: {}
+  arg_numeric_15_round_down: {}
+  arg_numeric_15_round_up: {}
+  arg_numeric_15_small: {}
+document_overrides: {}

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::arguments::{Object, ParsedValue, parse_json};
 use anyhow::Context;
-use serde_json::{Map, Value};
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
@@ -330,12 +330,12 @@ impl InvokeEmitter for DeepSeekV41 {
             .strip_suffix(INVOKE_END)
             .context("incomplete DeepSeek V4.1 invocation")?;
         let mut arguments = if body.trim_start().starts_with('{') {
-            let arguments = serde_json::from_str::<Map<String, Value>>(body)
+            let arguments = crate::arguments::parse_object(body)
                 .context("invalid DeepSeek V4.1 JSON arguments")?;
             body = "";
             arguments
         } else {
-            Map::new()
+            Object::new()
         };
         while !body.trim().is_empty() {
             let (name, string, value) = parameter_header(body.trim_start())
@@ -344,9 +344,9 @@ impl InvokeEmitter for DeepSeekV41 {
                 .split_once(PARAMETER_END)
                 .context("incomplete DeepSeek V4.1 parameter")?;
             let value = if string {
-                Value::String(raw.to_string())
+                ParsedValue::String(raw.to_string())
             } else {
-                serde_json::from_str(raw)?
+                parse_json(raw)?
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),

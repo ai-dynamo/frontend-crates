@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import hashlib
+import io
 import json
 import sys
+import tarfile
 import threading
 from pathlib import Path
 from types import SimpleNamespace
@@ -568,6 +570,33 @@ def test_existing_versioned_archive_cannot_be_overwritten(evidence, tmp_path):
     with pytest.raises(ValueError, match="immutable"):
         package_fixtures.sync_store(tmp_path, [shard], dry_run=False, prune=False)
     assert path.read_bytes() == b"historical bytes"
+
+
+def test_existing_versioned_archive_accepts_new_members_without_changing_old_data(tmp_path):
+    old = tmp_path / "old.tar.gz"
+    new = tmp_path / "new.tar.gz"
+    entries = {
+        "toolcalling/fixtures-stream-v1/dynamo_v1-9.1.0/family/old.yaml": b"old result\n",
+        "toolcalling/fixtures-stream-v1/dynamo_v1-9.1.0/family/TOOLCALLING.streamv1.7-numeric.yaml": b"new result\n",
+    }
+    for path, names in ((old, list(entries)[:1]), (new, list(entries))):
+        with tarfile.open(path, "w:gz") as archive:
+            for name in names:
+                info = tarfile.TarInfo(name)
+                info.size = len(entries[name])
+                archive.addfile(info, io.BytesIO(entries[name]))
+
+    assert package_fixtures._archive_extends(old, new)
+
+    changed = tmp_path / "changed.tar.gz"
+    with tarfile.open(changed, "w:gz") as archive:
+        info = tarfile.TarInfo(next(iter(entries)))
+        info.size = len(b"changed result\n")
+        archive.addfile(info, io.BytesIO(b"changed result\n"))
+        info = tarfile.TarInfo(list(entries)[1])
+        info.size = len(entries[list(entries)[1]])
+        archive.addfile(info, io.BytesIO(entries[list(entries)[1]]))
+    assert not package_fixtures._archive_extends(old, changed)
 
 
 def test_prune_removes_stale_unified_archive(tmp_path):

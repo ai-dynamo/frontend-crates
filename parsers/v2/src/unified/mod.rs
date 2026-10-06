@@ -108,6 +108,7 @@ pub enum UnifiedEvent {
     },
     ToolCall {
         name: String,
+        /// Semantic projection; use `tool_arguments_raw()` for exact numeric tokens.
         #[serde(default)]
         arguments: serde_json::Value,
     },
@@ -2489,13 +2490,13 @@ fn json_payload_started(buf: &str) -> bool {
 /// visible text; an incomplete valid prefix remains buffered until its payload
 /// finishes streaming.
 fn json_payload_kind(payload: &str) -> &'static str {
-    match serde_json::from_str::<serde_json::Value>(payload) {
-        Ok(serde_json::Value::Object(_)) => "object",
-        Ok(serde_json::Value::Array(_)) => "array",
-        Ok(serde_json::Value::String(_)) => "string",
-        Ok(serde_json::Value::Number(_)) => "number",
-        Ok(serde_json::Value::Bool(_)) => "boolean",
-        Ok(serde_json::Value::Null) => "null",
+    match crate::arguments::parse_json(payload) {
+        Ok(crate::arguments::ParsedValue::Object(_)) => "object",
+        Ok(crate::arguments::ParsedValue::Array(_)) => "array",
+        Ok(crate::arguments::ParsedValue::String(_)) => "string",
+        Ok(crate::arguments::ParsedValue::Number(_)) => "number",
+        Ok(crate::arguments::ParsedValue::Bool(_)) => "boolean",
+        Ok(crate::arguments::ParsedValue::Null) => "null",
         Err(_) => "invalid_json",
     }
 }
@@ -2699,9 +2700,7 @@ impl GuidedState {
 
     fn is_guided_payload(&self, payload: &str) -> bool {
         match self.named_tool {
-            Some(_) => {
-                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload).is_ok()
-            }
+            Some(_) => crate::arguments::parse_object(payload).is_ok(),
             None => parse_required_guided_calls(payload).is_some_and(|calls| !calls.is_empty()),
         }
     }
@@ -4517,9 +4516,7 @@ impl GuidedState {
             return Vec::new();
         };
         let mut output = Vec::new();
-        if let Ok(obj) =
-            serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(self.json.trim())
-        {
+        if let Ok(obj) = crate::arguments::parse_object(self.json.trim()) {
             warn_if_named_payload_looks_like_an_envelope(named_tool, &obj);
             output.push(UnifiedParserEvent::ToolCall(ToolCallDelta {
                 tool_index: 0,
@@ -4628,24 +4625,20 @@ impl GuidedState {
             // Arguments are an OBJECT. A bare string / number / null / array is
             // syntactically valid JSON but is not an argument set, and EMITTING it
             // would hand the tool a shape it cannot bind — surface it as text instead.
-            Some(name) => {
-                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload)
-                    .ok()
-                    .map(|obj| {
-                        warn_if_named_payload_looks_like_an_envelope(name, &obj);
-                        vec![GuidedCall {
-                            name: name.clone(),
-                            arguments: raw_payload.clone(),
-                        }]
-                    })
-            }
+            Some(name) => crate::arguments::parse_object(payload).ok().map(|obj| {
+                warn_if_named_payload_looks_like_an_envelope(name, &obj);
+                vec![GuidedCall {
+                    name: name.clone(),
+                    arguments: raw_payload.clone(),
+                }]
+            }),
             None => parse_required_guided_calls(payload),
         };
 
         let Some(calls) = calls.filter(|calls| !calls.is_empty()) else {
             if self.invalid_payload == InvalidGuidedPayloadPolicy::Reject {
                 return Err(InvalidGuidedPayload {
-                    kind: if serde_json::from_str::<serde_json::Value>(payload).is_ok() {
+                    kind: if crate::arguments::valid_json(payload) {
                         InvalidGuidedPayloadKind::WrongShape
                     } else {
                         InvalidGuidedPayloadKind::InvalidJson
@@ -4765,10 +4758,7 @@ struct GuidedElement {
 /// One implementation, because BOTH named paths reach it now: the buffered
 /// completion path and the streamed one, which has already put these very bytes on
 /// the wire and can only report the suspicion, not act on it.
-fn warn_if_named_payload_looks_like_an_envelope(
-    named_tool: &str,
-    obj: &serde_json::Map<String, serde_json::Value>,
-) {
+fn warn_if_named_payload_looks_like_an_envelope(named_tool: &str, obj: &crate::arguments::Object) {
     if obj.contains_key("name") && (obj.contains_key("arguments") || obj.contains_key("parameters"))
     {
         tracing::warn!(
@@ -4799,7 +4789,7 @@ fn convert_guided_call(call: GuidedToolCall) -> Option<GuidedCall> {
         // hand the tool a shape it cannot use. Absent is different — that means
         // no arguments, and stays valid (see the note above).
         (Some(raw), None) | (None, Some(raw)) => {
-            serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(raw.get()).ok()?;
+            crate::arguments::parse_object(raw.get()).ok()?;
             raw.get().to_string()
         }
         (None, None) => "{}".to_string(),

@@ -5,6 +5,7 @@
 // Format: <tool_call>function_name<arg_key>param1</arg_key><arg_value>value1</arg_value></tool_call>
 // Reference: https://huggingface.co/zai-org/GLM-4.7/blob/main/chat_template.jinja
 
+use crate::arguments::schema::{schema_has_type, schema_permits_null};
 use regex::Regex;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -13,8 +14,10 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::Glm47ParserConfig;
-use super::parsed_value::{ParsedValue, coerce_integer_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::arguments::{
+    NumberSpelling, ParsedValue, coerce_integral_number, number_value, parse_json,
+};
 
 /// Render a tool_call block snippet for logs. Bounded so a huge truncated
 /// argument body doesn't blow up the log line; control chars are escaped
@@ -379,26 +382,21 @@ fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
 
     // If the value already looks like JSON (object, array, or quoted string), parse it directly
     if (trimmed.starts_with('{') || trimmed.starts_with('[') || trimmed.starts_with('"'))
-        && let Ok(v) = serde_json::from_str::<Value>(trimmed)
+        && let Ok(v) = parse_json(trimmed)
     {
-        return v.into();
+        return v;
     }
 
     // Use schema type hints for coercion when available
     match schema_type {
         Some("integer") | Some("int") => {
-            if let Some(value) = coerce_integer_literal(trimmed) {
+            if let Some(value) = coerce_integral_number(trimmed) {
                 return value;
             }
         }
         Some("number") | Some("float") | Some("double") => {
-            if let Some(value) = coerce_integer_literal(trimmed) {
+            if let Some(value) = number_value(trimmed, NumberSpelling::Preserve) {
                 return value;
-            }
-            if let Ok(n) = trimmed.parse::<f64>()
-                && let Some(num) = serde_json::Number::from_f64(n)
-            {
-                return Value::Number(num).into();
             }
         }
         Some("boolean") | Some("bool") => match trimmed.to_lowercase().as_str() {
@@ -408,10 +406,10 @@ fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
         },
         Some("array") => {
             // Try JSON parse first, then fall back to comma-separated splitting
-            if let Ok(v) = serde_json::from_str::<Value>(trimmed)
-                && v.is_array()
+            if let Ok(v) = parse_json(trimmed)
+                && matches!(v, ParsedValue::Array(_))
             {
-                return v.into();
+                return v;
             }
             let items: Vec<Value> = trimmed
                 .split(',')
@@ -464,13 +462,13 @@ fn get_param_schema_type<'a>(
         return None;
     }
     // Preserve the integer coercer's arbitrary-length path before Value's numeric limit.
-    let candidates: &[&str] = if super::parsed_value::is_integer_literal(raw) {
+    let candidates: &[&str] = if crate::arguments::is_integer_literal(raw) {
         &["integer", "number"]
     } else {
-        match serde_json::from_str::<Value>(raw).ok()? {
-            Value::Null => &["null"],
-            Value::Bool(_) => &["boolean"],
-            Value::Number(_) => &["number"],
+        match parse_json(raw).ok()? {
+            ParsedValue::Null => &["null"],
+            ParsedValue::Bool(_) => &["boolean"],
+            ParsedValue::Number(_) => &["number"],
             _ => &[],
         }
     };
@@ -478,228 +476,6 @@ fn get_param_schema_type<'a>(
         .iter()
         .copied()
         .find(|candidate| schema_has_type(schema, param, candidate))
-}
-
-const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
-const MAX_NULL_SCHEMA_NODES: usize = 4096;
-
-// Only a proven match may turn the model's text into JSON null. Unknown references
-// must remain unknown through negation and oneOf, rather than counting as false.
-fn schema_permits_null(schema: &Value, root: &Value) -> bool {
-    let mut active_refs = vec![schema];
-    let mut remaining = MAX_NULL_SCHEMA_NODES;
-    schema_null_match(schema, root, &mut active_refs, 0, &mut remaining) == Some(true)
-}
-
-fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<bool> {
-    match (left, right) {
-        (Some(false), _) | (_, Some(false)) => Some(false),
-        (Some(true), Some(true)) => Some(true),
-        _ => None,
-    }
-}
-
-fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
-    ["$id", "$dynamicRef", "$recursiveRef"]
-        .iter()
-        .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())
-}
-
-fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
-    // URI percent-decoding precedes JSON Pointer's ~0/~1 decoding.
-    let pointer = reference.strip_prefix('#')?;
-    let decoded;
-    let pointer = if pointer.contains('%') {
-        let mut bytes = pointer.bytes();
-        let mut result = Vec::with_capacity(pointer.len());
-        while let Some(byte) = bytes.next() {
-            result.push(if byte == b'%' {
-                let high = char::from(bytes.next()?).to_digit(16)?;
-                let low = char::from(bytes.next()?).to_digit(16)?;
-                ((high << 4) | low) as u8
-            } else {
-                byte
-            });
-        }
-        decoded = String::from_utf8(result).ok()?;
-        decoded.as_str()
-    } else {
-        pointer
-    };
-    let mut bytes = pointer.bytes();
-    while let Some(byte) = bytes.next() {
-        if byte == b'~' && !matches!(bytes.next(), Some(b'0' | b'1')) {
-            return None;
-        }
-    }
-    // A nested $id changes the reference scope. Do not jump through it while
-    // resolving a fragment against the original tool-parameter document.
-    for (end, _) in pointer.char_indices().filter(|(_, ch)| *ch == '/').skip(1) {
-        if has_unsupported_schema_ref_scope(root.pointer(&pointer[..end])?) {
-            return None;
-        }
-    }
-    let target = root.pointer(pointer)?;
-    matches!(target, Value::Bool(_) | Value::Object(_)).then_some(target)
-}
-
-// Evaluate only the constraints relevant to null. Ref targets and sibling
-// keywords intersect; the remaining coercion rules do not change.
-fn schema_null_match<'a>(
-    schema: &'a Value,
-    root: &'a Value,
-    active_refs: &mut Vec<&'a Value>,
-    ref_depth: usize,
-    remaining: &mut usize,
-) -> Option<bool> {
-    *remaining = (*remaining).checked_sub(1)?;
-    if let Some(allowed) = schema.as_bool() {
-        return Some(allowed);
-    }
-    if !schema.is_object()
-        || schema.get("$dynamicRef").is_some()
-        || schema.get("$recursiveRef").is_some()
-        || (schema.get("$id").is_some() && !std::ptr::eq(schema, root))
-    {
-        return None;
-    }
-    let mut permits = Some(true);
-    if let Some(reference) = schema.get("$ref") {
-        let target = reference
-            .as_str()
-            .and_then(|reference| resolve_local_schema_ref(reference, root));
-        permits = if let Some(target) = target
-            && ref_depth < MAX_NULL_SCHEMA_REF_DEPTH
-            && !active_refs
-                .iter()
-                .any(|active| std::ptr::eq(*active, target))
-        {
-            active_refs.push(target);
-            let result = schema_null_match(target, root, active_refs, ref_depth + 1, remaining);
-            active_refs.pop();
-            result
-        } else {
-            None
-        };
-    }
-    if let Some(ty) = schema.get("type") {
-        let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
-        if !nullable
-            && ty.as_str() != Some("null")
-            && !ty
-                .as_array()
-                .is_some_and(|types| types.iter().any(|ty| ty == "null"))
-        {
-            return Some(false);
-        }
-    }
-    if schema.get("const").is_some_and(|value| !value.is_null())
-        || schema
-            .get("enum")
-            .and_then(Value::as_array)
-            .is_some_and(|values| !values.iter().any(Value::is_null))
-    {
-        return Some(false);
-    }
-    for keyword in ["allOf", "anyOf", "oneOf"] {
-        if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-            let mut matches = 0;
-            let mut unknown = 0;
-            for branch in branches {
-                match schema_null_match(branch, root, active_refs, ref_depth, remaining) {
-                    Some(true) => matches += 1,
-                    Some(false) => {}
-                    None => unknown += 1,
-                }
-            }
-            let branch_match = match keyword {
-                "allOf" if matches + unknown < branches.len() => Some(false),
-                "anyOf" if matches > 0 => Some(true),
-                "oneOf" if matches > 1 => Some(false),
-                _ if unknown > 0 => None,
-                "allOf" => Some(true),
-                "anyOf" => Some(false),
-                _ => Some(matches == 1),
-            };
-            permits = intersect_null_matches(permits, branch_match);
-            if permits == Some(false) {
-                return permits;
-            }
-        }
-    }
-    if let Some(not) = schema.get("not") {
-        let not_match = schema_null_match(not, root, active_refs, ref_depth, remaining);
-        permits = intersect_null_matches(permits, not_match.map(|matches| !matches));
-    }
-    permits
-}
-
-fn schema_has_type(root: &Value, schema: &Value, expected: &str) -> bool {
-    let mut remaining = 1024;
-    let matched = schema_type_match(root, schema, expected, 0, &mut remaining);
-    remaining > 0 && matched == Some(true)
-}
-
-// None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
-fn schema_type_match(
-    root: &Value,
-    schema: &Value,
-    expected: &str,
-    depth: usize,
-    remaining: &mut usize,
-) -> Option<bool> {
-    // A branching reference cycle can expand exponentially even at bounded depth.
-    *remaining = remaining.checked_sub(1)?;
-    // Local references are common in strict tool schemas. Limit traversal so a
-    // cyclic definition cannot recurse indefinitely while deciding a type hint.
-    if depth > 16
-        || schema.get("$dynamicRef").is_some()
-        || schema.get("$recursiveRef").is_some()
-        || (schema.get("$id").is_some() && !std::ptr::eq(schema, root))
-    {
-        return None;
-    }
-    let reference_hint = schema
-        .get("$ref")
-        .and_then(Value::as_str)
-        .and_then(|reference| resolve_local_schema_ref(reference, root))
-        .and_then(|target| schema_type_match(root, target, expected, depth + 1, remaining));
-    let matches = |ty: &Value| {
-        ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
-    };
-    let mut hint = schema.get("type").map(|ty| {
-        ty.as_array()
-            .map_or_else(|| matches(ty), |types| types.iter().any(matches))
-    });
-    // Modern JSON Schema applies $ref siblings as additional constraints.
-    hint = match (hint, reference_hint) {
-        (Some(left), Some(right)) => Some(left && right),
-        (left, right) => left.or(right),
-    };
-    for keyword in ["anyOf", "oneOf", "allOf"] {
-        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
-            continue;
-        };
-        let branches = options
-            .iter()
-            .map(|option| schema_type_match(root, option, expected, depth, remaining));
-        let branch_hint = if keyword == "allOf" {
-            branches.flatten().reduce(|left, right| left && right)
-        } else {
-            branches
-                .reduce(|left, right| match (left, right) {
-                    (Some(true), _) | (_, Some(true)) => Some(true),
-                    (Some(false), Some(false)) => Some(false),
-                    _ => None,
-                })
-                .flatten()
-        };
-        hint = match (hint, branch_hint) {
-            (Some(left), Some(right)) => Some(left && right),
-            (left, right) => left.or(right),
-        };
-    }
-    hint
 }
 
 /// Parse a single GLM-4.7 tool call block
@@ -873,18 +649,9 @@ mod tests {
             "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
             "properties": {"value": reference}
         });
-        let mut remaining = 64;
-        assert_eq!(
-            schema_type_match(
-                &schema,
-                &schema["properties"]["value"],
-                "string",
-                0,
-                &mut remaining
-            ),
-            None
-        );
-        assert_eq!(remaining, 0);
+        let mut walker = crate::arguments::schema::SchemaWalker::new(&schema);
+        assert!(!walker.has_type(Some(&schema["properties"]["value"]), "string"));
+        assert!(!walker.has_type(Some(&schema["properties"]["value"]), "integer"));
     }
 
     #[test]

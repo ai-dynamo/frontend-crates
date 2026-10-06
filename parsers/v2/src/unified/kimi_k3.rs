@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 
+#[cfg(test)]
 use serde_json::Value;
 
 use crate::tool_calling::scan::{
@@ -625,7 +626,7 @@ impl KimiK3CallBoundary {
                 return false;
             };
             let payload = &rest[..end];
-            serde_json::from_str::<Value>(payload).is_ok()
+            crate::arguments::valid_json(payload)
                 && rest[end..].trim().is_empty()
                 && (self.context != CallBoundaryContext::Guided || guided_payload_starts(rest))
         })
@@ -1011,7 +1012,7 @@ fn header_separator_is_partial(text: &str) -> bool {
 
 fn guided_payload_starts(text: &str) -> bool {
     let text = text.trim_start();
-    json_value_end(text).is_some_and(|end| serde_json::from_str::<Value>(&text[..end]).is_ok())
+    json_value_end(text).is_some_and(|end| crate::arguments::valid_json(&text[..end]))
 }
 
 fn kimi_k3_call_boundary() -> Box<dyn InvokeBoundary> {
@@ -2005,7 +2006,8 @@ fn parse_call_body(body: &str) -> Option<String> {
             return None;
         }
         let raw = &trimmed[value_start..value_end];
-        let Value::Object(_) = serde_json::from_str::<Value>(raw).ok()? else {
+        let crate::arguments::ParsedValue::Object(_) = crate::arguments::parse_json(raw).ok()?
+        else {
             return None;
         };
         return Some(compact_json(raw));
@@ -2209,7 +2211,7 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
     if arg_type == "string" {
         return serde_json::to_string(raw).expect("serializing a Rust string cannot fail");
     }
-    if serde_json::from_str::<Value>(raw).is_ok() {
+    if crate::arguments::valid_json(raw) {
         compact_json(raw)
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")

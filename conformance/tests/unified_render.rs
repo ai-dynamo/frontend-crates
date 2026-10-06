@@ -347,6 +347,17 @@ fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
 
 /// Classify a Dynamo divergence from the golden.
 fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
+    let projected: Vec<Ev> = golden
+        .iter()
+        .map(|event| match event {
+            Ev::ToolCall { name, arguments } => Ev::ToolCall {
+                name: name.clone(),
+                arguments: common::decoded_golden_arguments(arguments),
+            },
+            event => event.clone(),
+        })
+        .collect();
+    let golden = projected.as_slice();
     if golden == got {
         return "MATCH";
     }

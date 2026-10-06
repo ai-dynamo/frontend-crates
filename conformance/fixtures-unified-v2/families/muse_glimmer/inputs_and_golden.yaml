@@ -8641,38 +8641,20 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
-  malformed_json_then_two_valid_calls:
+  arg_numeric_15_exponent:
     lifecycle: active
-    scenario: malformed_json_then_two_valid_calls
-    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    scenario: arg_numeric_15_exponent
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
     policy:
-    - I2
     - I7
-    - P2
-    display_id: UNIFIED.5-4
+    display_id: UNIFIED.7-15.exponent
     historical_ids: []
     request:
-      input: '<|start|>assistant to=bad<|message|><atem:function_calls>
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
-        <atem:invoke name="bad">
+        <atem:invoke name="get_weather">
 
-        <atem:parameter name="value">{"x":"unfinished</atem:parameter>
-
-        </atem:invoke>
-
-        </atem:function_calls><|eom|><|start|>assistant to=echo<|message|><atem:function_calls>
-
-        <atem:invoke name="echo">
-
-        <atem:parameter name="value">é</atem:parameter>
-
-        </atem:invoke>
-
-        </atem:function_calls><|eom|><|start|>assistant to=echo<|message|><atem:function_calls>
-
-        <atem:invoke name="echo">
-
-        <atem:parameter name="value">Café</atem:parameter>
+        <atem:parameter name="value">9.0071992547409925e15</atem:parameter>
 
         </atem:invoke>
 
@@ -8683,58 +8665,399 @@ cases:
         named_tool: null
       finish_reason: stop
       tools:
-      - name: bad
+      - name: get_weather
         parameters:
           type: object
           properties:
             value:
-              type: object
-      - name: echo
-        parameters:
-          type: object
-          properties:
-            value:
-              type: string
-          required:
-          - value
+              type: number
       chunks:
-      - delta_text: '<|start|>assistant to=bad<|message|><atem:function_calls>
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
 
-          <atem:invoke name="bad">
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
 
-          <atem:parameter name="value">{"x":"unfinished</atem:parameter>
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 9.0071992547409925e15
+      - delta_text: </atem:parameter>
+      - delta_text: '
 
-          </atem:invoke>
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
 
-          </atem:function_calls><|eom|><|start|>assistant to=echo<|message|><atem:function_calls>
-
-          <atem:invoke name="echo">
-
-          <atem:parameter name="value">é</atem:parameter>
-
-          </atem:invoke>
-
-          </atem:function_calls><|eom|><|start|>assistant to=echo<|message|><atem:function_calls>
-
-          <atem:invoke name="echo">
-
-          <atem:parameter name="value">Café</atem:parameter>
-
-          </atem:invoke>
-
-          </atem:function_calls><|eom|>'
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
       - delta_text: ‹finish›
     golden:
       assembled:
       - kind: tool_call
-        name: bad
-        arguments:
-          value: '{"x":"unfinished'
+        name: get_weather
+        arguments: '{"value":9.0071992547409925e15}'
+  arg_numeric_15_negative:
+    lifecycle: active
+    scenario: arg_numeric_15_negative
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.negative
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">-9007199254740992.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '-9007199254740992.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
       - kind: tool_call
-        name: echo
-        arguments:
-          value: é
+        name: get_weather
+        arguments: '{"value":-9007199254740992.5}'
+  arg_numeric_15_ordinary:
+    lifecycle: active
+    scenario: arg_numeric_15_ordinary
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.ordinary
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">42.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '42.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
       - kind: tool_call
-        name: echo
-        arguments:
-          value: Café
+        name: get_weather
+        arguments: '{"value":42.5}'
+  arg_numeric_15_quarter:
+    lifecycle: active
+    scenario: arg_numeric_15_quarter
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.quarter
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740993.25</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740993.25'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.25}'
+  arg_numeric_15_round_down:
+    lifecycle: active
+    scenario: arg_numeric_15_round_down
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.round_down
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740992.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740992.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740992.5}'
+  arg_numeric_15_round_up:
+    lifecycle: active
+    scenario: arg_numeric_15_round_up
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.round_up
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740993.1</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740993.1'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.1}'
+  arg_numeric_15_small:
+    lifecycle: active
+    scenario: arg_numeric_15_small
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-15.small
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">0.10000000000000000001</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '0.10000000000000000001'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.10000000000000000001}'

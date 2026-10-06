@@ -119,7 +119,8 @@ from impls import (  # noqa: E402
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
 from null_cases import null_group
-from case_variants import group_null_variants
+from case_variants import group_null_variants, variant_group
+from numeric_cases import canonical_events, canonical_arguments
 
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 import gen_unified_golden  # noqa: E402  (authored Unified scenario scope)
@@ -800,7 +801,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 
 def _subcase_group_label(mode: str, sub: str) -> str:
-    return _group_by_sub(mode).get(null_group(sub) or sub, "Other")
+    return _group_by_sub(mode).get(variant_group(sub) or sub, "Other")
 
 
 def _subcase_runs(mode: str, sub_cases: list[str]) -> list[list[str]]:
@@ -2082,7 +2083,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     """Classify a captured event list against the golden oracle. Python port of
     the Rust `classify` in tests/unified_render.rs so vLLM (captured) and Dynamo
     (LIVE-in-Rust) are scored the same way against GOLDEN."""
-    if golden == got:
+    if canonical_events(golden) == canonical_events(got):
         return "MATCH"
 
     # Shared markers + any family-specific markup that leaks invisibly to them (e.g.
@@ -2104,7 +2105,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
         return "MERGE"
 
     def _calls(evs):
-        return [(e.get("name"), json.dumps(e.get("arguments"), sort_keys=True))
+        return [(e.get("name"), json.dumps(canonical_arguments(e.get("arguments")), sort_keys=True))
                 for e in evs if e.get("kind") == "tool_call"]
 
     gc, tc = _calls(golden), _calls(got)
@@ -2121,7 +2122,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     return "LOSS"
 
 
-def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = None) -> list:
+def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = None, preserve_arguments=False) -> list:
     """Assemble the FINAL ordered event list from a parser's per-chunk STREAMED deltas
     (not its batch final message). Coalesces consecutive reasoning/text runs and joins
     per-call tool-argument fragments (a delta with a name starts a new call; nameless
@@ -2171,7 +2172,8 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
                 e["arguments"] = {}
             else:
                 try:
-                    e["arguments"] = json.loads(raw)
+                    parsed = json.loads(raw)
+                    e["arguments"] = raw if preserve_arguments else parsed
                 except (ValueError, TypeError):
                     malformed.add(position)
                     e["arguments"] = raw
@@ -2508,7 +2510,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     vrust_vers = _vers.get("vllm_rust_all") or []
 
     def _sig(events) -> int:
-        return int(hashlib.md5(json.dumps(events, sort_keys=True).encode()).hexdigest()[:8], 16)
+        return int(hashlib.md5(json.dumps(canonical_events(events), sort_keys=True).encode()).hexdigest()[:8], 16)
 
     scenarios: list[str] = []
     families: list[str] = []
@@ -2689,6 +2691,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             )
             dynamo_failure = ({"error": missing_reason} if missing_reason else c.get("dynamo_failure") or {})
             gold = c["golden"]
+            preserve_arguments = any(isinstance(e.get("arguments"), str) for e in gold)
             # Assemble every engine's FINAL from its STREAMED per-chunk deltas (not its
             # batch final message). For Dynamo this is decisive: streaming preserves the
             # reasoning<->tool order that the batch assembly (detect_and_parse_reasoning)
@@ -2696,7 +2699,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
-            dyn = _assemble_stream(dyn_chunk_deltas, recorded_assembly=c.get("dynamo"))
+            dyn = _assemble_stream(dyn_chunk_deltas, preserve_arguments=preserve_arguments, recorded_assembly=c.get("dynamo"))
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
             if dynamo_failure:
@@ -2712,7 +2715,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 failure = _unified_capture_failure(cap) if cap else {}
                 chunks = [] if failure else (cap.get("chunks") if cap else None) or []
                 events = (None if cap is None or failure else
-                          (_assemble_stream(chunks) if spec["stream"] else
+                          (_assemble_stream(chunks, preserve_arguments=preserve_arguments) if spec["stream"] else
                            cap.get("assembled")))
                 err = cap.get("error") if cap else None
                 verdict = "ERROR" if err else (_unified_classify(f, gold, events)
@@ -2763,7 +2766,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     )
                     prev_chunks_by_ver[pv] = []
                     continue
-                pevents = _assemble_stream(pchunks, recorded_assembly=pdoc.get("assembled"))
+                pevents = _assemble_stream(pchunks, preserve_arguments=preserve_arguments, recorded_assembly=pdoc.get("assembled"))
                 pverd = _unified_classify(f, gold, pevents)
                 cmp[f"dynamo@{pv}"] = markers.cmp_entry(
                     _sig(pevents), leak=1 if pverd == "LEAK" else 0
@@ -2844,10 +2847,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
                                else (_unified_capture_failure(prev_by_ver[pv]) or {
-                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled")),
+                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or [], preserve_arguments=preserve_arguments, recorded_assembly=prev_by_ver[pv].get("assembled")),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled"))),
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [], preserve_arguments=preserve_arguments, recorded_assembly=prev_by_ver[pv].get("assembled"))),
                                      "explanation": (
                                          f"Inherited unchanged from Dynamo v2 {prev_by_ver[pv].get('inherited_from')}."
                                          if prev_by_ver[pv].get("inherited_from") else None

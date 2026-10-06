@@ -1370,15 +1370,29 @@ def _update_from_loose(
         if missing_required_capture_dirs:
             missing = ", ".join(missing_required_capture_dirs)
             raise ValueError(f"complete snapshot is missing required captures: {missing}")
-    for capture_dir in sorted(
-        path
-        for path in loose_root.iterdir()
-        if (
-            path.is_dir()
-            and CAPTURE_DIRECTORY_RE.fullmatch(path.name) is not None
-            and path.name not in excluded_capture_dirs
-        )
-    ):
+    ordered_capture_dirs = sorted(
+        (
+            path
+            for path in loose_root.iterdir()
+            if (
+                path.is_dir()
+                and CAPTURE_DIRECTORY_RE.fullmatch(path.name) is not None
+                and path.name not in excluded_capture_dirs
+            )
+        ),
+        key=lambda path: _capture_release_sort_key(
+            CAPTURE_DIRECTORY_RE.fullmatch(path.name)["runtime_version"]
+        ),
+    )
+    # Older backfills must not become inherited evidence at a newer checkpoint
+    # before its own additions are checked. New checkpoints instead build on
+    # their immediate predecessor, and membership can differ between families.
+    capture_passes = [
+        (path, existing_capture)
+        for existing_capture in (True, False)
+        for path in (reversed(ordered_capture_dirs) if existing_capture else ordered_capture_dirs)
+    ]
+    for capture_dir, existing_capture in capture_passes:
         match = CAPTURE_DIRECTORY_RE.fullmatch(capture_dir.name)
         assert match is not None
         implementation = match["implementation"]
@@ -1435,6 +1449,8 @@ def _update_from_loose(
             history = store.histories.get(key)
             if history is None:
                 raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
+            if (capture_dir.name in history.captures) != existing_capture:
+                continue
             case_by_external = {}
             for case_id, case in history.family.cases.items():
                 for external_id in [case["display_id"], *case["historical_ids"]]:
@@ -1526,14 +1542,46 @@ def _update_from_loose(
                     != _canonical_json(_capture_semantic(records[case_id], case_id))
                 ]
                 if conflicts:
-                    raise ValueError(f"capture is immutable; use a new identity: {capture_dir.name}")
+                    raise ValueError(
+                        f"capture is immutable; use a new identity: {capture_dir.name}/"
+                        f"{family_name}: {', '.join(conflicts)}"
+                    )
                 additions = sorted(set(records) - set(resolved))
                 if not additions:
                     continue
-                raise ValueError(
-                    f"capture {capture_dir.name} is already recorded; add a new semantic "
-                    "version after back-capturing any new case across prior versions"
+                capture = captures[capture_dir.name]
+                missing_origins = [
+                    case_id
+                    for case_id in additions
+                    if "capture_origin" not in records[case_id]["document"]
+                ]
+                if missing_origins:
+                    raise ValueError(
+                        f"back-capture records are missing capture origin: {capture_dir.name}/"
+                        f"{family_name}: {', '.join(missing_origins)}"
+                    )
+                incoming_origins = {
+                    _canonical_json(records[case_id]["document"]["capture_origin"])
+                    for case_id in additions
+                }
+                if incoming_origins and incoming_origins != {
+                    _canonical_json(capture["provenance"].get("origin"))
+                }:
+                    raise ValueError(
+                        f"back-capture source differs from recorded origin: {capture_dir.name}"
+                    )
+                for case_id in additions:
+                    capture["changes"][case_id] = _stored_change(records[case_id])
+                    record_metadata = records[case_id]["document"].get("record_metadata", {})
+                    if record_metadata:
+                        capture["metadata_changes"][case_id] = record_metadata
+                    parser_path = records[case_id]["document"].get("parser_path")
+                    if parser_path is not None:
+                        capture["document_overrides"][case_id] = {"parser_path": parser_path}
+                documents[history.capture_path(capture_dir.name)] = _capture_document(
+                    history, capture_dir.name
                 )
+                continue
             prior_id = history.ordered_capture_ids()[-1]
             if _capture_release_sort_key(runtime_version) <= _capture_release_sort_key(
                 history.captures[prior_id]["runtime_version"]

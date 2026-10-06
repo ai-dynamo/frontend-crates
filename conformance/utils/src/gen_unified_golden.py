@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from numeric_cases import NUMERIC_VARIANTS, NUMERIC_DESCRIPTIONS, NumericLiteral, applicable, arguments_json
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
@@ -152,7 +153,8 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 def r_tool(fam, name, key, val, idx):
     assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
     value = "null" if val is None else val
-    string_attr = "false" if val is None else "true"
+    numeric = isinstance(val, NumericLiteral)
+    string_attr = "false" if val is None or numeric else "true"
     if fam == "deepseek_v41":
         return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
                 f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
@@ -162,7 +164,7 @@ def r_tool(fam, name, key, val, idx):
                 f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
                 f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
     if fam == "gemma4":
-        argument = "null" if val is None else f'<|"|>{value}<|"|>'
+        argument = "null" if val is None else value if numeric else f'<|"|>{value}<|"|>'
         return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
@@ -171,15 +173,16 @@ def r_tool(fam, name, key, val, idx):
         return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
                 f"<arg_value>{value}</arg_value></tool_call>")
     if fam == "muse_glimmer":
-        argument = "null" if val is None else _atem_value(val)
+        argument = "null" if val is None else value if numeric else _atem_value(val)
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
                 f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        argument_type = "null" if val is None else "string"
+        argument_type = "null" if val is None else "number" if numeric else "string"
         return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
-    args = json.dumps({key: val}, ensure_ascii=False)
+    args = ("{" + json.dumps(key) + ":" + value + "}" if numeric
+            else json.dumps({key: val}, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
 
@@ -2081,6 +2084,19 @@ for scenario, description, parameters, raw_arguments, arguments in (
     ))
 
 
+EDGE += [
+    (scenario, NUMERIC_DESCRIPTIONS[label.split(".")[0]] + f" Input {raw}; expected {expected}.",
+     ["I7"], [{"kind": "tool_call", "name": "get_weather", "arguments": arguments_json(expected)}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     OnlyFamilies({family: (r_tool(family, "get_weather", "value", NumericLiteral(raw), 0),
+                             VLLM_UNCAPTURABLE.get(family, M), M)
+                   for family in FAMILIES if applicable(family, label)}),
+     {family: [{"name": "get_weather", "parameters": {
+         "type": "object", "properties": {"value": schema}}}]
+      for family in FAMILIES if applicable(family, label)})
+    for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
+]
 
 
 def build_cases(fam):

@@ -12,8 +12,9 @@ from conformance.utils.tests.schema_oracle import matches_schema
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from case_variants import aggregate_cells, group_null_variants, leaf_cells
-from gen_null_stream_cases import FAMILIES, build_cases
+from gen_null_stream_cases import FAMILIES, build_cases, native_call
 from null_cases import NULL_DESCRIPTIONS, NULL_VARIANTS
+from numeric_cases import NumericLiteral
 from validate_conformance_status import cell_state
 
 
@@ -90,6 +91,24 @@ def test_mixed_reproducers_keep_both_field_types_and_strict():
     m3 = build_cases("minimax_m3")["TOOLCALLING.streamv1.7-4.mixed_grep"]
     assert m3["tools"][0]["strict"] is True
     assert m3["golden"]["calls"] == [{"name": "grep", "arguments": {"pattern": "null", "path": None}}]
+
+
+@pytest.mark.parametrize("family", ["glm47", "minimax_m2", "minimax_m3", "qwen3_coder"])
+def test_native_numeric_call_preserves_each_argument_value(family):
+    text = native_call(family, "f", {"first": NumericLiteral("42"), "second": None})
+    if family == "minimax_m2":
+        assert '<parameter name="first">42</parameter>' in text
+        assert '<parameter name="second">null</parameter>' in text
+    elif family == "minimax_m3":
+        marker = "]<]minimax[>["
+        assert f"{marker}<first>42{marker}</first>" in text
+        assert f"{marker}<second>null{marker}</second>" in text
+    elif family == "glm47":
+        assert "<arg_key>first</arg_key><arg_value>42</arg_value>" in text
+        assert "<arg_key>second</arg_key><arg_value>null</arg_value>" in text
+    else:
+        assert "<parameter=first>42</parameter>" in text
+        assert "<parameter=second>null</parameter>" in text
 
 
 def test_missing_fixture_variant_remains_visible_and_incomplete():

@@ -1178,9 +1178,10 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.15"
+version = "0.7.16"
 dependencies = [
  "anyhow",
+ "indexmap 2.14.0",
  "openai-harmony",
  "percent-encoding",
  "regex",

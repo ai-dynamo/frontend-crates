@@ -178,9 +178,8 @@ fn find_section_end(
         // malformed/raw-string fallback below (with its own intervening-
         // section-end guard) instead of trusting `json_value_end` alone;
         // mirrors the identical hoist in streaming's `kimi_invoke_end`.
-        let valid_json_end = json_value_end(&region[arg_pos..]).filter(|&json_end| {
-            serde_json::from_str::<serde_json::Value>(&region[arg_pos..arg_pos + json_end]).is_ok()
-        });
+        let valid_json_end = json_value_end(&region[arg_pos..])
+            .filter(|&json_end| crate::arguments::valid_json(&region[arg_pos..arg_pos + json_end]));
         cursor = match valid_json_end {
             Some(json_end) => arg_pos + json_end,
             None => {
@@ -482,9 +481,9 @@ fn parse_section_block(
             .and_then(|m| {
                 let args_start = m.start();
                 let argument_region = &block[args_start..];
-                if let Some(json_len) = json_value_end(argument_region).filter(|&json_len| {
-                    serde_json::from_str::<serde_json::Value>(&argument_region[..json_len]).is_ok()
-                }) {
+                if let Some(json_len) = json_value_end(argument_region)
+                    .filter(|&json_len| crate::arguments::valid_json(&argument_region[..json_len]))
+                {
                     let after_json = &argument_region[json_len..];
                     let call_end = after_json.find(config.call_end.as_str())?;
                     let next_call_start = after_json.find(config.call_start.as_str());
@@ -534,7 +533,7 @@ fn parse_section_block(
         }
 
         // Validate JSON arguments
-        let arguments_json = match serde_json::from_str::<serde_json::Value>(arguments_raw) {
+        let arguments_json = match crate::arguments::parse_json(arguments_raw) {
             Ok(val) => serde_json::to_string(&val)?,
             Err(e) => {
                 tracing::warn!(

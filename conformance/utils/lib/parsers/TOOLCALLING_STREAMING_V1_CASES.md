@@ -85,3 +85,10 @@ boundary). Partial matches must return "keep buffering" rather than flushing as
 plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
+
+## Numeric argument fidelity (#339)
+
+- **`TOOLCALLING.streamv1.7-14`** Integral decimal/exponent conversion: 12 variants cover const/enum constraints, integral values above 2^53, signed exponents, underflowing zero, and fractional fallback under integer/string schemas. Applies only to Qwen3-Coder and MiniMax-M2; MiniMax-M2 has no Unified interface.
+- **`TOOLCALLING.streamv1.7-15`** Fractional numeric preservation: seven variants cover ordinary fractions, values that round upward or downward in binary floating point, negative values, small fractions, and exponent notation. Each supported family uses its native number syntax.
+
+`numeric_cases.py` owns the shared variant inventory. Input and expected decimal tokens remain strings during generation; GOLDEN arguments use raw JSON strings in the packaged report to avoid binary floating-point rounding. The Rust assembled-event harness still uses `serde_json::Value`; its numeric equality is not the precision oracle. The report compares captured argument fragments with the independent exact-decimal oracle, and the parser unit tests retain exact spelling and exhaustive splits. Measured defects remain red and are tracked in `numeric-failures.md`; no production fix is included.

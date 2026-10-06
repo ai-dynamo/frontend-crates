@@ -11,7 +11,7 @@
 // `<|"|>`-delimited strings, bare unquoted keys, nested objects/arrays,
 // multiple calls concatenated without separators.
 
-use serde_json::{Map, Value};
+use crate::arguments::{NumberSpelling, Object, ParsedValue as Value, number_value};
 use uuid::Uuid;
 
 use super::super::ToolDefinition;
@@ -44,7 +44,7 @@ fn parse_gemma_call_parts(
                 name,
                 e
             );
-            Value::Object(Map::new())
+            Value::Object(Object::new())
         }
     };
     let arguments = serde_json::to_string(&args_value)?;
@@ -197,8 +197,7 @@ pub fn parse_one_tool_call_gemma4(
 //   object   = "{" args "}"
 //   array    = "[" (value ("," value)*)? "]"
 //
-// We parse straight into `serde_json::Value` so the rest of the pipeline sees
-// the same shape every other parser produces.
+// Keep numeric tokens exact through nested objects and arrays.
 
 struct Cursor<'a> {
     src: &'a str,
@@ -255,7 +254,7 @@ pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<Value> {
 }
 
 fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
-    let mut map = Map::new();
+    let mut map = Object::new();
     cur.skip_whitespace();
     if cur.eof() || cur.peek_byte() == Some(b'}') {
         return Ok(Value::Object(map));
@@ -412,22 +411,25 @@ fn parse_number(cur: &mut Cursor) -> anyhow::Result<Value> {
             &cur.src[start..]
         );
     }
-    let mut is_float = false;
     if cur.peek_byte() == Some(b'.') {
-        is_float = true;
         cur.pos += 1;
         while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
             cur.pos += 1;
         }
     }
-    let lex = &cur.src[start..cur.pos];
-    if is_float {
-        let f: f64 = lex.parse()?;
-        Ok(serde_json::json!(f))
-    } else {
-        let i: i64 = lex.parse()?;
-        Ok(serde_json::json!(i))
+    if matches!(cur.peek_byte(), Some(b'e' | b'E')) {
+        cur.pos += 1;
+        if matches!(cur.peek_byte(), Some(b'+' | b'-')) {
+            cur.pos += 1;
+        }
+        let exponent_start = cur.pos;
+        while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
+            cur.pos += 1;
+        }
+        anyhow::ensure!(cur.pos > exponent_start, "missing exponent digits");
     }
+    number_value(&cur.src[start..cur.pos], NumberSpelling::Preserve)
+        .ok_or_else(|| anyhow::anyhow!("invalid number at offset {start}"))
 }
 
 #[cfg(test)]

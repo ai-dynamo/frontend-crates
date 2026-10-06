@@ -3,6 +3,8 @@
 
 //! Dynamo parser v2 implementations.
 
+mod arguments;
+
 pub mod structural_tag;
 pub mod tool_calling;
 pub mod unified;

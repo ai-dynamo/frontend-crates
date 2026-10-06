@@ -1,0 +1,192 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.16
+    git_commit: f279dcc139f9f00e056d78defde4a4d4e962d679
+    source_sha256: a887e96590fd44c495b8405dd16714b5dc9fdfeb409b31df972a3378433054b4
+document:
+  mode: unified
+changes:
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: ad01e44b5f334ef038b3425b26c6fdf8cb69cfafe8d21412d069f2b552365608
+    case_key: UNIFIED.7-15.exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9.0071992547409925e15}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 92e76b0afb861bac225dcdb7432fb1848977c36b17bc5a0e48fc168bbb99f6d6
+    case_key: UNIFIED.7-15.negative
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":-9007199254740992.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: 212dd0f935663cceab2f65a465ca16c3662e43faf20ad50c3b1edbc066cd30ab
+    case_key: UNIFIED.7-15.quarter
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740993.25}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: b2fb852e084974ce1351b93297afc292bd4a51b84b3c518a88a77af48ac89d1d
+    case_key: UNIFIED.7-15.round_down
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740992.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: af0834e5a700cb04b2e7178f1e1ec214ca36589389b23b5ddaa383092b3583eb
+    case_key: UNIFIED.7-15.round_up
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740993.1}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: 77960ad3213bb16951a6a9a27bcaeb67a447315b9bb9aaac72020772e259de1c
+    case_key: UNIFIED.7-15.small
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":0.10000000000000000001}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes:
+  arg_numeric_15_exponent: {}
+  arg_numeric_15_negative: {}
+  arg_numeric_15_ordinary: {}
+  arg_numeric_15_quarter: {}
+  arg_numeric_15_round_down: {}
+  arg_numeric_15_round_up: {}
+  arg_numeric_15_small: {}
+document_overrides: {}

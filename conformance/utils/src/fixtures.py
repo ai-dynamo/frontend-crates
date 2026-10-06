@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-from null_cases import null_group
+from case_variants import variant_group
 from fixture_disposition import canonical_toolcalling_case_key
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
@@ -308,6 +308,8 @@ BATCH_SUB_CASE_GROUPS = [
             "7-11",
             "7-12",
             "7-13",
+            "7-14",
+            "7-15",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -389,7 +391,7 @@ def _natural_sub_sort_key(sub: str) -> tuple[int, int, str]:
 
 def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
     """Sort known cases by semantic display group, future cases naturally last."""
-    display_order = _display_order(mode).get(null_group(sub) or sub)
+    display_order = _display_order(mode).get(variant_group(sub) or sub)
     if display_order is not None:
         group_idx, sub_idx = display_order
         return (0, group_idx, sub_idx, sub)
@@ -398,12 +400,12 @@ def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
 
 
 def _subcase_band_class(mode: str, sub: str) -> str:
-    group_idx = _group_index_by_sub(mode).get(null_group(sub) or sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
+    group_idx = _group_index_by_sub(mode).get(variant_group(sub) or sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
     return f"case-band-{group_idx % 2}"
 
 
 def _subcase_group_key(mode: str, sub: str) -> str:
-    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(null_group(sub) or sub, "other")
+    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(variant_group(sub) or sub, "other")
 
 
 def _discover_sub_cases(mode: str, cases: dict) -> list[str]:
@@ -649,7 +651,9 @@ def _derive_stream_expected(case: dict) -> dict:
         for idx in order:
             raw = args.get(idx, "")
             try:
-                parsed = json.loads(raw) if raw else {}
+                parsed = (raw if any(isinstance(call.get("arguments"), str)
+                                     for call in (case.get("golden") or {}).get("calls", []))
+                          else json.loads(raw)) if raw else {}
             except json.JSONDecodeError:
                 parsed = raw
             calls.append({"name": names.get(idx, ""), "arguments": parsed})

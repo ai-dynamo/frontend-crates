@@ -1,0 +1,30 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.16
+    git_commit: f279dcc139f9f00e056d78defde4a4d4e962d679
+    source_sha256: a887e96590fd44c495b8405dd16714b5dc9fdfeb409b31df972a3378433054b4
+document:
+  mode: unified
+changes: {}
+metadata_changes:
+  arg_numeric_14_const_decimal: {}
+  arg_numeric_14_const_exponent: {}
+  arg_numeric_14_enum_decimal: {}
+  arg_numeric_14_enum_exponent: {}
+  arg_numeric_14_fraction_fallback: {}
+  arg_numeric_14_fraction_near_integer: {}
+  arg_numeric_14_fraction_underflow: {}
+  arg_numeric_14_large_decimal: {}
+  arg_numeric_14_large_exponent: {}
+  arg_numeric_14_negative: {}
+  arg_numeric_14_negative_exponent: {}
+  arg_numeric_14_zero_underflow: {}
+  arg_numeric_15_exponent: {}
+  arg_numeric_15_negative: {}
+  arg_numeric_15_ordinary: {}
+  arg_numeric_15_quarter: {}
+  arg_numeric_15_round_down: {}
+  arg_numeric_15_round_up: {}
+  arg_numeric_15_small: {}
+document_overrides: {}

@@ -16,6 +16,7 @@ the point the case is added, and name the file to edit.
 from __future__ import annotations
 
 from collections import defaultdict
+from decimal import Decimal
 import json
 import re
 import sys
@@ -726,24 +727,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 94,
-            "deepseek_v41": 94,
-            "gemma4": 96,
-            "glm47": 101,
-            "kimi_k2": 94,
-            "kimi_k3": 102,
-            "muse_glimmer": 95,
-            "qwen3": 94,
+            "deepseek_v4": 100,
+            "deepseek_v41": 100,
+            "gemma4": 102,
+            "glm47": 107,
+            "kimi_k2": 100,
+            "kimi_k3": 108,
+            "muse_glimmer": 101,
+            "qwen3": 112,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 770
+    assert sum(per_family.values()) == 830
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 113
+    assert len(UNIFIED_TAX) == 131
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1025,7 +1026,7 @@ def _json_values(raw):
     return values
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present
@@ -1083,7 +1084,7 @@ def _native_input_calls(family, raw):
             gap = " " if family == "deepseek_v41" else ""
             pattern = rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>'
             for key, is_string, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if is_string == "true" else json.loads(value)
+                arguments[key] = value if is_string == "true" else json.loads(value, parse_float=Decimal if exact_numbers else float)
         elif family == "qwen3":
             # The generator frames values with one newline; payload whitespace is data.
             arguments = {key: value.removeprefix("\n").removesuffix("\n")
@@ -1091,19 +1092,21 @@ def _native_input_calls(family, raw):
         elif family == "muse_glimmer":
             for key, value in re.findall(r'<atem:parameter name="([^"]+)">(.*?)</atem:parameter>', body, re.S):
                 try:
-                    arguments[key] = json.loads(value)
+                    arguments[key] = json.loads(value, parse_float=Decimal if exact_numbers else float)
                 except json.JSONDecodeError:
                     arguments[key] = value
         elif family == "gemma4":
             arguments = {key: value for key, value in re.findall(r'(\w+):<\|"\|>(.*?)<\|"\|>', body, re.S)}
             unquoted = re.sub(r'<\|"\|>.*?<\|"\|>', '', body, flags=re.S)
+            arguments.update({key: json.loads(value, parse_float=Decimal if exact_numbers else float)
+                              for key, value in re.findall(r'(\w+):(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?=[,}])', unquoted)})
             arguments.update({key: None for key in re.findall(r'(\w+):null(?=[,}])', unquoted)})
         elif family == "kimi_k2":
-            arguments, _ = json.JSONDecoder().raw_decode(body)
+            arguments, _ = json.JSONDecoder(parse_float=Decimal if exact_numbers else float).raw_decode(body)
         else:
             pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
             for key, kind, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if kind == "string" else json.loads(value)
+                arguments[key] = value if kind == "string" else json.loads(value, parse_float=Decimal if exact_numbers else float)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
                 values = _json_values(body)
                 if values:
@@ -1173,10 +1176,14 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
         _assert_malformed_recovery(family, case)
         return
     raw = case["input"]
-    tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
+    tools = [dict(event) for event in case["golden"] if event["kind"] == "tool_call"]
+    exact_numbers = any(isinstance(event["arguments"], str) for event in tools)
+    for event in tools:
+        if isinstance(event["arguments"], str):
+            event["arguments"] = json.loads(event["arguments"], parse_float=Decimal)
     if tools:
         if case["init"]["tool_output_mode"] == "Native":
-            candidates = _native_input_calls(family, raw)
+            candidates = _native_input_calls(family, raw, exact_numbers=exact_numbers)
             for candidate in candidates:
                 tool_schema = next(
                     (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
@@ -1190,6 +1197,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                     schema = properties.get(key, {})
                     if family not in {"qwen3", "glm47"} or not isinstance(value, str):
                         continue
+                    if exact_numbers:
+                        decoded = json.loads(value, parse_float=Decimal)
+                        if matches_schema(decoded, schema, parameters):
+                            candidate["arguments"][key] = decoded
+                            continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
                     elif not matches_schema(value, schema, parameters):
@@ -1233,6 +1245,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]
+        if isinstance(arguments, str):
+            arguments = json.loads(arguments, parse_float=Decimal)
         assert name in raw or case["init"]["named_tool"] == name, (family, scenario, "input tool name", name)
         assert isinstance(arguments, dict), (family, scenario, "argument object")
         for key, value in arguments.items():

@@ -1,13 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use percent_encoding::percent_decode_str;
-use serde_json::{Map, Number, Value};
+use crate::arguments::schema::SchemaWalker;
+#[cfg(test)]
+use crate::arguments::schema::{MAX_SCHEMA_DEPTH, MAX_SCHEMA_WORK};
+use crate::arguments::{
+    NumberSpelling, Object, ParsedValue, coerce_integral_number, html_unescape, number_value,
+    parse_json,
+};
+use serde_json::Value;
 use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
-use super::parsed_value::{coerce_integer_literal, raw_number_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 // Main entry point: strips normal prefix text and turns M3 tool markup into tool-call responses.
@@ -208,7 +213,7 @@ fn parse_invokes(
                 tp: ToolCallType::Function,
                 function: CalledFunction {
                     name: function_name,
-                    arguments: serde_json::to_string(&Value::Object(arguments))?,
+                    arguments: serde_json::to_string(&ParsedValue::Object(arguments))?,
                 },
             });
         }
@@ -246,14 +251,14 @@ fn parse_parameters(
     body: &str,
     config: &MiniMaxM3ParserConfig,
     tools: Option<&[ToolDefinition]>,
-) -> anyhow::Result<Map<String, Value>> {
+) -> anyhow::Result<Object> {
     let parameter_start = parameter_start(config);
     let root_schema = get_arguments_config(function_name, tools).unwrap_or(&Value::Null);
     let param_config = root_schema
         .get("properties")
         .filter(|value| value.is_object())
         .unwrap_or(root_schema);
-    let mut parameters = Map::new();
+    let mut parameters = Object::new();
     let mut cursor = 0;
 
     while let Some(start_rel) = body[cursor..].find(parameter_start.as_str()) {
@@ -290,14 +295,14 @@ fn parse_parameters(
 }
 
 // Preserves duplicate XML tags by collecting repeated values into arrays.
-fn insert_parameter(parameters: &mut Map<String, Value>, key: String, value: Value) {
-    if let Some(existing) = parameters.remove(&key) {
+fn insert_parameter(parameters: &mut Object, key: String, value: ParsedValue) {
+    if let Some(existing) = parameters.swap_remove(&key) {
         let merged = match existing {
-            Value::Array(mut values) => {
+            ParsedValue::Array(mut values) => {
                 values.push(value);
-                Value::Array(values)
+                ParsedValue::Array(values)
             }
-            existing => Value::Array(vec![existing, value]),
+            existing => ParsedValue::Array(vec![existing, value]),
         };
         parameters.insert(key, merged);
     } else {
@@ -311,7 +316,7 @@ fn parse_parameter_value(
     schema: Option<&Value>,
     root_schema: &Value,
     config: &MiniMaxM3ParserConfig,
-) -> Value {
+) -> ParsedValue {
     if raw.contains(parameter_start(config).as_str()) {
         parse_nested_minimax_xml(raw, schema, root_schema, config)
     } else {
@@ -325,7 +330,7 @@ fn parse_nested_minimax_xml(
     schema: Option<&Value>,
     root_schema: &Value,
     config: &MiniMaxM3ParserConfig,
-) -> Value {
+) -> ParsedValue {
     let chunks: Vec<&str> = raw.split(config.namespace_token.as_str()).collect();
     let leading_text = chunks.first().copied().unwrap_or_default();
     let root_value = if SchemaWalker::new(root_schema).has_type(schema, "array")
@@ -335,7 +340,7 @@ fn parse_nested_minimax_xml(
     {
         Some(StackValue::Array(Vec::new()))
     } else {
-        Some(StackValue::Object(Map::new()))
+        Some(StackValue::Object(Object::new()))
     };
     let mut stack = vec![StackItem {
         tag: None,
@@ -439,8 +444,8 @@ fn split_end_tag_chunk(chunk: &str) -> (String, &str) {
 
 #[derive(Debug)]
 enum StackValue {
-    Object(Map<String, Value>),
-    Array(Vec<Value>),
+    Object(Object),
+    Array(Vec<ParsedValue>),
 }
 
 #[derive(Debug)]
@@ -454,7 +459,7 @@ struct StackItem<'a> {
 
 impl<'a> StackItem<'a> {
     // Converts a stack node into the JSON value it represents.
-    fn into_value(self) -> Value {
+    fn into_value(self) -> ParsedValue {
         match self.value {
             None => {
                 convert_scalar_value(self.texts.join("").as_str(), self.schema, self.root_schema)
@@ -465,11 +470,11 @@ impl<'a> StackItem<'a> {
                     while map.contains_key(&text_key) {
                         text_key = format!("${text_key}");
                     }
-                    map.insert(text_key, Value::String(self.texts.join("")));
+                    map.insert(text_key, ParsedValue::String(self.texts.join("")));
                 }
-                Value::Object(map)
+                ParsedValue::Object(map)
             }
-            Some(StackValue::Array(values)) => Value::Array(values),
+            Some(StackValue::Array(values)) => ParsedValue::Array(values),
         }
     }
 
@@ -479,7 +484,7 @@ impl<'a> StackItem<'a> {
         let value = item.into_value();
         match self.value.as_mut() {
             None => {
-                let mut map = Map::new();
+                let mut map = Object::new();
                 map.insert(key, value);
                 self.value = Some(StackValue::Object(map));
             }
@@ -526,7 +531,7 @@ fn get_arguments_config<'a>(
 }
 
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
-fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> Value {
+fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> ParsedValue {
     let mut schemas = SchemaWalker::new(root_schema);
     let value = html_unescape(raw);
     let trimmed = value.trim();
@@ -534,372 +539,62 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
     // Without a schema we cannot know the intended type, so preserve the literal
     // text (including the string "null") instead of inventing a JSON null.
     let Some(schema) = schema else {
-        return Value::String(value);
+        return ParsedValue::String(value);
     };
 
     // Only collapse the literal "null" into JSON null when the schema actually
     // permits null. A `string`-typed parameter keeps the literal value "null".
     if trimmed.eq_ignore_ascii_case("null") {
         return if schemas.permits_null(schema) == Some(true) {
-            Value::Null
+            ParsedValue::Null
         } else {
-            Value::String(value)
+            ParsedValue::String(value)
         };
     }
 
     if schemas.has_type(Some(schema), "string") || schemas.has_type(Some(schema), "enum") {
-        return Value::String(value);
+        return ParsedValue::String(value);
     }
-    if schemas.has_type(Some(schema), "integer") {
-        return coerce_integer_literal(trimmed)
-            .and_then(|parsed| serde_json::to_value(parsed).ok())
-            .unwrap_or(Value::String(value));
+    if schemas.has_type(Some(schema), "integer") && !schemas.has_type(Some(schema), "number") {
+        return coerce_integral_number(trimmed).unwrap_or(ParsedValue::String(value));
     }
     if schemas.has_type(Some(schema), "number") {
-        if let Some(parsed) = coerce_integer_literal(trimmed)
-            && let Ok(json) = serde_json::to_value(parsed)
-        {
-            return json;
-        }
-        if let Ok(number) = trimmed.parse::<f64>()
-            && let Some(number) = Number::from_f64(number)
-        {
-            return Value::Number(number);
-        }
-        if let Some(parsed) = raw_number_literal(trimmed)
-            && let Ok(json) = serde_json::to_value(parsed)
-        {
-            return json;
-        }
-        return Value::String(value);
+        return number_value(trimmed, NumberSpelling::Preserve)
+            .unwrap_or(ParsedValue::String(value));
     }
     if schemas.has_type(Some(schema), "boolean") {
         return match trimmed.to_ascii_lowercase().as_str() {
-            "true" => Value::Bool(true),
-            "1" => Value::Bool(true),
-            "false" => Value::Bool(false),
-            "0" => Value::Bool(false),
-            _ => Value::String(value),
+            "true" => ParsedValue::Bool(true),
+            "1" => ParsedValue::Bool(true),
+            "false" => ParsedValue::Bool(false),
+            "0" => ParsedValue::Bool(false),
+            _ => ParsedValue::String(value),
         };
     }
     if schemas.has_type(Some(schema), "object") {
         if trimmed.is_empty() {
-            return Value::Object(Map::new());
+            return ParsedValue::Object(Object::new());
         }
-        if let Ok(json) = serde_json::from_str::<Value>(trimmed) {
+        if let Ok(json) = parse_json(trimmed) {
             return json;
         }
     }
     if schemas.has_type(Some(schema), "array") {
         if trimmed.is_empty() {
-            return Value::Array(Vec::new());
+            return ParsedValue::Array(Vec::new());
         }
-        if let Ok(json) = serde_json::from_str::<Value>(trimmed) {
+        if let Ok(json) = parse_json(trimmed) {
             return json;
         }
     }
 
-    Value::String(value)
-}
-
-// Bound graph traversal as well as recursion: shared references can expand
-// exponentially even when there are no cycles. Exhaustion preserves untyped output.
-const MAX_SCHEMA_WORK: usize = 1024;
-const MAX_SCHEMA_DEPTH: usize = 64;
-
-// Each lookup tracks its own schema path: recursive schemas may be revisited
-// after consuming another XML child, but reference/composition cycles cannot loop.
-struct SchemaWalker<'a> {
-    root: &'a Value,
-    path: Vec<&'a Value>,
-    remaining_work: usize,
-    exhausted: bool,
-}
-
-impl<'a> SchemaWalker<'a> {
-    fn new(root: &'a Value) -> Self {
-        Self {
-            root,
-            path: Vec::new(),
-            remaining_work: MAX_SCHEMA_WORK,
-            exhausted: false,
-        }
-    }
-
-    fn spend_work(&mut self) -> bool {
-        if self.exhausted || self.remaining_work == 0 {
-            self.exhausted = true;
-            return false;
-        }
-        self.remaining_work -= 1;
-        true
-    }
-
-    // Leave unknown references and cycles untouched; do not discard sibling constraints.
-    fn resolve_ref(&mut self, schema: &'a Value) -> Option<&'a Value> {
-        let mut current = schema;
-        let mut visited = Vec::new();
-        while let Some(reference) = current.get("$ref").and_then(Value::as_str) {
-            if !self.spend_work() {
-                return None;
-            }
-            if current.as_object().is_some_and(|object| {
-                object.keys().any(|key| {
-                    !matches!(
-                        key.as_str(),
-                        "$ref" | "title" | "description" | "default" | "examples" | "$comment"
-                    )
-                })
-            }) || visited.contains(&reference)
-            {
-                return Some(schema);
-            }
-            let Some(fragment) = reference.strip_prefix('#') else {
-                return Some(schema);
-            };
-            // percent_decode_str preserves invalid escapes, so reject them before lookup.
-            if fragment.as_bytes().iter().enumerate().any(|(index, byte)| {
-                *byte == b'%'
-                    && !fragment
-                        .as_bytes()
-                        .get(index + 1..index + 3)
-                        .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
-            }) {
-                return Some(schema);
-            }
-            let Ok(pointer) = percent_decode_str(fragment).decode_utf8() else {
-                return Some(schema);
-            };
-            let Some(target) = self.root.pointer(&pointer) else {
-                return Some(schema);
-            };
-            visited.push(reference);
-            current = target;
-        }
-        Some(current)
-    }
-
-    fn with_schema<T: Copy>(
-        &mut self,
-        schema: &'a Value,
-        fallback: T,
-        query: impl FnOnce(&mut Self, &'a Value) -> T,
-    ) -> T {
-        if !self.spend_work() || self.path.len() >= MAX_SCHEMA_DEPTH {
-            self.exhausted = true;
-            return fallback;
-        }
-        let Some(schema) = self.resolve_ref(schema) else {
-            return fallback;
-        };
-        if self.path.iter().any(|seen| std::ptr::eq(*seen, schema)) {
-            return fallback;
-        }
-        self.path.push(schema);
-        let result = query(self, schema);
-        self.path.pop();
-        if self.exhausted { fallback } else { result }
-    }
-
-    // Unknown constraints remain possible, preserving object-union ambiguity.
-    fn may_describe_object(&mut self, schema: &'a Value) -> bool {
-        self.with_schema(schema, true, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return false;
-            }
-            if let Some(ty) = schema.get("type") {
-                let object = ty.as_str() == Some("object")
-                    || ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "object"));
-                if !object {
-                    return false;
-                }
-            }
-            if schema.get("const").is_some_and(|value| !value.is_object())
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(Value::is_object))
-            {
-                return false;
-            }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let possible = if keyword == "allOf" {
-                        branches
-                            .iter()
-                            .all(|branch| walker.may_describe_object(branch))
-                    } else {
-                        branches
-                            .iter()
-                            .any(|branch| walker.may_describe_object(branch))
-                    };
-                    if !possible {
-                        return false;
-                    }
-                }
-            }
-            true
-        })
-    }
-
-    // Nested XML identifies an object, but does not choose among object variants.
-    fn object_child(&mut self, schema: &'a Value, tag: &str) -> Option<&'a Value> {
-        self.with_schema(schema, None, |walker, schema| {
-            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
-                return Some(child);
-            }
-            if let Some(additional) = schema
-                .get("additionalProperties")
-                .filter(|value| value.is_object())
-            {
-                return Some(additional);
-            }
-            let branches = match (schema.get("anyOf"), schema.get("oneOf")) {
-                (Some(branches), None) | (None, Some(branches)) => branches.as_array()?,
-                _ => return None,
-            };
-            let mut objects = branches
-                .iter()
-                .filter(|branch| walker.may_describe_object(branch));
-            let object = objects.next()?;
-            if objects.next().is_some() {
-                return None;
-            }
-            walker.object_child(object, tag)
-        })
-    }
-
-    fn permits_null(&mut self, schema: &'a Value) -> Option<bool> {
-        self.with_schema(schema, None, |walker, schema| {
-            if let Some(allowed) = schema.as_bool() {
-                return Some(allowed);
-            }
-            if let Some(ty) = schema.get("type") {
-                let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
-                if !nullable
-                    && ty.as_str() != Some("null")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "null"))
-                {
-                    return Some(false);
-                }
-            }
-            if schema.get("const").is_some_and(|value| !value.is_null())
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(Value::is_null))
-            {
-                return Some(false);
-            }
-            // A remaining reference was not resolved, including refs with siblings.
-            let mut result = if schema.get("$ref").is_some() {
-                None
-            } else {
-                Some(true)
-            };
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let mut matches = 0;
-                    let mut rejects = 0;
-                    let mut unknown = false;
-                    for branch in branches {
-                        match walker.permits_null(branch) {
-                            Some(true) => matches += 1,
-                            Some(false) => rejects += 1,
-                            None => unknown = true,
-                        }
-                    }
-                    let permitted = match keyword {
-                        "allOf" if rejects > 0 => Some(false),
-                        "anyOf" if matches > 0 => Some(true),
-                        "oneOf" if matches > 1 => Some(false),
-                        _ if unknown => None,
-                        "allOf" => Some(true),
-                        "anyOf" => Some(false),
-                        _ => Some(matches == 1),
-                    };
-                    if permitted == Some(false) {
-                        return Some(false);
-                    }
-                    if permitted.is_none() {
-                        result = None;
-                    }
-                }
-            }
-            if let Some(branch) = schema.get("not") {
-                match walker.permits_null(branch) {
-                    Some(true) => return Some(false),
-                    Some(false) => {}
-                    None => result = None,
-                }
-            }
-            result
-        })
-    }
-
-    fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
-        let Some(schema) = schema else {
-            return false;
-        };
-        self.with_schema(schema, false, |walker, schema| {
-            if let Some(ty) = schema.get("type")
-                && (ty.as_str() == Some(expected)
-                    || ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected))))
-            {
-                return true;
-            }
-            for key in ["anyOf", "oneOf"] {
-                if let Some(options) = schema.get(key).and_then(Value::as_array)
-                    && options
-                        .iter()
-                        .any(|option| walker.has_type(Some(option), expected))
-                {
-                    return true;
-                }
-            }
-            false
-        })
-    }
-
-    fn array_item(&mut self, schema: Option<&'a Value>) -> Option<&'a Value> {
-        self.with_schema(schema?, None, |walker, schema| {
-            if let Some(items) = schema.get("items") {
-                return Some(items);
-            }
-            for key in ["anyOf", "oneOf"] {
-                if let Some(options) = schema.get(key).and_then(Value::as_array) {
-                    for option in options {
-                        if let Some(items) = walker.array_item(Some(option)) {
-                            return Some(items);
-                        }
-                    }
-                }
-            }
-            None
-        })
-    }
-}
-
-// Decodes common XML/HTML entities so tool arguments receive the intended literal text.
-fn html_unescape(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&#39;", "'")
+    ParsedValue::String(value)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Map, json};
 
     #[test]
     fn null_coercion_intersects_schema_constraints() {
@@ -1031,10 +726,12 @@ mod tests {
         let parsed = parse_nested_minimax_xml(&raw, None, &Value::Null, &config);
         assert_eq!(parsed, json!({ "a": "1", "b": "2" }));
         // No `$text` (or `$$text`) key should have been synthesized from whitespace.
-        let obj = parsed.as_object().expect("object value");
+        let ParsedValue::Object(obj) = &parsed else {
+            panic!("expected object")
+        };
         assert!(
             obj.keys().all(|k| !k.contains("$text")),
-            "unexpected whitespace $text key in {parsed}"
+            "unexpected whitespace $text key in {parsed:?}"
         );
     }
 
@@ -1190,7 +887,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            Value::Object(actual),
+            ParsedValue::Object(actual),
             serde_json::json!({"data":{"input":"Alex"}})
         );
     }
@@ -1263,7 +960,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            Value::Object(actual),
+            ParsedValue::Object(actual),
             serde_json::json!({
                 "options": {"count": 2, "enabled": true, "counts": [3]}
             })
@@ -1392,7 +1089,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            Value::Object(actual),
+            ParsedValue::Object(actual),
             serde_json::json!({
                 "tree": {"count": 1, "child": {"count": 2, "child": {"count": 3}}},
                 "loop": {"count": "4"}

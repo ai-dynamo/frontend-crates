@@ -255,6 +255,25 @@ suites:
           "9": {desc: Local parameter references preserve declared object types, required: false}
           "10": {desc: Nested references preserve property and array item types, required: false}
           "11": {desc: URI-encoded local references resolve before type coercion, required: false}
+          "14.const_decimal": {desc: Integral decimal token under a literal constraint, required: false}
+          "14.const_exponent": {desc: Integral exponent token under a literal constraint, required: false}
+          "14.enum_decimal": {desc: Integral decimal token under an enum constraint, required: false}
+          "14.enum_exponent": {desc: Integral exponent token under an enum constraint, required: false}
+          "14.large_decimal": {desc: Large integral decimal beyond exact binary-float integer range, required: false}
+          "14.large_exponent": {desc: Large integral exponent beyond exact binary-float integer range, required: false}
+          "14.negative": {desc: Negative integral exponent token, required: false}
+          "14.negative_exponent": {desc: Negative exponent with an integral result, required: false}
+          "14.zero_underflow": {desc: Exponent token that underflows to integral zero, required: false}
+          "14.fraction_near_integer": {desc: Fractional decimal near an integer falls back to text, required: false}
+          "14.fraction_underflow": {desc: Nonzero fractional exponent that underflows in binary floating point, required: false}
+          "14.fraction_fallback": {desc: Fractional token falls back to text under an integer-or-string schema, required: false}
+          "15.ordinary": {desc: Ordinary fractional number, required: false}
+          "15.round_down": {desc: Fractional value at a downward binary-float rounding boundary, required: false}
+          "15.round_up": {desc: Fractional value at an upward binary-float rounding boundary, required: false}
+          "15.quarter": {desc: Quarter fraction beyond exact binary-float integer range, required: false}
+          "15.exponent": {desc: Fractional value written in exponent notation, required: false}
+          "15.small": {desc: Small fraction with significant trailing decimal digits, required: false}
+          "15.negative": {desc: Negative fraction at a binary-float rounding boundary, required: false}
       "8":
         title: Narration around calls
         required: true

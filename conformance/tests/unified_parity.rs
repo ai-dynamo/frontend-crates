@@ -67,6 +67,15 @@ fn load_golden() -> Vec<GoldenFile> {
         );
     }
     files.sort_by(|a, b| a.family.cmp(&b.family));
+    for file in &mut files {
+        for case in file.cases.values_mut() {
+            for event in &mut case.golden {
+                if let UnifiedEvent::ToolCall { arguments, .. } = event {
+                    *arguments = common::decoded_golden_arguments(arguments);
+                }
+            }
+        }
+    }
     files
 }
 

@@ -4,6 +4,7 @@
 // Reference implementation:
 // https://github.com/sgl-project/sglang/blob/44da737770e4bcd9bfa27751f0a0751c9b5c06e1/python/sglang/srt/function_call/qwen3_coder_detector.py
 
+use crate::arguments::schema::{SchemaType, collect_allowed_types};
 use std::collections::{HashMap, HashSet};
 
 use regex::Regex;
@@ -12,10 +13,10 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
-use super::parsed_value::{
-    ParsedValue, coerce_integer_literal, is_integer_literal, raw_number_literal,
-};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::arguments::{
+    ParsedValue, coerce_integral_number, coerce_number_value, html_unescape, parse_json,
+};
 
 /// Build a `<start>name>(body)<end>` regex pattern. When `strict` is false,
 /// missing `<end>` falls back to end-of-block so truncated input still parses
@@ -630,7 +631,7 @@ fn convert_prepared_param_value(
             // parses to i64 when it fits and falls back to a raw numeric literal
             // (via `serde_json::value::RawValue`) for values outside i64 range,
             // so a 21-digit argument stays a JSON number instead of a string.
-            match coerce_integer_literal(param_value.trim()) {
+            match coerce_integral_number(param_value.trim()) {
                 Some(coerced) => coerced,
                 None => {
                     tracing::warn!(
@@ -677,8 +678,8 @@ fn convert_prepared_param_value(
             || t.starts_with("list") =>
         {
             // Try JSON parsing first (standard JSON with double quotes).
-            if let Ok(json_val) = serde_json::from_str::<Value>(&param_value) {
-                return json_val.into();
+            if let Ok(json_val) = parse_json(&param_value) {
+                return json_val;
             }
 
             tracing::warn!(
@@ -690,7 +691,7 @@ fn convert_prepared_param_value(
 
             // Try `ast.literal_eval` equivalent (handles Python-style single quotes, etc.).
             if let Ok(json_val) = try_literal_eval(&param_value) {
-                return json_val.into();
+                return json_val;
             }
 
             tracing::warn!(
@@ -707,7 +708,7 @@ fn convert_prepared_param_value(
         _ => {
             // Unknown type, try `literal_eval`.
             if let Ok(json_val) = try_literal_eval(&param_value) {
-                return json_val.into();
+                return json_val;
             }
 
             tracing::warn!(
@@ -721,194 +722,17 @@ fn convert_prepared_param_value(
     }
 }
 
-/// Coarse JSON-schema type category, used to resolve union (`anyOf`/`oneOf`/
-/// `type: [..]`/`nullable`) schemas to the set of types they actually allow.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum SchemaType {
-    String,
-    Integer,
-    Number,
-    Boolean,
-    Object,
-    Array,
-    Null,
-}
-
-/// Map a schema type name (including the aliases `convert_param_value`
-/// recognizes) to its category. Unknown names return `None`.
-fn categorize_type(name: &str) -> Option<SchemaType> {
-    let t = name.to_lowercase();
-    let t = t.as_str();
-    if matches!(t, "string" | "str" | "text" | "varchar" | "char" | "enum") {
-        Some(SchemaType::String)
-    } else if matches!(t, "boolean" | "bool" | "binary") {
-        Some(SchemaType::Boolean)
-    } else if matches!(t, "null" | "none") {
-        Some(SchemaType::Null)
-    } else if t.starts_with("int")
-        || t.starts_with("uint")
-        || t.starts_with("long")
-        || t.starts_with("short")
-        || t.starts_with("unsigned")
-    {
-        Some(SchemaType::Integer)
-    } else if t.starts_with("num") || t.starts_with("float") {
-        Some(SchemaType::Number)
-    } else if t == "object" || t.starts_with("dict") {
-        Some(SchemaType::Object)
-    } else if t == "array" || t == "arr" || t.starts_with("list") {
-        Some(SchemaType::Array)
-    } else {
-        None
-    }
-}
-
-/// Collect the set of types a (possibly union) schema allows, walking
-/// `type`, `const`/`enum`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
-fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
-    collect_type_constraints(schema).unwrap_or_default()
-}
-
-// None is an absent type constraint, not an empty intersection.
-fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
-    let mut out = HashSet::new();
-    if let Some(ty) = schema.get("type") {
-        if let Some(name) = ty.as_str() {
-            if let Some(cat) = categorize_type(name) {
-                out.insert(cat);
-            }
-        } else if let Some(arr) = ty.as_array() {
-            for item in arr.iter().filter_map(Value::as_str) {
-                if let Some(cat) = categorize_type(item) {
-                    out.insert(cat);
-                }
-            }
-        }
-    }
-    if out.contains(&SchemaType::Number) {
-        out.insert(SchemaType::Integer);
-    }
-    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
-        out.insert(SchemaType::Null);
-    }
-    let mut constraints = Vec::new();
-    if !out.is_empty() {
-        constraints.push(out);
-    }
-    if let Some(value) = schema.get("const") {
-        constraints.push(literal_type_constraints(value));
-    }
-    if let Some(values) = schema.get("enum").and_then(Value::as_array) {
-        constraints.push(values.iter().flat_map(literal_type_constraints).collect());
-    }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(options) = schema.get(key).and_then(Value::as_array) {
-            let branches = options.iter().map(collect_type_constraints);
-            if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
-                constraints.push(alternatives.into_iter().flatten().collect());
-            }
-        }
-    }
-    constraints.into_iter().reduce(|mut left, right| {
-        left.retain(|ty| right.contains(ty));
-        left
-    })
-}
-
-// A float-backed schema literal has already passed through f64: an integral-looking
-// value may have originated as a large fraction. Retain the number alternative.
-// Explicit integer types still intersect this set and exclude fractional arguments.
-fn literal_type_constraints(value: &Value) -> HashSet<SchemaType> {
-    match value_category(value) {
-        SchemaType::Number => HashSet::from([SchemaType::Integer, SchemaType::Number]),
-        category => HashSet::from([category]),
-    }
-}
-
-/// The storage category, without inferring mathematical integrality from f64.
-fn value_category(v: &Value) -> SchemaType {
-    match v {
-        Value::String(_) => SchemaType::String,
-        Value::Bool(_) => SchemaType::Boolean,
-        Value::Number(n) => {
-            if n.is_i64() || n.is_u64() {
-                SchemaType::Integer
-            } else {
-                SchemaType::Number
-            }
-        }
-        Value::Object(_) => SchemaType::Object,
-        Value::Array(_) => SchemaType::Array,
-        Value::Null => SchemaType::Null,
-    }
-}
-
-fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
-    let cat = value_category(v);
+fn value_matches(v: &ParsedValue, allowed: &HashSet<SchemaType>) -> bool {
+    let cat = match v {
+        ParsedValue::Null => SchemaType::Null,
+        ParsedValue::Bool(_) => SchemaType::Boolean,
+        ParsedValue::String(_) => SchemaType::String,
+        ParsedValue::Number(_) => SchemaType::Number,
+        ParsedValue::Array(_) => SchemaType::Array,
+        ParsedValue::Object(_) => SchemaType::Object,
+    };
     // An integer literal also satisfies a `number` constraint.
     allowed.contains(&cat) || (cat == SchemaType::Integer && allowed.contains(&SchemaType::Number))
-}
-
-fn coerce_number_value(value: &str) -> Option<ParsedValue> {
-    if let Some(integer) = coerce_integral_number(value) {
-        return Some(integer);
-    }
-    if value.starts_with(|ch: char| ch == '-' || ch.is_ascii_digit())
-        && let Some(number) = raw_number_literal(value)
-    {
-        return Some(number);
-    }
-    // Preserve the historical acceptance of non-JSON spellings such as +1 or .5.
-    value
-        .parse::<f64>()
-        .ok()
-        .and_then(serde_json::Number::from_f64)
-        .map(|number| Value::Number(number).into())
-}
-
-// JSON Schema integers include decimal/exponent spellings with no fractional part.
-// Work on digits so large integers and near-integers are never rounded through f64.
-fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
-    if is_integer_literal(value) {
-        return coerce_integer_literal(value);
-    }
-    let raw = raw_number_literal(value)?;
-    let unsigned = value.strip_prefix('-').unwrap_or(value);
-    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
-        Some((mantissa, exponent)) => (mantissa, exponent.parse::<i64>().ok()?),
-        None => (unsigned, 0),
-    };
-    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
-    if whole.is_empty()
-        || !whole
-            .bytes()
-            .chain(fraction.bytes())
-            .all(|b| b.is_ascii_digit())
-    {
-        return None;
-    }
-    let digits = format!("{whole}{fraction}");
-    let significant = digits.trim_start_matches('0').trim_end_matches('0');
-    if significant.is_empty() {
-        return Some(Value::Number(0.into()).into());
-    }
-    let trailing = digits.len() - digits.trim_end_matches('0').len();
-    let zeros = exponent
-        .checked_sub(i64::try_from(fraction.len()).ok()?)?
-        .checked_add(i64::try_from(trailing).ok()?)?;
-    if zeros < 0 {
-        return None;
-    }
-    // Keep very large numbers in their original exact JSON spelling rather than
-    // allocating an exponent-sized string. Twenty digits cover i64/u64 values.
-    if zeros > 20 || significant.len() > 20 - zeros as usize {
-        return Some(raw);
-    }
-    let sign = if value.starts_with('-') { "-" } else { "" };
-    coerce_integer_literal(&format!(
-        "{sign}{significant}{}",
-        "0".repeat(zeros as usize)
-    ))
 }
 
 /// Coerce a raw XML value to one of the types a union schema allows. Tries
@@ -919,15 +743,15 @@ fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
 fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue {
     // `null` is already handled by the caller before schema lookup.
     if allowed.contains(&SchemaType::Object) || allowed.contains(&SchemaType::Array) {
-        if let Ok(json_val) = serde_json::from_str::<Value>(value)
+        if let Ok(json_val) = parse_json(value)
             && value_matches(&json_val, allowed)
         {
-            return json_val.into();
+            return json_val;
         }
         if let Ok(json_val) = try_literal_eval(value)
             && value_matches(&json_val, allowed)
         {
-            return json_val.into();
+            return json_val;
         }
     }
 
@@ -955,9 +779,9 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
 
 /// Try to parse a value similar to Python's ast.literal_eval.
 /// This is a simplified version that handles common cases.
-fn try_literal_eval(s: &str) -> Result<Value, ()> {
+fn try_literal_eval(s: &str) -> Result<ParsedValue, ()> {
     // First try standard JSON
-    if let Ok(val) = serde_json::from_str::<Value>(s) {
+    if let Ok(val) = parse_json(s) {
         return Ok(val);
     }
 
@@ -967,7 +791,7 @@ fn try_literal_eval(s: &str) -> Result<Value, ()> {
     // must NOT become `{"message": "true story"}`).
     let normalized = normalize_python_literal(s);
 
-    serde_json::from_str::<Value>(&normalized).map_err(|_| ())
+    parse_json(&normalized).map_err(|_| ())
 }
 
 /// Convert a Python-style literal into a JSON-ish string: swap single-quote
@@ -1037,49 +861,6 @@ fn normalize_python_literal(s: &str) -> String {
         flush_ident(&mut ident, &mut out);
     }
     out
-}
-
-/// Safely parse a value - tries JSON, then falls back to string.
-/// Mimics SGLang's `_safe_val` function in spirit.
-/// NOTE: This function is deprecated and kept for reference. Use convert_param_value instead.
-#[allow(dead_code)]
-fn safe_parse_value(raw: &str) -> serde_json::Value {
-    // HTML unescape
-    let unescaped = html_unescape(raw.trim());
-
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&unescaped) {
-        return value;
-    }
-
-    if let Ok(num) = unescaped.parse::<i64>() {
-        return serde_json::Value::Number(num.into());
-    }
-
-    if let Ok(num) = unescaped.parse::<f64>()
-        && let Some(num_val) = serde_json::Number::from_f64(num)
-    {
-        return serde_json::Value::Number(num_val);
-    }
-
-    match unescaped.to_lowercase().as_str() {
-        "true" => return serde_json::Value::Bool(true),
-        "false" => return serde_json::Value::Bool(false),
-        "null" | "none" => return serde_json::Value::Null,
-        _ => {}
-    }
-
-    // Default to string, stripping newlines from start and end.
-    serde_json::Value::String(unescaped.trim_matches('\n').to_string())
-}
-
-/// Simple HTML unescape for common entities.
-fn html_unescape(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&#39;", "'")
 }
 
 #[cfg(test)]

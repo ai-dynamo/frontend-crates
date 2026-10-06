@@ -7,7 +7,9 @@
 //! `DeepSeekV4ToolStreamParser` remains for compatibility, but it projects the
 //! native UnifiedParser's ordered events instead of maintaining another parser.
 
-use serde_json::{Map, Value};
+use crate::arguments::{Object, ParsedValue, parse_json};
+#[cfg(test)]
+use serde_json::Value;
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
@@ -501,8 +503,8 @@ fn parse_invoke_header(s: &str) -> Option<(String, usize)> {
     Some((name, header_len))
 }
 
-fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
-    let mut params = Map::new();
+fn parse_parameters(body: &str) -> anyhow::Result<Object> {
+    let mut params = Object::new();
     let mut cursor = 0;
     while let Some(rel_start) = body[cursor..].find(PARAMETER_PREFIX) {
         let start = cursor + rel_start + PARAMETER_PREFIX.len();
@@ -525,16 +527,16 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         };
         let raw_value = &body[value_start..value_start + value_end_rel];
         let value = if attrs.contains(r#"string="true""#) {
-            Value::String(raw_value.to_string())
+            ParsedValue::String(raw_value.to_string())
         } else {
             let raw_value = raw_value.trim();
-            serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
+            parse_json(raw_value).unwrap_or_else(|_| ParsedValue::String(raw_value.to_string()))
         };
         params.insert(name.to_string(), value);
         cursor = value_start + value_end_rel + PARAMETER_END.len();
     }
     if params.is_empty()
-        && let Ok(Value::Object(object)) = serde_json::from_str::<Value>(body.trim())
+        && let Ok(ParsedValue::Object(object)) = parse_json(body.trim())
     {
         return Ok(object.into_iter().collect());
     }

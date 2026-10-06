@@ -38,7 +38,7 @@ from pathlib import Path
 
 import yaml
 
-from dynamo_version import crate_version, dynamo_v2_label
+from dynamo_version import crate_version, dynamo_v2_label, dynamo_v2_provenance, validate_capture_provenance
 from fixture_snapshot import fixture_snapshot_root
 
 HERE = Path(__file__).resolve().parent
@@ -201,6 +201,10 @@ def refresh_batch(v1_ver: str) -> None:
 
 
 def refresh_stream(v2_ver: str) -> None:
+    producer = dynamo_v2_provenance(ROOT)
+    origin = validate_capture_provenance(ROOT, producer)
+    if origin["crate_version"] != v2_ver:
+        raise ValueError("stream capture version does not match producer")
     tree = ensure_tree("fixtures-stream-v1")
     inputs = tree / "inputs"
     # The current-version dir is (re)written in place; OLDER version dirs
@@ -246,12 +250,14 @@ def refresh_stream(v2_ver: str) -> None:
                 "family": family,
                 "mode": src.get("mode", "streamv1"),
                 "captured_with": {"dynamo_v2": v2_ver},
+                "capture_origin": origin,
                 "cases": cases_out,
             }
             dst = out_root / family / fp.name
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_text(dump_yaml(doc, SPDX))
         print(f"[stream] {family}: recorded")
+    validate_capture_provenance(ROOT, producer)
     print(f"[stream] wrote {out_root.name} ({n_cases} cases)")
 
 

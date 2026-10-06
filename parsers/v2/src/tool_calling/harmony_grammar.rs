@@ -11,8 +11,8 @@
 
 use std::sync::OnceLock;
 
+use crate::arguments::{parse_json, valid_json};
 use regex::Regex;
-use serde_json::Value;
 
 static COMMENTARY_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -116,14 +116,14 @@ pub(super) fn record_special_tokens(text: &str, items: &mut Vec<String>) {
 
 pub(super) fn serialize_harmony_arguments(raw_args: &str) -> String {
     let trimmed = raw_args.trim();
-    match serde_json::from_str::<Value>(trimmed) {
+    match parse_json(trimmed) {
         Ok(value) => serde_json::to_string(&value).unwrap_or_else(|_| trimmed.to_string()),
         Err(_) => trimmed.to_string(),
     }
 }
 
 pub(super) fn args_are_complete_json(raw_args: &str) -> bool {
-    serde_json::from_str::<Value>(raw_args.trim()).is_ok()
+    valid_json(raw_args.trim())
 }
 
 pub(super) fn extract_calls_via_regex(
