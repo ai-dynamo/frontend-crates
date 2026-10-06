@@ -121,3 +121,10 @@ Ambiguous constant unions retain each family's established schema-valid interpre
 - **`TOOLCALLING.streamv1.7.x.xml_string_type_single_quoted_object`** and **`TOOLCALLING.streamv1.7.x.xml_string_type_double_quoted_object`** use the same native values with `type: string` and preserve their exact text. Other grammars have separate JSON or explicitly typed argument contracts.
 
 The `7.x.xml_string_type_single_quoted_object` and `7.x.xml_string_type_double_quoted_object` controls cover every registered text family, including MiniMax M3 and GLM. Each native grammar encodes the exact string payload; JSON-body and Pythonic grammars quote or escape the containing string. Harmony uses its text registration because token fixtures require real token IDs. Families without a Dynamo v2 implementation remain explicitly unavailable, and historical captures are not backfilled.
+
+## Numeric argument fidelity (#339)
+
+- **`TOOLCALLING.streamv1.7-14`** Integral decimal/exponent conversion: 12 variants cover const/enum constraints, integral values above 2^53, signed exponents, underflowing zero, and fractional fallback under integer/string schemas. Applies only to Qwen3-Coder and MiniMax-M2; MiniMax-M2 has no Unified interface.
+- **`TOOLCALLING.streamv1.7-15`** Fractional numeric preservation: seven variants cover ordinary fractions, values that round upward or downward in binary floating point, negative values, small fractions, and exponent notation. Each supported family uses its native number syntax.
+
+`numeric_cases.py` owns the shared variant inventory. Input and expected decimal tokens remain strings during generation; GOLDEN arguments use raw JSON strings in the packaged report to avoid binary floating-point rounding. The Rust assembled-event harness still uses `serde_json::Value`; its numeric equality is not the precision oracle. The report compares captured argument fragments with the independent exact-decimal oracle, and the parser unit tests retain exact spelling and exhaustive splits. The Unified captures record current v2 fixes separately from historical v1 failures in `numeric-failures.md`.
