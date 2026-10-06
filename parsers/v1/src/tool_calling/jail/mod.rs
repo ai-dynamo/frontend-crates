@@ -130,6 +130,107 @@ fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatCh
     }
 }
 
+/// One choice per index where that loses nothing, in first-seen order.
+fn pack_choices(emissions: Vec<ChoiceEmission>) -> Vec<ChatChoiceStream> {
+    let mut packed: Vec<ChatChoiceStream> = Vec::with_capacity(emissions.len());
+    for choice in emissions.into_iter().map(ChoiceEmission::into_choice) {
+        match packed
+            .iter_mut()
+            .find(|seen| seen.index == choice.index && choices_merge(seen, &choice))
+        {
+            Some(seen) => merge_choice(seen, choice),
+            None => packed.push(choice),
+        }
+    }
+    packed
+}
+
+/// Whether two entries for one choice fold without losing anything. `Parts`
+/// content has no concatenation, so such a pair stays as it arrived.
+fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
+    let parts = |c: &ChatChoiceStream| {
+        matches!(
+            c.delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        )
+    };
+    let both = |has: fn(&ChatChoiceStream) -> bool| has(a) && has(b);
+    #[allow(deprecated)]
+    let conflicts = (parts(a) && b.delta.content.is_some())
+        || (parts(b) && a.delta.content.is_some())
+        || both(|c| c.delta.refusal.is_some())
+        || both(|c| c.delta.function_call.is_some())
+        || both(|c| c.finish_reason.is_some());
+    !conflicts
+}
+
+/// Append `extra` to `base`, its earlier entry for the same choice.
+fn merge_choice(base: &mut ChatChoiceStream, extra: ChatChoiceStream) {
+    let ChatChoiceStream {
+        index: _,
+        delta,
+        finish_reason,
+        logprobs,
+    } = extra;
+    #[allow(deprecated)]
+    let ChatCompletionStreamResponseDelta {
+        role,
+        content,
+        tool_calls,
+        function_call,
+        refusal,
+        reasoning_content,
+    } = delta;
+    let target = &mut base.delta;
+    target.content = match (target.content.take(), content) {
+        (
+            Some(ChatCompletionMessageContent::Text(mut text)),
+            Some(ChatCompletionMessageContent::Text(more)),
+        ) => {
+            text.push_str(&more);
+            Some(ChatCompletionMessageContent::Text(text))
+        }
+        (existing, added) => existing.or(added),
+    };
+    target.reasoning_content = match (target.reasoning_content.take(), reasoning_content) {
+        (Some(mut text), Some(more)) => {
+            text.push_str(&more);
+            Some(text)
+        }
+        (existing, added) => existing.or(added),
+    };
+    if let Some(calls) = tool_calls {
+        let merged = target.tool_calls.get_or_insert_with(Vec::new);
+        for call in calls {
+            // A nameless entry continues the call already at its index.
+            let continues =
+                call.id.is_none() && call.function.as_ref().is_none_or(|f| f.name.is_none());
+            match merged
+                .iter_mut()
+                .find(|seen| continues && seen.index == call.index)
+                .and_then(|seen| seen.function.as_mut())
+            {
+                Some(function) => {
+                    let more = call.function.and_then(|f| f.arguments).unwrap_or_default();
+                    function
+                        .arguments
+                        .get_or_insert_with(String::new)
+                        .push_str(&more);
+                }
+                None => merged.push(call),
+            }
+        }
+    }
+    target.role = target.role.or(role);
+    target.refusal = target.refusal.take().or(refusal);
+    #[allow(deprecated)]
+    {
+        target.function_call = target.function_call.take().or(function_call);
+    }
+    base.finish_reason = base.finish_reason.or(finish_reason);
+    append_logprobs(&mut base.logprobs, logprobs);
+}
+
 impl ChoiceEmission {
     /// Extract the ChatChoiceStream from any emission type
     pub fn into_choice(self) -> ChatChoiceStream {
@@ -499,24 +600,7 @@ impl ChoiceJailState {
         if self.is_jailed {
             self.accumulated_content.push_str(content);
             // Accumulate logprobs so they are preserved across jailed chunks.
-            if let Some(lp) = logprobs {
-                let state_lps = self.accumulated_logprobs.get_or_insert(ChatChoiceLogprobs {
-                    content: None,
-                    refusal: None,
-                });
-                if let Some(content_lps) = &lp.content {
-                    state_lps
-                        .content
-                        .get_or_insert_with(Vec::new)
-                        .extend(content_lps.clone());
-                }
-                if let Some(refusal_lps) = &lp.refusal {
-                    state_lps
-                        .refusal
-                        .get_or_insert_with(Vec::new)
-                        .extend(refusal_lps.clone());
-                }
-            }
+            append_logprobs(&mut self.accumulated_logprobs, logprobs.cloned());
         }
     }
 
@@ -719,14 +803,16 @@ impl ChoiceJailState {
             // The cursor commits a call's opener and releases its first fragment in the
             // same advance. Two entries for one index in one chunk is not valid OpenAI
             // streaming, and a client keeping the last entry per index loses the name.
-            if let Some(last) = chunks.last_mut().filter(|chunk| chunk.index == index) {
-                debug_assert!(delta.name.is_none(), "a call's name is committed once");
-                if let Some(function) = last.function.as_mut() {
-                    function
-                        .arguments
-                        .get_or_insert_with(String::new)
-                        .push_str(&delta.arguments);
-                }
+            if delta.name.is_none()
+                && let Some(function) = chunks
+                    .last_mut()
+                    .filter(|chunk| chunk.index == index)
+                    .and_then(|chunk| chunk.function.as_mut())
+            {
+                function
+                    .arguments
+                    .get_or_insert_with(String::new)
+                    .push_str(&delta.arguments);
                 continue;
             }
             let first = delta.name.is_some();
@@ -743,7 +829,7 @@ impl ChoiceJailState {
 
         emissions.push(ChoiceEmission::ToolCall(create_choice_stream(
             choice.index,
-            None,
+            choice.delta.role,
             "",
             Some(chunks),
             None,
@@ -846,28 +932,6 @@ impl ChoiceJailState {
         }
     }
 
-    /// The emission this pass already made for `remainder`'s choice, when
-    /// `remainder` has nothing left to say.
-    fn fully_streamed_into<'a>(
-        remainder: &ChatChoiceStream,
-        emissions: &'a mut [ChoiceEmission],
-    ) -> Option<&'a mut ChatChoiceStream> {
-        let empty = |text: Option<&str>| text.is_none_or(str::is_empty);
-        let content = match remainder.delta.content.as_ref() {
-            None => None,
-            Some(ChatCompletionMessageContent::Text(text)) => Some(text.as_str()),
-            Some(_) => return None,
-        };
-        if !empty(content) || !empty(remainder.delta.reasoning_content.as_deref()) {
-            return None;
-        }
-        emissions
-            .iter_mut()
-            .rev()
-            .map(ChoiceEmission::choice_mut)
-            .find(|choice| choice.index == remainder.index)
-    }
-
     async fn emit_completed_jail(
         &mut self,
         completed: CompletedJail,
@@ -899,16 +963,6 @@ impl ChoiceJailState {
 
         if unjailed_choice.delta.tool_calls.is_some() {
             emissions.push(ChoiceEmission::ToolCall(unjailed_choice));
-        } else if let Some(streamed) = self
-            .guided_cursor
-            .as_ref()
-            .filter(|cursor| !cursor.streamed().is_empty())
-            .and_then(|_| Self::fully_streamed_into(&unjailed_choice, emissions))
-        {
-            // Guided streaming already sent every byte of this payload, this pass
-            // included. The empty remainder would be a second entry for the same
-            // choice index; keep only its logprobs.
-            append_logprobs(&mut streamed.logprobs, unjailed_choice.logprobs);
         } else {
             emissions.push(ChoiceEmission::Content(unjailed_choice));
         }
@@ -1522,9 +1576,11 @@ impl JailedStream {
 
         match self.emission_mode {
             EmissionMode::Packed => {
-                // Pack all choices into a single response
+                // Pack all choices into a single response. One pass can emit several
+                // entries for one choice (a guided call's last fragment beside the
+                // completed jail's remainder), which is not valid at n = 1.
                 let mut response = base_response.clone();
-                response.choices = emissions.into_iter().map(|e| e.into_choice()).collect();
+                response.choices = pack_choices(emissions);
 
                 vec![Annotated {
                     data: Some(response),
@@ -3807,5 +3863,147 @@ mod tests {
             }),
             "terminal chunks must follow the early empty response and precede the final usage response"
         );
+    }
+
+    // --- pack_choices --------------------------------------------------------
+
+    fn packed_call(
+        index: u32,
+        name: Option<&str>,
+        args: &str,
+    ) -> ChatCompletionMessageToolCallChunk {
+        ChatCompletionMessageToolCallChunk {
+            index,
+            id: name.map(|_| "call-1".to_string()),
+            r#type: name.map(|_| FunctionType::Function),
+            function: Some(FunctionCallStream {
+                name: name.map(str::to_string),
+                arguments: Some(args.to_string()),
+            }),
+        }
+    }
+
+    fn logprobs_of(tokens: &[&str]) -> Option<ChatChoiceLogprobs> {
+        Some(ChatChoiceLogprobs {
+            content: Some(
+                tokens
+                    .iter()
+                    .map(
+                        |token| dynamo_protocols::types::ChatCompletionTokenLogprob {
+                            token: token.to_string(),
+                            logprob: -0.5,
+                            token_id: None,
+                            bytes: None,
+                            top_logprobs: Vec::new(),
+                        },
+                    )
+                    .collect(),
+            ),
+            refusal: None,
+        })
+    }
+
+    /// A completed jail's non-empty remainder beside this pass's guided fragment
+    /// for the same call: one entry, the arguments in order, nothing dropped.
+    #[test]
+    fn pack_choices_folds_a_remainder_into_the_same_choice() {
+        let fragment = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "{\"a\": ")]),
+            None,
+            logprobs_of(&["t0"]),
+        );
+        let remainder = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "1}")]),
+            Some(FinishReason::ToolCalls),
+            logprobs_of(&["t1"]),
+        );
+
+        let packed = pack_choices(vec![
+            ChoiceEmission::ToolCall(fragment),
+            ChoiceEmission::ToolCall(remainder),
+        ]);
+
+        assert_eq!(packed.len(), 1);
+        let calls = packed[0].delta.tool_calls.as_ref().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.as_ref().unwrap().arguments.as_deref(),
+            Some("{\"a\": 1}")
+        );
+        assert_eq!(packed[0].delta.role, Some(Role::Assistant));
+        assert_eq!(packed[0].finish_reason, Some(FinishReason::ToolCalls));
+        let tokens: Vec<_> = packed[0]
+            .logprobs
+            .as_ref()
+            .unwrap()
+            .content
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|t| t.token.as_str())
+            .collect();
+        assert_eq!(tokens, ["t0", "t1"]);
+    }
+
+    /// A second call opening at the same choice stays its own tool-call entry.
+    #[test]
+    fn pack_choices_keeps_distinct_calls_apart() {
+        let first = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(0, Some("a"), "{}")]),
+            None,
+            None,
+        );
+        let second = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(1, Some("b"), "{}")]),
+            None,
+            None,
+        );
+
+        let packed = pack_choices(vec![
+            ChoiceEmission::ToolCall(first),
+            ChoiceEmission::ToolCall(second),
+        ]);
+
+        assert_eq!(packed.len(), 1);
+        let names: Vec<_> = packed[0]
+            .delta
+            .tool_calls
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|c| (c.index, c.function.as_ref().unwrap().name.clone().unwrap()))
+            .collect();
+        assert_eq!(names, [(0, "a".to_string()), (1, "b".to_string())]);
+    }
+
+    /// Entries that cannot fold without losing data, and other choices, are left
+    /// exactly as they arrived.
+    #[test]
+    fn pack_choices_leaves_unmergeable_entries_and_other_choices_alone() {
+        let mut parts = create_choice_stream(0, None, "", None, None, None);
+        parts.delta.content = Some(ChatCompletionMessageContent::Parts(Vec::new()));
+        let text = create_choice_stream(0, None, "after", None, None, None);
+        let other = create_choice_stream(1, None, "other", None, None, None);
+
+        let packed = pack_choices(vec![
+            ChoiceEmission::PassThrough(parts),
+            ChoiceEmission::PassThrough(other),
+            ChoiceEmission::PassThrough(text),
+        ]);
+
+        let indices: Vec<_> = packed.iter().map(|c| c.index).collect();
+        assert_eq!(indices, [0, 1, 0]);
     }
 }
