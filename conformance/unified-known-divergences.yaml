@@ -11,6 +11,10 @@ gemma4:
     golden:
       note: An unfinished native string consumes both later echo calls; parser fix is outside this capture change.
       actual: ''
+  UNIFIED.arg_numeric_15_exponent.gemma4:
+    golden:
+      note: "TODO NUM-2 in numeric-failures.md: Gemma drops exponent-form arguments. Keep the numeric report red until the parser is fixed."
+      actual: "tool_call(get_weather, {})"
 deepseek_v41:
   UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
     golden:
