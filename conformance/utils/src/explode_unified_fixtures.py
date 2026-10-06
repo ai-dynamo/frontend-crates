@@ -291,6 +291,7 @@ def main():
     # A version dir is written once; accumulate cases into per-(dir, family) docs.
     docs = {}  # (dirname, family) -> {family, mode, [model_label|captured_with], cases:{}}
     active_cases = {}
+    golden_cases = {}
 
     def slot(dirname, family, captured_with=None, model_label=None):
         k = (dirname, family)
@@ -312,6 +313,8 @@ def main():
     for c in feed["cases"]:
         cid = c["id"]
         key, fam, scenario = _case_key(cid)
+        if fam not in golden_cases:
+            golden_cases[fam] = build_cases(fam)
         chunks = c.get("chunks") or []
         request = _request_stimulus(
             c, keep_finish_chunk=_historical_finish_chunk(fam, scenario)
@@ -325,7 +328,7 @@ def main():
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
         slot("golden", fam, captured_with={"golden": "v1"})[key] = {
-            "assembled": build_cases(fam)[cid]["golden"],
+            "assembled": golden_cases[fam][cid]["golden"],
         }
 
         # dynamo_v2-<ver>/<family>/<key>.yaml — LIVE dynamo (assembled + per-chunk)
