@@ -1351,7 +1351,7 @@ def _json_values(raw):
     return values
 
 
-def _parse_gemma_value(raw, index=0):
+def _parse_gemma_value(raw, index=0, *, exact_numbers=False):
     while index < len(raw) and raw[index].isspace():
         index += 1
     if raw.startswith('<|"|>', index):
@@ -1374,14 +1374,14 @@ def _parse_gemma_value(raw, index=0):
                 assert key is not None, ("invalid Gemma object key", raw[index:])
                 index += key.end()
                 assert index < len(raw) and raw[index] == ":", ("missing Gemma key separator", raw)
-                value, index = _parse_gemma_value(raw, index + 1)
+                value, index = _parse_gemma_value(raw, index + 1, exact_numbers=exact_numbers)
                 values[key[0]] = value
             else:
-                value, index = _parse_gemma_value(raw, index)
+                value, index = _parse_gemma_value(raw, index, exact_numbers=exact_numbers)
                 values.append(value)
     token = re.match(r"(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", raw[index:])
     assert token is not None, ("unsupported Gemma value", raw[index:])
-    return json.loads(token[0]), index + token.end()
+    return json.loads(token[0], parse_float=Decimal if exact_numbers else float), index + token.end()
 
 
 def _atem_parameter_end(raw, value_start):
@@ -1397,7 +1397,7 @@ def _atem_parameter_end(raw, value_start):
     return raw.find("</atem:parameter>", minimum)
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present
