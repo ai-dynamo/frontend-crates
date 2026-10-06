@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 import sys
 from pathlib import Path
@@ -65,7 +66,7 @@ def test_dynamo_malformed_arguments_use_p3_without_hiding_peer_bytes():
                 {"kind": "tool_call", "name": "echo", "arguments": {"value": "é"}},
                 {"kind": "tool_call", "name": "echo", "arguments": {"value": "Café"}},
             ]
-            assert module._assemble_stream(rows, dynamo=True) == expected
+            assert module._assemble_stream(rows, recorded_assembly=expected) == expected
             expected[0]["arguments"] = raw
             assert module._assemble_stream(rows) == expected
 
@@ -73,6 +74,24 @@ def test_dynamo_malformed_arguments_use_p3_without_hiding_peer_bytes():
 def test_dynamo_preserves_valid_literal_string_fallback():
     module = _load_table_module()
     rows = [[{"kind": "tool_call", "name": "bad", "arguments": '{"value":"unfinished"}', "complete": True}]]
-    assert module._assemble_stream(rows, dynamo=True) == [
+    assert module._assemble_stream(rows) == [
         {"kind": "tool_call", "name": "bad", "arguments": {"value": "unfinished"}},
     ]
+
+
+def test_recorded_fallback_requires_matching_call_sequence():
+    module = _load_table_module()
+    rows = [[
+        {"kind": "tool_call", "name": "bad", "arguments": '{"x":"unfinished', "complete": True},
+        {"kind": "text", "text": "between"},
+        {"kind": "tool_call", "name": "echo", "arguments": '{"value":"é"}', "complete": True},
+    ]]
+    raw = module._assemble_stream(rows)
+    assert module._assemble_stream(rows, recorded_assembly=raw) == raw
+    native = copy.deepcopy(raw)
+    native[0]["arguments"] = {}
+    assert module._assemble_stream(rows, recorded_assembly=native) == native
+    for mismatch in (native[:1], list(reversed(native)), [native[0], native[1], {**native[2], "arguments": {"value": "different"}}]):
+        assert module._assemble_stream(rows, recorded_assembly=mismatch) == raw
+    batch_order = [native[1], native[0], native[2]]
+    assert module._assemble_stream(rows, recorded_assembly=batch_order) == native
