@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "protocols",
     "parsers/v1",
+    "parsers/structural-tag",
     "renderer",
     "tokenizers",
     "conformance",
@@ -19,6 +20,7 @@ homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"
 
 [workspace.dependencies]
+dynamo-structural-tag = { path = "parsers/structural-tag", version = "0.1.0" }
 aho-corasick = "1"
 anyhow = "1"
 async-openai = { version = "0.41", default-features = false }
