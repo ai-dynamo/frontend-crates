@@ -256,7 +256,7 @@
           // Colorize the name + args like the streaming deltas do (word hues shared with
           // the input), instead of plain-escaping — so the assembled row matches.
           return '<span class="fldl">tool_call=</span>' + colorizeWords(ev.name || '', ctx)
-            + '(' + colorizeWords(JSON.stringify(ev.arguments || {}), ctx) + ')';
+            + '(' + colorizeWords(typeof ev.arguments === 'string' ? ev.arguments : JSON.stringify(ev.arguments || {}), ctx) + ')';
         }
         return '';
       });

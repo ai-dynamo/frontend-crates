@@ -26,9 +26,11 @@ import sys
 from pathlib import Path
 
 import yaml
+import yaml_fast
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dynamo_version import validate_capture_provenance  # noqa: E402
+from gen_unified_golden import build_cases
 from capture_stimulus import capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
 
@@ -141,7 +143,7 @@ def main():
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
         slot("golden", fam, captured_with={"golden": "v1"})[key] = {
-            "assembled": c.get("golden") or [],
+            "assembled": build_cases(fam)[cid]["golden"],
         }
 
         # dynamo_v2-<ver>/<family>/<key>.yaml — LIVE dynamo (assembled + per-chunk)

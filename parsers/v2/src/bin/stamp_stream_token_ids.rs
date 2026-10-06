@@ -47,36 +47,45 @@ fn main() -> anyhow::Result<()> {
         .expect("parsers/v2 is two levels below the repo root")
         .to_path_buf();
 
-    // Stamp the v2 stream overlay only. The v1 conformance corpus stays pristine.
-    let dirs = [repo_root.join("conformance/toolcalling/fixtures-stream-v1/harmony")];
-
-    for root in &dirs {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args == ["--help"] {
+        println!("usage: stamp_stream_token_ids [--input FILE]");
+        return Ok(());
+    }
+    let mut files: Vec<PathBuf> = if args.len() == 2 && args[0] == "--input" {
+        vec![PathBuf::from(&args[1])]
+    } else {
+        anyhow::ensure!(
+            args.is_empty(),
+            "usage: stamp_stream_token_ids [--input FILE]"
+        );
+        let root = repo_root.join("conformance/toolcalling/fixtures-stream-v1/harmony");
         if !root.exists() {
-            continue;
+            return Ok(());
         }
-        let mut files: Vec<_> = std::fs::read_dir(root)?
-            .flatten()
-            .map(|e| e.path())
-            .filter(|p| {
-                p.file_name()
-                    .and_then(|n| n.to_str())
-                    .map(|n| n.starts_with("TOOLCALLING.stream") && n.ends_with(".yaml"))
-                    .unwrap_or(false)
+        std::fs::read_dir(root)?
+            .map(|entry| entry.map(|entry| entry.path()))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| {
+                        name.starts_with("TOOLCALLING.stream") && name.ends_with(".yaml")
+                    })
             })
-            .collect();
-        files.sort();
-
-        for path in &files {
-            let src = std::fs::read_to_string(path)?;
-            let out = stamp_token_ids(&src)?;
-            if out != src {
-                std::fs::write(path, &out)?;
-                println!("updated {}", path.display());
-            } else {
-                println!("no change {}", path.display());
-            }
+            .collect()
+    };
+    files.sort();
+    for path in files {
+        let src = std::fs::read_to_string(&path)?;
+        let out = stamp_token_ids(&src)?;
+        if out != src {
+            std::fs::write(&path, out)?;
+            println!("updated {}", path.display());
         }
     }
+
     Ok(())
 }
 

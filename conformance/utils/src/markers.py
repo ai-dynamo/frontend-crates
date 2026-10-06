@@ -20,6 +20,8 @@ from typing import Any
 
 import yaml
 
+from numeric_cases import canonical_arguments
+
 from impls import (
     BASELINE_IMPLS,
     BASELINE_STREAM_IMPL,
@@ -506,13 +508,7 @@ def _canon_call_for_sig(call: object) -> object:
     `2`) still differ."""
     if not isinstance(call, dict):
         return call
-    args = call.get("arguments")
-    if isinstance(args, str):
-        try:
-            return {**call, "arguments": json.loads(args)}
-        except (json.JSONDecodeError, ValueError):
-            return call
-    return call
+    return {**call, "arguments": canonical_arguments(call.get("arguments"))}
 
 
 def candidate_sig(block: object) -> str:

@@ -9,16 +9,13 @@ document:
 changes:
   arg_json_null_nullable:
     case_key: UNIFIED.7-4.nullable
-    stimulus:
-      ref: current
-      semantic_sha256: 6e0b46340fc2323941d5e915255edbe74a5eb384c46697d2ca1852db768f42b9
     observation:
       value:
         assembled:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -32,11 +29,11 @@ changes:
             complete: true
         - expected: []
         - expected: []
-  arg_marker_in_string:
-    case_key: UNIFIED.7-2
     stimulus:
       ref: current
-      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
+      semantic_sha256: 6e0b46340fc2323941d5e915255edbe74a5eb384c46697d2ca1852db768f42b9
+  arg_marker_in_string:
+    case_key: UNIFIED.7-2
     observation:
       value:
         assembled:
@@ -57,33 +54,58 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: </tool_call>
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ' --oneline'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
         - expected: []
         - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
   arg_string_null_const:
     case_key: UNIFIED.7-5.const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
     stimulus:
       ref: current
       semantic_sha256: 598f958cc2ed7ed06fadb5a0b14f84c6cc88585ef29cea2ff222cb57cb492caa
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
     observation:
       value:
         assembled:
@@ -95,20 +117,28 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-        - expected: []
-        - expected: []
         - expected:
           - kind: tool_call
             name: get_weather
-            arguments: '{"city":"null"}'
+            arguments: '{"city":"null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: '}'
             complete: true
         - expected: []
         - expected: []
-  arg_string_null_enum:
-    case_key: UNIFIED.7-5.enum
     stimulus:
       ref: current
       semantic_sha256: ef784c4dcad52e5d9d39ab5928018eda86a1c14310c6537dd353f5ba2345ff34
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
     observation:
       value:
         assembled:
@@ -127,21 +157,21 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
         - expected: []
-  arg_string_null_sibling_anyof:
-    case_key: UNIFIED.7-5.sibling_anyof
     stimulus:
       ref: current
       semantic_sha256: 8b572cfe08f734fb59fcda07b9423ce40761ae6b42aa23a3aa5634c8bcb3f02d
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
     observation:
       value:
         assembled:
@@ -153,28 +183,20 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
+        - expected: []
         - expected:
           - kind: tool_call
             name: get_weather
-            arguments: '{"city":"null'
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"'
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
+            arguments: '{"city":"null"}'
             complete: true
         - expected: []
         - expected: []
-  arg_string_null_sibling_oneof:
-    case_key: UNIFIED.7-5.sibling_oneof
     stimulus:
       ref: current
       semantic_sha256: 0d44dd040d10d51108dddb8e31201c9b30af3014e5b6b0166bf321d642e867bf
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
     observation:
       value:
         assembled:
@@ -195,36 +217,11 @@ changes:
             complete: true
         - expected: []
         - expected: []
-  arg_string_null_union:
-    case_key: UNIFIED.7-5.union
     stimulus:
       ref: current
       semantic_sha256: 1f5b4eb699db6573f9b1a7b8df8e0003c913e891b7ba3153558151749ab0021f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
   arg_string_null_untyped_branch:
     case_key: UNIFIED.7-5.untyped_branch
-    stimulus:
-      ref: current
-      semantic_sha256: 2a4121a53c8a98ae45bb512d354b7b60382ffeec1dbe1d6f5ade910c73f1f353
     observation:
       value:
         assembled:
@@ -243,16 +240,131 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
         - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 2a4121a53c8a98ae45bb512d354b7b60382ffeec1dbe1d6f5ade910c73f1f353
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <think>quoted</think> <tool_call> </tool_call> </function> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":" '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: <think>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: quoted
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: </think>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: <tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: </tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: ' '
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: </function> &amp; \"x\"\\\n "
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 2265cf929ee180d55608c508d42a9f2da9e60da2a50ae08773f50ec34c687366
+  qwen_string_null:
+    case_key: UNIFIED.7-5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name:
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 9732b6945959ed7895a88e2344b2420012d97b427299eeb61e2f064010d9c7af
   arg_unicode:
     case_key: UNIFIED.7.a
     stimulus:
@@ -277,13 +389,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -351,92 +463,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
-            arguments: '}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: 2265cf929ee180d55608c508d42a9f2da9e60da2a50ae08773f50ec34c687366
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: " <think>quoted</think> <tool_call> </tool_call> </function> &amp; \"x\"\\\n "
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":" '
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: <think>
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: quoted
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: </think>
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: ' '
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: <tool_call>
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: ' '
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: </tool_call>
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: ' '
-            complete: false
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: </function> &amp; \"x\"\\\n "
-            complete: false
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1237,13 +1270,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1285,13 +1318,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1311,13 +1344,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1337,13 +1370,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1395,13 +1428,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1462,13 +1495,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1553,13 +1586,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1603,49 +1636,16 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
-        - expected: []
-        - expected: []
-  qwen_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: 9732b6945959ed7895a88e2344b2420012d97b427299eeb61e2f064010d9c7af
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null'
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"'
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-            complete: true
         - expected: []
         - expected: []
   reason_after_tool:
@@ -1683,13 +1683,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1733,13 +1733,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1761,13 +1761,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1810,13 +1810,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1838,13 +1838,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1875,24 +1875,24 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: reconsider
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: </think>
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1930,24 +1930,24 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: reconsider
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: </think>
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2024,13 +2024,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2075,13 +2075,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2103,13 +2103,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2159,13 +2159,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2190,13 +2190,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2246,13 +2246,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2288,13 +2288,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2314,13 +2314,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2384,13 +2384,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2415,13 +2415,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2458,13 +2458,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2516,13 +2516,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2571,13 +2571,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2624,13 +2624,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2658,13 +2658,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2696,13 +2696,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2795,13 +2795,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2818,13 +2818,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2858,13 +2858,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2881,13 +2881,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -2926,6 +2926,177 @@ changes:
           - kind: text
             text: done
         - expected: []
+  arg_numeric_14_const_decimal:
+    stimulus:
+      ref: current
+      semantic_sha256: a94acc443cb48bd9e3ced1783ce9bec78f6e80bbbe94a76748d85a4bdffdd879
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.const_decimal
+  arg_numeric_14_const_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 4ce788be15f6cf69d6defd12687acf1c6f0fc741ac2008d6fcca79c988a8185c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.const_exponent
+  arg_numeric_14_enum_decimal:
+    stimulus:
+      ref: current
+      semantic_sha256: beb0b0bebe8c00d3245283078a50c1c24ec3184a8f3b6ff910210d72f3c1303e
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.enum_decimal
+  arg_numeric_14_enum_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 91178d3be56dcc3a7e7296b053f85b48cf5b949e7375ed9c11bf971424332e75
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.enum_exponent
+  arg_numeric_14_fraction_fallback:
+    stimulus:
+      ref: current
+      semantic_sha256: 7f899c5a47ba93a0508d18a204bfd1518ad373fabbbeb1fdd1713b8c9ed8499d
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.fraction_fallback
+  arg_numeric_14_fraction_near_integer:
+    stimulus:
+      ref: current
+      semantic_sha256: 82dd4776d5e71942c765600aa99b5a37adbef7fcd30a8d30fcef2e471e404b47
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.fraction_near_integer
+  arg_numeric_14_fraction_underflow:
+    stimulus:
+      ref: current
+      semantic_sha256: b170ce57444e825a162cf086f5a1ac08b07eac25ac63e63de9b8afe5c86c8ab3
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.fraction_underflow
+  arg_numeric_14_large_decimal:
+    stimulus:
+      ref: current
+      semantic_sha256: b7bea099cdbc0072bf705830e6302b4a9b4ba27c23f27c0028abcb7596151b2a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.large_decimal
+  arg_numeric_14_large_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: bd65265624ca70183b28a7203ba2d01f7c2c400078579b98a569a77ca62b662c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.large_exponent
+  arg_numeric_14_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 1956b830d54f27172b312184f1ee241efbdb0186d27186028103839b2eae1e43
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.negative
+  arg_numeric_14_negative_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: fa43195f3c35b416099dcb9ff697f02afc19c4f01ffba927fed448a87cd7e2c9
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.negative_exponent
+  arg_numeric_14_zero_underflow:
+    stimulus:
+      ref: current
+      semantic_sha256: e53f1d73e96f0c9c35f0ca39dfb9e55d87ebf0255c276f0fe160dbbdb973fd33
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-14.zero_underflow
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 1f52421eeb062ea3edff8f5251379843fc61a1cc00151fc07cad8d5970d8f52d
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.exponent
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 091e2f78e83a27935450e6dffdd796b6e61acc8ad571c694735f81daf8b5664e
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.negative
+  arg_numeric_15_ordinary:
+    stimulus:
+      ref: current
+      semantic_sha256: a4d366993ba2730cf81cfe41c164ec55e2b7ba5eb432539d74505035cff05017
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.ordinary
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: 095cd754ab7918f339568c03688d3d8789d00091db5caea0b2f2162340f861f3
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.quarter
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: 2aef51ee0cf8557fb17810b22db57981c1ec568a316f2a4264ef758ce9a3ac02
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.round_down
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: a0a3987a26330e516fc5fa6983e46d5906261401b0e6e508c428d52d1c6d7d55
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.round_up
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: ac8e0369d39da773d9fde9ef6f7ea869abfd636eba3c7093ba43e1377a617b53
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Historical producer cc7182838602e3ae16b0e0ba29d5cf6c5e33757d is unavailable locally; no newer producer substituted.
+    case_key: UNIFIED.7-15.small
 metadata_changes: {}
 document_overrides:
   arg_unicode:
@@ -3040,13 +3211,13 @@ document_overrides:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.2
-      capture_origin: null
+      capture_origin:
       inherited_from: 0.3.2
   guided_json_malformed_json:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.2
-      capture_origin: null
+      capture_origin:
       inherited_from: 0.3.2
   guided_json_marker_inside_argument:
     capture_provenance:
@@ -3223,19 +3394,19 @@ document_overrides:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.2
-      capture_origin: null
+      capture_origin:
       inherited_from: 0.3.2
   guided_json_syntax_error_trailing_close:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.2
-      capture_origin: null
+      capture_origin:
       inherited_from: 0.3.2
   guided_json_syntax_error_wrapped:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.2
-      capture_origin: null
+      capture_origin:
       inherited_from: 0.3.2
   guided_json_tool_close_after_payload:
     capture_provenance:

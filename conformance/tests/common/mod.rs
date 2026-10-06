@@ -19,6 +19,17 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+/// Legacy assembled-event tests consume Value; exact decimal comparisons belong
+/// to the raw-delta report and numeric parser tests, not this lossy projection.
+pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
+    match arguments {
+        serde_json::Value::String(raw) => {
+            serde_json::from_str(raw).expect("authored JSON arguments")
+        }
+        value => value.clone(),
+    }
+}
+
 /// Copy the schema file with historical harnesses: tool registration and argument
 /// typing are request inputs, not parser-version differences.
 pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {

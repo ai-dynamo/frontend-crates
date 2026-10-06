@@ -24,6 +24,7 @@ import yaml
 
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
+from numeric_cases import NUMERIC_VARIANTS, NUMERIC_DESCRIPTIONS, NumericLiteral, applicable, arguments_json
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
@@ -96,6 +97,8 @@ def _atem_value(val):
     the quoted spelling like every other value that parses. Keeping it bare authored a
     golden no correct parser can emit.
     """
+    if isinstance(val, NumericLiteral):
+        return str(val)
     try:
         json.loads(val)
     except ValueError:
@@ -151,6 +154,8 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 
 
 def _gemma_value(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
     if isinstance(value, str):
         return f'<|"|>{value}<|"|>'
     if isinstance(value, dict):
@@ -164,24 +169,37 @@ def r_tool(fam, name, key, val, idx):
     return r_tool_arguments(fam, name, {key: val}, idx)
 
 
+def _json_with_numeric_literals(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
+    if isinstance(value, dict):
+        return "{" + ",".join(
+            json.dumps(key, ensure_ascii=False) + ":" + _json_with_numeric_literals(item)
+            for key, item in value.items()
+        ) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(_json_with_numeric_literals(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
 def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     # Raw spellings preserve published stimuli independently of the typed oracle.
     raw = raw_arguments if raw_arguments is not None else {
-        key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        key: str(value) if isinstance(value, NumericLiteral)
+        else value if isinstance(value, str) else _json_with_numeric_literals(value)
         for key, value in arguments.items()
     }
     if fam in ("deepseek_v4", "deepseek_v41"):
         gap = " " if fam == "deepseek_v41" else ""
         envelope = "calls" if gap else "tool_calls"
         params = "".join(
-            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
+            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str) and not isinstance(value, NumericLiteral)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
             for key, value in arguments.items()
         )
         return (f'<｜DSML｜{gap}{envelope}><｜DSML｜{gap}invoke name="{name}">'
                 f'{params}</｜DSML｜{gap}invoke></｜DSML｜{gap}{envelope}>')
     if fam == "gemma4":
-        native_values = {key: raw[key] if isinstance(value, str) else json.loads(raw[key])
-                         for key, value in arguments.items()}
+        native_values = {key: value for key, value in arguments.items()}
         return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
     if fam == "qwen3":
         params = "\n".join(
@@ -196,7 +214,7 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         return f"<tool_call>{name}{params}</tool_call>"
     if fam == "muse_glimmer":
         params = "".join(
-            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) else raw[key]}</atem:parameter>\n'
+            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) and not isinstance(value, NumericLiteral) else raw[key]}</atem:parameter>\n'
             for key, value in arguments.items()
         )
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
@@ -205,14 +223,14 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     if fam == "kimi_k3":
         types = {str: "string", type(None): "null", bool: "boolean", int: "integer",
                  float: "number", dict: "object", list: "array"}
-        params = "".join(k3_argument(key, types[type(value)], raw[key])
-                         for key, value in arguments.items())
+        params = "".join(k3_argument(
+            key, "number" if isinstance(value, NumericLiteral) else types[type(value)], raw[key]
+        ) for key, value in arguments.items())
         return k3_tools(k3_call(name, idx + 1, params))
     assert fam == "kimi_k2", fam
-    args = json.dumps(arguments, ensure_ascii=False)
+    args = _json_with_numeric_literals(arguments)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
-
 
 def qwen3_input_as_glm47(input_text):
     """Translate a Qwen-shaped edge fixture into GLM XML."""
@@ -2216,6 +2234,19 @@ EDGE.append((
 ))
 
 
+EDGE += [
+    (scenario, NUMERIC_DESCRIPTIONS[label.split(".")[0]] + f" Input {raw}; expected {expected}.",
+     ["I7"], [{"kind": "tool_call", "name": "get_weather", "arguments": arguments_json(expected)}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     OnlyFamilies({family: (r_tool(family, "get_weather", "value", NumericLiteral(raw), 0),
+                             VLLM_UNCAPTURABLE.get(family, M), M)
+                   for family in FAMILIES if applicable(family, label)}),
+     {family: [{"name": "get_weather", "parameters": {
+         "type": "object", "properties": {"value": schema}}}]
+      for family in FAMILIES if applicable(family, label)})
+    for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
+]
 
 
 _NATIVE_QUOTED_CONTROL = {

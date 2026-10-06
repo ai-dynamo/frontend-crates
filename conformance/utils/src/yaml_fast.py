@@ -14,6 +14,8 @@ and the tables package call `yaml.safe_load` directly at call time, so one impor
 covers them without a copy of the shim in each file. Every module that reads or writes
 fixture YAML on the render path imports this instead of rolling its own.
 """
+import re
+
 import yaml
 
 if hasattr(yaml, "CSafeLoader"):
@@ -24,6 +26,13 @@ if hasattr(yaml, "CSafeLoader"):
     yaml.safe_load = _fast_load
 
 if hasattr(yaml, "CSafeDumper"):
+    def _string(dumper, value):
+        # YAML 1.1 (PyYAML) and Rust's YAML reader disagree on unsigned exponents.
+        # Quote JSON numeric-looking strings so chunk text remains text in both.
+        numeric = re.fullmatch(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?", value)
+        return dumper.represent_scalar("tag:yaml.org,2002:str", value, style='"' if numeric else None)
+
+    yaml.CSafeDumper.add_representer(str, _string)
 
     def _fast_dump(data, stream=None, _dumper=yaml.CSafeDumper, **kwargs):
         return yaml.dump(data, stream, Dumper=_dumper, **kwargs)

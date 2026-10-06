@@ -697,6 +697,202 @@ changes:
             name: f
             arguments: '{"x":"ok"}'
             complete: true
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: ad01e44b5f334ef038b3425b26c6fdf8cb69cfafe8d21412d069f2b552365608
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740992.0}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.exponent
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 92e76b0afb861bac225dcdb7432fb1848977c36b17bc5a0e48fc168bbb99f6d6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":-9007199254740992.0}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.negative
+  arg_numeric_15_ordinary:
+    stimulus:
+      ref: current
+      semantic_sha256: 27ed5f06b322428623846a07b6853a0f038891a0b0d729f93e40b3cd96ec8bd1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":42.5}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.ordinary
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: 212dd0f935663cceab2f65a465ca16c3662e43faf20ad50c3b1edbc066cd30ab
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740994.0}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.quarter
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: b2fb852e084974ce1351b93297afc292bd4a51b84b3c518a88a77af48ac89d1d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740992.0}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.round_down
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: af0834e5a700cb04b2e7178f1e1ec214ca36589389b23b5ddaa383092b3583eb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":9007199254740994.0}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.round_up
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: 77960ad3213bb16951a6a9a27bcaeb67a447315b9bb9aaac72020772e259de1c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"value":0.1}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-15.small
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:
@@ -762,5 +958,40 @@ metadata_changes:
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
+      named_tool: null
+  arg_numeric_15_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_ordinary:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_quarter:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_down:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_up:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_small:
+    init:
+      starting_state: None
+      tool_output_mode: Native
       named_tool: null
 document_overrides: {}

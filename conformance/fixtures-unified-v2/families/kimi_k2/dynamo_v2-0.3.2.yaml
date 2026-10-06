@@ -220,6 +220,174 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 9ab66318536453d965d53863a9750004630628991192fb3b6642aabd8af4fe27
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.exponent
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: 47dcd2e1d28de28f7c34f3dc64a3f2db1971175b9b70d405db39e44ce9a43a62
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-9007199254740992.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.negative
+  arg_numeric_15_ordinary:
+    stimulus:
+      ref: current
+      semantic_sha256: 23336dea286e0b0eb02346b044140ae02c141175faa89adedb0b010d515ee909
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.5}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.ordinary
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: b074adb9bb89863a104e0c19dabc811c04d5e53c5e05c47f718e434df986fd32
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740994.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.quarter
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: 6e9f1a1a5c254ac4d5be09e23264fc21a1a4232d1c093c9e70a0cb27ee2bbf1f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.round_down
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: e2f66fd597f37584775a5d33767684e4f7c30c85ce7b524a2c3eb7eee2203b67
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740994.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.round_up
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: eb2e2d839392b61887d0bc5f2b0b5dffd2d9860c663ae9ec18588bd7e5e8ea44
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.1}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+    case_key: UNIFIED.7-15.small
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:
@@ -279,6 +447,41 @@ metadata_changes:
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_ordinary:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_quarter:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_down:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_up:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_small:
+    init:
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
 document_overrides: {}

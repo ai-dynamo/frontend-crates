@@ -1298,12 +1298,14 @@ def test_legacy_toolcalling_tabs_omit_null_probes(model_v2, tab_id):
 @pytest.mark.parametrize("mode", ["batch", "streamv1"])
 def test_numbered_cases_keep_argument_group_and_natural_fallback_order(mode: str) -> None:
     cases = {("minimax_m3", sub): {} for sub in (
-        "13-10", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
+        "13-10", "7-15.ordinary", "7-14.const_decimal", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
     )}
     assert table.fixtures._discover_sub_cases(mode, cases) == [
-        "7.a", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
+        "7.a", "7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
     ]
-    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8"))
+    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary"))
+    assert table.fixtures._subcase_band_class(mode, "7-14.const_decimal") == table.fixtures._subcase_band_class(mode, "7.a")
+    assert table.fixtures._subcase_band_class(mode, "7-15.ordinary") == table.fixtures._subcase_band_class(mode, "7.a")
 
 
 @pytest.mark.parametrize("suffix", ["7", "7.a", "7-4", "7-5", "7-6", "7-7", "7-8"])
@@ -1471,3 +1473,81 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
                 mismatches += differs
     assert checked > 0, "no independently authored schema probes were checked"
     print(f"Preserved {mismatches} visible authored-golden disagreements across {checked} current schema captures; {hidden_mismatches} additional hidden alias disagreements remain in the fixtures")
+def test_numeric_columns_share_argument_heading_and_band(model_v2):
+    for tab_id, heading in [("tab-unified", "TC Argument fidelity"),
+                            ("tab-toolcalling-streamv1", "Args")]:
+        tab = _tab(model_v2, tab_id)
+        columns = tab["columns"]
+        numeric = [column for column in columns if column["label"] in {"7-14", "7-15"}]
+        assert [column["label"] for column in numeric] == ["7-14", "7-15"]
+        previous = next(column for column in columns
+                        if column["group_key"] == numeric[0]["group_key"]
+                        and column["label"] not in {"7-14", "7-15"})
+        assert all(column["group_key"] == previous["group_key"] for column in numeric)
+        assert all(column["band"] == previous["band"] for column in numeric)
+        groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
+        assert len(groups) == 1
+        assert groups[0]["label"] == heading
+        assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)
+
+
+@pytest.mark.parametrize("old_id,new_id", [("7-1", "7-5"), ("7-2", "7-4")])
+def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeypatch):
+    monkeypatch.setattr(table.fixtures, "FIXTURES", Path(table.fixtures.__file__).parent / "fixtures")
+    monkeypatch.setattr(table.fixtures, "_CAPTURED_WITH_BY_MODE", {})
+    original = {"description": "null type", "chunks": [{"delta_text": "null", "expected": {"dynamo_v2": []}}]}
+    docs = {("qwen3_coder", f"TOOLCALLING.streamv1.{old_id}.yaml"): {
+        "family": "qwen3_coder", "mode": "streamv1", "cases": {f"TOOLCALLING.streamv1.{old_id}": original},
+    }}
+    cases, _ = table.fixtures.load_all_cases("streamv1", docs)
+    assert set(cases) == {("qwen3_coder", new_id)}
+    case = cases["qwen3_coder", new_id]
+    assert case["__case_id"] == f"TOOLCALLING.streamv1.{new_id}"
+    assert case["chunks"] == original["chunks"]
+    assert case["expected"]["dynamo_v2"] == {"calls": [], "normal_text": ""}
+
+
+def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -> None:
+    tab_id = "tab-unified"
+    tab = _tab(model_v2, tab_id)
+    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
+    families = set(table.gen_unified_golden.FAMILIES) if tab_id == "tab-unified" else {
+        "deepseek_v4", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer",
+        "qwen3_coder", "minimax_m2", "minimax_m3"}
+    for row in tab["rows"]:
+        if row.get("family") not in families:
+            continue
+        mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
+        refs = tab_id == "tab-unified" and row["family"] == "glm47"
+        groups = []
+        for label, count in (("7-4", 5), ("7-5", 7)):
+            sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
+            cell = row["cells"][sub]
+            qwen_ref = tab_id == "tab-unified" and row["family"] == "qwen3" and label == "7-5"
+            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
+            assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
+            groups.append({leaf["sub"] for leaf in cell["variants"]})
+            if tab_id.endswith("streamv1"):
+                for leaf in cell["variants"]:
+                    for key in ("dynamo_v1-9-1-0", "dynamo_v2-0-7-4"):
+                        assert leaf["cmp"][key]["na"] == 0
+        assert len(groups[0] & groups[1]) == int(mixed)
+
+
+def test_numeric_columns_share_argument_heading_and_band(model_v2):
+    for tab_id, heading in [("tab-unified", "TC Argument fidelity"),
+                            ("tab-toolcalling-streamv1", "Args")]:
+        tab = _tab(model_v2, tab_id)
+        columns = tab["columns"]
+        numeric = [column for column in columns if column["label"] in {"7-14", "7-15"}]
+        assert [column["label"] for column in numeric] == ["7-14", "7-15"]
+        previous = next(column for column in columns
+                        if column["group_key"] == numeric[0]["group_key"]
+                        and column["label"] not in {"7-14", "7-15"})
+        assert all(column["group_key"] == previous["group_key"] for column in numeric)
+        assert all(column["band"] == previous["band"] for column in numeric)
+        groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
+        assert len(groups) == 1
+        assert groups[0]["label"] == heading
+        assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)

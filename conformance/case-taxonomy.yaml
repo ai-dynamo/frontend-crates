@@ -493,6 +493,25 @@ suites:
           w.integer_const_ambiguous: {desc: "Schema probe integer_const_ambiguous: independently authored value \"42\" under {\"anyOf\": [{\"const\": \"42\"}, {\"type\": \"integer\"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           w.object_const_union: {desc: "Schema probe object_const_union: independently authored value \"{\\\"x\\\":1}\" under {\"anyOf\": [{\"const\": \"{\\\"x\\\":1}\"}, {\"type\": \"object\"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.id_direct_integer: {desc: "Schema probe id_direct_integer: independently authored value 42 under {\"$id\": \"https://example.test/schema\", \"type\": \"integer\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
+          "14.const_decimal": {desc: Integral decimal token under a literal constraint, required: false}
+          "14.const_exponent": {desc: Integral exponent token under a literal constraint, required: false}
+          "14.enum_decimal": {desc: Integral decimal token under an enum constraint, required: false}
+          "14.enum_exponent": {desc: Integral exponent token under an enum constraint, required: false}
+          "14.large_decimal": {desc: Large integral decimal beyond exact binary-float integer range, required: false}
+          "14.large_exponent": {desc: Large integral exponent beyond exact binary-float integer range, required: false}
+          "14.negative": {desc: Negative integral exponent token, required: false}
+          "14.negative_exponent": {desc: Negative exponent with an integral result, required: false}
+          "14.zero_underflow": {desc: Exponent token that underflows to integral zero, required: false}
+          "14.fraction_near_integer": {desc: Fractional decimal near an integer falls back to text, required: false}
+          "14.fraction_underflow": {desc: Nonzero fractional exponent that underflows in binary floating point, required: false}
+          "14.fraction_fallback": {desc: Fractional token falls back to text under an integer-or-string schema, required: false}
+          "15.ordinary": {desc: Ordinary fractional number, required: false}
+          "15.round_down": {desc: Fractional value at a downward binary-float rounding boundary, required: false}
+          "15.round_up": {desc: Fractional value at an upward binary-float rounding boundary, required: false}
+          "15.quarter": {desc: Quarter fraction beyond exact binary-float integer range, required: false}
+          "15.exponent": {desc: Fractional value written in exponent notation, required: false}
+          "15.small": {desc: Small fraction with significant trailing decimal digits, required: false}
+          "15.negative": {desc: Negative fraction at a binary-float rounding boundary, required: false}
       "8":
         title: Narration around calls
         required: true
@@ -655,11 +674,8 @@ known_gaps:
     minimax_m3: ["2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c", "8.d", "50"]
   reasoning.stream:
     minimax_m3: ["4.b", "4.c", "4.d"]
-
 retired_subcases:
   toolcalling.stream: ["50.a"]
-
-# Null probes remain in the archive and Unified; legacy tabs omit their columns.
 hidden_subcase_groups:
   toolcalling.batch: ["7-4", "7-5"]
   toolcalling.stream: ["7-4", "7-5"]
