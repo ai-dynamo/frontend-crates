@@ -46,3 +46,33 @@ def test_complete_tool_delta_keeps_prior_argument_fragments():
         "name": "get_weather",
         "arguments": {"city": "Paris"},
     }]
+
+
+def test_dynamo_malformed_arguments_use_p3_without_hiding_peer_bytes():
+    module = _load_table_module()
+    for raw in ('{"x":"unfinished', '{', '[invalid'):
+        for fragments in ([raw], [raw[:2], raw[2:]]):
+            rows = [[{
+                "kind": "tool_call", "name": "bad" if i == 0 else None,
+                "arguments": fragment, "complete": i == len(fragments) - 1,
+            }] for i, fragment in enumerate(fragments)]
+            rows.append([
+                {"kind": "tool_call", "name": "echo", "arguments": '{"value":"é"}', "complete": True},
+                {"kind": "tool_call", "name": "echo", "arguments": '{"value":"Café"}', "complete": True},
+            ])
+            expected = [
+                {"kind": "tool_call", "name": "bad", "arguments": {}},
+                {"kind": "tool_call", "name": "echo", "arguments": {"value": "é"}},
+                {"kind": "tool_call", "name": "echo", "arguments": {"value": "Café"}},
+            ]
+            assert module._assemble_stream(rows, dynamo=True) == expected
+            expected[0]["arguments"] = raw
+            assert module._assemble_stream(rows) == expected
+
+
+def test_dynamo_preserves_valid_literal_string_fallback():
+    module = _load_table_module()
+    rows = [[{"kind": "tool_call", "name": "bad", "arguments": '{"value":"unfinished"}', "complete": True}]]
+    assert module._assemble_stream(rows, dynamo=True) == [
+        {"kind": "tool_call", "name": "bad", "arguments": {"value": "unfinished"}},
+    ]

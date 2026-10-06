@@ -710,6 +710,7 @@ def test_every_authored_case_survives_emission_and_reload():
             assert loaded["golden"] == case["golden"], f"{cid}: golden changed"
             assert loaded["init"] == case["init"], f"{cid}: init changed"
             assert loaded.get("tools") == case.get("tools"), f"{cid}: tools changed"
+            assert loaded.get("input_chunks") == case.get("input_chunks"), f"{cid}: chunk schedule changed"
 
 
 # --- counts live where they can be checked, not in registry prose ---------------
@@ -725,24 +726,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 93,
-            "deepseek_v41": 93,
-            "gemma4": 95,
-            "glm47": 100,
-            "kimi_k2": 93,
-            "kimi_k3": 101,
-            "muse_glimmer": 94,
-            "qwen3": 93,
+            "deepseek_v4": 94,
+            "deepseek_v41": 94,
+            "gemma4": 96,
+            "glm47": 101,
+            "kimi_k2": 94,
+            "kimi_k3": 102,
+            "muse_glimmer": 95,
+            "qwen3": 94,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 762
+    assert sum(per_family.values()) == 770
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-4", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
+    deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 112
+    assert len(UNIFIED_TAX) == 113
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1125,7 +1126,52 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
     assert _native_input_calls("kimi_k2", raw) == []
 
 
+def _assert_malformed_recovery(family, case):
+    raw = case["input"]
+    assert case["input_chunks"] == [raw]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    openers = {
+        "kimi_k2": "<|tool_call_begin|>functions.echo:",
+        "kimi_k3": '<|open|>call tool="echo"',
+        "qwen3": "<tool_call>\n<function=echo>",
+        "glm47": "<tool_call>echo",
+        "deepseek_v4": '<｜DSML｜invoke name="echo">',
+        "deepseek_v41": '<｜DSML｜ invoke name="echo">',
+        "gemma4": "<|tool_call>call:echo{",
+        "muse_glimmer": "<|start|>assistant to=echo<|message|>",
+    }
+    at = raw.index(openers[family])
+    prefix, suffix = raw[:at], raw[at:]
+    broken = 'x:<|"|>unfinished' if family == "gemma4" else '{"x":"unfinished'
+    assert broken in prefix and broken + '"' not in prefix
+    assert "bad" in prefix
+    closers = {
+        "kimi_k2": "<|tool_call_end|>", "kimi_k3": "<|close|>json<|sep|><|close|>call<|sep|>",
+        "qwen3": "</parameter>\n</function>\n</tool_call>", "glm47": "</arg_value></tool_call>",
+        "deepseek_v4": "</｜DSML｜parameter></｜DSML｜invoke>",
+        "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
+        "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>",
+    }
+    assert closers[family] in prefix
+    echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
+    assert _native_input_calls(family, suffix) == echoes
+    bad = []
+    if family == "kimi_k2":
+        bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
+    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer"}:
+        bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
+    assert case["golden"] == bad + echoes
+    assert case["tools"] == [
+        {"name": "bad", "parameters": {"type": "object", "properties": {"value": {"type": "object"}}}},
+        {"name": "echo", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}},
+    ]
+    return echoes
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    if scenario == "malformed_json_then_two_valid_calls":
+        _assert_malformed_recovery(family, case)
+        return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
@@ -1229,7 +1275,8 @@ def _assert_cross_family_contract(corpus):
                 assert init == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
-            events = _logical_events(scenario, family, case["golden"])
+            events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+                      else _logical_events(scenario, family, case["golden"]))
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
                 expected_type = "string" if value is not None else ["string", "null"]
@@ -1354,3 +1401,22 @@ def test_dsml_eof_contract_rejects_invented_success_or_changed_body(family, muta
         case["input"] = case["input"].replace(old, new)
     with pytest.raises(AssertionError):
         _assert_cross_family_contract(corpus)
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("mutation", ["echo_order", "closed_string", "fallback", "chunks"])
+def test_malformed_recovery_contract_rejects_changed_stimulus(family, mutation):
+    case = build_cases(family)[f"UNIFIED.malformed_json_then_two_valid_calls.{family}"]
+    _assert_malformed_recovery(family, case)
+    if mutation == "echo_order":
+        case["input"] = case["input"].replace("Café", "OTHER").replace("é", "Café").replace("OTHER", "é")
+        case["input_chunks"] = [case["input"]]
+    elif mutation == "closed_string":
+        case["input"] = case["input"].replace("unfinished", 'unfinished"')
+        case["input_chunks"] = [case["input"]]
+    elif mutation == "fallback":
+        case["golden"][0]["arguments"] = {"value": "wrong"}
+    else:
+        case["input_chunks"] = [case["input"][:1], case["input"][1:]]
+    with pytest.raises(AssertionError):
+        _assert_malformed_recovery(family, case)

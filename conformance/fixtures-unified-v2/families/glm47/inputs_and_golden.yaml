@@ -7025,3 +7025,52 @@ cases:
         arguments:
           payload:
             x: 1
+  malformed_json_then_two_valid_calls:
+    lifecycle: active
+    scenario: malformed_json_then_two_valid_calls
+    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-4
+    historical_ids: []
+    request:
+      input: <tool_call>bad<arg_key>value</arg_key><arg_value>{"x":"unfinished</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>é</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>Café</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: bad
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <tool_call>bad<arg_key>value</arg_key><arg_value>{"x":"unfinished</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>é</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>Café</arg_value></tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments:
+          value: '{"x":"unfinished'
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: é
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: Café

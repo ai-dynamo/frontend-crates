@@ -6878,3 +6878,51 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  malformed_json_then_two_valid_calls:
+    lifecycle: active
+    scenario: malformed_json_then_two_valid_calls
+    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-4
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"x":"unfinished<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.echo:1<|tool_call_argument_begin|>{"value": "é"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.echo:2<|tool_call_argument_begin|>{"value": "Café"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: bad
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"x":"unfinished<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.echo:1<|tool_call_argument_begin|>{"value": "é"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.echo:2<|tool_call_argument_begin|>{"value": "Café"}<|tool_call_end|><|tool_calls_section_end|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments: {}
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: é
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: Café

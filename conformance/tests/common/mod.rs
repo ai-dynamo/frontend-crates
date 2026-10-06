@@ -13,6 +13,7 @@
 
 pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
+pub mod unified_capture;
 
 use std::io::Write;
 use std::path::{Path, PathBuf};

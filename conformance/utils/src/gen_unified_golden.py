@@ -1836,6 +1836,53 @@ def _edge_case_family_policy(edge_case):
     return edge_case[-2] if len(edge_case) == 8 else edge_case[-1]
 
 
+RECOVERY_RAW = '{"x":"unfinished'
+RECOVERY_TOOLS = [
+    {"name": "bad", "parameters": {"type": "object", "properties": {"value": {"type": "object"}}}},
+    {"name": "echo", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}},
+]
+
+
+def malformed_json_recovery(fam):
+    following = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
+    if fam == "kimi_k3":
+        inp = k3_tools(k3_call("bad", 1, k3_json(RECOVERY_RAW)) + "".join(
+            k3_call("echo", index, k3_argument("value", "string", value))
+            for index, value in ((2, "é"), (3, "Café"))))
+        golden = following
+    elif fam == "kimi_k2":
+        inp = ("<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0"
+               f"<|tool_call_argument_begin|>{RECOVERY_RAW}<|tool_call_end|><|tool_calls_section_end|>")
+        golden = [{"kind": "tool_call", "name": "bad", "arguments": {}}] + following
+    elif fam == "gemma4":
+        inp = '<|tool_call>call:bad{value:{x:<|"|>unfinished}}<tool_call|>'
+        golden = following
+    else:
+        inp = r_tool(fam, "bad", "value", RECOVERY_RAW, 0)
+        if fam in ("deepseek_v4", "deepseek_v41"):
+            inp = inp.replace('string="true"', 'string="false"')
+        golden = ([{"kind": "tool_call", "name": "bad", "arguments": {"value": RECOVERY_RAW}}]
+                  if fam != "deepseek_v41" else []) + following
+    if fam != "kimi_k3":
+        inp += "".join(r_tool(fam, "echo", "value", value, index)
+                       for index, value in ((1, "é"), (2, "Café")))
+    return inp, golden
+
+
+EDGE.append((
+    "malformed_json_then_two_valid_calls",
+    "An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.",
+    ["I2", "I7", "P2"], [],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "single_chunk": True},
+    {fam: (malformed_json_recovery(fam)[0], D("UNSUPPORTED", "No peer capture recorded."),
+           D("LOSS" if fam == "gemma4" else "ERROR", "Known malformed-call recovery defect; later calls must survive.")
+           if fam in ("gemma4", "deepseek_v41") else M, malformed_json_recovery(fam)[1])
+     for fam in FAMILIES},
+    RECOVERY_TOOLS,
+))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
@@ -2034,6 +2081,8 @@ for scenario, description, parameters, raw_arguments, arguments in (
     ))
 
 
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -2052,6 +2101,9 @@ def build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if fam in ("gemma4", "deepseek_v41"):
+        case = cases[f"UNIFIED.malformed_json_then_two_valid_calls.{fam}"]
+        case["expect"]["dynamo_current"] = case["expect"]["dynamo"]
     if fam == "deepseek_v41":
         case = cases[f"UNIFIED.reason_unterminated.{fam}"]
         case["input"] = case["input"].removeprefix("<think>")
@@ -2153,6 +2205,8 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if stream_config.get("single_chunk"):
+            case["input_chunks"] = [inp]
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
         cases[cid] = case
@@ -2217,6 +2271,11 @@ def emit_yaml(fam):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
+        if "input_chunks" in c:
+            chunks = c["input_chunks"]
+            if not isinstance(chunks, list) or any(not isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != c["input"]:
+                raise ValueError(f"{cid}: input_chunks must concatenate to input")
+            lines.append(f"    input_chunks: {json.dumps(chunks, ensure_ascii=False)}")
         if c.get("tools") is not None:
             lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
     return "\n".join(lines) + "\n"

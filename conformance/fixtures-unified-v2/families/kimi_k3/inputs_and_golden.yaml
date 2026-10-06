@@ -8483,3 +8483,48 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  malformed_json_then_two_valid_calls:
+    lifecycle: active
+    scenario: malformed_json_then_two_valid_calls
+    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-4
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"x":"unfinished<|close|>json<|sep|><|close|>call<|sep|><|open|>call tool="echo" index="2"<|sep|><|open|>argument key="value" type="string"<|sep|>é<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="echo" index="3"<|sep|><|open|>argument key="value" type="string"<|sep|>Café<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: bad
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"x":"unfinished<|close|>json<|sep|><|close|>call<|sep|><|open|>call tool="echo" index="2"<|sep|><|open|>argument key="value" type="string"<|sep|>é<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="echo" index="3"<|sep|><|open|>argument key="value" type="string"<|sep|>Café<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: é
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: Café

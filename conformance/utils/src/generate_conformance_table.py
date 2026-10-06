@@ -2121,7 +2121,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     return "LOSS"
 
 
-def _assemble_stream(chunk_deltas: list) -> list:
+def _assemble_stream(chunk_deltas: list, *, dynamo: bool = False) -> list:
     """Assemble the FINAL ordered event list from a parser's per-chunk STREAMED deltas
     (not its batch final message). Coalesces consecutive reasoning/text runs and joins
     per-call tool-argument fragments (a delta with a name starts a new call; nameless
@@ -2172,7 +2172,8 @@ def _assemble_stream(chunk_deltas: list) -> list:
                 try:
                     e["arguments"] = json.loads(raw)
                 except (ValueError, TypeError):
-                    e["arguments"] = raw
+                    # Dynamo assemble() applies P3 to invalid JSON; peer bytes stay visible.
+                    e["arguments"] = {} if dynamo else raw
     return events
 
 
@@ -2679,7 +2680,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
-            dyn = _assemble_stream(dyn_chunk_deltas)
+            dyn = _assemble_stream(dyn_chunk_deltas, dynamo=True)
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
             if dynamo_failure:
@@ -2746,7 +2747,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     )
                     prev_chunks_by_ver[pv] = []
                     continue
-                pevents = _assemble_stream(pchunks)
+                pevents = _assemble_stream(pchunks, dynamo=True)
                 pverd = _unified_classify(f, gold, pevents)
                 cmp[f"dynamo@{pv}"] = markers.cmp_entry(
                     _sig(pevents), leak=1 if pverd == "LEAK" else 0
@@ -2827,10 +2828,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
                                else (_unified_capture_failure(prev_by_ver[pv]) or {
-                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or [], dynamo=True),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [])),
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [], dynamo=True)),
                                      "explanation": (
                                          f"Inherited unchanged from Dynamo v2 {prev_by_ver[pv].get('inherited_from')}."
                                          if prev_by_ver[pv].get("inherited_from") else None
