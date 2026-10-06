@@ -618,15 +618,28 @@ pub(crate) fn inject_tools_and_response_format(
 /// fixed notation for exponents in [-4, 16) (always with a fraction, `100.0`),
 /// otherwise scientific with a signed, two-digit exponent (`1e-06`, `1e+16`).
 fn python_float_repr(value: f64) -> String {
-    // `{:e}` yields the shortest round-trip digits, e.g. "-1.5e-7".
-    let scientific = format!("{value:e}");
-    let (mantissa, exponent) = scientific.split_once('e').expect("`{:e}` has an exponent");
-    let exponent: i32 = exponent.parse().expect("`{:e}` exponent is an integer");
-    let (sign, mantissa) = match mantissa.strip_prefix('-') {
-        Some(mantissa) => ("-", mantissa),
-        None => ("", mantissa),
+    // serde_json's ryu picks the same shortest digits as Python, halfway ties
+    // included (`{:e}` breaks some differently); only the notation is respelled.
+    let shortest = serde_json::Number::from_f64(value)
+        .expect("JSON floats are finite")
+        .to_string();
+    let (sign, unsigned) = match shortest.strip_prefix('-') {
+        Some(unsigned) => ("-", unsigned),
+        None => ("", shortest.as_str()),
     };
-    let digits = mantissa.replace('.', "");
+    let (mantissa, exponent) = match unsigned.split_once('e') {
+        Some((mantissa, exponent)) => (mantissa, exponent.parse().expect("ryu exponent")),
+        None => (unsigned, 0),
+    };
+    let (integer, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let all_digits = format!("{integer}{fraction}");
+    let significant = all_digits.trim_start_matches('0');
+    let digits = significant.trim_end_matches('0');
+    if digits.is_empty() {
+        return format!("{sign}0.0");
+    }
+    let leading_zeros = (all_digits.len() - significant.len()) as i32;
+    let exponent: i32 = exponent + integer.len() as i32 - 1 - leading_zeros;
     if (-4..16).contains(&exponent) {
         let point = exponent + 1;
         let fixed = if point <= 0 {
@@ -677,6 +690,11 @@ mod tests {
             (-123.456, "-123.456"),
             (1.7976931348623157e308, "1.7976931348623157e+308"),
             (5e-324, "5e-324"),
+            // Exactly halfway between two shortest candidates.
+            (1e15 + 0.25, "1000000000000000.2"),
+            (-(1e15 + 0.25), "-1000000000000000.2"),
+            (1e14 + 0.125, "100000000000000.12"),
+            (-(1e14 + 0.125), "-100000000000000.12"),
         ] {
             assert_eq!(python_float_repr(value), python, "{value:?}");
         }
