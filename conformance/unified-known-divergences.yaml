@@ -11,3 +11,33 @@ kimi_k3:
     golden:
       note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
       actual: ''
+
+muse_glimmer:
+  UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
+    golden:
+      note: 'PR #316 follow-up: EOF drops the entire tool channel when the first invoke
+        has an unclosed parameter, losing the later complete parameterless call.'
+      actual: ''
+  UNIFIED.muse_unterminated_parameter_then_call.muse_glimmer:
+    golden:
+      note: 'PR #316 follow-up: the later parameter closer completes the earlier malformed
+        parameter, dispatching f with embedded invoke markup instead of get_weather.'
+      actual: tool_call(f, {"x":"bad</atem:invoke><atem:invoke 
+        name=\"get_weather\"><atem:parameter name=\"city\">Paris"})
+gemma4:
+  UNIFIED.malformed_json_then_two_valid_calls.gemma4:
+    golden:
+      note: An unfinished native string consumes both later echo calls; parser 
+        fix is outside this capture change.
+      actual: ''
+  UNIFIED.arg_numeric_15_exponent.gemma4:
+    golden:
+      note: "TODO NUM-2 in numeric-failures.md: Gemma drops exponent-form arguments.
+        Keep the numeric report red until the parser is fixed."
+      actual: "tool_call(get_weather, {})"
+deepseek_v41:
+  UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
+    golden:
+      note: Malformed object parameter raises before either later echo call; 
+        parser fix is outside this capture change.
+        actual: 'ERROR: native push: EOF while parsing a string at line 1 column 16'
