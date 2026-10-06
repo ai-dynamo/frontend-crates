@@ -2581,7 +2581,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     dynamo_history_vers = [
         version for version in dynamo_all_vers if version != dynamo_ver_label
     ]
-    dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
+    dynamo_label = dynamo_ver_label
     peer_specs = []
     for ver in reversed(vllm_python_vers):
         peer_specs.append({

@@ -116,6 +116,9 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 
 # Labels and structured metadata must identify the same captured version.
 def _assert_candidate_versioned(candidate, location):
+    if candidate.get("parse_mode") == "unified" and candidate.get("key") == "dynamo":
+        assert candidate["label"] == candidate["version"], location
+        return
     version = table._version_of_label(candidate["label"])
     assert version, f"{location}: unversioned candidate {candidate['label']!r}"
     assert candidate["version"] == version
@@ -314,7 +317,7 @@ def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_
 
     requested = dynamo_v2_label(REPO)
     assert dynamo["version"] == requested
-    assert dynamo["label"].startswith(f"Dynamo v2 Rust {requested} ")
+    assert dynamo["label"] == requested
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
@@ -760,7 +763,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
     assert candidates["dynamo"]["version"] == selected
-    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
+    assert candidates["dynamo"]["label"] == selected
     assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
@@ -809,17 +812,23 @@ def test_unpublished_current_label_projects_existing_producer_identity(monkeypat
     assert table._full_label("dynamo_v2", "0.7.9", mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
 
 
-def test_current_dynamo_display_identifies_the_measured_producer(model_v2):
+def test_unified_reference_displays_only_its_semantic_version(model_v2):
     producer = table._dynamo_v2_producer()
-    labels = [candidate["label"] for tab in model_v2["tabs"] for candidate in tab["candidates"]
-              if candidate.get("version") == producer["crate_version"]
-              and candidate["label"].startswith("Dynamo v2 Rust ")]
-    assert labels
-    for label in labels:
-        if producer["kind"] == "unpublished":
-            assert f"[unpublished {producer['source_id']}]" in label
-        else:
-            assert "[unpublished" not in label
+    tab = _tab(model_v2, "tab-unified")
+    reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
+    assert reference["label"] == producer["crate_version"]
+    assert reference["label_html"] == producer["crate_version"]
+    assert reference["version"] == producer["crate_version"]
+
+    tooltip_labels = [
+        candidate["label"]
+        for row in tab["rows"]
+        for cell in leaf_cells(row).values()
+        for candidate in cell.get("tooltip", {}).get("candidates", [])
+        if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
+    ]
+    assert tooltip_labels
+    assert set(tooltip_labels) == {producer["crate_version"]}
 
 
 def test_tc_source_capture_versions_survive_label_parsing():
