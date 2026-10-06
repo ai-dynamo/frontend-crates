@@ -443,6 +443,14 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
         "prefilled_response_reasoning_markers_literal",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
+        "native_quoted_control_in_response",
+        "native_single_quoted_word_control",
+        "native_single_quote_contraction_response",
+        "native_quoted_incomplete_header",
+        "native_quoted_control_then_call",
+        "native_unmatched_quote_then_call",
+        "guided_response_quoted_control_braces_named",
+        "guided_response_quoted_control_braces_required",
     }
     for family in FAMILIES:
         cases = build_cases(family)
@@ -451,10 +459,42 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             for case_id, case in cases.items()
             if case["init"]["starting_state"] == "Response"
         }
-        extra = {"guided_json_quoted_bare_tool_header_in_answer"} if family == "muse_glimmer" else set()
+        extra = set()
+        if family == "muse_glimmer":
+            extra.update({
+                "guided_json_quoted_bare_tool_header_in_answer",
+                "muse_quoted_reserved_eom_argument",
+                "muse_quoted_reserved_eot_argument",
+                "muse_quoted_reserved_start_argument",
+            })
+        if family == "deepseek_v4":
+            extra.add("guided_response_rejected_header_quote_ownership")
         assert set(response_cases) == response_scenarios | extra
-        marker = "<|message|>" if family == "muse_glimmer" else control_tokens(family)[0]
-        for case in response_cases.values():
+        native_scenarios = {
+            "native_quoted_control_in_response",
+            "native_single_quoted_word_control",
+            "native_single_quote_contraction_response",
+            "native_quoted_incomplete_header",
+            "native_quoted_control_then_call",
+            "native_unmatched_quote_then_call",
+            "guided_response_quoted_control_braces_named",
+            "guided_response_quoted_control_braces_required",
+        }
+        for scenario, case in response_cases.items():
+            if scenario.startswith("muse_quoted_reserved_"):
+                marker = {
+                    "muse_quoted_reserved_eom_argument": "<|eom|>",
+                    "muse_quoted_reserved_eot_argument": "<|eot|>",
+                    "muse_quoted_reserved_start_argument": "<|start|>",
+                }[scenario]
+            elif scenario in native_scenarios:
+                marker = G._NATIVE_QUOTED_CONTROL[family]
+            elif scenario == "guided_response_rejected_header_quote_ownership":
+                marker = '<｜DSML｜invoke'
+            elif family == "muse_glimmer":
+                marker = "<|message|>"
+            else:
+                marker = control_tokens(family)[0]
             assert marker in case["input"]
 
 
@@ -726,24 +766,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 94,
-            "deepseek_v41": 94,
-            "gemma4": 96,
-            "glm47": 101,
-            "kimi_k2": 94,
-            "kimi_k3": 102,
-            "muse_glimmer": 95,
-            "qwen3": 94,
+            "deepseek_v4": 107,
+            "deepseek_v41": 106,
+            "gemma4": 108,
+            "glm47": 113,
+            "kimi_k2": 106,
+            "kimi_k3": 114,
+            "muse_glimmer": 110,
+            "qwen3": 106,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 770
+    assert sum(per_family.values()) == 870
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 113
+    assert len(UNIFIED_TAX) == 129
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -959,6 +999,33 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 def _family_value(scenario, family):
     reason_open, reason_close, _, _ = control_tokens(family)
+    marker = G._NATIVE_QUOTED_CONTROL[family]
+    if scenario in {
+        "native_quoted_control_in_response",
+        "native_quoted_control_in_reasoning",
+        "native_quoted_control_then_call",
+    }:
+        return f'The literal "{marker}" marker is part of the explanation.'
+    if scenario == "native_single_quoted_word_control":
+        return f"The literal 'example {marker} marker' is part of the explanation."
+    if scenario in {
+        "native_single_quote_contraction_response",
+        "native_single_quote_contraction_reasoning",
+    }:
+        return f"The literal 'doesn't {marker} marker' stays quoted."
+    if scenario in {
+        "guided_quoted_reasoning_closer_named",
+        "guided_quoted_reasoning_closer_required",
+    }:
+        return f"The literal 'doesn't {reason_close} marker' stays quoted."
+    if scenario in {
+        "guided_response_quoted_control_braces_named",
+        "guided_response_quoted_control_braces_required",
+    }:
+        return f'The literal "{marker} {{ example }}" stays visible. '
+    if scenario == "native_quoted_incomplete_header":
+        header = G.r_tool(family, "get_weather", "city", "Paris", 0).split("Paris", 1)[0]
+        return f"The literal `{header}` header is part of the explanation."
     if scenario == "deepseek_v41_mixed_control_text_in_string":
         return G._MIXED_CONTROL_STRINGS[family]
     if scenario == "arg_marker_in_string":
