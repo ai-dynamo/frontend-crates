@@ -164,6 +164,14 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
         fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
             writer.write_all(b": ")
         }
+
+        fn write_f64<W: ?Sized + io::Write>(
+            &mut self,
+            writer: &mut W,
+            value: f64,
+        ) -> io::Result<()> {
+            writer.write_all(python_float_repr(value).as_bytes())
+        }
     }
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
@@ -606,8 +614,76 @@ pub(crate) fn inject_tools_and_response_format(
     Ok(())
 }
 
+/// Python's `repr(float)`, which `json.dumps` uses: the shortest round-trip digits,
+/// fixed notation for exponents in [-4, 16) (always with a fraction, `100.0`),
+/// otherwise scientific with a signed, two-digit exponent (`1e-06`, `1e+16`).
+fn python_float_repr(value: f64) -> String {
+    // `{:e}` yields the shortest round-trip digits, e.g. "-1.5e-7".
+    let scientific = format!("{value:e}");
+    let (mantissa, exponent) = scientific.split_once('e').expect("`{:e}` has an exponent");
+    let exponent: i32 = exponent.parse().expect("`{:e}` exponent is an integer");
+    let (sign, mantissa) = match mantissa.strip_prefix('-') {
+        Some(mantissa) => ("-", mantissa),
+        None => ("", mantissa),
+    };
+    let digits = mantissa.replace('.', "");
+    if (-4..16).contains(&exponent) {
+        let point = exponent + 1;
+        let fixed = if point <= 0 {
+            format!("0.{}{digits}", "0".repeat(point.unsigned_abs() as usize))
+        } else if point as usize >= digits.len() {
+            format!("{digits}{}.0", "0".repeat(point as usize - digits.len()))
+        } else {
+            format!(
+                "{}.{}",
+                &digits[..point as usize],
+                &digits[point as usize..]
+            )
+        };
+        format!("{sign}{fixed}")
+    } else {
+        let (head, tail) = digits.split_at(1);
+        let mantissa = if tail.is_empty() {
+            head.to_string()
+        } else {
+            format!("{head}.{tail}")
+        };
+        let exponent_sign = if exponent < 0 { '-' } else { '+' };
+        format!(
+            "{sign}{mantissa}e{exponent_sign}{:02}",
+            exponent.unsigned_abs()
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn floats_match_python_json_dumps() {
+        // Expected strings are Python's `json.dumps(value)`.
+        for (value, python) in [
+            (0.000001, "1e-06"),
+            (0.0001, "0.0001"),
+            (0.00001234, "1.234e-05"),
+            (1e16, "1e+16"),
+            (1e15, "1000000000000000.0"),
+            (1.5e-7, "1.5e-07"),
+            (2.5, "2.5"),
+            (100.0, "100.0"),
+            (0.1, "0.1"),
+            (-0.0, "-0.0"),
+            (0.0, "0.0"),
+            (-123.456, "-123.456"),
+            (1.7976931348623157e308, "1.7976931348623157e+308"),
+            (5e-324, "5e-324"),
+        ] {
+            assert_eq!(python_float_repr(value), python, "{value:?}");
+        }
+        let value = serde_json::json!({"a": 0.000001, "b": [1e16, 3]});
+        assert_eq!(to_json(&value), r#"{"a": 1e-06, "b": [1e+16, 3]}"#);
+    }
+
     use super::*;
     use serde_json::json;
 
