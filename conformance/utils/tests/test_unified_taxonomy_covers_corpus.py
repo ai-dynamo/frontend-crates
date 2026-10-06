@@ -555,10 +555,10 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
         "arg_string_null_ref": {"glm47"},
-        "glm_ref_object": {"glm47"},
-        "glm_ref_encoded_targets": {"glm47"},
-        "glm_ref_json_looking_strings": {"glm47"},
-        "glm_ref_scalar_types": {"glm47"},
+        "glm_ref_object": set(FAMILIES),
+        "glm_ref_encoded_targets": set(FAMILIES),
+        "glm_ref_json_looking_strings": set(FAMILIES),
+        "glm_ref_scalar_types": set(FAMILIES),
     }
     for scenario, families in scoped.items():
         assert G.scenario_families(scenario) == families
@@ -766,17 +766,17 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 107,
-            "deepseek_v41": 106,
-            "gemma4": 108,
+            "deepseek_v4": 111,
+            "deepseek_v41": 110,
+            "gemma4": 112,
             "glm47": 113,
-            "kimi_k2": 106,
-            "kimi_k3": 114,
-            "muse_glimmer": 110,
-            "qwen3": 106,
+            "kimi_k2": 110,
+            "kimi_k3": 118,
+            "muse_glimmer": 114,
+            "qwen3": 110,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 870
+    assert sum(per_family.values()) == 898
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():

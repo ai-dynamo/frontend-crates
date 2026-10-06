@@ -302,20 +302,6 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
-metadata_changes:
-  guided_quoted_reasoning_closer_named: {}
-  guided_quoted_reasoning_closer_required: {}
-  guided_response_quoted_control_braces_named: {}
-  guided_response_quoted_control_braces_required: {}
-  native_quoted_control_in_reasoning: {}
-  native_quoted_control_in_response: {}
-  native_quoted_control_then_call: {}
-  native_quoted_incomplete_header: {}
-  native_single_quote_contraction_reasoning: {}
-  native_single_quote_contraction_response: {}
-  native_single_quoted_word_control: {}
-  native_unmatched_quote_then_call: {}
-document_overrides: {}
   glm_ref_encoded_targets:
     stimulus:
       ref: current
@@ -425,5 +411,17 @@ document_overrides: {}
             complete: true
         - expected: []
         - expected: []
-metadata_changes: {}
+metadata_changes:
+  guided_quoted_reasoning_closer_named: {}
+  guided_quoted_reasoning_closer_required: {}
+  guided_response_quoted_control_braces_named: {}
+  guided_response_quoted_control_braces_required: {}
+  native_quoted_control_in_reasoning: {}
+  native_quoted_control_in_response: {}
+  native_quoted_control_then_call: {}
+  native_quoted_incomplete_header: {}
+  native_single_quote_contraction_reasoning: {}
+  native_single_quote_contraction_response: {}
+  native_single_quoted_word_control: {}
+  native_unmatched_quote_then_call: {}
 document_overrides: {}
