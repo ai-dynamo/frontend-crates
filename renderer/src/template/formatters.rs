@@ -609,10 +609,6 @@ impl HfTokenizerConfigJsonFormatter {
                 "parameters": {"type": "object", "properties": {}}
             }
         }]));
-        // See `detect_tool_calls_arguments_string`. Per template (default vs tool_use)
-        // because HF configs can register different sources for each. Only
-        // `tool_calls` is affected: legacy `function_call.arguments` lives outside
-        // this branch and is always normalized.
         let default_template_handles_tool_calls_arguments_string =
             detect_tool_calls_arguments_string(
                 &env,
