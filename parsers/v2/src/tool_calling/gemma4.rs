@@ -186,7 +186,11 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
     }
 
     fn resync(&mut self, input: &str, flush: bool, _tool_index: usize) -> Option<usize> {
-        if self.resync_cursor > input.len() {
+        // Only EOF proves the original string cannot close. Until then, a
+        // quoted tool opener remains argument data. Retry the recovery scan
+        // without carrying that unfinished string into later invocations.
+        let recover_unterminated_string = flush && self.progress.in_string;
+        if self.resync_cursor > input.len() || recover_unterminated_string {
             self.resync_cursor = 0;
             self.resync_in_string = false;
             self.resync_candidate = None;
@@ -206,7 +210,11 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                 count_boundary_bytes(STRING_DELIM.len());
                 continue;
             }
-            if !self.resync_in_string && cursor > 0 && rest.starts_with(TOOL_CALL_START) {
+            if (!self.resync_in_string
+                || (recover_unterminated_string && self.resync_candidate.is_none()))
+                && cursor > 0
+                && rest.starts_with(TOOL_CALL_START)
+            {
                 let after_marker = &rest[TOOL_CALL_START.len()..];
                 if CALL_PREFIX.starts_with(after_marker) {
                     return None;
@@ -228,6 +236,7 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                         .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
                 {
                     self.resync_candidate = Some((cursor, 1));
+                    self.resync_in_string = false;
                     let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len() + name_len + 1;
                     self.resync_cursor += consumed;
                     count_boundary_bytes(consumed);
@@ -237,7 +246,10 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
             if let Some((start, depth)) = self.resync_candidate {
                 if depth == 0 {
                     if rest.starts_with(TOOL_CALL_END) {
-                        return Some(start);
+                        // A later opener may still belong to an unfinished
+                        // argument string. Commit recovery only at EOF, after
+                        // the original invocation has failed to complete.
+                        return flush.then_some(start);
                     }
                     if TOOL_CALL_END.starts_with(rest) {
                         return None;
