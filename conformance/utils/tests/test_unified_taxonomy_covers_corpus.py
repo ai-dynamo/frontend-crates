@@ -645,20 +645,21 @@ def test_glm_type_reference_goldens_keep_raw_refs_and_schema_valid_arguments(
     _assert_input_carries_events("glm47", scenario, case)
 
 
+@pytest.mark.parametrize("family", FAMILIES)
 @pytest.mark.parametrize("scenario,key,value", [
     ("glm_ref_object", "payload", '{"x":1}'),
     ("glm_ref_encoded_targets", "pointer", "42"),
     ("glm_ref_json_looking_strings", "quoted_text", "hello"),
     ("glm_ref_scalar_types", "narrowed", "42"),
 ])
-def test_glm_reference_input_oracle_rejects_changed_golden_values(
-    scenario: str, key: str, value: object,
+def test_reference_input_oracle_rejects_changed_golden_values(
+    family: str, scenario: str, key: str, value: object,
 ) -> None:
-    case = json.loads(json.dumps(build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]))
-    _assert_input_carries_events("glm47", scenario, case)
+    case = json.loads(json.dumps(build_cases(family)[f"UNIFIED.{scenario}.{family}"]))
+    _assert_input_carries_events(family, scenario, case)
     case["golden"][0]["arguments"][key] = value
     with pytest.raises(AssertionError, match="input call differs from golden"):
-        _assert_input_carries_events("glm47", scenario, case)
+        _assert_input_carries_events(family, scenario, case)
 
 
 def test_reference_oracle_preserves_chained_targets_and_sibling_constraints() -> None:
@@ -1113,6 +1114,39 @@ def _json_values(raw):
     return values
 
 
+def _parse_gemma_value(raw, index=0):
+    while index < len(raw) and raw[index].isspace():
+        index += 1
+    if raw.startswith('<|"|>', index):
+        start = index + len('<|"|>')
+        end = raw.find('<|"|>', start)
+        assert end >= 0, ("unterminated Gemma string", raw)
+        return raw[start:end], end + len('<|"|>')
+    if index < len(raw) and raw[index] in "{[":
+        opener = raw[index]
+        closer = "}" if opener == "{" else "]"
+        index += 1
+        values = {} if opener == "{" else []
+        while True:
+            while index < len(raw) and (raw[index].isspace() or raw[index] == ","):
+                index += 1
+            if index < len(raw) and raw[index] == closer:
+                return values, index + 1
+            if opener == "{":
+                key = re.match(r"[A-Za-z0-9_.-]+", raw[index:])
+                assert key is not None, ("invalid Gemma object key", raw[index:])
+                index += key.end()
+                assert index < len(raw) and raw[index] == ":", ("missing Gemma key separator", raw)
+                value, index = _parse_gemma_value(raw, index + 1)
+                values[key[0]] = value
+            else:
+                value, index = _parse_gemma_value(raw, index)
+                values.append(value)
+    token = re.match(r"(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", raw[index:])
+    assert token is not None, ("unsupported Gemma value", raw[index:])
+    return json.loads(token[0]), index + token.end()
+
+
 def _native_input_calls(family, raw):
     """Read authored complete argument fields, not runtime recovery decisions.
 
@@ -1183,9 +1217,7 @@ def _native_input_calls(family, raw):
                 except json.JSONDecodeError:
                     arguments[key] = value
         elif family == "gemma4":
-            arguments = {key: value for key, value in re.findall(r'(\w+):<\|"\|>(.*?)<\|"\|>', body, re.S)}
-            unquoted = re.sub(r'<\|"\|>.*?<\|"\|>', '', body, flags=re.S)
-            arguments.update({key: None for key in re.findall(r'(\w+):null(?=[,}])', unquoted)})
+            arguments, _ = _parse_gemma_value("{" + body)
         elif family == "kimi_k2":
             arguments, _ = json.JSONDecoder().raw_decode(body)
         else:
