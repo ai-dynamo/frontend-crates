@@ -529,6 +529,11 @@ impl ChoiceJailState {
         Some(ChoiceEmission::PassThrough(choice))
     }
 
+    /// Whether this choice still holds output that only `finalize` can release.
+    fn is_holding_output(&self) -> bool {
+        self.is_jailed || !self.partial_match_buffer.is_empty()
+    }
+
     /// End jailing and return the accumulated content
     fn end_jail(&mut self) -> String {
         self.is_jailed = false;
@@ -583,7 +588,7 @@ impl ChoiceJailState {
 
         // A terminal marker may still be buffered. `finalize` owns the finish
         // reason in that case and reads it from `stream_finish_reason`.
-        if self.is_jailed || !self.partial_match_buffer.is_empty() {
+        if self.is_holding_output() {
             return;
         }
 
@@ -1075,6 +1080,41 @@ impl ChoiceJailState {
             None
         }
     }
+
+    /// Release everything this choice still holds, K3 reasoning first.
+    async fn finalize_into(
+        &mut self,
+        jail_stream: &JailedStream,
+        separates_k3_reasoning: bool,
+        emissions: &mut Vec<ChoiceEmission>,
+    ) {
+        if separates_k3_reasoning
+            && let Some(reasoning_emission) = self.take_pending_reasoning_emission()
+        {
+            emissions.push(reasoning_emission);
+        }
+        if let Some(emission) = self.finalize(jail_stream).await {
+            emissions.push(emission);
+        }
+    }
+}
+
+/// Envelope for output released after the upstream chunk that produced it.
+fn finalization_response(
+    id: String,
+    model: String,
+    created: u32,
+) -> CreateChatCompletionStreamResponse {
+    CreateChatCompletionStreamResponse {
+        id,
+        object: "chat.completion.chunk".to_string(),
+        created,
+        model,
+        choices: Vec::new(),
+        usage: None,
+        service_tier: None,
+        system_fingerprint: None,
+    }
 }
 
 /// Collection of choice jail states with deterministic ordering
@@ -1223,6 +1263,34 @@ impl JailedStream {
                     let mut all_emissions = Vec::new();
 
                     if chat_response.choices.is_empty() {
+                        // `fix_finish_reason` synthesizes `tool_calls` here for unterminated
+                        // tool-call choices. Release choices whose upstream already finished
+                        // first, or `finalize` later emits a second finish for them.
+                        let mut finished_emissions = Vec::new();
+                        for state in choice_states.states.iter_mut() {
+                            if state.stream_finish_reason.is_some() && state.is_holding_output() {
+                                state
+                                    .finalize_into(&self, separates_k3_reasoning, &mut finished_emissions)
+                                    .await;
+                            }
+                        }
+                        if !finished_emissions.is_empty() {
+                            let finished_response = finalization_response(
+                                last_stream_id.clone(),
+                                last_stream_model.clone(),
+                                last_stream_created,
+                            );
+                            let preserved_metadata = (
+                                last_annotated_id.clone(),
+                                last_annotated_event.clone(),
+                                last_annotated_comment.clone(),
+                            );
+                            let responses = self.emit_choice_emissions(finished_emissions, &finished_response, preserved_metadata);
+                            for emitted_response in responses {
+                                yield emitted_response;
+                            }
+                        }
+
                         // No choices processed (e.g., usage-only chunk)
                         // Pass through as-is to preserve usage and other metadata
                         yield response;
@@ -1409,29 +1477,16 @@ impl JailedStream {
             // Stream ended - finalize any remaining jailed choices
             let mut final_emissions = Vec::new();
             for state in choice_states.states.iter_mut() {
-                if separates_k3_reasoning
-                    && let Some(reasoning_emission) = state.take_pending_reasoning_emission()
-                {
-                    final_emissions.push(reasoning_emission);
-                }
-                if let Some(emission) = state.finalize(&self).await {
-                    final_emissions.push(emission);
-                }
+                state
+                    .finalize_into(&self, separates_k3_reasoning, &mut final_emissions)
+                    .await;
             }
 
             if !final_emissions.is_empty() {
                 tracing::debug!("Stream ended while jailed, releasing accumulated content");
                 // Create a finalization response carrying forward real stream metadata
-                let dummy_response = CreateChatCompletionStreamResponse {
-                    id: last_stream_id,
-                    object: "chat.completion.chunk".to_string(),
-                    created: last_stream_created,
-                    model: last_stream_model,
-                    choices: Vec::new(),
-                    usage: None,
-                    service_tier: None,
-                    system_fingerprint: None,
-                };
+                let dummy_response =
+                    finalization_response(last_stream_id, last_stream_model, last_stream_created);
 
                 let final_metadata = (last_annotated_id, last_annotated_event, last_annotated_comment);
                 let responses = self.emit_choice_emissions(final_emissions, &dummy_response, final_metadata);
@@ -1546,6 +1601,18 @@ impl JailedStream {
         }
 
         first_marker.map(|pos| &content[..pos])
+    }
+
+    /// Like [`Self::prefix_before_first_tool_call_marker`], but ignores markers that
+    /// can be ordinary prose. A marker made only of letters and digits (phi4's
+    /// `functools`) can appear in an answer, so cutting there could drop real text.
+    fn prefix_before_first_structural_marker<'a>(&self, content: &'a str) -> Option<&'a str> {
+        self.jail_start_sequences
+            .iter()
+            .filter(|marker| !marker.chars().all(char::is_alphanumeric))
+            .filter_map(|marker| content.find(marker.as_str()))
+            .min()
+            .map(|pos| &content[..pos])
     }
 
     fn find_incremental_end_marker(
@@ -1873,7 +1940,8 @@ impl JailedStream {
                         //                token when manual sequences are configured). Pass
                         //                accumulated_content through verbatim — it's regular text
                         //                and may carry leading/trailing whitespace the parser
-                        //                would have trimmed.
+                        //                would have trimmed. At the output limit a structural
+                        //                marker instead means a call was cut short (below).
                         //
                         // Harmony is different because its tool parser is also responsible for
                         // stripping Harmony envelopes when no reasoning parser is configured.
@@ -1928,6 +1996,16 @@ impl JailedStream {
                                 // No markers: false-positive jail entry on prose, pass through.
                                 accumulated_content.to_string()
                             }
+                        } else if is_finalize
+                            && base_choice.finish_reason == Some(FinishReason::Length)
+                            && let Some(prefix) =
+                                self.prefix_before_first_structural_marker(accumulated_content)
+                        {
+                            // The output limit cut a call short. What follows its opening
+                            // marker is incomplete parser syntax, not assistant prose. Like
+                            // the markup-suppressing families above, a marker quoted in prose
+                            // is not distinguished: the jail no longer holds the text before it.
+                            prefix.to_string()
                         } else {
                             // Other parsers / generic jails: release the buffer verbatim.
                             accumulated_content.to_string()
@@ -3742,5 +3820,85 @@ mod tests {
             }),
             "terminal chunks must follow the early empty response and precede the final usage response"
         );
+    }
+
+    fn with_finish(
+        mut chunk: Annotated<CreateChatCompletionStreamResponse>,
+        finish_reason: FinishReason,
+    ) -> Annotated<CreateChatCompletionStreamResponse> {
+        for choice in &mut chunk.data.as_mut().expect("response data").choices {
+            choice.finish_reason = Some(finish_reason);
+        }
+        chunk
+    }
+
+    /// The output limit cuts a second parallel call inside its function tag.
+    /// The terminal reason arrives in the truncated chunk or in a content-less
+    /// chunk after it, and the usage chunk follows while the call is still jailed.
+    #[tokio::test]
+    async fn length_inside_parallel_call_keeps_one_finish_and_no_markup() {
+        const CALL: &str = "<tool_call>\n<function=bash>\n<parameter=command>\nls -la /testbed\n</parameter>\n</function>\n</tool_call>";
+        let finish_in_last_content = vec![
+            text_chunk(CALL),
+            text_chunk("\n"),
+            with_finish(text_chunk("<tool_call>\n<function"), FinishReason::Length),
+            usage_only_chunk(),
+        ];
+        let finish_after_content = vec![
+            text_chunk(CALL),
+            text_chunk("\n"),
+            text_chunk("<tool_call>\n<function"),
+            with_finish(terminal_chunk(), FinishReason::Length),
+            usage_only_chunk(),
+        ];
+
+        for chunks in [finish_in_last_content, finish_after_content] {
+            let responses: Vec<_> = apply_tool_calling_jail(
+                Some("qwen3_coder".to_string()),
+                None,
+                None,
+                false,
+                stream::iter(chunks),
+            )
+            .collect()
+            .await;
+
+            assert_eq!(
+                collect_tool_calls(&responses),
+                vec![(
+                    "bash".to_string(),
+                    r#"{"command":"ls -la /testbed"}"#.to_string()
+                )]
+            );
+            let finishes: Vec<_> = responses
+                .iter()
+                .enumerate()
+                .flat_map(|(position, response)| {
+                    response.data.iter().flat_map(move |data| {
+                        data.choices
+                            .iter()
+                            .filter_map(move |choice| choice.finish_reason.map(|f| (position, f)))
+                    })
+                })
+                .collect();
+            let usage_position = responses
+                .iter()
+                .position(|r| r.data.as_ref().is_some_and(|d| d.usage.is_some()))
+                .expect("usage chunk must pass through");
+            assert_eq!(
+                finishes.iter().map(|(_, f)| *f).collect::<Vec<_>>(),
+                vec![FinishReason::Length],
+                "the truncated choice must finish exactly once, with the upstream reason"
+            );
+            assert!(
+                finishes[0].0 < usage_position,
+                "the terminal chunk must precede the usage chunk"
+            );
+            let content = collect_text_content(&responses);
+            assert!(
+                !content.contains("<tool_call>") && !content.contains("<function"),
+                "incomplete tool-call markup leaked as content: {content:?}"
+            );
+        }
     }
 }
