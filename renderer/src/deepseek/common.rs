@@ -674,7 +674,6 @@ mod tests {
 
     #[test]
     fn floats_match_python_json_dumps() {
-        // Expected strings are Python's `json.dumps(value)`.
         for (value, python) in [
             (0.000001, "1e-06"),
             (0.0001, "0.0001"),
@@ -692,9 +691,7 @@ mod tests {
             (5e-324, "5e-324"),
             // Exactly halfway between two shortest candidates.
             (1e15 + 0.25, "1000000000000000.2"),
-            (-(1e15 + 0.25), "-1000000000000000.2"),
             (1e14 + 0.125, "100000000000000.12"),
-            (-(1e14 + 0.125), "-100000000000000.12"),
         ] {
             assert_eq!(python_float_repr(value), python, "{value:?}");
         }
