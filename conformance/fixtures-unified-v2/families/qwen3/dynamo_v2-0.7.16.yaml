@@ -2,8 +2,8 @@ provenance:
   status: captured
   origin:
     crate_version: 0.7.16
-    git_commit: f279dcc139f9f00e056d78defde4a4d4e962d679
-    source_sha256: a887e96590fd44c495b8405dd16714b5dc9fdfeb409b31df972a3378433054b4
+    git_commit: e8cdd531c0af1ee02ca3e099f441f2b585a981d5
+    source_sha256: 8793963f52196a3d515af761d9735bd77b70ae2d6677c58f9b6bab25dfb18169
 document:
   mode: unified
 changes: {}

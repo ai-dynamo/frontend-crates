@@ -659,9 +659,7 @@ impl KimiK3CallBoundary {
             let Some(end) = json_value_end(suffix) else {
                 continue;
             };
-            if serde_json::from_str::<Value>(&suffix[..end]).is_ok()
-                && suffix[end..].trim().is_empty()
-            {
+            if crate::arguments::valid_json(&suffix[..end]) && suffix[end..].trim().is_empty() {
                 return Some(outer.end());
             }
         }

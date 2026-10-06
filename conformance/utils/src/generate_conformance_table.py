@@ -2162,6 +2162,7 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
                     events[cur_tool]["_complete"] = True
     events = [e for e in events if e.get("kind") != "tool_call" or e.get("_complete", True)]
     malformed = set()
+    projections = {}
     for position, e in enumerate(events):
         if e["kind"] == "tool_call":
             raw = e.pop("_raw", "")
@@ -2173,6 +2174,7 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
             else:
                 try:
                     parsed = json.loads(raw)
+                    projections[position] = parsed
                     e["arguments"] = raw if preserve_arguments else parsed
                 except (ValueError, TypeError):
                     malformed.add(position)
@@ -2185,7 +2187,7 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
         # split batch assembly can differ from stream order and must not replace it.
         if len(calls) == len(recorded) and all(
             event["name"] == observed["name"] and (
-                event["arguments"] == observed["arguments"] or
+                projections.get(position, event["arguments"]) == observed["arguments"] or
                 position in malformed and observed["arguments"] == {}
             ) for (position, event), observed in zip(calls, recorded)
         ):
