@@ -49,6 +49,7 @@ pub(crate) fn build_kimi_k3(
         at_least_one,
         ctx.stop_after_first(),
         response,
+        false,
     )?))
 }
 

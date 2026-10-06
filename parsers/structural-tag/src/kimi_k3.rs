@@ -1064,7 +1064,7 @@ fn canonical_required_arguments(
     })
 }
 
-fn arguments_block(tool: &Tool<'_>) -> anyhow::Result<Format> {
+fn arguments_block(tool: &Tool<'_>, any_order: bool) -> anyhow::Result<Format> {
     let root = tool.parameters;
     let resolved_root = root
         .as_object()
@@ -1088,6 +1088,18 @@ fn arguments_block(tool: &Tool<'_>) -> anyhow::Result<Format> {
         }
         Some(_) => return Ok(star(Format::Tag(permissive_argument_tag()))),
     };
+    if any_order {
+        // Match v2's relaxed any-order contract: allow repeated declared arguments
+        // in any order, including omission of required arguments. Keep each
+        // argument's type and value constraints without enumerating permutations.
+        return Ok(
+            optional_arguments(properties, &[], root)?.unwrap_or_else(|| {
+                Format::ConstString(ConstStringFormat {
+                    value: String::new(),
+                })
+            }),
+        );
+    }
     let optional_arguments = optional_arguments(properties, &required, root)?;
 
     if required.is_empty() {
@@ -1116,7 +1128,7 @@ fn arguments_block(tool: &Tool<'_>) -> anyhow::Result<Format> {
 pub fn build_auto(tools: &[Tool<'_>], stop_after_first: bool) -> anyhow::Result<StructuralTag> {
     let call_tags = tools
         .iter()
-        .map(call_tag)
+        .map(|tool| call_tag(tool, false))
         .collect::<anyhow::Result<Vec<_>>>()?;
     let parallel_tool_calls = !stop_after_first;
     let calls = if parallel_tool_calls {
@@ -1153,7 +1165,7 @@ pub fn build_auto(tools: &[Tool<'_>], stop_after_first: bool) -> anyhow::Result<
     Ok(StructuralTag { format: suffix })
 }
 
-pub fn call_tag(tool: &Tool<'_>) -> anyhow::Result<TagFormat> {
+pub fn call_tag(tool: &Tool<'_>, any_order: bool) -> anyhow::Result<TagFormat> {
     let begin = format!("{OPEN}call tool=\"{}\" index=\"", escape_attr(tool.name));
     Ok(TagFormat {
         begin,
@@ -1165,7 +1177,7 @@ pub fn call_tag(tool: &Tool<'_>) -> anyhow::Result<TagFormat> {
                 Format::ConstString(ConstStringFormat {
                     value: format!("\"{SEP}"),
                 }),
-                arguments_block(tool)
+                arguments_block(tool, any_order)
                     .with_context(|| format!("cannot constrain tool {}", tool.name))?,
             ],
         })),
@@ -1179,9 +1191,13 @@ pub fn build(
     at_least_one: bool,
     stop_after_first: bool,
     response_content: Format,
+    any_order: bool,
 ) -> anyhow::Result<StructuralTag> {
     let calls = Format::TagsWithSeparator(TagsWithSeparatorFormat {
-        tags: tools.iter().map(call_tag).collect::<anyhow::Result<_>>()?,
+        tags: tools
+            .iter()
+            .map(|tool| call_tag(tool, any_order))
+            .collect::<anyhow::Result<_>>()?,
         separator: String::new(),
         at_least_one: true,
         stop_after_first,

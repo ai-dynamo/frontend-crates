@@ -299,6 +299,14 @@ fn native_outputs_parse_and_export_grammar_cases() {
                 rejected.push(text.into());
             }
             cases.push(json!({"family":family,"tag":tag,"accepted":accepted,"rejected":rejected}));
+            if family == "kimi_k3" {
+                let options = StructuralTagOptions {
+                    exclude_special_tokens: Some(false),
+                    ..Default::default()
+                };
+                cases.push(json!({"family":family,"tag":builder.build_with_options(&ctx, &options).unwrap().unwrap(),
+                    "accepted":accepted,"rejected":rejected}));
+            }
             ctx.parallel_tool_calls = Some(true);
             cases.push(json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),
                 "accepted": if matches!(choice, StructuralTagToolChoice::Named(_)) { vec![valid.clone()] } else { vec![parallel.clone()] },
@@ -324,7 +332,122 @@ fn native_outputs_parse_and_export_grammar_cases() {
         };
         cases.push(json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),"accepted":[valid,response("{\"answer\":2}")],"rejected":[response("{\"answer\":false}")]}));
     }
+    cases.extend(k3_argument_order_cases());
     if let Some(path) = std::env::var_os("KIMI_GRAMMAR_CASES") {
         std::fs::write(path, serde_json::to_vec_pretty(&cases).unwrap()).unwrap();
     }
+}
+
+#[test]
+fn k3_optional_exclusions_do_not_disable_tool_dispatch() {
+    let tools = tools();
+    let builder = structural_tag_builder_for_family("kimi_k3").unwrap();
+    let tag = builder
+        .build_with_options(
+            &context(&tools),
+            &StructuralTagOptions {
+                exclude_special_tokens: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .unwrap();
+    let text = nodes(&tag, "any_text");
+    assert_eq!(
+        text[0]["excludes"],
+        json!(["<|open|>tools<|sep|>", "<|open|>call "])
+    );
+}
+
+fn k3_argument(key: &str, kind: &str, value: &str) -> String {
+    format!("<|open|>argument key=\"{key}\" type=\"{kind}\"<|sep|>{value}<|close|>argument<|sep|>")
+}
+
+fn k3_call(arguments: &str) -> String {
+    format!(
+        "<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|>{arguments}<|close|>call<|sep|><|close|>tools<|sep|>"
+    )
+}
+
+fn k3_argument_order_cases() -> Vec<Value> {
+    let schema = json!({"type":"object", "properties": {
+        "a":{"type":"integer"}, "b":{"type":"integer"},
+        "label":{"type":"string", "enum":["ok"]}
+    }, "required":["a","b"], "additionalProperties":false});
+    let a = k3_argument("a", "number", "1");
+    let b = k3_argument("b", "number", "2");
+    let label = k3_argument("label", "string", "ok");
+    let mut cases = Vec::new();
+    for parameters in [
+        schema.clone(),
+        json!({"$ref":"#/$defs/args", "$defs":{"args":schema}}),
+    ] {
+        let tools = [Tool {
+            name: "f".into(),
+            description: None,
+            strict: Some(true),
+            parameters,
+        }];
+        // The native parser must produce the same arguments for either tag order.
+        for args in [format!("{a}{b}"), format!("{b}{a}")] {
+            let parsed = create_tool_parser_for_family("kimi_k3", &tools)
+                .unwrap()
+                .parse_complete(&k3_call(&args))
+                .unwrap()
+                .coalesce_calls();
+            assert_eq!(
+                serde_json::from_str::<Value>(&parsed.calls[0].arguments).unwrap(),
+                json!({"a":1,"b":2})
+            );
+        }
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("f"),
+        ] {
+            for any_order in [false, true] {
+                let mut ctx = context(&tools);
+                ctx.tool_choice = choice;
+                let tag = structural_tag_builder_for_family("kimi_k3")
+                    .unwrap()
+                    .build_with_options(
+                        &ctx,
+                        &StructuralTagOptions {
+                            tool_arguments_any_order: any_order,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap()
+                    .unwrap();
+                let mut accepted = vec![
+                    k3_call(&format!("{a}{b}")),
+                    k3_call(&format!("{a}{b}{label}")),
+                ];
+                let mut rejected = vec![
+                    k3_call(&format!("{}{}", k3_argument("a", "number", "false"), b)),
+                    k3_call(&format!("{a}{b}{}", k3_argument("unknown", "number", "3"))),
+                    k3_call(&format!(
+                        "{a}{b}{}",
+                        k3_argument("label", "string", "wrong")
+                    )),
+                ];
+                let reordered = [
+                    k3_call(&format!("{b}{a}")),
+                    k3_call(&format!("{label}{b}{a}")),
+                ];
+                if any_order {
+                    accepted.extend(reordered);
+                    // Match the documented relaxation of presence and uniqueness.
+                    accepted.extend([k3_call(&a), k3_call(&format!("{b}{a}{a}"))]);
+                } else {
+                    rejected.extend(reordered);
+                    rejected.extend([k3_call(&a), k3_call(&format!("{b}{a}{a}"))]);
+                }
+                cases.push(
+                    json!({"family":"kimi_k3","tag":tag,"accepted":accepted,"rejected":rejected}),
+                );
+            }
+        }
+    }
+    cases
 }

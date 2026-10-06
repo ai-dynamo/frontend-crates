@@ -114,21 +114,20 @@ impl ToolCallGrammar for KimiK3 {
                 value: String::new(),
             })
         } else {
-            native::Format::AnyText(native::AnyTextFormat {
-                excludes: if exclude {
-                    self.tool_call_excludes()
-                        .iter()
-                        .copied()
-                        .chain([
-                            self.reasoning_begin().unwrap(),
-                            self.reasoning_end().unwrap(),
-                        ])
-                        .map(str::to_owned)
-                        .collect()
-                } else {
-                    vec![]
-                },
-            })
+            // These boundaries select the constrained tools branch. They must
+            // remain active even when optional marker exclusions are disabled.
+            let mut excludes: Vec<_> = self
+                .tool_call_excludes()
+                .iter()
+                .map(|s| (*s).to_owned())
+                .collect();
+            if exclude {
+                excludes.extend([
+                    self.reasoning_begin().unwrap().to_owned(),
+                    self.reasoning_end().unwrap().to_owned(),
+                ]);
+            }
+            native::Format::AnyText(native::AnyTextFormat { excludes })
         };
         with_tools(policy, |tools| {
             Ok(wire::import_native(
@@ -137,6 +136,7 @@ impl ToolCallGrammar for KimiK3 {
                     policy.mode == ToolCallingMode::Required,
                     policy.stop_after_first(),
                     response,
+                    any_order,
                 )?
                 .format,
                 any_order,
@@ -158,6 +158,7 @@ impl ToolCallGrammar for KimiK3 {
                     native::Format::ConstString(native::ConstStringFormat {
                         value: String::new(),
                     }),
+                    any_order,
                 )?
                 .format,
                 any_order,
