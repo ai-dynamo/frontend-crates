@@ -24,14 +24,19 @@ use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    UnifiedParserExt, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    assemble, create_tool_parser_for_family, create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
 
 mod common;
+use common::unified_capture::{self as capture, chunk_input};
 
-use common::{Init, unified_tools as tools};
+use common::{
+    Init,
+    known_unified_divergences::{self as divergences, Check, Expected},
+    unified_tools as tools,
+};
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -49,6 +54,10 @@ struct GoldenCase {
     #[serde(default)]
     finish_reason: Option<String>,
     input: String,
+    #[serde(default)]
+    input_chunks: Option<Vec<String>>,
+    #[serde(default)]
+    tools: Option<serde_json::Value>,
     golden: Vec<Ev>,
     expect: BTreeMap<String, Expect>,
 }
@@ -166,24 +175,16 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
 ///
 /// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
 /// assembled row and the per-chunk rows in the popup describe one run.
-fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
-    if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
-        init.apply(&mut parser, family);
-
-        let mut deltas = Vec::new();
-        for chunk in chunk_input(input) {
-            deltas.extend(
-                parser
-                    .push(&chunk)
-                    .unwrap_or_else(|e| panic!("unified push `{family}`: {e}")),
-            );
-        }
-        deltas.extend(
-            parser
-                .finish()
-                .unwrap_or_else(|e| panic!("unified finish `{family}`: {e}")),
-        );
-        return assemble(&deltas).into_iter().map(Ev::from).collect();
+fn dynamo_events_with_tools(
+    family: &str,
+    input: &str,
+    init: &Init,
+    tool_schemas: &[dynamo_parsers_v2::Tool],
+) -> Vec<Ev> {
+    if create_unified_parser_for_family(family, tool_schemas).is_ok() {
+        return capture_native_case(family, &chunk_input(input), init, tool_schemas)
+            .expect("native capture")
+            .0;
     }
 
     let (reasoning_name, tool_family) = parsers_for(family);
@@ -198,7 +199,7 @@ fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
         });
     }
 
-    let mut tp = create_tool_parser_for_family(&tool_family, &tools())
+    let mut tp = create_tool_parser_for_family(&tool_family, tool_schemas)
         .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
     let mut slots: BTreeMap<usize, usize> = BTreeMap::new();
     let mut raw_args: BTreeMap<usize, String> = BTreeMap::new();
@@ -229,37 +230,29 @@ fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
     out
 }
 
-/// Tokenize an input into streaming chunks: each control marker (`<...>`, incl.
-/// `<|...|>` / `<|"|>`) is its own chunk, and each run of text between markers is
-/// a chunk. Generic across the gemma4 / qwen3 / kimi grammars.
-fn chunk_input(input: &str) -> Vec<String> {
-    let bytes = input.as_bytes();
-    let mut chunks = Vec::new();
-    let mut i = 0;
-    let mut text_start = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'<' {
-            // flush any pending text run
-            if text_start < i {
-                chunks.push(input[text_start..i].to_string());
-            }
-            // consume through the matching '>'
-            let mut j = i + 1;
-            while j < bytes.len() && bytes[j] != b'>' {
-                j += 1;
-            }
-            let end = (j + 1).min(bytes.len());
-            chunks.push(input[i..end].to_string());
-            i = end;
-            text_start = i;
-        } else {
-            i += 1;
-        }
-    }
-    if text_start < bytes.len() {
-        chunks.push(input[text_start..].to_string());
-    }
-    chunks
+fn capture_native_case(
+    family: &str,
+    chunks: &[String],
+    init: &Init,
+    tool_schemas: &[dynamo_parsers_v2::Tool],
+) -> Result<(Vec<Ev>, Vec<ChunkRow>), capture::CaptureFailure> {
+    let mut parser = create_unified_parser_for_family(family, tool_schemas)
+        .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
+    init.apply(&mut parser, family);
+    let rows = capture::native_capture(&mut parser, chunks)?;
+    let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
+    let assembled = assemble(&deltas).into_iter().map(Ev::from).collect();
+    let rows = chunks
+        .iter()
+        .cloned()
+        .chain(std::iter::once("‹finish›".into()))
+        .zip(rows)
+        .map(|(delta_text, deltas)| ChunkRow {
+            delta_text,
+            deltas: deltas.iter().map(unified_delta_json).collect(),
+        })
+        .collect();
+    Ok((assembled, rows))
 }
 
 /// One streaming chunk: the delta text fed, and the RAW per-chunk deltas Dynamo
@@ -282,34 +275,24 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
 fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
-    // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
-    if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
-        init.apply(&mut parser, family);
+    dynamo_chunks_with_tools(family, input, init, &tools())
+}
 
-        let mut rows = Vec::new();
-        for chunk in chunk_input(input) {
-            let deltas = parser.push(&chunk).expect("native capture push failed");
-            rows.push(ChunkRow {
-                delta_text: chunk,
-                deltas: deltas.iter().map(unified_delta_json).collect(),
-            });
-        }
-        let tail: Vec<Value> = parser
-            .finish()
-            .expect("native capture finish failed")
-            .iter()
-            .map(unified_delta_json)
-            .collect();
-        rows.push(ChunkRow {
-            delta_text: "‹finish›".to_string(),
-            deltas: tail,
-        });
-        return rows;
+fn dynamo_chunks_with_tools(
+    family: &str,
+    input: &str,
+    init: &Init,
+    tool_schemas: &[dynamo_parsers_v2::Tool],
+) -> Vec<ChunkRow> {
+    if create_unified_parser_for_family(family, tool_schemas).is_ok() {
+        return capture_native_case(family, &chunk_input(input), init, tool_schemas)
+            .expect("native capture")
+            .1;
     }
 
     let (reasoning_name, tool_family) = parsers_for(family);
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
-    let mut tp = create_tool_parser_for_family(&tool_family, &tools())
+    let mut tp = create_tool_parser_for_family(&tool_family, tool_schemas)
         .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
 
     let mut rows = Vec::new();
@@ -500,6 +483,9 @@ fn cell(
 #[test]
 fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
+    let known = divergences::load();
+    let mut observed_dynamo = std::collections::BTreeSet::new();
+    let mut parity_failures = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
@@ -570,16 +556,64 @@ fn render_unified_conformance_html() {
             total += 1;
 
             // Dynamo: live.
-            let got = dynamo_events(&file.family, &case.input, &case.init);
-            let dclass = classify(&file.family, &case.golden, &got);
+            let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let schedule = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+            let (got, captured_rows, error) =
+                match capture_native_case(&file.family, &schedule, &case.init, &case_tools) {
+                    Ok((got, rows)) => (got, rows, None),
+                    Err(capture::CaptureFailure::Error(error)) => {
+                        (Vec::new(), Vec::new(), Some(error))
+                    }
+                    Err(failure) => panic!("native capture unavailable: {failure:?}"),
+                };
+            let dclass = if error.is_some() {
+                "ERROR"
+            } else {
+                classify(&file.family, &case.golden, &got)
+            };
+            if dclass != "MATCH" {
+                let actual = error
+                    .as_ref()
+                    .map(|e| format!("ERROR: {e}"))
+                    .unwrap_or_else(|| {
+                        got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
+                    });
+                match divergences::expected(&known, &file.family, id, Check::Golden) {
+                    Some(Expected::Golden(expected)) if actual == expected.actual => {
+                        observed_dynamo.insert((file.family.clone(), id.clone()));
+                    }
+                    Some(Expected::Golden(expected)) => parity_failures.push(format!(
+                        "{id}: known golden divergence changed\n expected: {}\n      got: {}",
+                        expected.actual, actual
+                    )),
+                    _ => parity_failures.push(format!(
+                        "{id}: unexpected golden divergence\n   golden: {}\n   actual: {}",
+                        case.golden
+                            .iter()
+                            .map(Ev::render)
+                            .collect::<Vec<_>>()
+                            .join("  |  "),
+                        actual
+                    )),
+                }
+            }
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
-            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input, &case.init)
-                .into_iter()
-                .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
-                .collect();
+            let chunk_feed: Vec<Value> = if error.is_some() {
+                schedule
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once("‹finish›".into()))
+                    .map(|text| json!({"delta_text": text}))
+                    .collect()
+            } else {
+                captured_rows
+                    .into_iter()
+                    .map(|r| json!({"delta_text":r.delta_text,"dynamo":r.deltas}))
+                    .collect()
+            };
 
             let scenario = id
                 .strip_prefix("UNIFIED.")
@@ -595,9 +629,10 @@ fn render_unified_conformance_html() {
                 "init": case.init.applied(),
                 "finish_reason": case.finish_reason.clone().unwrap_or_else(|| "stop".to_string()),
                 "input": case.input,
-                "tools": common::unified_tool_schemas(),
+                "tools": common::unified_tool_schemas_for_case(case.tools.as_ref()),
                 "golden": case.golden,
                 "dynamo": got,
+                "dynamo_error": error,
                 "dynamo_verdict": dclass,
                 "vllm_verdict": vx.map(|e| if e.verdict == "match" { "MATCH".to_string() } else { e.class.clone().unwrap_or_else(|| "DIVERGE".into()) }),
                 "vllm_note": vx.and_then(|e| e.note.clone()),
@@ -733,14 +768,20 @@ fn render_unified_conformance_html() {
     // and asserted elsewhere via the rendered legend), so this only needs to
     // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    // Every family in the current golden corpus has a native UnifiedParser
-    // (see the module doc), so Dynamo must match GOLDEN on every case — the
-    // split's interleaving-order loss no longer applies to anything here. A
-    // regression back to >0 means either a native parser broke, or a new
-    // split-only family entered the corpus without a native parser of its own.
+    parity_failures.extend(divergences::reconcile(
+        &known,
+        Check::Golden,
+        &observed_dynamo,
+    ));
     assert_eq!(
-        dynamo_red, 0,
-        "expected every case to match golden now that every family is native (got {dynamo_red} red)"
+        dynamo_red,
+        observed_dynamo.len(),
+        "every red report cell must match one exact allowlisted golden divergence"
+    );
+    assert!(
+        parity_failures.is_empty(),
+        "unified report has unexpected or stale golden divergences:\n\n{}",
+        parity_failures.join("\n\n")
     );
 }
 
@@ -753,6 +794,8 @@ struct CaptureDoc {
 
 #[derive(Deserialize)]
 struct CaptureCase {
+    #[serde(default)]
+    error: Option<String>,
     #[serde(default)]
     assembled: Vec<Ev>,
     #[serde(default)]
@@ -784,6 +827,10 @@ struct InputCase {
     /// drift for every prefilled / guided-JSON case.
     #[serde(default)]
     init: Init,
+    #[serde(default)]
+    tools: Option<Value>,
+    #[serde(default)]
+    chunks: Option<Vec<capture::InputChunk>>,
 }
 
 /// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
@@ -839,10 +886,12 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
     let captures: Vec<CaptureDoc> =
         serde_json::from_slice(&validation.stdout).expect("validated effective capture records");
 
-    // key -> (family, scenario, input, init), from the base inputs shard plus
+    // key -> (family, scenario, input, init, tools), from the base inputs shard plus
     // PR-qualified sparse overlays. New cases must carry their input metadata in
     // the same overlay as the capture, rather than making the released shard mutable.
-    let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
+    type CaptureKey = (String, String);
+    type CaptureMetadata = InputCase;
+    let mut meta: BTreeMap<CaptureKey, CaptureMetadata> = BTreeMap::new();
     for input_dir in input_dirs {
         for entry in glob_yaml(&input_dir) {
             let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
@@ -850,13 +899,10 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             for (key, case) in doc.cases {
                 // A sparse overlay can rename a case while preserving its scenario.
                 // The newer key replaces the released key for capture validation.
-                meta.retain(|(family, _), (scenario, _, _)| {
-                    family != &doc.family || scenario != &case.scenario
+                meta.retain(|(family, _), previous| {
+                    family != &doc.family || previous.scenario != case.scenario
                 });
-                meta.insert(
-                    (doc.family.clone(), key),
-                    (case.scenario, case.input, case.init),
-                );
+                meta.insert((doc.family.clone(), key), case);
             }
         }
     }
@@ -881,7 +927,7 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
     }
     for doc in captures {
         for (key, committed) in doc.cases {
-            let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
+            let Some(metadata) = meta.get(&(doc.family.clone(), key.clone())) else {
                 stale.push(format!(
                     "{} [{key}] has no input metadata in inputs or its PR overlays",
                     doc.family
@@ -889,9 +935,36 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
                 continue;
             };
             checked += 1;
+            let InputCase {
+                scenario,
+                input,
+                init,
+                tools: tool_schemas,
+                chunks,
+            } = metadata;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
 
-            let live_assembled = dynamo_events(&doc.family, input, init);
+            let case_tools = common::unified_tools_for_schemas(tool_schemas.as_ref());
+            let schedule = capture::replay_chunks(input, chunks.as_deref());
+            let (live_assembled, live_rows) =
+                match capture_native_case(&doc.family, &schedule, init, &case_tools) {
+                    Ok(value) => {
+                        if committed.error.is_some() {
+                            stale.push(format!("{id}: recorded error no longer occurs"));
+                            continue;
+                        }
+                        value
+                    }
+                    Err(capture::CaptureFailure::Error(error))
+                        if committed.error.as_ref() == Some(&error) =>
+                    {
+                        continue;
+                    }
+                    Err(failure) => {
+                        stale.push(format!("{id}: unexpected live error {failure:?}"));
+                        continue;
+                    }
+                };
             if live_assembled != committed.assembled {
                 stale.push(format!(
                     "{id} [{key}] assembled\n    committed: {}\n         live: {}",
@@ -911,10 +984,7 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
-                .into_iter()
-                .map(|r| r.deltas)
-                .collect();
+            let live_chunks: Vec<Vec<Value>> = live_rows.into_iter().map(|r| r.deltas).collect();
             let committed_chunks: Vec<Vec<Value>> =
                 committed.chunks.into_iter().map(|c| c.expected).collect();
             if live_chunks != committed_chunks {
@@ -1206,4 +1276,65 @@ fn label(v: &str) -> String {
 }
 fn css(v: &str) -> &'static str {
     if v == "MATCH" { "MATCH" } else { "RED" }
+}
+
+#[test]
+fn case_tools_control_capture_types_without_changing_legacy_defaults() {
+    // Exercise the authored Python YAML path as well as Rust deserialization;
+    // dropping tools during emit_yaml would silently restore the string default.
+    let output = std::process::Command::new("python3")
+        .arg("-c")
+        .arg(
+            r#"
+import sys
+sys.path.insert(0, sys.argv[1])
+import gen_unified_golden as g
+case = {"description":"per-case schema", "policy":[], "init":{},
+        "finish_reason":"stop", "input":"", "golden":[], "expect":{},
+        "tools":[{"name":"f", "parameters":{"type":"object",
+                 "properties":{"x":{"type":"integer"}}}}]}
+g.build_cases = lambda family: {"custom": case}
+print(g.emit_yaml("glm47"))
+"#,
+        )
+        .arg(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let mut file: GoldenFile = serde_yaml::from_slice(&output.stdout).unwrap();
+    let case = file.cases.remove("custom").unwrap();
+    let input = "<tool_call>f<arg_key>x</arg_key><arg_value>42</arg_value></tool_call>";
+    let custom = common::unified_tools_for_schemas(case.tools.as_ref());
+    let expected = vec![Ev::ToolCall {
+        name: "f".into(),
+        arguments: json!({"x":42}),
+    }];
+    assert_eq!(
+        dynamo_events_with_tools("glm47", input, &case.init, &custom),
+        expected
+    );
+    assert_ne!(
+        dynamo_events_with_tools("glm47", input, &case.init, &tools()),
+        expected
+    );
+    let rows = dynamo_chunks_with_tools("glm47", input, &case.init, &custom);
+    assert!(rows.iter().flat_map(|row| &row.deltas).any(|delta| {
+        delta["arguments"]
+            .as_str()
+            .is_some_and(|args| args.contains("42"))
+    }));
+    let legacy: GoldenCase = serde_json::from_value(json!({
+        "description": "legacy schema", "input": "", "golden": [], "expect": {}
+    }))
+    .unwrap();
+    assert_eq!(
+        common::unified_tool_schemas_for_case(legacy.tools.as_ref()),
+        common::unified_tool_schemas()
+    );
+    let input_case: InputCase = serde_json::from_value(json!({"tools":case.tools})).unwrap();
+    assert_eq!(input_case.tools, case.tools);
 }

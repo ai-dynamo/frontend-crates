@@ -82,6 +82,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`5-1`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
 - **`5-2`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
 - **`5-3`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
+- **`5-4`** (`malformed_json_then_two_valid_calls`) Across all eight families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: Published `dynamo-parsers-v2 = 0.7.13` and `0.7.14` lose the first echo, and unpublished candidate `0.7.15` preserves both. The candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint is retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
 
 ### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
 - **`6-1`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
@@ -89,6 +90,15 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 ### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
 - **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
 - **`7-2`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
+- **`7-3`** (`deepseek_v41_mixed_control_text_in_string`) All eight families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-2` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
+- **`7-4`** (`arg_json_null`) The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
+- **`7-5`** (`arg_string_null`) The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
+- **`7-4.ref`** (`arg_json_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a nullable string definition on the tool parameters root. Split-chunk XML input with bare `null` must produce JSON null.
+- **`7-5.ref`** (`arg_string_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a string-only definition on the tool parameters root. Split-chunk XML input with bare `null` must preserve string `"null"`.
+- **`7-9`** (`glm_ref_object`) GLM-only compatibility control for PR #271: a local object reference converts JSON object text into an object. The ref remains unresolved in the request.
+- **`7-11`** (`glm_ref_encoded_targets`) GLM-only regression for PR #271: URI percent decoding and JSON Pointer unescaping resolve definition names containing a space, UTF-8 with literal `+`, and `/` plus `~`. Bare `42` becomes an integer for each target.
+- **`7-12`** (`glm_ref_json_looking_strings`) GLM-only regression for PR #271: referenced string fields preserve object-looking, array-looking, and quoted JSON text exactly, including literal quote characters. An inline string field with matching object-looking bytes is a control.
+- **`7-13`** (`glm_ref_scalar_types`) GLM-only regression for PR #271: integer, number, and boolean refs produce typed scalars. A sibling integer constraint narrows a string-or-integer ref; bare `42` must become an integer. All four probes use split-chunk native XML and keep request refs unresolved.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
 - **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
@@ -123,12 +133,12 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 80 of the 92 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 94 of the 113 taxonomy cases for this family.
 - Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 12 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; and `muse-1`, whose non-Muse variant is a duplication of `35-1`. This duplicate does not imply that quoted or malformed model output cannot occur.
+- The 19 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
-<!-- TODO: Restore the 15 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 7-3, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
+<!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
 
 ## End-to-end test cases (`End-to-end:` tags)
 
@@ -335,6 +345,8 @@ The marker-free prefilled-Response variants were removed because they emitted th
 - **`muse-1`** is the Muse tool-recipient header inside visible answer text. Its old `31-26` capture key remains a historical alias; this column is intentionally absent for non-Muse families because it would duplicate `35-1`.
 
 ## Authoring a case: what to check BEFORE adding one
+
+Numeric groups describe shared behaviors: inspect every registered family and author its native input and expected output wherever applicable. Named family sections hold grammar-specific cases; explain genuine exclusions. A bug discovered in one family does not justify restricting shared coverage to it. Preserve previously published IDs.
 
 Every rule here exists because a case was added that could not fail for the reason it claimed. Fake coverage is worse than no coverage — it renders green.
 

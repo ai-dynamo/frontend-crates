@@ -401,8 +401,7 @@
     if (!allCands.length) { return ''; }
     var input = m.input || { kind: null };
     var family = input.family;
-    // Golden is the fixed reference: render its output at the bottom of the INPUT column,
-    // not as a selectable column. Every engine is measured against it.
+    // Golden is the fixed comparison reference, not a selectable engine.
     var golden = null;
     var cands = allCands.filter(function (c) {
       if (c.key === 'golden') { golden = c; return false; }
@@ -434,9 +433,9 @@
         body += row + '</tr>';
       });
     }
-    // Assembled row: the input cell shows the GOLDEN output (the reference); each engine
-    // column shows its own assembled block.
-    var inputCell = golden
+    // Text input stands alone; other popups retain their golden reference.
+    var showGolden = golden && input.kind !== 'text';
+    var inputCell = showGolden
       ? outputBlock(golden.block, family, ctx).replace(/\n/g, '<br>')
         + '<br><br><span class="golden-out-cap">Golden output</span>'
       : (body ? 'assembled' : inputTextCell(input, ctx));
@@ -444,15 +443,14 @@
     cands.forEach(function (c, ci) {
       // Red when this candidate's assembled output DIVERGES from the golden oracle
       // (its verdict, classified against golden, is anything but MATCH) — the same
-      // "red = doesn't match golden" rule the matrix cell uses. golden itself is the
-      // input-column reference and never appears here, so it is never flagged.
+      // "red = doesn't match golden" rule the matrix cell uses.
       var diverges = c.block && c.block.verdict && c.block.verdict !== 'MATCH';
       fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
         + (diverges ? ' class="cand-diverge"' : '') + '>'
         + outputBlock(c.block, family, ctx, goldenKinds).replace(/\n/g, '<br>') + '</td>';
     });
     fin += '</tr>';
-    var inputHdr = golden ? 'input / golden output' : 'input';
+    var inputHdr = showGolden ? 'input / golden output' : 'input';
     // The table carries class `ttip-chunks` — conformance.js keys the popup grid on it.
     return '<table class="ttip-chunks"><thead><tr><th>' + escapeHtml(inputHdr) + '</th>' + header
       + '</tr></thead><tbody>' + body + fin + '</tbody></table>';
@@ -546,6 +544,9 @@
     } else if (m.description) {
       h += '<div class="ttip-casedesc"><span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span></div>';
     }
+    if (m.variants) {
+      return h + m.variants.map(variant => '<div class="case-variant">' + buildTooltipHtml(variant) + '</div>').join('');
+    }
     // Parser configuration for THIS case, one knob per line, directly under the
     // description it qualifies.
     h += buildConfigHtml(m.init);
@@ -605,7 +606,7 @@
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
-    // Golden is the oracle shown in the input column, not a selectable engine. Make it the
+    // Golden is the fixed oracle, not a selectable engine. Make it the
     // hidden comparison base ONLY when no engine is the default Reference — otherwise an
     // engine (Dynamo on the Unified tab) is the starred REF and golden is just the fixed
     // NΔ baseline (cmp.golden). A golden REF would color every cell green (it never diverges
@@ -720,7 +721,9 @@
       if (!row || row.section) { return; }              // section banners are not families
       var cell = (row.cells || {})[col.sub];
       if (cell && cell.case_id && !caseId) { caseId = cell.case_id; }
-      var tip = cell && cell.tooltip;
+      const parentTip = cell && cell.tooltip;
+      const variantTips = parentTip && parentTip.variants ? parentTip.variants : [parentTip];
+      variantTips.forEach(tip => {
       var text = caseInputText(tip);
       // An input that EXISTS but is empty is not the same as a missing one — case 9.a
       // ("Empty model text") is empty on purpose, and calling that "no input recorded"
@@ -750,13 +753,15 @@
       var inp = (tip && tip.input) || {};
       rows.push({
         family: row.family || '',
-        label: row.model_label || row.family || '',
+        label: (row.model_label || row.family || '') + (variantTips.length > 1 ? ' — ' + tip.head : ''),
         init: tip ? tip.init : null,
+        description: variantTips.length > 1 && tip ? tip.description : null,
         text: text ? text : null,
         chunks: (inp.chunks && inp.chunks.length) ? inp.chunks : null,
         blocks: blocks,
         reason: text ? null : (text === '' ? 'empty input — this case tests empty model text'
                                            : 'n/a — ' + naReason(cell, tip)),
+      });
       });
     });
     return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', init: col.init,
@@ -838,7 +843,7 @@
         ? '<span class="grfam">' + escapeHtml(r.family) + '</span>' : '';
       const config = m.init ? '' : buildConfigHtml(r.init);
       body += '<tr' + cls + '><td class="grf">' + escapeHtml(r.label || r.family)
-        + fam + config + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
+        + fam + config + (r.description ? '<div class="ttip-head-desc">' + codeSpans(escapeHtml(r.description)) + '</div>' : '') + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
     });
     // One output header per candidate; applyCtl shows golden + the active columns,
     // flags the Reference (★) and orders golden -> REF -> rest.

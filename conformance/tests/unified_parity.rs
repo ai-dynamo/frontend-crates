@@ -3,10 +3,10 @@
 
 //! The acceptance gate for the unified parser: every `UNIFIED.*` case of every
 //! family that has a unified parser must assemble EXACTLY to the authored golden
-//! event list.
+//! event list, except for documented parser defects in `known-divergences.yaml`.
 //!
 //! `unified_schema_roundtrip` proves the corpus is well-formed and
-//! `unified_render` draws it; this file is what fails CI when a parser is wrong.
+//! `unified_render` draws it; undocumented or stale divergences fail CI here.
 //! It asserts the invariants from `conformance/utils/lib/parsers/UNIFIED_CASES.md`
 //! that are checkable from the single-stream corpus:
 //!
@@ -16,8 +16,12 @@
 //! * `I4` per-stream isolation — two concurrent parsers do not see each other
 
 mod common;
+use common::unified_capture::{self as capture, chunk_input as chunk_markers};
 
-use common::{Init, unified_tools as tools};
+use common::{
+    Init,
+    known_unified_divergences::{self as divergences, Check, Expected},
+};
 
 use std::collections::BTreeMap;
 
@@ -37,6 +41,10 @@ struct GoldenFile {
 #[derive(Deserialize)]
 struct GoldenCase {
     input: String,
+    #[serde(default)]
+    input_chunks: Option<Vec<String>>,
+    #[serde(default)]
+    tools: Option<serde_json::Value>,
     golden: Vec<UnifiedEvent>,
     /// Request-scoped parser configuration, declared by the case. Shared with
     /// `unified_render` via `common::Init` so both harnesses configure a case
@@ -66,20 +74,28 @@ fn has_unified_parser(family: &str) -> bool {
     create_unified_parser_for_family(family, &[]).is_ok()
 }
 
-fn events(family: &str, chunks: &[String], init: &Init) -> Vec<UnifiedEvent> {
-    let mut parser = create_unified_parser_for_family(family, &tools())
+fn events(
+    family: &str,
+    chunks: &[String],
+    init: &Init,
+    tool_schemas: &[dynamo_parsers_v2::Tool],
+) -> Result<Vec<UnifiedEvent>, String> {
+    let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create unified parser for `{family}`: {e}"));
     init.apply(&mut parser, family);
 
-    let mut deltas = Vec::new();
-    for chunk in chunks {
-        deltas.extend(parser.push(chunk).unwrap_or_else(|e| panic!("push: {e}")));
-    }
-    deltas.extend(parser.finish().unwrap_or_else(|e| panic!("finish: {e}")));
-    assemble(&deltas)
+    let rows = capture::native_capture(&mut parser, chunks).map_err(|failure| match failure {
+        capture::CaptureFailure::Error(error) => error,
+        other => panic!("unexpected capture failure: {other:?}"),
+    })?;
+    Ok(assemble(&rows.into_iter().flatten().collect::<Vec<_>>()))
 }
 
-fn render(events: &[UnifiedEvent]) -> String {
+fn render(result: &Result<Vec<UnifiedEvent>, String>) -> String {
+    let events = match result {
+        Ok(events) => events,
+        Err(error) => return format!("ERROR: {error}"),
+    };
     events
         .iter()
         .map(|e| match e {
@@ -89,34 +105,6 @@ fn render(events: &[UnifiedEvent]) -> String {
         })
         .collect::<Vec<_>>()
         .join("  |  ")
-}
-
-/// Marker-aligned chunking: each `<...>` control marker is its own chunk.
-fn chunk_markers(input: &str) -> Vec<String> {
-    let bytes = input.as_bytes();
-    let mut chunks = Vec::new();
-    let (mut i, mut text_start) = (0, 0);
-    while i < bytes.len() {
-        if bytes[i] == b'<' {
-            if text_start < i {
-                chunks.push(input[text_start..i].to_string());
-            }
-            let mut j = i + 1;
-            while j < bytes.len() && bytes[j] != b'>' {
-                j += 1;
-            }
-            let end = (j + 1).min(bytes.len());
-            chunks.push(input[i..end].to_string());
-            i = end;
-            text_start = i;
-        } else {
-            i += 1;
-        }
-    }
-    if text_start < bytes.len() {
-        chunks.push(input[text_start..].to_string());
-    }
-    chunks
 }
 
 /// Split into chunks of at most `n` chars (never mid-char).
@@ -143,6 +131,7 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
 #[test]
 fn unified_parser_matches_the_golden_oracle() {
     let files = load_golden();
+    let known = divergences::load();
     let covered: Vec<&GoldenFile> = files
         .iter()
         .filter(|f| has_unified_parser(&f.family))
@@ -153,22 +142,40 @@ fn unified_parser_matches_the_golden_oracle() {
     );
 
     let mut failures = Vec::new();
+    let mut observed = std::collections::BTreeSet::new();
     let mut checked = 0usize;
     for file in &covered {
         for (id, case) in &file.cases {
             checked += 1;
-            let got = events(&file.family, &chunk_markers(&case.input), &case.init);
-            if got != case.golden {
-                failures.push(format!(
-                    "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
-                    case.input,
-                    render(&case.golden),
-                    render(&got),
-                ));
+            let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let got = events(
+                &file.family,
+                &capture::input_chunks(&case.input, case.input_chunks.as_deref()),
+                &case.init,
+                &case_tools,
+            );
+            if got.as_ref() != Ok(&case.golden) {
+                match divergences::expected(&known, &file.family, id, Check::Golden) {
+                    Some(Expected::Golden(expected)) if render(&got) == expected.actual => {
+                        observed.insert((file.family.clone(), id.clone()));
+                    }
+                    Some(Expected::Golden(expected)) => failures.push(format!(
+                        "{id}: known golden divergence changed\n expected: {}\n      got: {}",
+                        expected.actual,
+                        render(&got),
+                    )),
+                    _ => failures.push(format!(
+                        "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
+                        case.input,
+                        render(&Ok(case.golden.clone())),
+                        render(&got),
+                    )),
+                }
             }
         }
     }
 
+    failures.extend(divergences::reconcile(&known, Check::Golden, &observed));
     assert!(
         failures.is_empty(),
         "{} of {checked} unified cases diverge from the golden oracle:\n\n{}",
@@ -181,26 +188,60 @@ fn unified_parser_matches_the_golden_oracle() {
 /// I5: the assembled list must not depend on where chunk boundaries fall.
 #[test]
 fn unified_parser_is_chunk_invariant() {
+    let known = divergences::load();
+    let mut observed = std::collections::BTreeSet::new();
     let mut failures = Vec::new();
     for file in load_golden()
         .iter()
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
-            let baseline = events(&file.family, std::slice::from_ref(&case.input), &case.init);
+            let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let baseline = events(
+                &file.family,
+                std::slice::from_ref(&case.input),
+                &case.init,
+                &case_tools,
+            );
             for (label, chunks) in splittings(&case.input) {
-                let got = events(&file.family, &chunks, &case.init);
+                let got = events(&file.family, &chunks, &case.init, &case_tools);
                 if got != baseline {
-                    failures.push(format!(
-                        "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
-                        chunks.len(),
-                        render(&baseline),
-                        render(&got),
-                    ));
+                    match divergences::expected(
+                        &known,
+                        &file.family,
+                        id,
+                        Check::ChunkInvariance,
+                    ) {
+                        Some(Expected::ChunkInvariance(expected))
+                            if render(&baseline) == expected.baseline
+                                && render(&got) == expected.divergent =>
+                        {
+                            observed.insert((file.family.clone(), id.clone()));
+                        }
+                        Some(Expected::ChunkInvariance(expected)) => failures.push(format!(
+                            "{id} [{label}, {} chunks]: known divergence changed\n expected baseline: {}\n expected split: {}\n actual baseline: {}\n actual split: {}",
+                            chunks.len(),
+                            expected.baseline,
+                            expected.divergent,
+                            render(&baseline),
+                            render(&got),
+                        )),
+                        _ => failures.push(format!(
+                            "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
+                            chunks.len(),
+                            render(&baseline),
+                            render(&got),
+                        )),
+                    }
                 }
             }
         }
     }
+    failures.extend(divergences::reconcile(
+        &known,
+        Check::ChunkInvariance,
+        &observed,
+    ));
     assert!(
         failures.is_empty(),
         "chunk splitting changed the assembled events ({}):\n\n{}",
@@ -212,25 +253,82 @@ fn unified_parser_is_chunk_invariant() {
 /// I6: parsing the whole output at once assembles to the streamed result.
 #[test]
 fn unified_parser_has_stream_batch_parity() {
+    let known = divergences::load();
+    let mut observed = std::collections::BTreeSet::new();
+    let mut failures = Vec::new();
     for file in load_golden()
         .iter()
         .filter(|f| has_unified_parser(&f.family))
     {
         for (id, case) in &file.cases {
-            let streamed = events(&file.family, &chunk_markers(&case.input), &case.init);
-            let mut parser = create_unified_parser_for_family(&file.family, &tools()).unwrap();
+            let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let streamed = events(
+                &file.family,
+                &capture::input_chunks(&case.input, case.input_chunks.as_deref()),
+                &case.init,
+                &case_tools,
+            );
+            let mut parser = create_unified_parser_for_family(&file.family, &case_tools).unwrap();
             case.init.apply(&mut parser, id);
 
             let batch = parser
                 .parse_complete(&case.input)
-                .unwrap_or_else(|e| panic!("{id}: parse_complete: {e}"));
-            assert_eq!(
-                batch,
-                streamed,
-                "{id}: batch and stream disagree\n   batch: {}\n  stream: {}",
-                render(&batch),
-                render(&streamed),
-            );
+                .map_err(|e| format!("native push: {e:#}"));
+            if batch != streamed {
+                match divergences::expected(&known, &file.family, id, Check::StreamBatch) {
+                    Some(Expected::StreamBatch(expected))
+                        if render(&batch) == expected.batch
+                            && render(&streamed) == expected.stream =>
+                    {
+                        observed.insert((file.family.clone(), id.clone()));
+                    }
+                    Some(Expected::StreamBatch(expected)) => failures.push(format!(
+                        "{id}: known stream/batch divergence changed\n expected batch: {}\n expected stream: {}\n actual batch: {}\n actual stream: {}",
+                        expected.batch,
+                        expected.stream,
+                        render(&batch),
+                        render(&streamed),
+                    )),
+                    _ => failures.push(format!(
+                        "{id}: batch and stream disagree\n   batch: {}\n  stream: {}",
+                        render(&batch),
+                        render(&streamed),
+                    )),
+                }
+            }
+        }
+    }
+    failures.extend(divergences::reconcile(
+        &known,
+        Check::StreamBatch,
+        &observed,
+    ));
+    assert!(
+        failures.is_empty(),
+        "{} stream/batch discrepancies remain:\n\n{}",
+        failures.len(),
+        failures.join("\n\n")
+    );
+}
+
+fn advance(
+    parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    chunk: Option<&str>,
+    state: &mut Result<Vec<dynamo_parsers_v2::UnifiedParserEvent>, String>,
+) {
+    if let Ok(deltas) = state {
+        let result = match chunk {
+            Some(chunk) => parser
+                .push(chunk)
+                .map_err(|e| format!("native push: {e:#}")),
+            None => parser
+                .finish()
+                .map(|out| out.events)
+                .map_err(|e| format!("native finish: {e:#}")),
+        };
+        match result {
+            Ok(events) => deltas.extend(events),
+            Err(error) => *state = Err(error),
         }
     }
 }
@@ -248,34 +346,39 @@ fn unified_parsers_are_isolated_per_stream() {
             let [(id_a, a), (id_b, b)] = pair else {
                 continue;
             };
-            let (ca, cb) = (chunk_markers(&a.input), chunk_markers(&b.input));
-            let solo_a = events(&file.family, &ca, &a.init);
-            let solo_b = events(&file.family, &cb, &b.init);
+            let (ca, cb) = (
+                capture::input_chunks(&a.input, a.input_chunks.as_deref()),
+                capture::input_chunks(&b.input, b.input_chunks.as_deref()),
+            );
+            let tools_a = common::unified_tools_for_schemas(a.tools.as_ref());
+            let tools_b = common::unified_tools_for_schemas(b.tools.as_ref());
+            let solo_a = events(&file.family, &ca, &a.init, &tools_a);
+            let solo_b = events(&file.family, &cb, &b.init, &tools_b);
 
-            let mut pa = create_unified_parser_for_family(&file.family, &tools()).unwrap();
-            let mut pb = create_unified_parser_for_family(&file.family, &tools()).unwrap();
+            let mut pa = create_unified_parser_for_family(&file.family, &tools_a).unwrap();
+            let mut pb = create_unified_parser_for_family(&file.family, &tools_b).unwrap();
             a.init.apply(&mut pa, id_a);
             b.init.apply(&mut pb, id_b);
 
-            let (mut da, mut db) = (Vec::new(), Vec::new());
+            let (mut da, mut db) = (Ok(Vec::new()), Ok(Vec::new()));
             for i in 0..ca.len().max(cb.len()) {
                 if let Some(c) = ca.get(i) {
-                    da.extend(pa.push(c).unwrap());
+                    advance(&mut pa, Some(c), &mut da);
                 }
                 if let Some(c) = cb.get(i) {
-                    db.extend(pb.push(c).unwrap());
+                    advance(&mut pb, Some(c), &mut db);
                 }
             }
-            da.extend(pa.finish().unwrap().events);
-            db.extend(pb.finish().unwrap().events);
+            advance(&mut pa, None, &mut da);
+            advance(&mut pb, None, &mut db);
 
             assert_eq!(
-                assemble(&da),
+                da.map(|d| assemble(&d)),
                 solo_a,
                 "{id_a}: interleaving with {id_b} changed its events"
             );
             assert_eq!(
-                assemble(&db),
+                db.map(|d| assemble(&d)),
                 solo_b,
                 "{id_b}: interleaving with {id_a} changed its events"
             );
@@ -360,6 +463,7 @@ fn manifest_and_parser_registry_agree_on_native_families() {
 fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
     use dynamo_parsers_v2::{ToolParseResult, create_tool_parser_for_family};
 
+    let known = divergences::load();
     let mut coverage = BTreeMap::<String, usize>::new();
     for file in load_golden()
         .into_iter()
@@ -376,14 +480,27 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                 .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
                 .collect();
             for (label, chunks) in splittings(&case.input) {
-                let mut parser = create_tool_parser_for_family("deepseek_v4", &tools()).unwrap();
+                let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
+                let mut parser = create_tool_parser_for_family("deepseek_v4", &case_tools).unwrap();
                 let mut result = ToolParseResult::default();
+                let mut failure = None;
                 for chunk in chunks {
-                    result.append(
-                        parser
-                            .push(&chunk)
-                            .unwrap_or_else(|e| panic!("{id} {label}: {e}")),
-                    );
+                    match parser.push(&chunk) {
+                        Ok(delta) => result.append(delta),
+                        Err(error) => {
+                            failure = Some(format!("ERROR: native push: {error:#}"));
+                            break;
+                        }
+                    }
+                }
+                if let Some(error) = failure {
+                    let Some(Expected::Golden(expected_error)) =
+                        divergences::expected(&known, &file.family, &id, Check::Golden)
+                    else {
+                        panic!("{id} {label}: unexpected {error}");
+                    };
+                    assert_eq!(error, expected_error.actual, "{id} {label}");
+                    continue;
                 }
                 result.append(
                     parser

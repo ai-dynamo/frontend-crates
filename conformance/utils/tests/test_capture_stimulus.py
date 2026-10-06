@@ -132,11 +132,22 @@ def test_current_capture_guard_rejects_each_stale_dimension(tmp_path, dimension)
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
-def test_current_capture_guard_rejects_tools_when_input_and_capture_agree_on_stale_schema(tmp_path):
-    current = _input("same")
+@pytest.mark.parametrize("schema_type", ["string", ["string", "null"]])
+def test_current_capture_guard_accepts_the_executed_per_case_schema(tmp_path, schema_type):
+    current = _input("null") | {"tools": [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"city": {"type": schema_type}},
+    }}]}
     _write(tmp_path, "inputs", current)
     _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
-    with pytest.raises(ValueError, match="executable shared schema"):
+    assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
+
+
+def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
+    current = _input("same")
+    del current["tools"]
+    _write(tmp_path, "inputs", current)
+    _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
+    with pytest.raises(ValueError, match="executable tool schema"):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
@@ -226,3 +237,16 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
     assert capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"]) == [
         {"family": "deepseek_v41", "cases": {"UNIFIED.7-2": record}},
     ]
+
+
+def test_recorded_known_error_is_bound_and_must_match_exactly(tmp_path):
+    current = _input("same") | {"scenario": "malformed_json_then_two_valid_calls"}
+    error = "native push: EOF while parsing a string at line 1 column 16"
+    record = {"capture_input": capture_stimulus.capture_input(current), "error": error}
+    _write(tmp_path, "inputs", current, "UNIFIED.5-4")
+    _write(tmp_path, "capture", record, "UNIFIED.5-4")
+    assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
+    for invalid in ({"error": error + " changed"}, {"assembled": []}, {"chunks": []}):
+        _write(tmp_path, "capture", record | invalid, "UNIFIED.5-4")
+        with pytest.raises(ValueError, match="unexpected error"):
+            capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])

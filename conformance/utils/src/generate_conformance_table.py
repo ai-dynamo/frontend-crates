@@ -118,6 +118,9 @@ from impls import (  # noqa: E402
 # Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
+from null_cases import null_group
+from case_variants import group_null_variants
+
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 import gen_unified_golden  # noqa: E402  (authored Unified scenario scope)
 from markers import (  # noqa: E402,F401
@@ -765,7 +768,8 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     if not cases_md.exists():
         return {}
     pat = re.compile(
-        rf"\*\*`TOOLCALLING\.{re.escape(mode)}" rf"\.([0-9]+(?:\.[a-z])?)`\*\*\s+(.+)"
+        rf"\*\*`TOOLCALLING\.{re.escape(mode)}"
+        rf"\.({common.CASE_DESCRIPTION_SUFFIX})`\*\*\s+(.+)"
     )
     out: dict[str, str] = {}
     lines = cases_md.read_text(encoding="utf-8").splitlines()
@@ -796,7 +800,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 
 def _subcase_group_label(mode: str, sub: str) -> str:
-    return _group_by_sub(mode).get(sub, "Other")
+    return _group_by_sub(mode).get(null_group(sub) or sub, "Other")
 
 
 def _subcase_runs(mode: str, sub_cases: list[str]) -> list[list[str]]:
@@ -1281,7 +1285,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
             fam = doc.get("family") or family
             for cid, vc in (doc.get("cases") or {}).items():
                 if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
-                    counts[(fam, cid)] = len(vc["chunks"])
+                    counts[(fam, fixtures.canonical_toolcalling_case_key(cid))] = len(vc["chunks"])
         return counts
 
     def _record(cases, impl, version):
@@ -1289,10 +1293,8 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
         raw_counts = _raw_chunk_counts(impl, version)
         # Dynamo v1 and v2 are DIFFERENT parsers: v2 (dynamo_v2-0.1.11)
         # implements only a handful of families, while the v1 jail
-        # (dynamo_v1-3.0.0) covers all. The stream assembly defaults an absent
-        # impl to an empty-but-present block, which would paint the v2 parser green on
-        # families it doesn't implement. Gate on the version dir's actual family list
-        # so uncovered families read `na` (not implemented), not a clean empty output.
+        # (dynamo_v1-3.0.0) covers all. Gate on the version dir's actual family list
+        # to distinguish unsupported families from individual unrecorded cases.
         covered = _stream_version_families(impl, version) if impl in BASELINE_IMPLS else None
         for key, case in cases.items():
             block = _impl_get(case.get("expected") or {}, impl)
@@ -1739,7 +1741,6 @@ def _tab_label(
 import model as _model  # noqa: E402  (schema + serialization; leaf module)
 
 _MODE_PAREN_RE = re.compile(r"\(([^)]*)\)\s*$")
-_LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
 
 
 def _cand_engine_group(key: str) -> str:
@@ -1762,7 +1763,7 @@ def _parse_mode_of_label(label: str) -> str | None:
 
 
 def _version_of_label(label: str) -> str | None:
-    m = _LABEL_VERSION_RE.search(label)
+    m = _CANDIDATE_VERSION_RE.search(label)
     return m.group(1) if m else None
 
 
@@ -1859,6 +1860,9 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
             meta.append({"key": impl, "impl": impl,
                          "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
                          "version": _v2_display_version(impl), "block_raw": _impl_get(expected, impl)})
+    if case.get("golden"):
+        meta.append({"key": "golden", "label": "GOLDEN (oracle)", "version": None,
+                     "block_raw": case["golden"]})
     meta = _sort_candidates(meta)
     cmp_blocks = {m["key"]: m["block_raw"] for m in meta}
     for m in meta:
@@ -1954,7 +1958,7 @@ def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
     dyn = _impl_get(case.get("expected") or {}, baseline)
     fp = case.get("__fixture_path", "")
     href = href_rewrite(common.fixture_href(fp)) if fp else None
-    if not isinstance(dyn, dict):
+    if not isinstance(dyn, dict) and not case.get("golden"):
         # n/a stub: case has only `explanation:` (no `expected:` block).
         tooltip = {"head": f"{case.get('__case_id','')} — {family}",
                    "description": case.get("description") or "",
@@ -1965,10 +1969,11 @@ def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
                                 sub=sub, col_group=col_group, band=band, fixture_href=href,
                                 status=status, cmp=cmp, facts=facts, tooltip=tooltip,
                                 known_divergence=bool(case.get("__known_divergence")))
-    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn)
+    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn or {})
     return _model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
                             sub=sub, col_group=col_group, band=band, fixture_href=href,
                             status=status, cmp=cmp, facts=facts, tooltip=tooltip,
+                            red_on_diff=bool(case.get("golden")),
                             known_divergence=bool(case.get("__known_divergence")))
 
 
@@ -2116,7 +2121,7 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     return "LOSS"
 
 
-def _assemble_stream(chunk_deltas: list) -> list:
+def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = None) -> list:
     """Assemble the FINAL ordered event list from a parser's per-chunk STREAMED deltas
     (not its batch final message). Coalesces consecutive reasoning/text runs and joins
     per-call tool-argument fragments (a delta with a name starts a new call; nameless
@@ -2155,7 +2160,8 @@ def _assemble_stream(chunk_deltas: list) -> list:
                 if cur_tool is not None and dl.get("complete", True):
                     events[cur_tool]["_complete"] = True
     events = [e for e in events if e.get("kind") != "tool_call" or e.get("_complete", True)]
-    for e in events:
+    malformed = set()
+    for position, e in enumerate(events):
         if e["kind"] == "tool_call":
             raw = e.pop("_raw", "")
             e.pop("_complete", None)
@@ -2167,7 +2173,23 @@ def _assemble_stream(chunk_deltas: list) -> list:
                 try:
                     e["arguments"] = json.loads(raw)
                 except (ValueError, TypeError):
+                    malformed.add(position)
                     e["arguments"] = raw
+    if malformed and recorded_assembly is not None:
+        calls = [(position, event) for position, event in enumerate(events) if event["kind"] == "tool_call"]
+        recorded = [event for event in recorded_assembly if event["kind"] == "tool_call"]
+        # Native P3 uses {}, but split-era captures preserve invalid JSON bytes.
+        # Require the entire call sequence to align before using recorded fallbacks;
+        # split batch assembly can differ from stream order and must not replace it.
+        if len(calls) == len(recorded) and all(
+            event["name"] == observed["name"] and (
+                event["arguments"] == observed["arguments"] or
+                position in malformed and observed["arguments"] == {}
+            ) for (position, event), observed in zip(calls, recorded)
+        ):
+            for (position, event), observed in zip(calls, recorded):
+                if position in malformed:
+                    event["arguments"] = observed["arguments"]
     return events
 
 
@@ -2594,11 +2616,6 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         pc = _cand(spec["key"], spec["label"], "C", spec["version"])
         pc["impl"] = spec["impl"]
         candidates.append(pc)
-    _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
-             "per-family mixture — native unified where available, split elsewhere). "
-             "Today's split parses ALL reasoning first, so reasoning between/after tool "
-             "calls is merged up front and loses its position. One state machine per stream "
-             "(owning reasoning+content+tools) fixes this by construction.")
 
     rows = []
 
@@ -2679,7 +2696,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
             if dynamo_failure:
                 dyn_chunk_deltas = []
-            dyn = _assemble_stream(dyn_chunk_deltas)
+            dyn = _assemble_stream(dyn_chunk_deltas, recorded_assembly=c.get("dynamo"))
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
             if dynamo_failure:
@@ -2746,7 +2763,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     )
                     prev_chunks_by_ver[pv] = []
                     continue
-                pevents = _assemble_stream(pchunks)
+                pevents = _assemble_stream(pchunks, recorded_assembly=pdoc.get("assembled"))
                 pverd = _unified_classify(f, gold, pevents)
                 cmp[f"dynamo@{pv}"] = markers.cmp_entry(
                     _sig(pevents), leak=1 if pverd == "LEAK" else 0
@@ -2789,7 +2806,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
-                                "todo": _TODO if dverd != "MATCH" else None,
+                                "todo": None,
                                 "explanation": (
                                     f"Inherited unchanged from Dynamo v2 {c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')}."
                                     if c['dynamo_by_ver'].get(dynamo_ver_label, {}).get('inherited_from')
@@ -2827,10 +2844,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
                                else (_unified_capture_failure(prev_by_ver[pv]) or {
-                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                                     "events": _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled")),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [])),
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or [], recorded_assembly=prev_by_ver[pv].get("assembled"))),
                                      "explanation": (
                                          f"Inherited unchanged from Dynamo v2 {prev_by_ver[pv].get('inherited_from')}."
                                          if prev_by_ver[pv].get("inherited_from") else None
@@ -3032,6 +3049,16 @@ def build_combined_model(output_path: Path | None = None,
         "generated_by": "generate_conformance_table.build_combined_model",
     }
     legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
+    for tab in tabs:
+        if tab["id"] in {"tab-toolcalling-batch", "tab-toolcalling-streamv1"} and any(
+            "golden" in (cell.get("cmp") or {})
+            for row in tab["rows"] for cell in row["cells"].values()
+        ):
+            tab["candidates"].append({"key": "golden", "impl": "golden", "label": "GOLDEN (oracle)",
+                                      "label_html": "GOLDEN (oracle)", "default_bucket": "B",
+                                      "version": None,
+                                      "parse_mode": "batch" if tab["mode"] == "batch" else "stream"})
+        group_null_variants(tab)
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
                              legend_html=legend_html)
 

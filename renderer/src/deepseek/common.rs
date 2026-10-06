@@ -93,11 +93,6 @@ Here are the functions available in JSONSchema format:
 </functions>
 "#;
 
-pub(crate) const TOOL_CALL_TEMPLATE: &str =
-    "<{dsml_token}invoke name=\"{name}\">\n{arguments}\n</{dsml_token}invoke>";
-
-pub(crate) const TOOL_OUTPUT_TEMPLATE: &str = "\n<result>{content}</result>";
-
 pub(crate) const REASONING_EFFORT_HIGH: &str = "Reasoning Effort: Absolute maximum with no shortcuts permitted.\nYou MUST be very thorough in your thinking and comprehensively decompose the problem to resolve the root cause, rigorously stress-testing your logic against all potential paths, edge cases, and adversarial scenarios.\nExplicitly write out your entire deliberation process, documenting every intermediate step, considered alternative, and rejected hypothesis to ensure absolutely no assumption is left unchecked.\n\n";
 
 pub(crate) const REASONING_EFFORT_MAX: &str = "Reasoning Effort: Beyond maximum — exhaustive, relentless, and uncompromising.\nYou MUST reason with the utmost depth and rigor, leaving absolutely nothing to chance: exhaustively decompose the problem into its most fundamental components, trace every causal chain to its root, and resolve the underlying cause rather than any surface symptom.\nDo not stop reasoning until you have independently verified the solution from multiple angles and are certain that no assumption remains unchecked and no error remains undiscovered.\n\n";
@@ -168,6 +163,14 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
 
         fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
             writer.write_all(b": ")
+        }
+
+        fn write_f64<W: ?Sized + io::Write>(
+            &mut self,
+            writer: &mut W,
+            value: f64,
+        ) -> io::Result<()> {
+            writer.write_all(python_float_repr(value).as_bytes())
         }
     }
 
@@ -242,10 +245,11 @@ pub(crate) fn normalize_message_contents(messages: &mut [JsonValue], non_text: N
         let Some(content) = msg.get("content") else {
             continue;
         };
-        if !content.is_string()
-            && !content.is_array()
-            && non_text == NormalizeNonText::LeaveUntouched
-        {
+        // Text content is already normalized. Keep its allocation in place.
+        if content.is_string() {
+            continue;
+        }
+        if !content.is_array() && non_text == NormalizeNonText::LeaveUntouched {
             continue;
         }
         let normalized = extract_visible_text(content);
@@ -316,19 +320,32 @@ fn preserve_user_fields(target: &mut JsonValue, source: &JsonValue) {
 }
 
 // Merge `tool` role messages into preceding user `content_blocks` and collapse
-// consecutive user turns, matching Python's `merge_tool_messages`.
-pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
+// consecutive user turns with Python-compatible rendering. The internal user
+// representation keeps text only in content_blocks, without Python's duplicate
+// content field.
+pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
     let mut merged: Vec<JsonValue> = Vec::with_capacity(messages.len());
 
-    for msg in messages {
+    for mut msg in messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
 
         if role == "tool" {
-            let tool_block = serde_json::json!({
-                "type": "tool_result",
-                "tool_use_id": msg.get("tool_call_id").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
-                "content": msg.get("content").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
-            });
+            let obj = msg
+                .as_object_mut()
+                .expect("a message with a role is an object");
+            let tool_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("tool_result".into())),
+                (
+                    "tool_use_id".into(),
+                    obj.remove("tool_call_id")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+                (
+                    "content".into(),
+                    obj.remove("content")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -348,18 +365,22 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                     blocks.push(tool_block);
                 }
             } else {
-                merged.push(serde_json::json!({
-                    "role": "user",
-                    "content_blocks": [tool_block],
-                }));
+                merged.push(JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![tool_block])),
+                ])));
             }
         } else if role == "user" {
             let text = msg
-                .get("content")
-                .and_then(|c| c.as_str())
-                .unwrap_or("")
-                .to_string();
-            let text_block = serde_json::json!({ "type": "text", "text": text });
+                .as_object_mut()
+                .expect("a message with a role is an object")
+                .remove("content")
+                .filter(JsonValue::is_string)
+                .unwrap_or_else(|| JsonValue::String(String::new()));
+            let text_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("text".into())),
+                ("text".into(), text),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -381,19 +402,20 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                     })
                     .is_some();
                 if appended {
-                    preserve_user_fields(last, msg);
+                    preserve_user_fields(last, &msg);
                 }
             } else {
-                let mut new_msg = serde_json::json!({
-                    "role": "user",
-                    "content": text,
-                    "content_blocks": [text_block],
-                });
-                preserve_user_fields(&mut new_msg, msg);
+                // Rendering reads content_blocks; retaining content would copy
+                // the entire user message for an unused second representation.
+                let mut new_msg = JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![text_block])),
+                ]));
+                preserve_user_fields(&mut new_msg, &msg);
                 merged.push(new_msg);
             }
         } else {
-            merged.push(msg.clone());
+            merged.push(msg);
         }
     }
 
@@ -592,10 +614,121 @@ pub(crate) fn inject_tools_and_response_format(
     Ok(())
 }
 
+/// Python's `repr(float)`, which `json.dumps` uses: the shortest round-trip digits,
+/// fixed notation for exponents in [-4, 16) (always with a fraction, `100.0`),
+/// otherwise scientific with a signed, two-digit exponent (`1e-06`, `1e+16`).
+fn python_float_repr(value: f64) -> String {
+    // serde_json's ryu picks the same shortest digits as Python, halfway ties
+    // included (`{:e}` breaks some differently); only the notation is respelled.
+    let shortest = serde_json::Number::from_f64(value)
+        .expect("JSON floats are finite")
+        .to_string();
+    let (sign, unsigned) = match shortest.strip_prefix('-') {
+        Some(unsigned) => ("-", unsigned),
+        None => ("", shortest.as_str()),
+    };
+    let (mantissa, exponent) = match unsigned.split_once('e') {
+        Some((mantissa, exponent)) => (mantissa, exponent.parse().expect("ryu exponent")),
+        None => (unsigned, 0),
+    };
+    let (integer, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let all_digits = format!("{integer}{fraction}");
+    let significant = all_digits.trim_start_matches('0');
+    let digits = significant.trim_end_matches('0');
+    if digits.is_empty() {
+        return format!("{sign}0.0");
+    }
+    let leading_zeros = (all_digits.len() - significant.len()) as i32;
+    let exponent: i32 = exponent + integer.len() as i32 - 1 - leading_zeros;
+    if (-4..16).contains(&exponent) {
+        let point = exponent + 1;
+        let fixed = if point <= 0 {
+            format!("0.{}{digits}", "0".repeat(point.unsigned_abs() as usize))
+        } else if point as usize >= digits.len() {
+            format!("{digits}{}.0", "0".repeat(point as usize - digits.len()))
+        } else {
+            format!(
+                "{}.{}",
+                &digits[..point as usize],
+                &digits[point as usize..]
+            )
+        };
+        format!("{sign}{fixed}")
+    } else {
+        let (head, tail) = digits.split_at(1);
+        let mantissa = if tail.is_empty() {
+            head.to_string()
+        } else {
+            format!("{head}.{tail}")
+        };
+        let exponent_sign = if exponent < 0 { '-' } else { '+' };
+        format!(
+            "{sign}{mantissa}e{exponent_sign}{:02}",
+            exponent.unsigned_abs()
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn floats_match_python_json_dumps() {
+        for (value, python) in [
+            (0.000001, "1e-06"),
+            (0.0001, "0.0001"),
+            (0.00001234, "1.234e-05"),
+            (1e16, "1e+16"),
+            (1e15, "1000000000000000.0"),
+            (1.5e-7, "1.5e-07"),
+            (2.5, "2.5"),
+            (100.0, "100.0"),
+            (0.1, "0.1"),
+            (-0.0, "-0.0"),
+            (0.0, "0.0"),
+            (-123.456, "-123.456"),
+            (1.7976931348623157e308, "1.7976931348623157e+308"),
+            (5e-324, "5e-324"),
+            // Exactly halfway between two shortest candidates.
+            (1e15 + 0.25, "1000000000000000.2"),
+            (1e14 + 0.125, "100000000000000.12"),
+        ] {
+            assert_eq!(python_float_repr(value), python, "{value:?}");
+        }
+        let value = serde_json::json!({"a": 0.000001, "b": [1e16, 3]});
+        assert_eq!(to_json(&value), r#"{"a": 1e-06, "b": [1e+16, 3]}"#);
+    }
+
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn merged_user_blocks_preserve_metadata_and_order() {
+        let merged = merge_tool_messages(vec![
+            serde_json::json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
+            serde_json::json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
+            serde_json::json!({"role": "user", "content": "two", "task": "action"}),
+            serde_json::json!({"role": "user", "content": "separate"}),
+        ]);
+        assert_eq!(merged.len(), 2);
+        assert!(
+            merged
+                .iter()
+                .all(|message| message.get("content").is_none())
+        );
+        assert_eq!(
+            merged[0]["content_blocks"],
+            serde_json::json!([
+                {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
+                {"type": "text", "text": "one"},
+                {"type": "text", "text": "two"}
+            ])
+        );
+        assert_eq!(merged[0]["task"], "action");
+        assert_eq!(merged[0]["wo_eos"], true);
+        assert_eq!(merged[0]["mask"], serde_json::json!([1, 0]));
+        assert_eq!(merged[1]["content_blocks"][0]["text"], "separate");
+    }
 
     #[test]
     fn test_extract_visible_text_from_content_array() {

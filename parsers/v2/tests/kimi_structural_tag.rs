@@ -217,7 +217,10 @@ fn kimi_structured_response_keeps_schema_and_channel() {
         assert_eq!(schemas[0]["json_schema"], schema);
         assert!(schemas[0].get("any_order").is_none());
         if family == "kimi_k3" {
-            assert_eq!(response["elements"][1]["end"], "<|close|>response<|sep|>");
+            assert_eq!(
+                response["elements"][2]["content"]["value"],
+                "<|close|>response<|sep|>"
+            );
         }
     }
 }
@@ -229,7 +232,7 @@ fn call(family: &str, tool: &str, value: &str) -> String {
         )
     } else {
         format!(
-            "<|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool=\"{tool}\" index=\"0\"<|sep|><|open|>argument key=\"days\" type=\"number\"<|sep|>{value}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
+            "<|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool=\"{tool}\" index=\"1\"<|sep|><|open|>argument key=\"days\" type=\"number\"<|sep|>{value}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
         )
     }
 }

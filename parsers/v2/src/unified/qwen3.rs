@@ -270,6 +270,40 @@ mod tests {
         assemble(&deltas)
     }
 
+    #[test]
+    fn native_parameter_preserves_literal_text_at_every_split() {
+        for value in [
+            " <think>quoted</think> <tool_call> </tool_call> </function> &amp; \"x\"\\\n ",
+            "  Montréal &amp;quot;  ",
+            "\n\n",
+            "",
+            " ",
+            "<function=f><parameter=fake>data",
+        ] {
+            let input = format!(
+                "<tool_call>\n<function=get_weather>\n<parameter=city>\n{value}\n</parameter>\n</function>\n</tool_call>"
+            );
+            let want = vec![UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({"city": value}),
+            }];
+            for split in 0..=input.len() {
+                if input.is_char_boundary(split) {
+                    assert_eq!(
+                        events(&weather_tools(), &[&input[..split], &input[split..]]),
+                        want,
+                        "split {split}, value {value:?}"
+                    );
+                }
+            }
+            let chunks: Vec<_> = input
+                .char_indices()
+                .map(|(at, c)| &input[at..at + c.len_utf8()])
+                .collect();
+            assert_eq!(events(&weather_tools(), &chunks), want);
+        }
+    }
+
     fn configured_events(
         tools: &[Tool],
         starting_state: UnifiedParserStartingState,

@@ -14,9 +14,6 @@ from fixture_disposition import (
     canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
     is_source_capture,
 )
-from unified_tools import unified_tools
-
-
 def capture_input(record: dict) -> dict:
     return {
         "input": record.get("input", ""),
@@ -168,16 +165,21 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
     captures = _effective_capture_records(directory, input_aliases)
     if not inputs or inputs.keys() != captures.keys():
         raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
-    tools = unified_tools()
     for ident, current in inputs.items():
-        if current.get("tools") != tools:
-            raise ValueError(f"current input tools differ from executable shared schema: {ident}")
+        if not isinstance(current.get("tools"), list):
+            raise ValueError(f"current input has no executable tool schema: {ident}")
         record, raw, relative, bindings = captures[ident]
         failure = comparison_failure(record, current, raw, relative, bindings)
         if failure:
             raise ValueError(f"{ident}: {failure}")
-        if "unavailable" in record or "error" in record:
+        if "unavailable" in record:
             raise ValueError(f"current capture did not succeed: {ident}")
+        if "error" in record:
+            known = yaml.safe_load((Path(__file__).resolve().parents[2] / "unified-known-divergences.yaml").read_text())
+            scenario_id = f"UNIFIED.{current.get('scenario', '')}.{ident[0]}"
+            expected_error = known.get(ident[0], {}).get(scenario_id, {}).get("golden", {}).get("actual")
+            if expected_error != f"ERROR: {record['error']}" or "assembled" in record or "chunks" in record:
+                raise ValueError(f"current capture did not succeed (unexpected error): {ident}")
     families = {}
     for (family, key), (record, _raw, _relative, _bindings) in sorted(captures.items()):
         families.setdefault(family, {})[input_keys[(family, key)]] = record

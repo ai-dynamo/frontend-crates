@@ -130,18 +130,18 @@ impl ToolCallGrammar for KimiK3 {
                 },
             })
         };
-        Ok(with_tools(policy, |tools| {
-            wire::import_native(
+        with_tools(policy, |tools| {
+            Ok(wire::import_native(
                 kimi_k3::build(
                     tools,
                     policy.mode == ToolCallingMode::Required,
                     policy.stop_after_first(),
                     response,
-                )
+                )?
                 .format,
                 any_order,
-            )
-        }))
+            ))
+        })
     }
 
     fn build_tool_calls_only(
@@ -149,8 +149,8 @@ impl ToolCallGrammar for KimiK3 {
         policy: &ResolvedToolCallingPolicy<'_>,
         any_order: bool,
     ) -> anyhow::Result<Format> {
-        Ok(with_tools(policy, |tools| {
-            wire::import_native(
+        with_tools(policy, |tools| {
+            Ok(wire::import_native(
                 kimi_k3::build(
                     tools,
                     true,
@@ -158,11 +158,11 @@ impl ToolCallGrammar for KimiK3 {
                     native::Format::ConstString(native::ConstStringFormat {
                         value: String::new(),
                     }),
-                )
+                )?
                 .format,
                 any_order,
-            )
-        }))
+            ))
+        })
     }
 
     fn build_auto_with_structured_output(

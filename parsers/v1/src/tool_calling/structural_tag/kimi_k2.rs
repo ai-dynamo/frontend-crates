@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::builder::{
-    ToolCallFormatBuildContext, kimi_uses_declared_tool_schema, resolve_tools_to_include,
+    ToolCallFormatBuildContext, resolve_tools_to_include, uses_declared_tool_schema,
 };
 use super::format::*;
 use crate::tool_calling::ToolChoice;
@@ -23,7 +23,7 @@ pub(crate) fn build_kimi_k2(
         .iter()
         .map(|tool| dynamo_structural_tag::Tool {
             name: &tool.name,
-            parameters: if kimi_uses_declared_tool_schema(tool, ctx.strict_schema()) {
+            parameters: if uses_declared_tool_schema(tool, ctx.strict_schema()) {
                 tool.parameters.as_ref().unwrap_or(&relaxed)
             } else {
                 &relaxed

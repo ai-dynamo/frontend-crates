@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -149,29 +150,35 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 
 
 def r_tool(fam, name, key, val, idx):
+    assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
+    value = "null" if val is None else val
+    string_attr = "false" if val is None else "true"
     if fam == "deepseek_v41":
         return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'<｜DSML｜ parameter name="{key}" string="true">{val}'
+                f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
                 f'</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>')
     if fam == "deepseek_v4":
         return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
-                f"<｜DSML｜parameter name=\"{key}\" string=\"true\">{val}"
+                f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
                 f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
     if fam == "gemma4":
-        return f"<|tool_call>call:{name}{{{key}:<|\"|>{val}<|\"|>}}<tool_call|>"
+        argument = "null" if val is None else f'<|"|>{value}<|"|>'
+        return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
-                f"{val}\n</parameter>\n</function>\n</tool_call>")
+                f"{value}\n</parameter>\n</function>\n</tool_call>")
     if fam == "glm47":
         return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
-                f"<arg_value>{val}</arg_value></tool_call>")
+                f"<arg_value>{value}</arg_value></tool_call>")
     if fam == "muse_glimmer":
+        argument = "null" if val is None else _atem_value(val)
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
-                f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
+                f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        return k3_tools(k3_call(name, idx + 1, k3_argument(key, "string", val)))
+        argument_type = "null" if val is None else "string"
+        return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
@@ -616,6 +623,25 @@ CLEAN = [
 
 # --- EDGE scenarios: grammar-specific raw input per family --------------------
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
+
+_DS41_MIXED_STRING = ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"' + "\\" + "\n "
+
+# Keep the original DS4.1 payload stable so its existing capture remains comparable.
+_MIXED_CONTROL_STRINGS = {
+    "deepseek_v41": _DS41_MIXED_STRING,
+    **{
+        family: " " + r_reason(family, "quoted") + " " + markers + ' &amp; "x"' + "\\" + "\n "
+        for family, markers in {
+            "deepseek_v4": "<｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke>",
+            "gemma4": "<|tool_call> <tool_call|>",
+            "glm47": "<tool_call> </tool_call>",
+            "qwen3": "<tool_call> </tool_call> </function>",
+            "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
+            "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
+            "muse_glimmer": "<atem:function_calls> </atem:function_calls> </atem:invoke>",
+        }.items()
+    },
+}
 
 EDGE = [
     ("glm47_parameterless_call_shape_inside_argument",
@@ -1318,8 +1344,23 @@ EDGE = [
                     k3_channel("think", "literal") + " then a call"),
      }),
 
+    (
+        "deepseek_v41_mixed_control_text_in_string",
+        "A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.",
+        ["I7"],
+        [{"kind": "tool_call", "name": "f", "arguments": {"x": None}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {
+            family: (
+                r_tool(family, "f", "x", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M),
+                M,
+                value,
+            )
+            for family, value in _MIXED_CONTROL_STRINGS.items()
+        },
+    ),
 ]
-
 
 EDGE += [
     ("kimi_k3_typed_argument_values",
@@ -1791,10 +1832,62 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
+def _edge_case_family_policy(edge_case):
+    return edge_case[-2] if len(edge_case) == 8 else edge_case[-1]
+
+
+RECOVERY_RAW = '{"x":"unfinished'
+RECOVERY_TOOLS = [
+    {"name": "bad", "parameters": {"type": "object", "properties": {"value": {"type": "object"}}}},
+    {"name": "echo", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}},
+]
+
+
+def malformed_json_recovery(fam):
+    following = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
+    if fam == "kimi_k3":
+        inp = k3_tools(k3_call("bad", 1, k3_json(RECOVERY_RAW)) + "".join(
+            k3_call("echo", index, k3_argument("value", "string", value))
+            for index, value in ((2, "é"), (3, "Café"))))
+        golden = following
+    elif fam == "kimi_k2":
+        inp = ("<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0"
+               f"<|tool_call_argument_begin|>{RECOVERY_RAW}<|tool_call_end|><|tool_calls_section_end|>")
+        golden = [{"kind": "tool_call", "name": "bad", "arguments": {}}] + following
+    elif fam == "gemma4":
+        inp = '<|tool_call>call:bad{value:{x:<|"|>unfinished}}<tool_call|>'
+        golden = following
+    else:
+        inp = r_tool(fam, "bad", "value", RECOVERY_RAW, 0)
+        if fam in ("deepseek_v4", "deepseek_v41"):
+            inp = inp.replace('string="true"', 'string="false"')
+        golden = ([{"kind": "tool_call", "name": "bad", "arguments": {"value": RECOVERY_RAW}}]
+                  if fam != "deepseek_v41" else []) + following
+    if fam != "kimi_k3":
+        inp += "".join(r_tool(fam, "echo", "value", value, index)
+                       for index, value in ((1, "é"), (2, "Café")))
+    return inp, golden
+
+
+EDGE.append((
+    "malformed_json_then_two_valid_calls",
+    "An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.",
+    ["I2", "I7", "P2"], [],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "single_chunk": True},
+    {fam: (malformed_json_recovery(fam)[0], D("UNSUPPORTED", "No peer capture recorded."),
+           D("LOSS" if fam == "gemma4" else "ERROR", "Known malformed-call recovery defect; later calls must survive.")
+           if fam in ("gemma4", "deepseek_v41") else M, malformed_json_recovery(fam)[1])
+     for fam in FAMILIES},
+    RECOVERY_TOOLS,
+))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
-    if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+    if not isinstance(_edge_case_family_policy(spec), OnlyFamilies)
+    or "deepseek_v41" in _edge_case_family_policy(spec)
 }
 
 
@@ -1845,6 +1938,151 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+# Native grammars encode the oracle type; Qwen and GLM consult the request schema.
+_NULL_TEXT_INPUTS = {
+    "qwen3": "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
+    "glm47": "<tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>",
+}
+
+EDGE += [
+    (
+        scenario,
+        null_description(label, detail),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({
+            family: (
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
+                VLLM_UNCAPTURABLE.get(family, M), M,
+            )
+            for family in FAMILIES
+        }),
+        {family: [{"name": "get_weather", "parameters": {
+            "type": "object", "properties": {"city": json.loads(json.dumps(schema))},
+        }}] for family in FAMILIES},
+    )
+    for scenario, label, schema, value, detail in NULL_VARIANTS
+]
+
+# GLM's XML values have no native type marker. Keep these references unresolved
+# in the request so the parser must consult definitions on the parameters root.
+EDGE += [
+    (
+        scenario,
+        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
+                         'the tool parameters root; the referenced definition controls null coercion.'),
+        ["I7"],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            _NULL_TEXT_INPUTS["glm47"],
+            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "get_weather", "parameters": {
+            "type": "object", "$defs": {"City": schema},
+            "properties": {"city": {"$ref": "#/$defs/City"}},
+        }}]},
+    )
+    for scenario, label, schema, value in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    )
+]
+
+EDGE.append((
+    "arg_null_mixed_labels",
+    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    ["I7"],
+    [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        "<tool_call>set_labels"
+        "<arg_key>label</arg_key><arg_value>null</arg_value>"
+        "<arg_key>note</arg_key><arg_value>null</arg_value>"
+        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
+    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+    {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
+     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+))
+
+# These valid-schema reference probes target GLM's untyped XML values. Keep the
+# request refs unresolved and author the expected values separately from the text.
+for scenario, description, parameters, raw_arguments, arguments in (
+    (
+        "glm_ref_object",
+        'PR #271 compatibility control: a local object reference keeps JSON object text as an object.',
+        {"type": "object", "$defs": {"Payload": {
+            "type": "object", "properties": {"x": {"type": "integer"}},
+        }}, "properties": {"payload": {"$ref": "#/$defs/Payload"}}},
+        {"payload": '{"x":1}'},
+        {"payload": {"x": 1}},
+    ),
+    (
+        "glm_ref_encoded_targets",
+        'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.',
+        {"type": "object", "$defs": {
+            "postal code": {"type": "integer"}, "café+": {"type": "integer"},
+            "a/b~c": {"type": "integer"},
+        }, "properties": {
+            "space": {"$ref": "#/$defs/postal%20code"},
+            "utf8_plus": {"$ref": "#/$defs/caf%c3%a9+"},
+            "pointer": {"$ref": "#/$defs/a%7E1b%7E0c"},
+        }},
+        {"space": "42", "utf8_plus": "42", "pointer": "42"},
+        {"space": 42, "utf8_plus": 42, "pointer": 42},
+    ),
+    (
+        "glm_ref_json_looking_strings",
+        'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.',
+        {"type": "object", "$defs": {"Text": {"type": "string"}}, "properties": {
+            "object_text": {"$ref": "#/$defs/Text"},
+            "array_text": {"$ref": "#/$defs/Text"},
+            "quoted_text": {"$ref": "#/$defs/Text"},
+            "inline_text": {"type": "string"},
+        }},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+        {"object_text": '{"x":1}', "array_text": '[1,2]',
+         "quoted_text": '"hello"', "inline_text": '{"x":1}'},
+    ),
+    (
+        "glm_ref_scalar_types",
+        'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union.',
+        {"type": "object", "$defs": {
+            "Integer": {"type": "integer"}, "Number": {"type": "number"},
+            "Boolean": {"type": "boolean"}, "Scalar": {"type": ["string", "integer"]},
+        }, "properties": {
+            "count": {"$ref": "#/$defs/Integer"}, "ratio": {"$ref": "#/$defs/Number"},
+            "flag": {"$ref": "#/$defs/Boolean"},
+            "narrowed": {"$ref": "#/$defs/Scalar", "type": "integer"},
+        }},
+        {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
+        {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
+    ),
+):
+    input_text = "<tool_call>capture_payload" + "".join(
+        f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>"
+        for key, raw in raw_arguments.items()
+    ) + "</tool_call>"
+    EDGE.append((
+        scenario, description, ["I7"],
+        [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"glm47": (
+            input_text, D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
+        )}),
+        {"glm47": [{"name": "capture_payload", "parameters": parameters}]},
+    ))
+
+
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -1863,6 +2101,9 @@ def build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if fam in ("gemma4", "deepseek_v41"):
+        case = cases[f"UNIFIED.malformed_json_then_two_valid_calls.{fam}"]
+        case["expect"]["dynamo_current"] = case["expect"]["dynamo"]
     if fam == "deepseek_v41":
         case = cases[f"UNIFIED.reason_unterminated.{fam}"]
         case["input"] = case["input"].removeprefix("<think>")
@@ -1873,10 +2114,13 @@ def build_cases(fam):
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
-        # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
+        # Support legacy tuples, stream config, and per-case request tool schemas.
+        case_tools = None
         if len(edge_case) == 6:
             name, desc, policy, golden, init, per_fam = edge_case
             stream_config = {"finish_reason": "stop"}
+        elif len(edge_case) == 8:
+            name, desc, policy, golden, init, stream_config, per_fam, case_tools = edge_case
         else:
             name, desc, policy, golden, init, stream_config, per_fam = edge_case
 
@@ -1952,7 +2196,7 @@ def _build_edge_cases(fam, specs):
                 "vLLM base case does not set a starting channel state; conformance "
                 "captures default generation only",
             )
-        cases[cid] = {
+        case = {
             "description": desc,
             "policy": policy,
             "input": inp,
@@ -1961,6 +2205,11 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
+        if stream_config.get("single_chunk"):
+            case["input_chunks"] = [inp]
+        if case_tools is not None:
+            case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
+        cases[cid] = case
     return cases
 
 
@@ -1980,7 +2229,7 @@ def scenario_families(scenario):
         name = edge_case[0]
         if name != scenario:
             continue
-        per_fam = edge_case[-1]
+        per_fam = _edge_case_family_policy(edge_case)
         return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
@@ -2022,6 +2271,13 @@ def emit_yaml(fam):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
+        if "input_chunks" in c:
+            chunks = c["input_chunks"]
+            if not isinstance(chunks, list) or any(not isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != c["input"]:
+                raise ValueError(f"{cid}: input_chunks must concatenate to input")
+            lines.append(f"    input_chunks: {json.dumps(chunks, ensure_ascii=False)}")
+        if c.get("tools") is not None:
+            lines.append(f"    tools: {json.dumps(c['tools'], ensure_ascii=False)}")
     return "\n".join(lines) + "\n"
 
 
