@@ -32,9 +32,9 @@ use async_stream::stream;
 // `Nv{inner, nvext}` newtype and dynamo-runtime's `Annotated`, which dynamo
 // re-wraps at its own boundary after the move.
 use dynamo_protocols::types::{
-    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageToolCallChunk,
-    ChatCompletionStreamResponseDelta, CreateChatCompletionStreamResponse, FinishReason,
-    FunctionCallStream, FunctionType, Role,
+    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageContent,
+    ChatCompletionMessageToolCallChunk, ChatCompletionStreamResponseDelta,
+    CreateChatCompletionStreamResponse, FinishReason, FunctionCallStream, FunctionType, Role,
 };
 use futures::{Stream, StreamExt};
 use serde_json::value::RawValue;
@@ -109,6 +109,25 @@ pub enum ChoiceEmission {
     Content(ChatChoiceStream),
     /// Emit trailing content after tool call end (choice has trailing after unjail)
     Trailing(ChatChoiceStream),
+}
+
+/// Append `extra`'s token logprobs after `target`'s, in stream order.
+fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatChoiceLogprobs>) {
+    let Some(extra) = extra else {
+        return;
+    };
+    let Some(target) = target.as_mut() else {
+        *target = Some(extra);
+        return;
+    };
+    for (into, from) in [
+        (&mut target.content, extra.content),
+        (&mut target.refusal, extra.refusal),
+    ] {
+        if let Some(from) = from {
+            into.get_or_insert_with(Vec::new).extend(from);
+        }
+    }
 }
 
 impl ChoiceEmission {
@@ -696,9 +715,23 @@ impl ChoiceJailState {
 
         let mut chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
         for delta in deltas {
+            let index = (self.emitted_tool_calls_count + delta.tool_index) as u32;
+            // The cursor commits a call's opener and releases its first fragment in the
+            // same advance. Two entries for one index in one chunk is not valid OpenAI
+            // streaming, and a client keeping the last entry per index loses the name.
+            if let Some(last) = chunks.last_mut().filter(|chunk| chunk.index == index) {
+                debug_assert!(delta.name.is_none(), "a call's name is committed once");
+                if let Some(function) = last.function.as_mut() {
+                    function
+                        .arguments
+                        .get_or_insert_with(String::new)
+                        .push_str(&delta.arguments);
+                }
+                continue;
+            }
             let first = delta.name.is_some();
             chunks.push(ChatCompletionMessageToolCallChunk {
-                index: (self.emitted_tool_calls_count + delta.tool_index) as u32,
+                index,
                 id: first.then(|| format!("call-{}", uuid::Uuid::new_v4())),
                 r#type: first.then_some(FunctionType::Function),
                 function: Some(FunctionCallStream {
@@ -813,6 +846,28 @@ impl ChoiceJailState {
         }
     }
 
+    /// The emission this pass already made for `remainder`'s choice, when
+    /// `remainder` has nothing left to say.
+    fn fully_streamed_into<'a>(
+        remainder: &ChatChoiceStream,
+        emissions: &'a mut [ChoiceEmission],
+    ) -> Option<&'a mut ChatChoiceStream> {
+        let empty = |text: Option<&str>| text.is_none_or(str::is_empty);
+        let content = match remainder.delta.content.as_ref() {
+            None => None,
+            Some(ChatCompletionMessageContent::Text(text)) => Some(text.as_str()),
+            Some(_) => return None,
+        };
+        if !empty(content) || !empty(remainder.delta.reasoning_content.as_deref()) {
+            return None;
+        }
+        emissions
+            .iter_mut()
+            .rev()
+            .map(ChoiceEmission::choice_mut)
+            .find(|choice| choice.index == remainder.index)
+    }
+
     async fn emit_completed_jail(
         &mut self,
         completed: CompletedJail,
@@ -844,6 +899,16 @@ impl ChoiceJailState {
 
         if unjailed_choice.delta.tool_calls.is_some() {
             emissions.push(ChoiceEmission::ToolCall(unjailed_choice));
+        } else if let Some(streamed) = self
+            .guided_cursor
+            .as_ref()
+            .filter(|cursor| !cursor.streamed().is_empty())
+            .and_then(|_| Self::fully_streamed_into(&unjailed_choice, emissions))
+        {
+            // Guided streaming already sent every byte of this payload, this pass
+            // included. The empty remainder would be a second entry for the same
+            // choice index; keep only its logprobs.
+            append_logprobs(&mut streamed.logprobs, unjailed_choice.logprobs);
         } else {
             emissions.push(ChoiceEmission::Content(unjailed_choice));
         }

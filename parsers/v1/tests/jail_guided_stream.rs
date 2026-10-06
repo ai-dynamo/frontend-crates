@@ -542,3 +542,130 @@ async fn a_sparse_streamed_call_is_not_rebuilt_on_a_dense_index() {
         "the completion parser rebuilt the streamed call on another index"
     );
 }
+
+/// Every index at most once per chunk, at both levels, as OpenAI streaming requires
+/// at `n = 1`. A client that keeps one entry per index must still reassemble the
+/// whole call, and the finish reason must still arrive.
+#[tokio::test]
+async fn guided_chunks_carry_each_index_once() {
+    use dynamo_protocols::types::{ChatChoiceLogprobs, ChatCompletionTokenLogprob, FinishReason};
+
+    let named = || JailedStream::builder().tool_choice_named("calculate".to_string());
+    let required = || JailedStream::builder().tool_choice_required();
+    let named_payloads: [&[&str]; 3] = [
+        // opener and first fragment in one upstream chunk
+        &["{\"expression\": \"", "123 * 4", "56\"}"],
+        // the final fragment and the payload's completion in one chunk
+        &["{\"expression\": \"123", " * 456\"}", ""],
+        &["{\"expression\": \"123 * 456\"}"],
+    ];
+    let required_payloads: [&[&str]; 2] = [
+        &[
+            "[{\"name\":\"calculate\",\"parameters\":{\"expression\": \"",
+            "123 * 456\"}}]",
+        ],
+        &["[{\"name\":\"calculate\",\"parameters\":{\"expression\": \"123 * 456\"}}]\n"],
+    ];
+    let mut runs: Vec<(JailedStream, &[&str])> = Vec::new();
+    for payload in named_payloads {
+        runs.push((named().guided_streaming(true).build(), payload));
+        runs.push((
+            named()
+                .guided_streaming(true)
+                .single_choice_per_chunk()
+                .build(),
+            payload,
+        ));
+    }
+    for payload in required_payloads {
+        runs.push((required().guided_streaming(true).build(), payload));
+        runs.push((
+            required()
+                .guided_streaming(true)
+                .single_choice_per_chunk()
+                .build(),
+            payload,
+        ));
+    }
+
+    for (jail, pieces) in runs {
+        let mut chunks: Vec<_> = pieces.iter().map(|piece| chunk(piece)).collect();
+        // One logprob per payload-bearing chunk; none may be lost when entries fold.
+        for (i, c) in chunks.iter_mut().enumerate() {
+            if pieces[i].is_empty() {
+                continue;
+            }
+            let choice = &mut c.data.as_mut().unwrap().choices[0];
+            choice.logprobs = Some(ChatChoiceLogprobs {
+                content: Some(vec![ChatCompletionTokenLogprob {
+                    token: format!("t{i}"),
+                    logprob: -0.5,
+                    token_id: None,
+                    bytes: None,
+                    top_logprobs: Vec::new(),
+                }]),
+                refusal: None,
+            });
+        }
+        if let Some(choice) = chunks
+            .last_mut()
+            .and_then(|last| last.data.as_mut())
+            .and_then(|data| data.choices.first_mut())
+        {
+            choice.finish_reason = Some(FinishReason::Stop);
+        }
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+
+        let mut names = Vec::new();
+        let mut args = String::new();
+        let mut finished = false;
+        let mut logprobs = Vec::new();
+        for data in results.iter().filter_map(|r| r.data.as_ref()) {
+            let indices: Vec<u32> = data.choices.iter().map(|c| c.index).collect();
+            assert!(
+                indices
+                    .iter()
+                    .enumerate()
+                    .all(|(i, x)| !indices[..i].contains(x)),
+                "{pieces:?}: duplicate choice index in {indices:?}"
+            );
+            for choice in &data.choices {
+                finished |= choice.finish_reason.is_some();
+                if let Some(content) = choice.logprobs.as_ref().and_then(|l| l.content.as_ref()) {
+                    logprobs.extend(content.iter().map(|t| t.token.clone()));
+                }
+                let Some(calls) = choice.delta.tool_calls.as_ref() else {
+                    continue;
+                };
+                let call_indices: Vec<u32> = calls.iter().map(|c| c.index).collect();
+                assert!(
+                    call_indices
+                        .iter()
+                        .enumerate()
+                        .all(|(i, x)| !call_indices[..i].contains(x)),
+                    "{pieces:?}: duplicate tool_call index in {call_indices:?}"
+                );
+                for call in calls {
+                    let function = call.function.as_ref().unwrap();
+                    names.extend(function.name.clone());
+                    args.push_str(function.arguments.as_deref().unwrap_or(""));
+                }
+            }
+        }
+        assert_eq!(names, ["calculate"], "{pieces:?}");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&args).unwrap(),
+            serde_json::json!({"expression": "123 * 456"}),
+            "{pieces:?}"
+        );
+        assert!(finished, "{pieces:?}: finish_reason never arrived");
+        let expected: Vec<String> = (0..pieces.len())
+            .filter(|&i| !pieces[i].is_empty())
+            .map(|i| format!("t{i}"))
+            .collect();
+        assert_eq!(logprobs, expected, "{pieces:?}: logprobs lost or reordered");
+    }
+}
