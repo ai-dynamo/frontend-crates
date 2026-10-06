@@ -160,6 +160,8 @@ The commands below cover both the older archive-backed tests and Unified. Apply 
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
 
+For each conformance fix, add a regression test column that shows red for the previous (before) version and green for the fixed (after) version in the rendered report. Capture both versions using the same input, tools, initialization, and chunk schedule, and compare both against the same authored GOLDEN. Preserve the delivery pattern that triggers the bug, including single-chunk input when chunking affects the failure.
+
 1. Fix the code under `parsers/v1/` or `parsers/v2/`.
 2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.
 3. For an intended Unified change, use the plain-version YAML contract above. Keep the first capture's source origin in metadata; do not create another identity when its SHA changes. For the older tests, retain their existing capture format.
