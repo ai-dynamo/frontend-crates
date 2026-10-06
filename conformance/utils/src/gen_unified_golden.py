@@ -149,37 +149,66 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
     )
 
 
+def _gemma_value(value):
+    if isinstance(value, str):
+        return f'<|"|>{value}<|"|>'
+    if isinstance(value, dict):
+        return "{" + ",".join(f"{key}:{_gemma_value(item)}" for key, item in value.items()) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(_gemma_value(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
 def r_tool(fam, name, key, val, idx):
-    assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
-    value = "null" if val is None else val
-    string_attr = "false" if val is None else "true"
-    if fam == "deepseek_v41":
-        return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
-                f'</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>')
-    if fam == "deepseek_v4":
-        return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
-                f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
-                f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
+    return r_tool_arguments(fam, name, {key: val}, idx)
+
+
+def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
+    # Raw spellings preserve published stimuli independently of the typed oracle.
+    raw = raw_arguments if raw_arguments is not None else {
+        key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        for key, value in arguments.items()
+    }
+    if fam in ("deepseek_v4", "deepseek_v41"):
+        gap = " " if fam == "deepseek_v41" else ""
+        envelope = "calls" if gap else "tool_calls"
+        params = "".join(
+            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
+            for key, value in arguments.items()
+        )
+        return (f'<｜DSML｜{gap}{envelope}><｜DSML｜{gap}invoke name="{name}">'
+                f'{params}</｜DSML｜{gap}invoke></｜DSML｜{gap}{envelope}>')
     if fam == "gemma4":
-        argument = "null" if val is None else f'<|"|>{value}<|"|>'
-        return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
+        native_values = {key: raw[key] if isinstance(value, str) else json.loads(raw[key])
+                         for key, value in arguments.items()}
+        return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
     if fam == "qwen3":
-        return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
-                f"{value}\n</parameter>\n</function>\n</tool_call>")
+        params = "\n".join(
+            f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw.items()
+        )
+        return f"<tool_call>\n<function={name}>\n{params}\n</function>\n</tool_call>"
     if fam == "glm47":
-        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
-                f"<arg_value>{value}</arg_value></tool_call>")
+        params = "".join(
+            f"<arg_key>{key}</arg_key><arg_value>{value}</arg_value>"
+            for key, value in raw.items()
+        )
+        return f"<tool_call>{name}{params}</tool_call>"
     if fam == "muse_glimmer":
-        argument = "null" if val is None else _atem_value(val)
+        params = "".join(
+            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) else raw[key]}</atem:parameter>\n'
+            for key, value in arguments.items()
+        )
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
-                f"<atem:invoke name=\"{name}\">\n"
-                f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
+                f'<atem:invoke name="{name}">\n{params}'
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        argument_type = "null" if val is None else "string"
-        return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
-    args = json.dumps({key: val}, ensure_ascii=False)
+        types = {str: "string", type(None): "null", bool: "boolean", int: "integer",
+                 float: "number", dict: "object", list: "array"}
+        params = "".join(k3_argument(key, types[type(value)], raw[key])
+                         for key, value in arguments.items())
+        return k3_tools(k3_call(name, idx + 1, params))
+    assert fam == "kimi_k2", fam
+    args = json.dumps(arguments, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
 
@@ -2010,8 +2039,8 @@ EDGE.append((
      for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
 
-# These valid-schema reference probes target GLM's untyped XML values. Keep the
-# request refs unresolved and author the expected values separately from the text.
+# Keep historical scenario IDs and raw spellings; applicability is shared.
+# GLM/Qwen consult schemas; explicitly typed grammars test value preservation.
 for scenario, description, parameters, raw_arguments, arguments in (
     (
         "glm_ref_object",
@@ -2065,19 +2094,16 @@ for scenario, description, parameters, raw_arguments, arguments in (
         {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
     ),
 ):
-    input_text = "<tool_call>capture_payload" + "".join(
-        f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>"
-        for key, raw in raw_arguments.items()
-    ) + "</tool_call>"
     EDGE.append((
-        scenario, description, ["I7"],
+        scenario, description + " GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.", ["I7"],
         [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop"},
-        OnlyFamilies({"glm47": (
-            input_text, D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
-        )}),
-        {"glm47": [{"name": "capture_payload", "parameters": parameters}]},
+        OnlyFamilies({family: (
+            r_tool_arguments(family, "capture_payload", arguments, 0, raw_arguments),
+            D("UNSUPPORTED", "No peer capture is recorded for this reference-schema probe."), M,
+        ) for family in FAMILIES}),
+        {family: [{"name": "capture_payload", "parameters": parameters}] for family in FAMILIES},
     ))
 
 

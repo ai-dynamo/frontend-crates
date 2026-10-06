@@ -177,10 +177,10 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
-    "gemma": "Gemma 4 guided call-prefix boundaries",
-    "glm5": "GLM 5 argument-marker boundaries",
-    "kimi": "Kimi K3 XTML",
-    "muse": "Muse-specific",
+    "gemma": "Gemma-specific tests",
+    "glm5": "GLM-specific tests",
+    "kimi": "Kimi-specific tests",
+    "muse": "Muse-specific tests",
 }
 
 

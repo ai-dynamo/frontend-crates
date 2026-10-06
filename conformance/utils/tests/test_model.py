@@ -1183,8 +1183,23 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     events = [{"kind": "tool_call", **call} for call in calls]
     assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
     assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
-    assert all(other["cells"][scenario]["status"] == "na"
-               for other in unified["rows"] if other.get("family") and other["family"] != "glm47")
+    families = {"deepseek_v4", "deepseek_v41", "gemma4", "glm47",
+                "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    rows = {other["family"]: other for other in unified["rows"] if other.get("family")}
+    assert rows.keys() == families
+    for family, other in rows.items():
+        shared = leaf_cells(other)[scenario]
+        assert shared["case_id"] == f"UNIFIED.{sub}"
+        assert shared["status"] != "na"
+        candidates = {candidate["key"]: candidate["block"]
+                      for candidate in shared["tooltip"]["candidates"]}
+        assert candidates["golden"]["events"] == events
+        measured = candidates["dynamo"]
+        assert "error" not in measured and "unavailable" not in measured
+        assert measured["events"], family
+        expected_color = "green" if measured["events"] == events else "red"
+        assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == expected_color
+        assert "without proving reference resolution" in shared["tooltip"]["description"]
 
 
 def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
