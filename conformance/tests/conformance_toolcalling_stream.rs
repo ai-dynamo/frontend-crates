@@ -197,7 +197,7 @@ fn minimax_m3_required_stream_cases_have_captured_expectations() {
 }
 
 #[test]
-fn stream_dynamo_dirs_keep_the_previous_release_before_current() {
+fn stream_dynamo_dirs_keep_historical_releases_before_current() {
     let root = std::env::temp_dir().join(format!(
         "dynamo-stream-dirs-{}-{}",
         std::process::id(),
@@ -221,6 +221,7 @@ fn stream_dynamo_dirs_keep_the_previous_release_before_current() {
         [
             "dynamo_v2-0.3.1",
             "dynamo_v2-0.7.13",
+            "dynamo_v2-0.7.14",
             common::STREAM_DYNAMO_V2_CURRENT_CAPTURE,
         ]
         .map(std::ffi::OsString::from)
