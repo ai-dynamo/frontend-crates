@@ -667,6 +667,144 @@ mod tests {
         f.render(&req)
     }
 
+    // --- MiniMax M2 thinking toggle ------------------------------------------
+
+    use super::super::formatters::test_support::minimax_m2_style_template;
+    use std::collections::HashMap;
+
+    fn minimax_m2_formatter() -> SysFormatter {
+        formatter_for(&minimax_m2_style_template())
+    }
+
+    /// One user message plus the `chat_template_kwargs` and `add_generation_prompt`
+    /// that Dynamo's request wrapper supplies.
+    struct TemplateRequest {
+        args: Option<HashMap<String, serde_json::Value>>,
+        add_generation_prompt: bool,
+    }
+
+    impl OAIChatLikeRequest for TemplateRequest {
+        fn model(&self) -> String {
+            "MiniMaxAI/MiniMax-M2.7".to_string()
+        }
+        fn messages(&self) -> Value {
+            Value::from_serialize(json!([{"role": "user", "content": "What is 937 * 18 + 42?"}]))
+        }
+        fn should_add_generation_prompt(&self) -> bool {
+            self.add_generation_prompt
+        }
+        fn chat_template_args(&self) -> Option<&HashMap<String, serde_json::Value>> {
+            self.args.as_ref()
+        }
+    }
+
+    fn minimax_request(chat_template_kwargs: Option<serde_json::Value>) -> TemplateRequest {
+        TemplateRequest {
+            args: chat_template_kwargs.map(|kwargs| serde_json::from_value(kwargs).unwrap()),
+            add_generation_prompt: true,
+        }
+    }
+
+    const MINIMAX_OPEN_TAIL: &str = "]~b]ai\n<think>\n";
+    const MINIMAX_CLOSED_TAIL: &str = "]~b]ai\n<think>\n</think>\n";
+
+    #[test]
+    fn minimax_m2_default_and_enabled_thinking_render_open_think() {
+        let f = minimax_m2_formatter();
+        for kwargs in [
+            None,
+            Some(json!({})),
+            Some(json!({"thinking": true})),
+            Some(json!({"enable_thinking": true})),
+            Some(json!({"thinking_mode": "thinking"})),
+            Some(json!({"thinking_mode": "adaptive"})),
+            // Non-bool spellings are not a toggle for the template; consumers
+            // normalize them to bools before rendering.
+            Some(json!({"thinking": "false"})),
+        ] {
+            let rendered = f.render(&minimax_request(kwargs.clone())).unwrap();
+            assert!(
+                rendered.ends_with(MINIMAX_OPEN_TAIL),
+                "{kwargs:?}: expected open <think> tail, got {rendered:?}"
+            );
+            assert!(!rendered.contains("</think>"), "{kwargs:?}");
+        }
+    }
+
+    #[test]
+    fn minimax_m2_disabled_thinking_closes_the_empty_think_block() {
+        let f = minimax_m2_formatter();
+        for kwargs in [
+            json!({"thinking": false}),
+            json!({"enable_thinking": false}),
+            // `thinking` wins over `enable_thinking`, matching thinking_bool_from_args.
+            json!({"thinking": false, "enable_thinking": true}),
+            json!({"thinking_mode": "chat"}),
+        ] {
+            let rendered = f.render(&minimax_request(Some(kwargs.clone()))).unwrap();
+            assert!(
+                rendered.ends_with(MINIMAX_CLOSED_TAIL),
+                "{kwargs}: expected closed empty think block, got {rendered:?}"
+            );
+            assert_eq!(
+                rendered.matches("<think>").count(),
+                1,
+                "{kwargs}: exactly one opener"
+            );
+        }
+        let rendered = f
+            .render(&minimax_request(Some(
+                json!({"thinking": true, "enable_thinking": false}),
+            )))
+            .unwrap();
+        assert!(rendered.ends_with(MINIMAX_OPEN_TAIL));
+    }
+
+    #[test]
+    fn minimax_m2_preserves_custom_thinking_closure() {
+        let template = minimax_m2_style_template();
+        let stock_opener = r"{{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}";
+        assert!(template.contains(stock_opener));
+
+        let custom_opener = [
+            stock_opener,
+            r"{%- if thinking is false -%}{{- '</think>' ~ '\n' }}{%- endif -%}",
+        ]
+        .join("\n");
+        let custom_template = template.replacen(stock_opener, &custom_opener, 1);
+
+        let formatter = formatter_for(&custom_template);
+        let rendered = formatter
+            .render(&minimax_request(Some(json!({"thinking": false}))))
+            .unwrap();
+
+        assert_eq!(rendered.matches("</think>").count(), 1);
+        assert!(rendered.ends_with(MINIMAX_CLOSED_TAIL));
+    }
+
+    #[test]
+    fn minimax_m2_disabled_thinking_only_changes_the_generation_prompt() {
+        let f = minimax_m2_formatter();
+        let enabled = f
+            .render(&minimax_request(Some(json!({"thinking": true}))))
+            .unwrap();
+        let disabled = f
+            .render(&minimax_request(Some(json!({"thinking": false}))))
+            .unwrap();
+        let common = enabled.strip_suffix(MINIMAX_OPEN_TAIL).unwrap();
+        assert_eq!(disabled, format!("{common}{MINIMAX_CLOSED_TAIL}"));
+    }
+
+    #[test]
+    fn minimax_m2_no_generation_prompt_never_appends_a_closer() {
+        let f = minimax_m2_formatter();
+        let mut request = minimax_request(Some(json!({"thinking": false})));
+        request.add_generation_prompt = false;
+        let rendered = f.render(&request).unwrap();
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("</think>"));
+    }
+
     struct RawMessagesRequest(Value);
 
     impl OAIChatLikeRequest for RawMessagesRequest {
