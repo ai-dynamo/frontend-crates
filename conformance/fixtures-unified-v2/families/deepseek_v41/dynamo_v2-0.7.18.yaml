@@ -1,0 +1,38 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.18
+    git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
+    source_sha256: d073abcc75bdf3e9520d98b179261ff893cbb15bab4790c2112d3b30e0c2adba
+document:
+  mode: unified
+changes:
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: echo
+            arguments: '{"value":"é"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value":"Café"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: a7f43a11f9fdd37253809b088ccc30a3c4eece02700148d2ec3e70402a1bf7e9
+    case_key: UNIFIED.5-4
+metadata_changes: {}
+document_overrides: {}
