@@ -2851,6 +2851,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn kimi_k3_streamed_turns_do_not_reuse_tool_ids() {
+        let payload = kimi_k3_tool_call("Bash");
+        let mut turn_ids = Vec::new();
+        for _ in 0..2 {
+            let chunks: Vec<_> = payload
+                .chars()
+                .map(|ch| text_chunk(&ch.to_string()))
+                .collect();
+            let responses: Vec<_> = apply_tool_calling_jail(
+                Some("kimi_k3".to_string()),
+                None,
+                None,
+                false,
+                stream::iter(chunks),
+            )
+            .collect()
+            .await;
+            let calls = collect_tool_calls(&responses);
+            assert_eq!(
+                calls,
+                vec![("Bash".to_string(), r#"{"city":"Berlin"}"#.to_string())]
+            );
+            let ids: Vec<_> = responses
+                .iter()
+                .filter_map(|response| response.data.as_ref())
+                .flat_map(|response| &response.choices)
+                .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                .flatten()
+                .filter_map(|call| call.id.clone())
+                .collect();
+            assert_eq!(ids.len(), 1, "a streamed call emits its ID once");
+            turn_ids.push(ids[0].clone());
+        }
+        assert_ne!(turn_ids[0], turn_ids[1]);
+    }
+
+    #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_keeps_matching_tool() {
         let calls = apply_named_kimi_k3("get_weather", true).await;
 
