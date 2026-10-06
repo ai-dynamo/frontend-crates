@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 import gen_unified_golden as unified
+from numeric_cases import NumericLiteral
 from null_cases import (
     MIXED_CASE_FAMILIES, MIXED_GREP_ARGS, MIXED_GREP_SCHEMA, MIXED_LABELS_ARGS, MIXED_LABELS_SCHEMA,
     NULL_VARIANTS, null_description,
@@ -16,18 +17,20 @@ from null_cases import (
 
 
 def native_call(family, name, arguments):
+    value = next(iter(arguments.values()))
+    raw = str(value) if isinstance(value, NumericLiteral) else "null"
     if family == "minimax_m2":
-        parameters = "".join(f'<parameter name="{key}">null</parameter>' for key in arguments)
+        parameters = "".join(f'<parameter name="{key}">{raw}</parameter>' for key in arguments)
         return f'<minimax:tool_call><invoke name="{name}">{parameters}</invoke></minimax:tool_call>'
     if family == "minimax_m3":
         marker = "]<]minimax[>["
-        parameters = "".join(f"{marker}<{key}>null{marker}</{key}>" for key in arguments)
+        parameters = "".join(f"{marker}<{key}>{raw}{marker}</{key}>" for key in arguments)
         return f'{marker}<tool_call>{marker}<invoke name="{name}">{parameters}{marker}</invoke>{marker}</tool_call>'
     if family == "glm47":
-        parameters = "".join(f"<arg_key>{key}</arg_key><arg_value>null</arg_value>" for key in arguments)
+        parameters = "".join(f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>" for key in arguments)
         return f"<tool_call>{name}{parameters}</tool_call>"
     if family == "qwen3_coder":
-        parameters = "".join(f"<parameter={key}>null</parameter>" for key in arguments)
+        parameters = "".join(f"<parameter={key}>{raw}</parameter>" for key in arguments)
         return f"<tool_call><function={name}>{parameters}</function></tool_call>"
     key, value = next(iter(arguments.items()))
     assert len(arguments) == 1

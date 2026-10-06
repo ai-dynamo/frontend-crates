@@ -24,6 +24,8 @@ import re
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_fold, schema_group, schema_case_label
+from numeric_cases import NUMERIC_VARIANTS
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -65,7 +67,7 @@ UNIFIED_TAX = {
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
-    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),

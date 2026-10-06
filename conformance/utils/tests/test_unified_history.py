@@ -1170,8 +1170,6 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     assert inherited["cases"] == document["cases"]
     assert inherited["inherited_from"] == "0.5.0"
     assert inherited["captured_with"] == {"dynamo_v2": "0.5.0"}
-
-
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
 def test_history_rejects_patch_and_source_qualified_filenames(tmp_path, version):
     _write_family(tmp_path)
