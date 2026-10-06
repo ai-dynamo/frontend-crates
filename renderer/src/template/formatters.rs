@@ -409,13 +409,13 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
 /// assistant turn with an opened `<think>` block and never consults a thinking
 /// toggle, so `thinking=false` renders byte-identical to `thinking=true`.
 ///
-/// Matches `MiniMaxAI/MiniMax-M2.7` `chat_template.jinja` at Hugging Face
+/// Taken from `MiniMaxAI/MiniMax-M2.7` `chat_template.jinja` at Hugging Face
 /// revision `d494266a4affc0d2995ba1fa35c8481cbd84294b`.
 const MINIMAX_M2_GENERATION_BLOCK: &str = r"{%- if add_generation_prompt -%}
 {{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}
 {%- endif -%}";
 
-/// Detects the stock MiniMax M2 family chat template (M2, M2.5, M2.7): the
+/// Detects the stock MiniMax M2 family chat template (M2, M2.1, M2.5, M2.7): the
 /// `<minimax:tool_call>` envelope plus the complete, unchanged generation block
 /// at the end of the template. Custom thinking logic inside or after that block
 /// does not match. MiniMax M3 uses `<mm:think>` and does not match either.
@@ -675,17 +675,13 @@ impl HfTokenizerConfigJsonFormatter {
 
 #[cfg(test)]
 pub(crate) mod test_support {
-    /// Synthetic input covering generation prompts and assistant reasoning replay.
-    /// Keep the generation block independent of the production matcher so changes
+    /// Minimal M2-style template: message replay plus the stock generation block.
+    /// The block is spelled out independently of the production matcher so changes
     /// to the matcher cannot silently change the test input too.
     pub(crate) fn minimax_m2_style_template() -> String {
         r"<minimax:tool_call>
 {%- for message in messages -%}
-{{- message.role ~ '\n' }}
-{%- if message.role == 'assistant' and message.reasoning_content is string and message.reasoning_content -%}
-{{- '<think>\n' ~ message.reasoning_content ~ '\n</think>\n' }}
-{%- endif -%}
-{{- (message.content or '') ~ '\n' }}
+{{- message.role ~ '\n' ~ message.content ~ '\n' }}
 {%- endfor -%}
 {%- if add_generation_prompt -%}
 {{- ']~b]ai' ~ '\n' ~ '<think>' ~ '\n' }}
@@ -712,6 +708,7 @@ mod tests {
         let template = template.as_str();
         assert!(is_minimax_m2_template_source(template));
         let adapted = normalize_chat_template_source(template);
+        assert!(!is_minimax_m2_template_source(&adapted));
         let (prefix, _) = template.split_once(MINIMAX_M2_GENERATION_BLOCK).unwrap();
         assert!(adapted.starts_with(prefix));
         assert_eq!(normalize_chat_template_source(&adapted), adapted);

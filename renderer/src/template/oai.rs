@@ -3,7 +3,7 @@
 
 use super::*;
 
-use crate::{OAIChatLikeRequest, PromptReasoningState, RenderedPrompt, TextInput};
+use crate::{OAIChatLikeRequest, TextInput};
 use minijinja::{context, value::Value};
 use serde_json::json;
 use std::result::Result::Ok;
@@ -482,50 +482,9 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
     }
 }
 
-const PROMPT_REASONING_MARKERS: &[(&str, &str)] =
-    &[("<think>", "</think>"), ("<mm:think>", "</mm:think>")];
-
-/// Classify where a rendered HF-template prompt leaves the assistant turn.
-///
-/// `Open` when the prompt ends with a known reasoning opener (the template put
-/// the model inside a reasoning block). `Closed` when it ends with an opener
-/// immediately followed by its closer, i.e. the template rendered an *empty*
-/// reasoning block because thinking was disabled. Anything else, including a
-/// replayed non-empty reasoning block, is `None`: the renderer makes no claim.
-fn infer_prompt_reasoning_state(prompt: &str) -> Option<PromptReasoningState> {
-    let tail = prompt.trim_end();
-    for (opener, closer) in PROMPT_REASONING_MARKERS {
-        if tail.ends_with(opener) {
-            return Some(PromptReasoningState::Open);
-        }
-        if let Some(before_closer) = tail.strip_suffix(closer)
-            && before_closer.trim_end().ends_with(opener)
-        {
-            return Some(PromptReasoningState::Closed);
-        }
-    }
-    None
-}
-
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     fn supports_add_generation_prompt(&self) -> bool {
         self.supports_add_generation_prompt
-    }
-
-    fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
-        let text = self.render(req)?;
-        // Only a generation prompt positions the completion relative to a
-        // reasoning block; a marker at the end of message content does not.
-        let state = if self.supports_add_generation_prompt && req.should_add_generation_prompt() {
-            infer_prompt_reasoning_state(&text)
-        } else {
-            None
-        };
-        let prompt = RenderedPrompt::text(text);
-        Ok(match state {
-            Some(state) => prompt.with_reasoning_state(state),
-            None => prompt,
-        })
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
@@ -644,7 +603,6 @@ mod tests {
     // default `OAIChatLikeRequest` impl above; Dynamo's `Nv*` wrapper lives in lib/llm.
     use dynamo_protocols::types::CreateChatCompletionRequest as NvCreateChatCompletionRequest;
     use minijinja::{Environment, context};
-    use std::collections::HashMap;
 
     // --- adaptive system-message normalization (#11762) --------------------
 
@@ -709,34 +667,28 @@ mod tests {
         f.render(&req)
     }
 
-    // --- MiniMax M2 thinking toggle + prompt reasoning state ------------------
+    // --- MiniMax M2 thinking toggle ------------------------------------------
 
     use super::super::formatters::test_support::minimax_m2_style_template;
+    use std::collections::HashMap;
 
     fn minimax_m2_formatter() -> SysFormatter {
         formatter_for(&minimax_m2_style_template())
     }
 
-    /// The bare protocol request plus the `chat_template_kwargs` and
-    /// `add_generation_prompt` that Dynamo's request wrapper supplies.
+    /// One user message plus the `chat_template_kwargs` and `add_generation_prompt`
+    /// that Dynamo's request wrapper supplies.
     struct TemplateRequest {
-        inner: NvCreateChatCompletionRequest,
         args: Option<HashMap<String, serde_json::Value>>,
         add_generation_prompt: bool,
     }
 
     impl OAIChatLikeRequest for TemplateRequest {
         fn model(&self) -> String {
-            self.inner.model()
+            "MiniMaxAI/MiniMax-M2.7".to_string()
         }
         fn messages(&self) -> Value {
-            self.inner.messages()
-        }
-        fn tools(&self) -> Option<Value> {
-            self.inner.tools()
-        }
-        fn tool_choice(&self) -> Option<Value> {
-            self.inner.tool_choice()
+            Value::from_serialize(json!([{"role": "user", "content": "What is 937 * 18 + 42?"}]))
         }
         fn should_add_generation_prompt(&self) -> bool {
             self.add_generation_prompt
@@ -746,36 +698,11 @@ mod tests {
         }
     }
 
-    fn template_request(
-        request: serde_json::Value,
-        chat_template_kwargs: Option<serde_json::Value>,
-    ) -> TemplateRequest {
+    fn minimax_request(chat_template_kwargs: Option<serde_json::Value>) -> TemplateRequest {
         TemplateRequest {
-            inner: serde_json::from_value(request).unwrap(),
             args: chat_template_kwargs.map(|kwargs| serde_json::from_value(kwargs).unwrap()),
             add_generation_prompt: true,
         }
-    }
-
-    fn minimax_request(
-        chat_template_kwargs: Option<serde_json::Value>,
-        tool_choice: Option<serde_json::Value>,
-    ) -> TemplateRequest {
-        let mut request = json!({
-            "model": "MiniMaxAI/MiniMax-M2.7",
-            "messages": [{"role": "user", "content": "Use the calculator tool for 937 * 18 + 42."}],
-            "tools": [{"type": "function", "function": {
-                "name": "calculate",
-                "description": "Evaluate a mathematical expression.",
-                "parameters": {"type": "object", "properties": {
-                    "expression": {"type": "string"}
-                }, "required": ["expression"]}
-            }}],
-        });
-        if let Some(choice) = tool_choice {
-            request["tool_choice"] = choice;
-        }
-        template_request(request, chat_template_kwargs)
     }
 
     const MINIMAX_OPEN_TAIL: &str = "]~b]ai\n<think>\n";
@@ -795,20 +722,12 @@ mod tests {
             // normalize them to bools before rendering.
             Some(json!({"thinking": "false"})),
         ] {
-            let rendered = f
-                .render_prompt(&minimax_request(kwargs.clone(), None))
-                .unwrap();
+            let rendered = f.render(&minimax_request(kwargs.clone())).unwrap();
             assert!(
-                rendered.as_str().ends_with(MINIMAX_OPEN_TAIL),
-                "{kwargs:?}: expected open <think> tail, got {:?}",
-                rendered.as_str()
+                rendered.ends_with(MINIMAX_OPEN_TAIL),
+                "{kwargs:?}: expected open <think> tail, got {rendered:?}"
             );
-            assert!(!rendered.as_str().contains("</think>"), "{kwargs:?}");
-            assert_eq!(
-                rendered.reasoning_state(),
-                Some(PromptReasoningState::Open),
-                "{kwargs:?}"
-            );
+            assert!(!rendered.contains("</think>"), "{kwargs:?}");
         }
     }
 
@@ -822,32 +741,23 @@ mod tests {
             json!({"thinking": false, "enable_thinking": true}),
             json!({"thinking_mode": "chat"}),
         ] {
-            let rendered = f
-                .render_prompt(&minimax_request(Some(kwargs.clone()), None))
-                .unwrap();
+            let rendered = f.render(&minimax_request(Some(kwargs.clone()))).unwrap();
             assert!(
-                rendered.as_str().ends_with(MINIMAX_CLOSED_TAIL),
-                "{kwargs}: expected closed empty think block, got {:?}",
-                rendered.as_str()
+                rendered.ends_with(MINIMAX_CLOSED_TAIL),
+                "{kwargs}: expected closed empty think block, got {rendered:?}"
             );
             assert_eq!(
-                rendered.as_str().matches("<think>").count(),
+                rendered.matches("<think>").count(),
                 1,
                 "{kwargs}: exactly one opener"
             );
-            assert_eq!(
-                rendered.reasoning_state(),
-                Some(PromptReasoningState::Closed),
-                "{kwargs}"
-            );
         }
         let rendered = f
-            .render_prompt(&minimax_request(
-                Some(json!({"thinking": true, "enable_thinking": false})),
-                None,
-            ))
+            .render(&minimax_request(Some(
+                json!({"thinking": true, "enable_thinking": false}),
+            )))
             .unwrap();
-        assert!(rendered.as_str().ends_with(MINIMAX_OPEN_TAIL));
+        assert!(rendered.ends_with(MINIMAX_OPEN_TAIL));
     }
 
     #[test]
@@ -864,25 +774,22 @@ mod tests {
         let custom_template = template.replacen(stock_opener, &custom_opener, 1);
 
         let formatter = formatter_for(&custom_template);
-        let request = minimax_request(Some(json!({"thinking": false})), None);
-        let rendered = formatter.render_prompt(&request).unwrap();
+        let rendered = formatter
+            .render(&minimax_request(Some(json!({"thinking": false}))))
+            .unwrap();
 
-        assert_eq!(rendered.as_str().matches("</think>").count(), 1);
-        assert!(rendered.as_str().ends_with(MINIMAX_CLOSED_TAIL));
-        assert_eq!(
-            rendered.reasoning_state(),
-            Some(PromptReasoningState::Closed)
-        );
+        assert_eq!(rendered.matches("</think>").count(), 1);
+        assert!(rendered.ends_with(MINIMAX_CLOSED_TAIL));
     }
 
     #[test]
     fn minimax_m2_disabled_thinking_only_changes_the_generation_prompt() {
         let f = minimax_m2_formatter();
         let enabled = f
-            .render(&minimax_request(Some(json!({"thinking": true})), None))
+            .render(&minimax_request(Some(json!({"thinking": true}))))
             .unwrap();
         let disabled = f
-            .render(&minimax_request(Some(json!({"thinking": false})), None))
+            .render(&minimax_request(Some(json!({"thinking": false}))))
             .unwrap();
         let common = enabled.strip_suffix(MINIMAX_OPEN_TAIL).unwrap();
         assert_eq!(disabled, format!("{common}{MINIMAX_CLOSED_TAIL}"));
@@ -891,159 +798,11 @@ mod tests {
     #[test]
     fn minimax_m2_no_generation_prompt_never_appends_a_closer() {
         let f = minimax_m2_formatter();
-        let mut request = minimax_request(Some(json!({"thinking": false})), None);
+        let mut request = minimax_request(Some(json!({"thinking": false})));
         request.add_generation_prompt = false;
-        let rendered = f.render_prompt(&request).unwrap();
-        assert!(!rendered.as_str().contains("<think>"));
-        assert!(!rendered.as_str().contains("</think>"));
-        assert_eq!(rendered.reasoning_state(), None);
-    }
-
-    #[test]
-    fn reasoning_state_ignores_message_markers_when_generation_prompt_is_disabled() {
-        let f = formatter_for(
-            "{% for m in messages %}{{ m.content }}{% endfor %}{% if add_generation_prompt %}assistant:<think>{% endif %}",
-        );
-        assert!(f.supports_add_generation_prompt());
-        for content in ["<think>", "<think>\n</think>"] {
-            let mut request = template_request(
-                json!({"model": "test", "messages": [{"role": "user", "content": content}]}),
-                None,
-            );
-            request.add_generation_prompt = false;
-            let rendered = f.render_prompt(&request).unwrap();
-            assert_eq!(rendered.as_str(), content);
-            assert_eq!(rendered.reasoning_state(), None, "{content:?}");
-        }
-    }
-
-    #[test]
-    fn reasoning_state_ignores_message_markers_when_generation_prompt_is_unsupported() {
-        let f = formatter_for("{% for m in messages %}{{ m.content }}{% endfor %}");
-        assert!(!f.supports_add_generation_prompt());
-        for content in ["<think>", "<think>\n</think>"] {
-            let request = template_request(
-                json!({"model": "test", "messages": [{"role": "user", "content": content}]}),
-                None,
-            );
-            assert!(request.should_add_generation_prompt());
-            let rendered = f.render_prompt(&request).unwrap();
-            assert_eq!(rendered.as_str(), content);
-            assert_eq!(rendered.reasoning_state(), None, "{content:?}");
-        }
-    }
-
-    #[test]
-    fn minimax_m2_replayed_reasoning_is_not_reported_as_closed() {
-        // Replayed assistant reasoning renders a non-empty `<think>...</think>`
-        // mid-prompt; only the trailing generation prompt decides the state.
-        let f = minimax_m2_formatter();
-        let request = template_request(
-            json!({
-                "model": "MiniMaxAI/MiniMax-M2.7",
-                "messages": [
-                    {"role": "user", "content": "What is 1+1?"},
-                    {"role": "assistant", "content": "", "reasoning_content": "use the tool",
-                     "tool_calls": [{"id": "call-1", "type": "function", "function": {
-                         "name": "calculate", "arguments": "{\"expression\": \"1+1\"}"}}]},
-                    {"role": "tool", "tool_call_id": "call-1", "content": "2"}
-                ],
-                "tools": [{"type": "function", "function": {
-                    "name": "calculate",
-                    "parameters": {"type": "object", "properties": {"expression": {"type": "string"}}}
-                }}]
-            }),
-            Some(json!({"thinking": true})),
-        );
-        let rendered = f.render_prompt(&request).unwrap();
-        assert!(
-            rendered
-                .as_str()
-                .contains("<think>\nuse the tool\n</think>"),
-            "replayed reasoning is rendered mid-prompt: {}",
-            rendered.as_str()
-        );
-        assert!(rendered.as_str().ends_with(MINIMAX_OPEN_TAIL));
-        assert_eq!(rendered.reasoning_state(), Some(PromptReasoningState::Open));
-    }
-
-    /// Opt-in check against MiniMax's real template, which is not vendored.
-    /// Point the variable at a local model snapshot, for example
-    /// `<hf-cache>/models--MiniMaxAI--MiniMax-M2.7/snapshots/<rev>/chat_template.jinja`:
-    ///
-    /// `MINIMAX_M2_CHAT_TEMPLATE=... cargo test -p dynamo-renderer -- --ignored minimax_m2_real`
-    #[test]
-    #[ignore = "set MINIMAX_M2_CHAT_TEMPLATE to a MiniMax M2.x chat_template.jinja"]
-    fn minimax_m2_real_template_from_env_honors_disabled_thinking() {
-        let path = std::env::var("MINIMAX_M2_CHAT_TEMPLATE")
-            .expect("MINIMAX_M2_CHAT_TEMPLATE must point at a MiniMax M2.x chat_template.jinja");
-        let template = std::fs::read_to_string(&path).unwrap();
-        let f = formatter_for(&template);
-
-        let open = f
-            .render_prompt(&minimax_request(Some(json!({"thinking": true})), None))
-            .unwrap();
-        assert!(open.as_str().ends_with(MINIMAX_OPEN_TAIL), "{path}");
-        assert_eq!(open.reasoning_state(), Some(PromptReasoningState::Open));
-
-        let closed = f
-            .render_prompt(&minimax_request(Some(json!({"thinking": false})), None))
-            .unwrap();
-        assert!(
-            closed.as_str().ends_with(MINIMAX_CLOSED_TAIL),
-            "{path}: the adapter did not recognize this template"
-        );
-        assert_eq!(closed.reasoning_state(), Some(PromptReasoningState::Closed));
-    }
-
-    #[test]
-    fn reasoning_state_follows_generic_template_tails() {
-        let qwen_like = "{% for m in messages %}<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% if enable_thinking is defined and enable_thinking is false %}<think>\n\n</think>\n\n{% else %}<think>\n{% endif %}{% endif %}";
-        let f = formatter_for(qwen_like);
-        let req = |kwargs: serde_json::Value| -> TemplateRequest {
-            template_request(
-                json!({
-                    "model": "test",
-                    "messages": [{"role": "user", "content": "hi"}]
-                }),
-                Some(kwargs),
-            )
-        };
-        let open = f.render_prompt(&req(json!({}))).unwrap();
-        assert!(open.as_str().ends_with("<think>\n"));
-        assert_eq!(open.reasoning_state(), Some(PromptReasoningState::Open));
-        let closed = f
-            .render_prompt(&req(json!({"enable_thinking": false})))
-            .unwrap();
-        assert!(closed.as_str().ends_with("<think>\n\n</think>\n\n"));
-        assert_eq!(closed.reasoning_state(), Some(PromptReasoningState::Closed));
-
-        let plain = formatter_for(
-            "{% for m in messages %}{{ m.role }}: {{ m.content }}\n{% endfor %}assistant:",
-        );
-        let rendered = plain
-            .render_prompt(&req(json!({"thinking": false})))
-            .unwrap();
-        assert_eq!(rendered.reasoning_state(), None);
-    }
-
-    #[test]
-    fn infer_prompt_reasoning_state_classifies_tails() {
-        use PromptReasoningState::{Closed, Open};
-        let cases = [
-            ("...<think>", Some(Open)),
-            ("...<think>\n", Some(Open)),
-            ("...<mm:think>\n", Some(Open)),
-            ("...<think>\n</think>\n", Some(Closed)),
-            ("...<think>\n\n</think>\n\n", Some(Closed)),
-            ("...<mm:think></mm:think>", Some(Closed)),
-            ("...<think>\nsome reasoning\n</think>\n", None),
-            ("...</think>", None),
-            ("plain prompt", None),
-        ];
-        for (tail, expected) in cases {
-            assert_eq!(infer_prompt_reasoning_state(tail), expected, "{tail:?}");
-        }
+        let rendered = f.render(&request).unwrap();
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("</think>"));
     }
 
     struct RawMessagesRequest(Value);
