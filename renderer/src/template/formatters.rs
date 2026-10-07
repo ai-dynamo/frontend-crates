@@ -241,32 +241,16 @@ fn detect_passthrough_template(env: &Environment) -> bool {
     out_mixed.contains('[') && out_mixed.contains("type")
 }
 
-/// Remove known non-standard Jinja2 tags from chat templates
-///
-/// Some models use custom Jinja2 extensions that minijinja doesn't recognize. These tags
-/// are typically metadata markers that don't affect the rendered output. For example:
-/// - {% generation %} / {% endgeneration %}: Used by vLLM's AssistantTracker to mark
-///   assistant-generated content. The tags themselves don't produce output.
-///
-/// By removing these tags before validation, we allow templates with backend-specific
-/// extensions to work with minijinja while maintaining correct output semantics.
-///
-/// Note: This follows the same approach as Mistral.rs, which also strips these tags
-/// for compatibility: https://github.com/EricLBuehler/mistral.rs/blob/2bcf0e9/mistralrs-core/src/pipeline/chat_template.rs#L318-L322
-fn remove_known_non_jinja2_tags(template: &str) -> String {
-    template
-        .replace("{% generation %}", "")
-        .replace("{% endgeneration %}", "")
-}
-
-/// Normalize common Python/Jinja dict method calls that are ambiguous in minijinja.
+/// Normalize HF extensions and Python dict method calls for minijinja.
 ///
 /// JSON schemas commonly use an `items` key for array item definitions. In
 /// minijinja, `foo.items()` can resolve `items` as a map entry before the
 /// pycompat method callback sees it, causing "object is not callable" for
 /// templates that iterate OpenAI tool schemas. The `items` filter gives the same
 /// map iteration behavior without colliding with schema keys.
-fn normalize_dict_method_calls(template: &str) -> String {
+/// Only executable tags are normalized; comments, raw blocks, and quoted strings
+/// can contain tag-shaped text that must remain literal.
+fn normalize_jinja_syntax(template: &str) -> String {
     let mut out = String::with_capacity(template.len());
     let mut i = 0;
 
@@ -303,7 +287,7 @@ fn normalize_dict_method_calls(template: &str) -> String {
                 }
             } else {
                 out.push_str("{%");
-                out.push_str(&normalize_jinja_code_segment(inner));
+                out.push_str(&normalize_jinja_block(inner));
                 out.push_str("%}");
                 i = end;
             }
@@ -317,38 +301,76 @@ fn normalize_dict_method_calls(template: &str) -> String {
     out
 }
 
+fn normalize_jinja_block(inner: &str) -> String {
+    let code = inner.strip_prefix(['-', '+']).unwrap_or(inner);
+    let code = code.strip_suffix(['-', '+']).unwrap_or(code).trim();
+    let replacement = match code {
+        // HF's AssistantTracker uses a CallBlock: render the body with local
+        // variable scope, then optionally record its character offsets. Serving
+        // needs the text only. A `with` block preserves that scope and, unlike
+        // deleting the tags, also preserves +/- and implicit block whitespace.
+        "generation" => "with",
+        "endgeneration" => "endwith",
+        _ => return normalize_jinja_code_segment(inner),
+    };
+    inner.replacen(code, replacement, 1)
+}
+
 fn find_tag_end(template: &str, start: usize, close: &str) -> Option<usize> {
-    template[start..]
-        .find(close)
-        .map(|relative| start + relative + close.len())
+    if close == "#}" {
+        return template[start..]
+            .find(close)
+            .map(|relative| start + relative + close.len());
+    }
+
+    let mut quote = None;
+    let mut escaped = false;
+    let mut braces: usize = 0;
+    for (offset, ch) in template[start..].char_indices() {
+        if let Some(delimiter) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == delimiter {
+                quote = None;
+            }
+        } else if braces == 0 && template[start + offset..].starts_with(close) {
+            return Some(start + offset + close.len());
+        } else if ch == '\'' || ch == '"' {
+            quote = Some(ch);
+        } else if ch == '{' {
+            braces += 1;
+        } else if ch == '}' {
+            braces = braces.saturating_sub(1);
+        }
+    }
+    None
 }
 
 fn find_raw_block_end(template: &str, start: usize) -> Option<usize> {
     let mut i = start;
     while let Some(relative_open) = template[i..].find("{%") {
         let open = i + relative_open;
-        let end = find_tag_end(template, open + 2, "%}")?;
-        if is_jinja_block_name(&template[open + 2..end - 2], "endraw") {
-            return Some(end);
+        // Raw text can contain unmatched quotes or nested tag-shaped text.
+        // Only an actual endraw tag has syntax here.
+        let rest = &template[open + 2..];
+        let rest = rest.strip_prefix(['-', '+']).unwrap_or(rest).trim_start();
+        if let Some(rest) = rest.strip_prefix("endraw") {
+            let rest = rest.trim_start();
+            let rest = rest.strip_prefix(['-', '+']).unwrap_or(rest);
+            if rest.starts_with("%}") {
+                return Some(template.len() - rest.len() + 2);
+            }
         }
-        i = end;
+        i = open + 2;
     }
     None
 }
 
 fn is_jinja_block_name(inner: &str, name: &str) -> bool {
-    let trimmed = inner.trim_start();
-    let trimmed = trimmed
-        .strip_prefix('-')
-        .or_else(|| trimmed.strip_prefix('+'))
-        .unwrap_or(trimmed)
-        .trim_start();
-    let Some(rest) = trimmed.strip_prefix(name) else {
-        return false;
-    };
-    rest.chars()
-        .next()
-        .is_none_or(|ch| ch.is_whitespace() || ch == '-' || ch == '+')
+    let code = inner.strip_prefix(['-', '+']).unwrap_or(inner);
+    code.strip_suffix(['-', '+']).unwrap_or(code).trim() == name
 }
 
 fn normalize_jinja_code_segment(segment: &str) -> String {
@@ -450,7 +472,7 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
 }
 
 fn normalize_chat_template_source(source: &str) -> String {
-    let source = normalize_dict_method_calls(&remove_known_non_jinja2_tags(source));
+    let source = normalize_jinja_syntax(source);
 
     if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
@@ -669,28 +691,6 @@ mod tests {
         env
     }
 
-    #[test]
-    fn test_remove_known_non_jinja2_tags() {
-        let template =
-            "USER: {{ message }} ASSISTANT: {% generation %}Reply here{% endgeneration %}";
-        let result = remove_known_non_jinja2_tags(template);
-        assert_eq!(result, "USER: {{ message }} ASSISTANT: Reply here");
-    }
-
-    #[test]
-    fn test_remove_known_non_jinja2_tags_preserves_standard_tags() {
-        let template = "{% for item in items %}{{ item }}{% endfor %}";
-        let result = remove_known_non_jinja2_tags(template);
-        assert_eq!(result, template);
-    }
-
-    #[test]
-    fn test_remove_known_non_jinja2_tags_multiple() {
-        let template = "Start {% generation %}Part 1{% endgeneration %} middle {% generation %}Part 2{% endgeneration %}";
-        let result = remove_known_non_jinja2_tags(template);
-        assert_eq!(result, "Start Part 1 middle Part 2");
-    }
-
     /// NVIDIA-Nemotron-Parse ships a pure pass-through chat template
     /// (`{% for message in messages %}{{ message['content'] }}{% endfor %}`).
     /// It must be detected as: (a) not requiring content arrays, and
@@ -756,7 +756,7 @@ mod tests {
     #[test]
     fn test_normalize_dict_method_calls_rewrites_items_method() {
         let template = "{% for k, v in tool.parameters.properties.items() %}{{ k }}{% endfor %}";
-        let result = normalize_dict_method_calls(template);
+        let result = normalize_jinja_syntax(template);
         assert_eq!(
             result,
             "{% for k, v in tool.parameters.properties|items %}{{ k }}{% endfor %}"
@@ -766,14 +766,14 @@ mod tests {
     #[test]
     fn test_normalize_dict_method_calls_rewrites_expression_items_method() {
         let template = "{{ tool.parameters.properties.items() }}";
-        let result = normalize_dict_method_calls(template);
+        let result = normalize_jinja_syntax(template);
         assert_eq!(result, "{{ tool.parameters.properties|items }}");
     }
 
     #[test]
     fn test_normalize_dict_method_calls_preserves_literal_text() {
         let template = "Do not rewrite literal .items() text.";
-        let result = normalize_dict_method_calls(template);
+        let result = normalize_jinja_syntax(template);
         assert_eq!(result, template);
     }
 
@@ -785,13 +785,13 @@ mod tests {
             "{{ '.items()' }}",
             "{{ \".items()\" }}",
         );
-        let result = normalize_dict_method_calls(template);
+        let result = normalize_jinja_syntax(template);
         assert_eq!(result, template);
     }
 
     #[test]
     fn test_normalize_dict_method_calls_avoids_schema_items_collision() {
-        let template = normalize_dict_method_calls(
+        let template = normalize_jinja_syntax(
             "{% for param_name, param_spec in tool.parameters.properties.items() %}{{ param_name }}={{ param_spec.type }};{% endfor %}",
         );
 
