@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
 use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
+use crate::RenderedPrompt;
 
 const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
 
@@ -246,6 +247,7 @@ pub fn encode_messages(
         drop_thinking,
         reasoning_effort,
     )
+    .map(RenderedPrompt::into_text)
 }
 
 fn encode_owned_messages(
@@ -253,7 +255,7 @@ fn encode_owned_messages(
     thinking_mode: ThinkingMode,
     drop_thinking: bool,
     reasoning_effort: u8,
-) -> Result<String> {
+) -> Result<RenderedPrompt> {
     ensure!(
         (1..=100).contains(&reasoning_effort),
         "DeepSeek V4.1 reasoning effort must be within 1–100"
@@ -319,6 +321,10 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     }
 
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
+        Ok(self.render_prompt(req)?.into_text())
+    }
+
+    fn render_prompt(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<RenderedPrompt> {
         let messages_json = crate::messages_to_json(req)?;
         crate::reject_unsupported_partial_assistant(&messages_json)?;
         crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;

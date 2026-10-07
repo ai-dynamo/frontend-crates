@@ -113,6 +113,25 @@ impl RenderedSegment {
     }
 }
 
+/// The continuation point established by a prompt renderer.
+///
+/// This describes emitted structure, not the request's thinking preference.
+/// Consumers should resolve it once for parser and constraint initialization.
+/// It does not specify who owns the reasoning boundary or a parser's policy.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum GenerationState {
+    /// No claim about the continuation point, including arbitrary templates.
+    #[default]
+    Unknown,
+    /// An assistant prefix is open but no content channel has been selected.
+    Unopened,
+    /// Generation continues inside reasoning.
+    Reasoning,
+    /// Generation continues inside the response channel.
+    Response,
+}
+
 /// A rendered prompt plus its optional tokenization boundaries.
 ///
 /// The prompt owns its segment text while `dynamo-tokenizers` borrows that text
@@ -122,6 +141,7 @@ impl RenderedSegment {
 pub struct RenderedPrompt {
     text: String,
     segments: Option<Vec<RenderedSegment>>,
+    generation_state: GenerationState,
 }
 
 impl RenderedPrompt {
@@ -129,6 +149,7 @@ impl RenderedPrompt {
         Self {
             text,
             segments: None,
+            generation_state: GenerationState::Unknown,
         }
     }
 
@@ -140,7 +161,21 @@ impl RenderedPrompt {
         Self {
             text,
             segments: Some(segments),
+            generation_state: GenerationState::Unknown,
         }
+    }
+
+    /// Attach the continuation point established by this prompt's encoder.
+    ///
+    /// Any later transformation of the prompt must preserve this fact or reset
+    /// it to `Unknown`. Do not infer it from untrusted message text.
+    pub fn with_generation_state(mut self, state: GenerationState) -> Self {
+        self.generation_state = state;
+        self
+    }
+
+    pub fn generation_state(&self) -> GenerationState {
+        self.generation_state
     }
 
     pub fn as_str(&self) -> &str {
@@ -160,6 +195,7 @@ impl RenderedPrompt {
         )
     }
 
+    /// Discard tokenization boundaries and generation-state metadata.
     pub fn into_text(self) -> String {
         self.text
     }

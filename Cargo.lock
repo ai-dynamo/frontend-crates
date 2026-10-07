@@ -1223,6 +1223,7 @@ version = "7.0.2"
 dependencies = [
  "anyhow",
  "chrono",
+ "dynamo-parsers-v2",
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",

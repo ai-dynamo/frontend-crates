@@ -15,8 +15,8 @@ use anyhow::{Context, Result, bail};
 use serde_json::{Map, Value};
 
 use crate::{
-    OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
-    thinking_bool_from_args,
+    GenerationState, OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt,
+    RenderedSegment, thinking_bool_from_args,
 };
 
 const OPEN_TOKEN: &str = "<|open|>";
@@ -55,7 +55,7 @@ impl KimiK3Formatter {
         }
     }
 
-    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<RenderedSegment>> {
+    fn build_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         let messages = crate::messages_to_json(req).context("Failed to convert K3 messages")?;
         let Value::Array(messages) = messages else {
             anyhow::bail!("Kimi K3 messages must be an array");
@@ -118,11 +118,11 @@ impl OAIPromptFormatter for KimiK3Formatter {
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?).into_text())
+        Ok(self.render_prompt(req)?.into_text())
     }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?))
+        self.build_prompt(req)
     }
 }
 
@@ -817,7 +817,7 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-) -> Result<Vec<RenderedSegment>> {
+) -> Result<RenderedPrompt> {
     let mut segments = Vec::new();
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
@@ -1023,8 +1023,9 @@ fn build_chat_segments(
     // A partial assistant turn *is* the generation prompt: it is left open so
     // the model continues from its prefix, so the generic prompt is skipped
     // regardless of `add_generation_prompt`.
-    if let Some(partial) = partial_tail {
+    let generation_state = if let Some(partial) = partial_tail {
         render_partial_assistant_segments(&mut segments, partial, thinking)?;
+        GenerationState::Response
     } else if add_generation_prompt {
         open_tag(
             &mut segments,
@@ -1036,9 +1037,16 @@ fn build_chat_segments(
             if thinking { "think" } else { "response" },
             [],
         );
-    }
+        if thinking {
+            GenerationState::Reasoning
+        } else {
+            GenerationState::Response
+        }
+    } else {
+        GenerationState::Unknown
+    };
 
-    Ok(segments)
+    Ok(RenderedPrompt::segmented(segments).with_generation_state(generation_state))
 }
 
 #[cfg(test)]
