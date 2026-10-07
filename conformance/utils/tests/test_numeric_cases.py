@@ -40,6 +40,24 @@ def test_numeric_oracle_and_native_input_are_independent(scenario, label, schema
                 assert other["tools"] == cases[key]["tools"]
 
 
+def test_kimi_k2_json_spacing_and_nested_exact_numbers_are_preserved():
+    ordinary_arguments = {"city": "Paris", "nested": [1, {"amount": "exact"}]}
+    ordinary_json = '{"city": "Paris", "nested": [1, {"amount": "exact"}]}'
+    assert unified.r_tool_arguments("kimi_k2", "f", ordinary_arguments, 0).endswith(
+        f"{ordinary_json}<|tool_call_end|><|tool_calls_section_end|>"
+    )
+
+    exact_arguments = {
+        "city": "Paris",
+        "nested": [1, {"amount": unified.NumericLiteral("9007199254740992.5")}],
+    }
+    exact_json = '{"city":"Paris","nested":[1,{"amount":9007199254740992.5}]}'
+    assert unified._json_with_numeric_literals(exact_arguments) == exact_json
+    assert unified.r_tool_arguments("kimi_k2", "f", exact_arguments, 0).endswith(
+        f"{exact_json}<|tool_call_end|><|tool_calls_section_end|>"
+    )
+
+
 @pytest.mark.parametrize("raw,rounded", [
     ("9007199254740992.5", "9007199254740992.0"),
     ("9007199254740993.1", "9007199254740994.0"),
