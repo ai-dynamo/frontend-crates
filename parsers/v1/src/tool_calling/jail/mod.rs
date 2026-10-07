@@ -4076,10 +4076,11 @@ mod tests {
         );
     }
 
-    /// A K3 call left open at EOF: the pending reasoning and the finalized call
-    /// arrive as separate, ordered frames, each holding the choice index once.
+    /// Pending reasoning and a call finalized at EOF for the same choice arrive as
+    /// separate, ordered frames, each holding the choice index once. Kimi K3 is
+    /// the parser that emits the reasoning as its own entry, so it drives this.
     #[tokio::test]
-    async fn kimi_k3_eof_reasoning_and_call_are_separate_frames() {
+    async fn reasoning_and_tool_call_are_separate_frames_at_eof() {
         let mut chunk = text_chunk(concat!(
             "<|open|>tools<|sep|>",
             "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
