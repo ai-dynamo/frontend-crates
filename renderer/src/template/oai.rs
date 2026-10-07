@@ -3177,6 +3177,66 @@ NORMAL_MODE
         );
     }
 
+    /// Tool-call loop of unsloth's Qwen3.8 template (unsloth/Qwen3.8-27B): it
+    /// renders mapping arguments as `<parameter=...>` and uses `arguments is
+    /// string` only to reject strings.
+    const QWEN38_REJECTS_STRING_ARGS_TEMPLATE: &str = r##"{%- for message in messages %}
+    {%- if message.role == "assistant" and message.tool_calls %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}
+            {%- if tool_call.arguments is mapping %}
+                {%- for args_name, args_value in tool_call.arguments|items %}
+                    {{- '<parameter=' + args_name + '>\n' + args_value + '\n</parameter>\n' }}
+                {%- endfor %}
+            {%- elif tool_call.arguments is string %}
+                {%- if tool_call.arguments|trim %}
+                    {{- raise_exception('Tool call arguments were passed as a JSON string.') }}
+                {%- endif %}
+            {%- endif %}
+            {{- '</function>\n</tool_call>' }}
+        {%- endfor %}
+    {%- else %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endfor %}"##;
+
+    /// A template that mentions `arguments is string` only to reject strings
+    /// must still get parsed arguments; otherwise every request with a tool call
+    /// in its history fails.
+    #[test]
+    fn test_template_rejecting_string_arguments_gets_objects() {
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": QWEN38_REJECTS_STRING_ARGS_TEMPLATE,
+        }))
+        .unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+        assert!(!formatter.default_template_handles_tool_calls_arguments_string);
+        assert!(!formatter.tool_use_template_handles_tool_calls_arguments_string);
+
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "qwen3.8",
+            "messages": [
+                {"role": "user", "content": "What's the weather in San Francisco?"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call_sf",
+                    "type": "function",
+                    "function": {"name": "get_weather", "arguments": "{\"location\": \"San Francisco\"}"}
+                }]},
+                {"role": "tool", "tool_call_id": "call_sf", "content": "Foggy"}
+            ],
+        }))
+        .unwrap();
+        let rendered = formatter.render(&request).unwrap();
+        assert!(
+            rendered.contains("<parameter=location>\nSan Francisco\n</parameter>"),
+            "{rendered}"
+        );
+    }
+
     /// Across a multi-step tool-use turn, the rendered prompt for turn N+1
     /// must be a strict prefix-extension of [turn-N prompt + bytes the model
     /// emitted on turn N]. Otherwise KV-cache prefix matching falls off a

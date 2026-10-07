@@ -187,6 +187,25 @@ def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
     return version
 
 
+def capture_source_fingerprint(repo_root: Path, label: str) -> str:
+    """Resolve a stream capture label to its released or current parser source."""
+    if label == "current" or "+source." in label:
+        return dynamo_v2_provenance(repo_root, label)["source_sha256"]
+
+    patch_match = re.fullmatch(r"(?P<base>\d+\.\d+\.\d+)\.patch\d+", label)
+    if patch_match is not None:
+        label = patch_match["base"]
+
+    release_tag = f"dynamo-parsers-v2-v{label}"
+    tags = _git(repo_root, "tag", "--list", release_tag).decode().splitlines()
+    if release_tag in tags:
+        return source_fingerprint(repo_root, f"refs/tags/{release_tag}")
+
+    if crate_version(repo_root / "parsers/v2/Cargo.toml") == label:
+        return dynamo_v2_provenance(repo_root, "current")["source_sha256"]
+    raise ValueError(f"capture label has no verifiable parser source: {label}")
+
+
 def select_capture_label(repo_root: Path, captures: dict) -> str:
     """Deprecated Rust-only selector; normal readers use dynamo_v2_label."""
     current = dynamo_v2_provenance(repo_root)

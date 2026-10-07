@@ -127,6 +127,17 @@ def test_string_arguments_and_open_additional_properties_are_preserved():
     _assert_value({}, schemas["get_weather"])
 
 
+def test_schema_oracle_enforces_required_properties():
+    schema = {
+        "type": "object",
+        "properties": {"count": {"type": "integer"}},
+        "required": ["count"],
+    }
+    _assert_value({"count": 42}, schema)
+    with pytest.raises(AssertionError):
+        _assert_value({}, schema)
+
+
 @pytest.mark.parametrize("script", ["capture_vllm_unified.py", "capture_sglang_unified.py"])
 def test_peer_request_schema_projection_matches_shared_definition(script):
     tree = ast.parse((SRC / script).read_text())

@@ -250,6 +250,49 @@ fn unified_parser_is_chunk_invariant() {
     );
 }
 
+#[test]
+fn reference_argument_cases_preserve_results_at_every_split() {
+    let mut checked = 0;
+    for file in load_golden() {
+        for (id, case) in &file.cases {
+            if ![
+                "glm_ref_object",
+                "glm_ref_encoded_targets",
+                "glm_ref_json_looking_strings",
+                "glm_ref_scalar_types",
+                "unused_reference_graph_parameter_types",
+                "nullable_reference_alias_literals",
+                "local_schema_id_preserves_type",
+            ]
+            .iter()
+            .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
+            {
+                continue;
+            }
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let whole = events(
+                &file.family,
+                std::slice::from_ref(&case.input),
+                &case.init,
+                &tools,
+            );
+            assert!(whole.is_ok(), "{id}: {}", render(&whole));
+            for split in case
+                .input
+                .char_indices()
+                .map(|(offset, _)| offset)
+                .chain(std::iter::once(case.input.len()))
+            {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                let divided = events(&file.family, &chunks, &case.init, &tools);
+                assert_eq!(divided, whole, "{id} at byte {split}");
+            }
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 56);
+}
+
 /// I6: parsing the whole output at once assembles to the streamed result.
 #[test]
 fn unified_parser_has_stream_batch_parity() {

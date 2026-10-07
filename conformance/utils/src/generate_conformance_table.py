@@ -979,13 +979,11 @@ _ENGINE_RUNTIME = {
 
 def _full_label(impl: str, version: object, mode: str) -> str:
     base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
-    if impl == BASELINE_STREAM_IMPL:
-        producer = _dynamo_v2_producer()
-        if version == producer["crate_version"] and producer["kind"] == "unpublished":
-            version = f"{version} [unpublished {producer['source_id']}]"
+    if impl == BASELINE_STREAM_IMPL and mode == "stream":
+        mode = "stream, Combined & Unified"
     # The v1/v2 generation is part of the impl key (dynamo_v1/dynamo_v2), so the
     # display already reads "Dynamo v1 Rust 3.0.0 (batch)" / "Dynamo v2 Rust
-    # 0.1.11 (stream)". The one remaining special case: v1 run against stream
+    # 0.1.11 (stream, Combined & Unified)". The one remaining special case: v1 run against stream
     # data goes through the streaming jail (buffer, then v1 batch parse), so on
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
@@ -1014,7 +1012,7 @@ def _dynamo_v2_version() -> str | None:
     provenance (the `dynamo_v2-<ver>` dir, e.g. 0.1.11), NOT the live
     parsers/v2/Cargo.toml.
 
-    Sourcing from the fixtures keeps every "Dynamo v2 Rust … (stream)" label on the page
+    Sourcing from the fixtures keeps every "Dynamo v2 Rust … (stream, Combined & Unified)" label on the page
     consistent (the stream-tab candidates already read the dir version) and matching the
     captured data. Reading the live crate makes the label drift ahead — the page would
     show 0.1.16 in one place and the real captured 0.1.11 in another the moment the crate
@@ -2536,18 +2534,17 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
 
     # Numbered taxonomy + axis labels — single source in unified_taxonomy.py (shared
     # with explode_unified_fixtures.py so the numbering can't drift). See UNIFIED_CASES.md.
-    UNIFIED_TAX = unified_taxonomy.UNIFIED_TAX
     UNIFIED_GROUP_LABEL = unified_taxonomy.UNIFIED_GROUP_LABEL
 
     def _tax(s):
-        return UNIFIED_TAX.get(s, (9, s))
+        return unified_taxonomy.display_tax(s)
 
     def _band(group_num):
         if isinstance(group_num, int):
             return "case-band-0" if group_num % 2 == 1 else "case-band-1"
         return "case-band-0"
 
-    ordered = sorted(scenarios, key=unified_taxonomy.taxonomy_sort_key)
+    ordered = sorted(scenarios, key=unified_taxonomy.display_sort_key)
     columns = []
     for s in ordered:
         g, sub = _tax(s)
@@ -2581,7 +2578,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     dynamo_history_vers = [
         version for version in dynamo_all_vers if version != dynamo_ver_label
     ]
-    dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
+    dynamo_label = _full_label(BASELINE_STREAM_IMPL, dynamo_ver_label, "stream")
     peer_specs = []
     for ver in reversed(vllm_python_vers):
         peer_specs.append({
@@ -2620,7 +2617,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # is that the version is THERE to click, not that it is compared by default.
     # impl="dynamo" groups them under the one Dynamo engine block of the compare bar.
     for v in reversed(dynamo_history_vers):
-        pc = _cand(f"dynamo@{v}", _full_label("dynamo_v2", v, "stream, Combined & Unified"), "C", v)
+        pc = _cand(f"dynamo@{v}", _full_label(BASELINE_STREAM_IMPL, v, "stream"), "C", v)
         pc["impl"] = "dynamo"
         candidates.append(pc)
     for spec in peer_specs:
@@ -2846,7 +2843,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     # that never recorded this case says so instead of showing an empty
                     # event list that reads like the parser produced nothing.
                     {"key": f"dynamo@{pv}",
-                     "label": _full_label("dynamo_v2", pv, "stream, Combined & Unified"),
+                     "label": _full_label(BASELINE_STREAM_IMPL, pv, "stream"),
                      "impl": "dynamo", "version": pv, "parse_mode": "unified",
                      "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
                      "block": ({"unavailable": (

@@ -9970,3 +9970,636 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  glm_ref_encoded_targets:
+    lifecycle: active
+    scenario: glm_ref_encoded_targets
+    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-11
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="space">42</atem:parameter>
+
+        <atem:parameter name="utf8_plus">42</atem:parameter>
+
+        <atem:parameter name="pointer">42</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            postal code:
+              type: integer
+            café+:
+              type: integer
+            a/b~c:
+              type: integer
+          properties:
+            space:
+              $ref: '#/$defs/postal%20code'
+            utf8_plus:
+              $ref: '#/$defs/caf%c3%a9+'
+            pointer:
+              $ref: '#/$defs/a%7E1b%7E0c'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="space">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="utf8_plus">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="pointer">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          space: 42
+          utf8_plus: 42
+          pointer: 42
+  glm_ref_json_looking_strings:
+    lifecycle: active
+    scenario: glm_ref_json_looking_strings
+    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-12
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="object_text">"{\"x\":1}"</atem:parameter>
+
+        <atem:parameter name="array_text">"[1,2]"</atem:parameter>
+
+        <atem:parameter name="quoted_text">"\"hello\""</atem:parameter>
+
+        <atem:parameter name="inline_text">"{\"x\":1}"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+          properties:
+            object_text:
+              $ref: '#/$defs/Text'
+            array_text:
+              $ref: '#/$defs/Text'
+            quoted_text:
+              $ref: '#/$defs/Text'
+            inline_text:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="object_text">
+      - delta_text: '"{\"x\":1}"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="array_text">
+      - delta_text: '"[1,2]"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="quoted_text">
+      - delta_text: '"\"hello\""'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="inline_text">
+      - delta_text: '"{\"x\":1}"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          object_text: '{"x":1}'
+          array_text: '[1,2]'
+          quoted_text: '"hello"'
+          inline_text: '{"x":1}'
+  glm_ref_scalar_types:
+    lifecycle: active
+    scenario: glm_ref_scalar_types
+    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-13
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="count">42</atem:parameter>
+
+        <atem:parameter name="ratio">3.5</atem:parameter>
+
+        <atem:parameter name="flag">true</atem:parameter>
+
+        <atem:parameter name="narrowed">42</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Integer:
+              type: integer
+            Number:
+              type: number
+            Boolean:
+              type: boolean
+            Scalar:
+              type:
+              - string
+              - integer
+          properties:
+            count:
+              $ref: '#/$defs/Integer'
+            ratio:
+              $ref: '#/$defs/Number'
+            flag:
+              $ref: '#/$defs/Boolean'
+            narrowed:
+              $ref: '#/$defs/Scalar'
+              type: integer
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="count">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="ratio">
+      - delta_text: '3.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="flag">
+      - delta_text: 'true'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="narrowed">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          ratio: 3.5
+          flag: true
+          narrowed: 42
+  glm_ref_object:
+    lifecycle: active
+    scenario: glm_ref_object
+    description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-9
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="payload">{"x":1}</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Payload:
+              type: object
+              properties:
+                x:
+                  type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/Payload'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="payload">
+      - delta_text: '{"x":1}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload:
+            x: 1
+  unused_reference_graph_parameter_types:
+    lifecycle: active
+    scenario: unused_reference_graph_parameter_types
+    description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-14
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="count">42</atem:parameter>
+
+        <atem:parameter name="flag">false</atem:parameter>
+
+        <atem:parameter name="text">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            N0:
+              allOf:
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+            N1:
+              allOf:
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+            N2:
+              allOf:
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+            N3:
+              allOf:
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+            N4:
+              allOf:
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+            N5:
+              allOf:
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+            N6:
+              type: string
+          properties:
+            a:
+              $ref: '#/$defs/N0'
+            count:
+              type: integer
+            flag:
+              type: boolean
+            text:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="count">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="flag">
+      - delta_text: 'false'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="text">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          flag: false
+          text: 'null'
+  nullable_reference_alias_literals:
+    lifecycle: active
+    scenario: nullable_reference_alias_literals
+    description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-15
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="const_text">"null"</atem:parameter>
+
+        <atem:parameter name="enum_text">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            ConstAlias:
+              $ref: '#/$defs/ConstText'
+            EnumAlias:
+              $ref: '#/$defs/EnumText'
+            ConstText:
+              type: string
+              const: 'null'
+            EnumText:
+              type: string
+              enum:
+              - 'null'
+          properties:
+            const_text:
+              $ref: '#/$defs/ConstAlias'
+              nullable: true
+            enum_text:
+              $ref: '#/$defs/EnumAlias'
+              nullable: true
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="const_text">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="enum_text">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          const_text: 'null'
+          enum_text: 'null'
+  local_schema_id_preserves_type:
+    lifecycle: active
+    scenario: local_schema_id_preserves_type
+    description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-16
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="count">42</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+              $id: https://example.com/count
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="count">
+      - delta_text: '42'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42

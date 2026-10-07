@@ -7781,3 +7781,380 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  glm_ref_encoded_targets:
+    lifecycle: active
+    scenario: glm_ref_encoded_targets
+    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-11
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"space": 42, "utf8_plus": 42, "pointer": 42}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            postal code:
+              type: integer
+            café+:
+              type: integer
+            a/b~c:
+              type: integer
+          properties:
+            space:
+              $ref: '#/$defs/postal%20code'
+            utf8_plus:
+              $ref: '#/$defs/caf%c3%a9+'
+            pointer:
+              $ref: '#/$defs/a%7E1b%7E0c'
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          space: 42
+          utf8_plus: 42
+          pointer: 42
+  glm_ref_json_looking_strings:
+    lifecycle: active
+    scenario: glm_ref_json_looking_strings
+    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-12
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+          properties:
+            object_text:
+              $ref: '#/$defs/Text'
+            array_text:
+              $ref: '#/$defs/Text'
+            quoted_text:
+              $ref: '#/$defs/Text'
+            inline_text:
+              type: string
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          object_text: '{"x":1}'
+          array_text: '[1,2]'
+          quoted_text: '"hello"'
+          inline_text: '{"x":1}'
+  glm_ref_scalar_types:
+    lifecycle: active
+    scenario: glm_ref_scalar_types
+    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-13
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Integer:
+              type: integer
+            Number:
+              type: number
+            Boolean:
+              type: boolean
+            Scalar:
+              type:
+              - string
+              - integer
+          properties:
+            count:
+              $ref: '#/$defs/Integer'
+            ratio:
+              $ref: '#/$defs/Number'
+            flag:
+              $ref: '#/$defs/Boolean'
+            narrowed:
+              $ref: '#/$defs/Scalar'
+              type: integer
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          ratio: 3.5
+          flag: true
+          narrowed: 42
+  glm_ref_object:
+    lifecycle: active
+    scenario: glm_ref_object
+    description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-9
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"payload": {"x": 1}}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Payload:
+              type: object
+              properties:
+                x:
+                  type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/Payload'
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"payload": {"x": 1}}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload:
+            x: 1
+  unused_reference_graph_parameter_types:
+    lifecycle: active
+    scenario: unused_reference_graph_parameter_types
+    description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-14
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"count": 42, "flag": false, "text": "null"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            N0:
+              allOf:
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+            N1:
+              allOf:
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+            N2:
+              allOf:
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+            N3:
+              allOf:
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+            N4:
+              allOf:
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+            N5:
+              allOf:
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+            N6:
+              type: string
+          properties:
+            a:
+              $ref: '#/$defs/N0'
+            count:
+              type: integer
+            flag:
+              type: boolean
+            text:
+              type: string
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"count": 42, "flag": false, "text": "null"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          flag: false
+          text: 'null'
+  nullable_reference_alias_literals:
+    lifecycle: active
+    scenario: nullable_reference_alias_literals
+    description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-15
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"const_text": "null", "enum_text": "null"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            ConstAlias:
+              $ref: '#/$defs/ConstText'
+            EnumAlias:
+              $ref: '#/$defs/EnumText'
+            ConstText:
+              type: string
+              const: 'null'
+            EnumText:
+              type: string
+              enum:
+              - 'null'
+          properties:
+            const_text:
+              $ref: '#/$defs/ConstAlias'
+              nullable: true
+            enum_text:
+              $ref: '#/$defs/EnumAlias'
+              nullable: true
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"const_text": "null", "enum_text": "null"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          const_text: 'null'
+          enum_text: 'null'
+  local_schema_id_preserves_type:
+    lifecycle: active
+    scenario: local_schema_id_preserves_type
+    description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-16
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"count": 42}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+              $id: https://example.com/count
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.capture_payload:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"count": 42}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42

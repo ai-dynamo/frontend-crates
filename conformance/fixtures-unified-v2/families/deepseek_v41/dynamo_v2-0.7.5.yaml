@@ -1,0 +1,58 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.5
+    git_commit: 78b638363d55a580564859769392a52c0203448f
+    source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+document:
+  mode: unified
+changes:
+  deepseek_v41_json_invocation_body:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            value: ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"
+
+              '
+            nested:
+              values:
+              - true
+              - 42
+              - -1250
+        - kind: tool_call
+          name: done
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: '{"value":" café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n","nested":{"values":[true,42,-1250]}}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: done
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+    case_key: UNIFIED.7-6
+    stimulus:
+      ref: current
+      semantic_sha256: 57b69f6d50c202b9526bf4eb2b54f844bdee5fa4856b9fda9e2b31e4a678e171
+metadata_changes: {}
+document_overrides: {}

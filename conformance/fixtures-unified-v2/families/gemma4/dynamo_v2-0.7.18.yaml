@@ -1,0 +1,198 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.18
+    git_commit: 01d482fcf173d82ce5e3731555f8d86b766c2f89
+    source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
+document:
+  mode: unified
+changes:
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-11
+    stimulus:
+      ref: current
+      semantic_sha256: aea6e9c28d188bc2b6933fe5fd4ef79168e0bd6c43554fd6ca18352b35f44dbe
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+            complete: true
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-12
+    stimulus:
+      ref: current
+      semantic_sha256: 0448d4bba536a0b5ef09639fa8d266ab63db3a6e89c51c0c6b146cdf142f0911
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-9
+    stimulus:
+      ref: current
+      semantic_sha256: edc443a20ef6d73a84e45da7e46acd0ff53c68e1d4a6820cfa8fc18498aa29ca
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload":{"x":1}}'
+            complete: true
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-13
+    stimulus:
+      ref: current
+      semantic_sha256: 0a07669ea0593004bec44e5c5fa94dd28739c053b0794988c3aca5121a48cc07
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+            complete: true
+        - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-16
+    stimulus:
+      ref: current
+      semantic_sha256: 178ab8660857356ca182aaee587b3cb712f9ef72b3ee1f07628c432567f7345e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42}'
+            complete: true
+        - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-15
+    stimulus:
+      ref: current
+      semantic_sha256: b061c15a46a3642291e56722a190a4e4cf0f9d26ccfcc27f2f2cd63e62fbe7e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text":"null","enum_text":"null"}'
+            complete: true
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-14
+    stimulus:
+      ref: current
+      semantic_sha256: 9603cdf67cd25be8e223b8f32b68a6a93db72d7f7ce42e33e78c82f9b96a7b55
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"flag":false,"text":"null"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

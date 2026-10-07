@@ -103,6 +103,50 @@ fn detect_system_normalization(
     }
 }
 
+/// Detects whether a template renders JSON-string `tool_calls[].function.arguments`
+/// itself, so `render` should pass them through unparsed.
+///
+/// Templates that branch on `arguments is string` (Qwen3, Hermes) print the
+/// string verbatim; pre-parsing it would send them down their `tojson` branch and
+/// break byte-level append-only across tool-use turns. But some templates use the
+/// same test only to reject strings (unsloth's Qwen3.8 template raises unless the
+/// arguments are a mapping), so the text match alone would hand them strings they
+/// can't render and fail every request with a tool call in its history. Confirm
+/// by rendering one historical tool call with string arguments.
+fn detect_tool_calls_arguments_string(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> bool {
+    let Ok(template) = env.get_template(template_name) else {
+        return false;
+    };
+    if !template.source().contains("arguments is string") {
+        return false;
+    }
+    let arguments = r#"{"probe": "value"}"#;
+    let ctx = context! {
+        messages => json!([
+            {"role": "user", "content": "u"},
+            {"role": "assistant", "content": "", "tool_calls": [{
+                "id": "call_probe",
+                "type": "function",
+                "function": {"name": "probe", "arguments": arguments}
+            }]},
+            {"role": "tool", "tool_call_id": "call_probe", "content": "r"}
+        ]),
+        add_generation_prompt => true,
+        tools => tools,
+        bos_token => tok.bos,
+        eos_token => tok.eos,
+        unk_token => tok.unk,
+    };
+    template
+        .render(&ctx)
+        .is_ok_and(|rendered| rendered.contains(arguments))
+}
+
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
 /// Returns true if the template only works with array format.
 fn detect_content_array_usage(env: &Environment) -> bool {
@@ -551,26 +595,6 @@ impl HfTokenizerConfigJsonFormatter {
         let default_template_handles_reasoning = template_handles_reasoning("default");
         let tool_use_template_handles_reasoning = template_handles_reasoning("tool_use");
 
-        // Detect if a given template branches on `tool_call.arguments is string` (Qwen3, Hermes).
-        // Such templates render a JSON-string `arguments` field verbatim; if we pre-parse
-        // it into an object, the `tojson` branch fires instead and emits compact JSON,
-        // breaking byte-level append-only across multi-step tool-use turns. The check is
-        // per-template (default vs tool_use) because in HF configs they can differ — and
-        // because `arguments is string` only appears inside tool-call iteration, the flag
-        // is naturally tied to the `tool_use` template in practice. It is also
-        // tool_calls-specific: legacy `function_call.arguments` lives outside this branch
-        // and must still be normalized.
-        let template_handles_args_string = |name: &str| -> bool {
-            env.templates()
-                .find(|(n, _)| *n == name)
-                .map(|(_, tmpl)| tmpl.source().contains("arguments is string"))
-                .unwrap_or(false)
-        };
-        let default_template_handles_tool_calls_arguments_string =
-            template_handles_args_string("default");
-        let tool_use_template_handles_tool_calls_arguments_string =
-            template_handles_args_string("tool_use");
-
         let probe_tokens = ProbeTokens {
             bos: config.bos_tok(),
             eos: config.eos_tok(),
@@ -585,6 +609,20 @@ impl HfTokenizerConfigJsonFormatter {
                 "parameters": {"type": "object", "properties": {}}
             }
         }]));
+        let default_template_handles_tool_calls_arguments_string =
+            detect_tool_calls_arguments_string(
+                &env,
+                "default",
+                &default_probe_tools,
+                &probe_tokens,
+            );
+        let tool_use_template_handles_tool_calls_arguments_string =
+            detect_tool_calls_arguments_string(
+                &env,
+                "tool_use",
+                &tool_use_probe_tools,
+                &probe_tokens,
+            );
         let default_system_normalization =
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
         let tool_use_system_normalization =
