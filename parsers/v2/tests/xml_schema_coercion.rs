@@ -162,6 +162,30 @@ fn custom_direct_type_preserves_literal_eval_fallback() {
             json!({"x":"not a literal"}),
         );
     }
+    for property in [
+        json!({"type":"custom","enum":[]}),
+        json!({"type":"custom","allOf":[{"type":"string"},{"type":"integer"}]}),
+        json!({"type":"custom","const":"{'a':1}"}),
+    ] {
+        assert_calls(
+            json!({"type":"object","properties":{"x":property}}),
+            &[("x", "{'a':1}")],
+            json!({"x":"{'a':1}"}),
+        );
+    }
+    for property in [
+        json!({"type":"custom","allOf":[]}),
+        json!({"type":"custom","allOf":[{"description":"annotation only"}]}),
+        json!({"type":"custom","anyOf":[{}]}),
+        json!({"type":"custom","$ref":"#/$defs/Missing"}),
+        json!({"type":"custom","oneOf":[]}),
+    ] {
+        assert_calls(
+            json!({"type":"object","properties":{"x":property}}),
+            &[("x", "{'a':1}")],
+            json!({"x":"{'a':1}"}),
+        );
+    }
     assert_calls(
         json!({"type":"object","properties":{"x":{"type":"string"}}}),
         &[("x", "{'a':1}")],
