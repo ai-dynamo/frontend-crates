@@ -130,23 +130,25 @@ fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatCh
     }
 }
 
-/// One choice per index where that loses nothing, in first-seen order.
-fn pack_choices(emissions: Vec<ChoiceEmission>) -> Vec<ChatChoiceStream> {
-    let mut packed: Vec<ChatChoiceStream> = Vec::with_capacity(emissions.len());
+/// Pack emissions into frames that hold each choice index at most once, in
+/// emission order. A same-index entry folds into the current frame when that
+/// loses nothing and crosses no boundary; otherwise it opens the next frame.
+fn pack_choices(emissions: Vec<ChoiceEmission>) -> Vec<Vec<ChatChoiceStream>> {
+    let mut frames: Vec<Vec<ChatChoiceStream>> = vec![Vec::new()];
     for choice in emissions.into_iter().map(ChoiceEmission::into_choice) {
-        match packed
-            .iter_mut()
-            .find(|seen| seen.index == choice.index && choices_merge(seen, &choice))
-        {
-            Some(seen) => merge_choice(seen, choice),
-            None => packed.push(choice),
+        let frame = frames.last_mut().expect("frames is never empty");
+        match frame.iter_mut().find(|seen| seen.index == choice.index) {
+            None => frame.push(choice),
+            Some(seen) if choices_merge(seen, &choice) => merge_choice(seen, choice),
+            Some(_) => frames.push(vec![choice]),
         }
     }
-    packed
+    frames
 }
 
-/// Whether two entries for one choice fold without losing anything. `Parts`
-/// content has no concatenation, so such a pair stays as it arrived.
+/// Whether two entries for one choice fold without losing anything or
+/// crossing a boundary. `Parts` content has no concatenation, and reasoning
+/// stays apart from the answer (content or tool calls) that follows it.
 fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
     let parts = |c: &ChatChoiceStream| {
         matches!(
@@ -155,8 +157,22 @@ fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
         )
     };
     let both = |has: fn(&ChatChoiceStream) -> bool| has(a) && has(b);
+    let reasoning = |c: &ChatChoiceStream| c.delta.reasoning_content.is_some();
+    let answer = |c: &ChatChoiceStream| {
+        c.delta
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty())
+            || match c.delta.content.as_ref() {
+                Some(ChatCompletionMessageContent::Text(text)) => !text.is_empty(),
+                Some(ChatCompletionMessageContent::Parts(_)) => true,
+                None => false,
+            }
+    };
     #[allow(deprecated)]
-    let conflicts = (parts(a) && b.delta.content.is_some())
+    let conflicts = (reasoning(a) && answer(b))
+        || (answer(a) && reasoning(b))
+        || (parts(a) && b.delta.content.is_some())
         || (parts(b) && a.delta.content.is_some())
         || both(|c| c.delta.refusal.is_some())
         || both(|c| c.delta.function_call.is_some())
@@ -1576,19 +1592,30 @@ impl JailedStream {
 
         match self.emission_mode {
             EmissionMode::Packed => {
-                // Pack all choices into a single response. One pass can emit several
-                // entries for one choice (a guided call's last fragment beside the
-                // completed jail's remainder), which is not valid at n = 1.
-                let mut response = base_response.clone();
-                response.choices = pack_choices(emissions);
-
-                vec![Annotated {
-                    data: Some(response),
-                    id,
-                    event,
-                    comment,
-                    error: None,
-                }]
+                // Pack all choices into as few responses as possible. One pass can emit
+                // several entries for one choice, and two for one index in one response
+                // is not valid at n = 1; entries that must stay apart get their own.
+                let frames = pack_choices(emissions);
+                let last = frames.len() - 1;
+                frames
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, choices)| {
+                        let mut response = base_response.clone();
+                        response.choices = choices;
+                        // Usage describes the whole chunk; count it once.
+                        if i != last {
+                            response.usage = None;
+                        }
+                        Annotated {
+                            data: Some(response),
+                            id: id.clone(),
+                            event: event.clone(),
+                            comment: comment.clone(),
+                            error: None,
+                        }
+                    })
+                    .collect()
             }
             EmissionMode::SingleChoicePerChunk => {
                 // Emit each choice in a separate response
@@ -3865,8 +3892,6 @@ mod tests {
         );
     }
 
-    // --- pack_choices --------------------------------------------------------
-
     fn packed_call(
         index: u32,
         name: Option<&str>,
@@ -3924,11 +3949,13 @@ mod tests {
             logprobs_of(&["t1"]),
         );
 
-        let packed = pack_choices(vec![
+        let frames = pack_choices(vec![
             ChoiceEmission::ToolCall(fragment),
             ChoiceEmission::ToolCall(remainder),
         ]);
 
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
         assert_eq!(packed.len(), 1);
         let calls = packed[0].delta.tool_calls.as_ref().unwrap();
         assert_eq!(calls.len(), 1);
@@ -3971,11 +3998,13 @@ mod tests {
             None,
         );
 
-        let packed = pack_choices(vec![
+        let frames = pack_choices(vec![
             ChoiceEmission::ToolCall(first),
             ChoiceEmission::ToolCall(second),
         ]);
 
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
         assert_eq!(packed.len(), 1);
         let names: Vec<_> = packed[0]
             .delta
@@ -3988,22 +4017,114 @@ mod tests {
         assert_eq!(names, [(0, "a".to_string()), (1, "b".to_string())]);
     }
 
-    /// Entries that cannot fold without losing data, and other choices, are left
-    /// exactly as they arrived.
+    /// An entry that cannot fold without losing data opens the next frame, so no
+    /// frame carries one index twice; other choices are untouched.
     #[test]
-    fn pack_choices_leaves_unmergeable_entries_and_other_choices_alone() {
+    fn pack_choices_moves_unmergeable_entries_to_the_next_frame() {
         let mut parts = create_choice_stream(0, None, "", None, None, None);
         parts.delta.content = Some(ChatCompletionMessageContent::Parts(Vec::new()));
         let text = create_choice_stream(0, None, "after", None, None, None);
         let other = create_choice_stream(1, None, "other", None, None, None);
 
-        let packed = pack_choices(vec![
+        let frames = pack_choices(vec![
             ChoiceEmission::PassThrough(parts),
             ChoiceEmission::PassThrough(other),
             ChoiceEmission::PassThrough(text),
         ]);
 
-        let indices: Vec<_> = packed.iter().map(|c| c.index).collect();
-        assert_eq!(indices, [0, 1, 0]);
+        let indices: Vec<Vec<u32>> = frames
+            .iter()
+            .map(|frame| frame.iter().map(|c| c.index).collect())
+            .collect();
+        assert_eq!(indices, [vec![0, 1], vec![0]]);
+        assert!(matches!(
+            frames[0][0].delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        ));
+    }
+
+    /// Reasoning stays a separate, earlier frame from the answer that follows it.
+    #[test]
+    fn pack_choices_keeps_reasoning_before_the_answer() {
+        let mut reasoning = create_choice_stream(0, None, "", None, None, None);
+        reasoning.delta.content = None;
+        reasoning.delta.reasoning_content = Some("Compute it.".to_string());
+        let call = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, Some("calc"), "{\"x\":323}")]),
+            Some(FinishReason::ToolCalls),
+            None,
+        );
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::Content(reasoning),
+            ChoiceEmission::ToolCall(call),
+        ]);
+
+        assert_eq!(frames.len(), 2);
+        assert_eq!(
+            frames[0][0].delta.reasoning_content.as_deref(),
+            Some("Compute it.")
+        );
+        assert!(frames[0][0].delta.tool_calls.is_none());
+        assert!(frames[1][0].delta.reasoning_content.is_none());
+        assert_eq!(
+            frames[1][0].delta.tool_calls.as_ref().map(Vec::len),
+            Some(1)
+        );
+    }
+
+    /// A K3 call left open at EOF: the pending reasoning and the finalized call
+    /// arrive as separate, ordered frames, each holding the choice index once.
+    #[tokio::test]
+    async fn kimi_k3_eof_reasoning_and_call_are_separate_frames() {
+        let mut chunk = text_chunk(concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>323",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+        ));
+        chunk.data.as_mut().expect("response").choices[0]
+            .delta
+            .reasoning_content = Some("Compute it.".to_string());
+
+        let responses = apply_kimi_k3(vec![chunk]).await;
+        let frames: Vec<&Vec<ChatChoiceStream>> = responses
+            .iter()
+            .filter_map(|response| response.data.as_ref())
+            .map(|response| &response.choices)
+            .filter(|choices| !choices.is_empty())
+            .collect();
+
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("calc".to_string(), r#"{"x":323}"#.to_string())]
+        );
+        for frame in &frames {
+            let indices: Vec<u32> = frame.iter().map(|c| c.index).collect();
+            assert!(
+                indices
+                    .iter()
+                    .enumerate()
+                    .all(|(i, x)| !indices[..i].contains(x)),
+                "duplicate choice index in {indices:?}"
+            );
+        }
+        let choices: Vec<&ChatChoiceStream> = frames.iter().flat_map(|f| f.iter()).collect();
+        assert!(choices.iter().all(|c| {
+            c.delta.reasoning_content.is_none()
+                || c.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+        }));
+        let reasoning_at = choices
+            .iter()
+            .position(|c| c.delta.reasoning_content.is_some())
+            .expect("reasoning emitted");
+        let call_at = choices
+            .iter()
+            .position(|c| c.delta.tool_calls.as_ref().is_some_and(|t| !t.is_empty()))
+            .expect("call emitted");
+        assert!(reasoning_at < call_at, "reasoning must precede the call");
     }
 }
