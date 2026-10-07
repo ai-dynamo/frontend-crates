@@ -1049,10 +1049,7 @@ impl ChoiceJailState {
     ) -> Option<usize> {
         let mut remaining = suffix.as_bytes();
         for (index, token) in tokens.iter().enumerate().rev() {
-            let bytes = token
-                .bytes
-                .as_deref()
-                .unwrap_or_else(|| token.token.as_bytes());
+            let bytes = token.bytes.as_deref().unwrap_or(token.token.as_bytes());
             remaining = remaining.strip_suffix(bytes)?;
             if remaining.is_empty() {
                 return Some(index);
@@ -1527,7 +1524,8 @@ impl JailedStream {
                                 let pass_through_choice = ChatChoiceStream {
                                     index: choice.index,
                                     delta: choice.delta.clone(),
-                                    finish_reason: choice.finish_reason,
+                                    // Finalization owns the terminal reason until buffered text drains.
+                                    finish_reason: choice.finish_reason.filter(|_| !has_pending_buffered_output),
                                     logprobs: choice.logprobs.clone(),
                                 };
                                 all_emissions.push(ChoiceEmission::PassThrough(pass_through_choice));
@@ -3755,6 +3753,63 @@ mod tests {
     }
 
     #[rstest::rstest]
+    #[case::role_suffix("message", "message", false)]
+    #[case::reasoning_suffix("message", "message", true)]
+    #[case::role_partial_marker("<|clo", "<|clo", false)]
+    #[case::reasoning_partial_marker("<|clo", "<|clo", true)]
+    #[case::role_suppressed_suffix("message<|sep|>", "", false)]
+    #[case::reasoning_suppressed_suffix("message<|sep|>", "", true)]
+    #[case::role_without_buffer("ordinary prose.", "ordinary prose.", false)]
+    #[case::reasoning_without_buffer("ordinary prose.", "ordinary prose.", true)]
+    #[tokio::test]
+    async fn kimi_k3_buffered_text_precedes_single_terminal_reason(
+        #[case] suffix: &str,
+        #[case] expected: &str,
+        #[case] reasoning: bool,
+    ) {
+        let mut text = text_chunk(suffix);
+        text.data.as_mut().unwrap().choices[0].delta.role = None;
+        let mut terminal = terminal_chunk();
+        let terminal_choice = &mut terminal.data.as_mut().unwrap().choices[0];
+        terminal_choice.finish_reason = Some(FinishReason::Length);
+        if reasoning {
+            terminal_choice.delta.reasoning_content = Some("thinking".to_string());
+        } else {
+            terminal_choice.delta.role = Some(Role::Assistant);
+        }
+        let terminal_delta = terminal_choice.delta.clone();
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("kimi_k3")
+            .build()
+            .apply(stream::iter(vec![text_chunk(KVV_K3_CALL), text, terminal]))
+            .collect()
+            .await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|response| &response.choices)
+            .collect();
+
+        assert_eq!(
+            choices
+                .iter()
+                .filter(|choice| choice.finish_reason.is_some())
+                .count(),
+            1
+        );
+        assert_eq!(
+            choices.last().unwrap().finish_reason,
+            Some(FinishReason::Length)
+        );
+        assert!(choices.iter().any(|choice| choice.delta == terminal_delta));
+        assert_eq!(collect_text_content(&responses), expected);
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
+        );
+    }
+
+    #[rstest::rstest]
     #[case::text_present(true)]
     #[case::contentless(false)]
     #[test]
@@ -3898,7 +3953,7 @@ mod tests {
                         token
                             .bytes
                             .as_deref()
-                            .unwrap_or_else(|| token.token.as_bytes())
+                            .unwrap_or(token.token.as_bytes())
                             .iter()
                             .copied()
                     })
