@@ -33,8 +33,8 @@ use async_stream::stream;
 // re-wraps at its own boundary after the move.
 use dynamo_protocols::types::{
     ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageToolCallChunk,
-    ChatCompletionStreamResponseDelta, CreateChatCompletionStreamResponse, FinishReason,
-    FunctionCallStream, FunctionType, Role,
+    ChatCompletionStreamResponseDelta, ChatCompletionTokenLogprob,
+    CreateChatCompletionStreamResponse, FinishReason, FunctionCallStream, FunctionType, Role,
 };
 use futures::{Stream, StreamExt};
 use serde_json::value::RawValue;
@@ -209,6 +209,8 @@ struct ChoiceJailState {
     partial_match_buffer: String,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
+    /// Whole token records belonging to the held suffix.
+    terminal_suffix_logprobs: Vec<ChatCompletionTokenLogprob>,
     /// A parsed call was emitted, with no subsequent visible prose.
     terminal_suffix_after_tool_call: bool,
     /// Stream finish reason
@@ -465,6 +467,7 @@ impl ChoiceJailState {
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
             terminal_suffix_buffer: String::new(),
+            terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
             stream_finish_reason: None,
             emitted_tool_calls_count: 0,
@@ -1020,39 +1023,91 @@ impl ChoiceJailState {
         emissions
     }
 
+    fn take_terminal_suffix_emission(&mut self, finish: Option<FinishReason>) -> ChoiceEmission {
+        let text = std::mem::take(&mut self.terminal_suffix_buffer);
+        let tokens = std::mem::take(&mut self.terminal_suffix_logprobs);
+        let mut choice = create_choice_stream(
+            self.index,
+            None,
+            &text,
+            None,
+            finish,
+            (!tokens.is_empty()).then_some(ChatChoiceLogprobs {
+                content: Some(tokens),
+                refusal: None,
+            }),
+        );
+        if text.is_empty() {
+            choice.delta.content = None;
+        }
+        ChoiceEmission::Content(choice)
+    }
+
+    fn suffix_logprob_boundary(
+        tokens: &[ChatCompletionTokenLogprob],
+        suffix: &str,
+    ) -> Option<usize> {
+        let mut remaining = suffix.as_bytes();
+        for (index, token) in tokens.iter().enumerate().rev() {
+            let bytes = token
+                .bytes
+                .as_deref()
+                .unwrap_or_else(|| token.token.as_bytes());
+            remaining = remaining.strip_suffix(bytes)?;
+            if remaining.is_empty() {
+                return Some(index);
+            }
+        }
+        None
+    }
+
     /// Hold a possible configured terminal suffix until more text disambiguates it.
     /// Tool arguments never enter this content-only filter.
     fn hold_terminal_suffix(
         &mut self,
-        emissions: &mut [ChoiceEmission],
+        emissions: &mut Vec<ChoiceEmission>,
         policy: TerminalMarkerPolicy,
     ) {
         let suffixes = policy.orphan_end_suffixes;
         if suffixes.is_empty() {
             return;
         }
-        for emission in emissions {
-            let has_tool_calls = emission
+        let mut index = 0;
+        while index < emissions.len() {
+            let has_tool_calls = emissions[index]
                 .choice()
                 .delta
                 .tool_calls
                 .as_ref()
                 .is_some_and(|calls| !calls.is_empty());
             if has_tool_calls {
+                // Release preceding prose before the call, including contentless calls.
+                if !self.terminal_suffix_buffer.is_empty() {
+                    emissions.insert(index, self.take_terminal_suffix_emission(None));
+                    index += 1;
+                }
                 self.terminal_suffix_after_tool_call = true;
+                index += 1;
+                continue;
             }
+            let choice = emissions[index].choice_mut();
             let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
-                emission.choice_mut().delta.content.as_mut()
+                choice.delta.content.as_mut()
             else {
+                index += 1;
                 continue;
             };
             if !self.terminal_suffix_buffer.is_empty() {
                 text.insert_str(0, &std::mem::take(&mut self.terminal_suffix_buffer));
-            }
-            // A parsed call is a channel boundary: release preceding prose
-            // now so a held word cannot move after the call or join its tail.
-            if has_tool_calls {
-                continue;
+                if !self.terminal_suffix_logprobs.is_empty() {
+                    let mut tokens = std::mem::take(&mut self.terminal_suffix_logprobs);
+                    let logprobs = choice.logprobs.get_or_insert(ChatChoiceLogprobs {
+                        content: None,
+                        refusal: None,
+                    });
+                    tokens.extend(logprobs.content.take().unwrap_or_default());
+                    logprobs.content = Some(tokens);
+                }
             }
             let suffix_len = suffixes
                 .iter()
@@ -1070,15 +1125,52 @@ impl ChoiceJailState {
                 && (!policy.orphan_suffix_after_tool_call_only
                     || self.terminal_suffix_after_tool_call)
             {
+                if let Some(logprobs) = choice.logprobs.as_mut()
+                    && let Some(tokens) = logprobs.content.as_mut()
+                {
+                    if !tokens.is_empty() {
+                        // A token cannot be split into invented logprob entries. Preserve
+                        // the text if the suffix boundary cuts a token or cannot be matched.
+                        let Some(start) =
+                            Self::suffix_logprob_boundary(tokens, &text[text.len() - suffix_len..])
+                        else {
+                            index += 1;
+                            continue;
+                        };
+                        self.terminal_suffix_logprobs = tokens.split_off(start);
+                    }
+                    if tokens.is_empty() {
+                        logprobs.content = None;
+                    }
+                    if logprobs.content.is_none() && logprobs.refusal.is_none() {
+                        choice.logprobs = None;
+                    }
+                }
                 self.terminal_suffix_buffer = text.split_off(text.len() - suffix_len);
+                if text.is_empty() {
+                    choice.delta.content = None;
+                    let delta = &choice.delta;
+                    if delta.role.is_none()
+                        && delta.tool_calls.is_none()
+                        && delta.function_call.is_none()
+                        && delta.refusal.is_none()
+                        && delta.reasoning_content.is_none()
+                        && choice.finish_reason.is_none()
+                        && choice.logprobs.is_none()
+                    {
+                        emissions.remove(index);
+                        continue;
+                    }
+                }
             }
+            index += 1;
         }
     }
 
     /// Finalize any remaining content when stream ends
-    async fn finalize(&mut self, jail_stream: &JailedStream) -> Option<ChoiceEmission> {
+    async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
         let policy = jail_stream.terminal_marker_policy;
-        let mut emission = if self.is_jailed && !self.accumulated_content.is_empty() {
+        let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
             #[allow(deprecated)]
             let dummy_choice = create_choice_stream(
@@ -1148,46 +1240,27 @@ impl ChoiceJailState {
         } else {
             None
         };
+        let mut emissions: Vec<_> = emission.into_iter().collect();
         if !policy.orphan_end_suffixes.is_empty() {
-            if let Some(emission) = emission.as_mut() {
-                self.hold_terminal_suffix(std::slice::from_mut(emission), policy);
-            }
+            self.hold_terminal_suffix(&mut emissions, policy);
             if !self.terminal_suffix_buffer.is_empty() {
-                let mut suffix = std::mem::take(&mut self.terminal_suffix_buffer);
                 if self.stream_finish_reason == Some(FinishReason::Length)
-                    && policy.orphan_end_suffixes.contains(&suffix.as_str())
+                    && policy
+                        .orphan_end_suffixes
+                        .contains(&self.terminal_suffix_buffer.as_str())
                     && (!policy.orphan_suffix_after_tool_call_only
                         || self.terminal_suffix_after_tool_call)
                 {
-                    suffix.clear();
+                    self.terminal_suffix_buffer.clear();
+                    self.terminal_suffix_logprobs.clear();
                 }
-                let choice = emission
-                    .get_or_insert_with(|| {
-                        ChoiceEmission::Content(create_choice_stream(
-                            self.index,
-                            Some(Role::Assistant),
-                            "",
-                            None,
-                            self.stream_finish_reason,
-                            None,
-                        ))
-                    })
-                    .choice_mut();
-                if !suffix.is_empty() {
-                    match choice.delta.content.as_mut() {
-                        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) => {
-                            text.push_str(&suffix);
-                        }
-                        _ => {
-                            choice.delta.content = Some(
-                                dynamo_protocols::types::ChatCompletionMessageContent::Text(suffix),
-                            );
-                        }
-                    }
+                if let Some(last) = emissions.last_mut() {
+                    last.choice_mut().finish_reason = None;
                 }
+                emissions.push(self.take_terminal_suffix_emission(self.stream_finish_reason));
             }
         }
-        emission
+        emissions
     }
 }
 
@@ -1534,9 +1607,7 @@ impl JailedStream {
                 {
                     final_emissions.push(reasoning_emission);
                 }
-                if let Some(emission) = state.finalize(&self).await {
-                    final_emissions.push(emission);
-                }
+                final_emissions.extend(state.finalize(&self).await);
             }
 
             if !final_emissions.is_empty() {
@@ -3670,6 +3741,242 @@ mod tests {
             collect_tool_calls(&responses),
             vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
         );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_terminal_suffix_keeps_prose_before_next_call() {
+        let responses =
+            apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "message", KVV_K3_CALL, "tail"]).await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|response| response.choices.iter())
+            .collect();
+        let second_call = choices
+            .iter()
+            .enumerate()
+            .filter(|(_, choice)| {
+                choice
+                    .delta
+                    .tool_calls
+                    .as_ref()
+                    .is_some_and(|c| !c.is_empty())
+            })
+            .nth(1)
+            .unwrap()
+            .0;
+        let preceding_text: String = choices[..second_call]
+            .iter()
+            .filter_map(|choice| match &choice.delta.content {
+                Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) => {
+                    Some(text.as_str())
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(preceding_text, "message");
+        assert_eq!(collect_text_content(&responses), "messagetail");
+        assert_eq!(collect_tool_calls(&responses).len(), 2);
+    }
+
+    #[rstest::rstest]
+    #[case::text_present(true)]
+    #[case::contentless(false)]
+    #[test]
+    fn terminal_suffix_releases_separately_before_call(#[case] text_present: bool) {
+        let mut state = ChoiceJailState::new(0, false, None);
+        state.terminal_suffix_after_tool_call = true;
+        let policy = crate::tool_calling::xtml::TERMINAL_MARKER_POLICY;
+        let mut held_choice = text_chunk_with_logprobs("message")
+            .data
+            .unwrap()
+            .choices
+            .remove(0);
+        held_choice.delta.role = None;
+        let held_logprobs = held_choice.logprobs.clone();
+        let mut held = vec![ChoiceEmission::Content(held_choice)];
+        state.hold_terminal_suffix(&mut held, policy);
+        let mut call = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![ChatCompletionMessageToolCallChunk {
+                index: 1,
+                id: Some("call-2".to_string()),
+                r#type: Some(FunctionType::Function),
+                function: Some(FunctionCallStream {
+                    name: Some("get_server_time".to_string()),
+                    arguments: Some("{}".to_string()),
+                }),
+            }]),
+            None,
+            None,
+        );
+        if !text_present {
+            call.delta.content = None;
+        }
+        let mut emissions = vec![ChoiceEmission::ToolCall(call.clone())];
+        state.hold_terminal_suffix(&mut emissions, policy);
+
+        assert_eq!(emissions.len(), 2);
+        assert_eq!(
+            emissions[0].choice().delta.content,
+            Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(
+                "message".to_string()
+            ))
+        );
+        assert!(emissions[0].choice().delta.tool_calls.is_none());
+        assert_eq!(emissions[0].choice().logprobs, held_logprobs);
+        assert_eq!(emissions[1].choice(), &call);
+        assert!(state.terminal_suffix_buffer.is_empty());
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_terminal_suffix_drops_empty_delta() {
+        let mut chunks: Vec<_> = [KVV_K3_CALL, "message", " received by me"]
+            .into_iter()
+            .map(text_chunk)
+            .collect();
+        for chunk in &mut chunks[1..] {
+            chunk.data.as_mut().unwrap().choices[0].delta.role = None;
+        }
+        chunks.push(terminal_chunk());
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("kimi_k3")
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await;
+
+        assert_eq!(collect_text_content(&responses), "message received by me");
+        for choice in responses
+            .iter()
+            .flat_map(|r| r.data.iter())
+            .flat_map(|r| &r.choices)
+        {
+            assert!(
+                choice.finish_reason.is_some()
+                    || !matches!(
+                        &choice.delta.content,
+                        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) if text.is_empty()
+                    )
+                    || choice.delta.tool_calls.is_some()
+            );
+            if choice.finish_reason.is_none() && choice.logprobs.is_none() {
+                assert_ne!(
+                    serde_json::to_value(&choice.delta).unwrap(),
+                    serde_json::json!({})
+                );
+            }
+        }
+    }
+
+    #[rstest::rstest]
+    #[case::release(vec!["message", " reçu"], FinishReason::Length, "message reçu")]
+    #[case::suppress(vec!["message", "<|sep|>"], FinishReason::Length, "")]
+    #[case::stop(vec!["message", "<|sep|>"], FinishReason::Stop, "message<|sep|>")]
+    #[case::partial(vec!["message"], FinishReason::Length, "message")]
+    #[tokio::test]
+    async fn kimi_k3_terminal_suffix_logprobs_follow_visible_text(
+        #[case] text: Vec<&str>,
+        #[case] finish: FinishReason,
+        #[case] expected: &str,
+        #[values(true, false)] include_bytes: bool,
+    ) {
+        let mut chunks = vec![text_chunk(KVV_K3_CALL)];
+        let mut expected_logprobs = Vec::new();
+        for text in text {
+            let mut chunk = text_chunk_with_logprobs(text);
+            let choice = &mut chunk.data.as_mut().unwrap().choices[0];
+            choice.delta.role = None;
+            let tokens = choice.logprobs.as_mut().unwrap().content.as_mut().unwrap();
+            if !include_bytes {
+                for token in tokens.iter_mut() {
+                    token.bytes = None;
+                }
+            } else {
+                tokens[0].token = "encoded-token".to_string();
+                tokens[0].token_id = Some(42);
+            }
+            expected_logprobs.extend(tokens.iter().cloned());
+            chunks.push(chunk);
+        }
+        let mut terminal = terminal_chunk();
+        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(finish);
+        chunks.push(terminal);
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("kimi_k3")
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await;
+        let mut actual_logprobs = Vec::new();
+        for choice in responses
+            .iter()
+            .flat_map(|r| r.data.iter())
+            .flat_map(|r| &r.choices)
+        {
+            if let Some(tokens) = choice.logprobs.as_ref().and_then(|lp| lp.content.as_ref()) {
+                let token_bytes: Vec<_> = tokens
+                    .iter()
+                    .flat_map(|token| {
+                        token
+                            .bytes
+                            .as_deref()
+                            .unwrap_or_else(|| token.token.as_bytes())
+                            .iter()
+                            .copied()
+                    })
+                    .collect();
+                let token_text = String::from_utf8(token_bytes).unwrap();
+                assert_eq!(
+                    choice.delta.content,
+                    Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(
+                        token_text
+                    ))
+                );
+                actual_logprobs.extend(tokens.iter().cloned());
+            }
+        }
+        assert_eq!(collect_text_content(&responses), expected);
+        if expected.is_empty() {
+            expected_logprobs.clear();
+        }
+        assert_eq!(actual_logprobs, expected_logprobs);
+        assert_eq!(
+            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+            Some(finish)
+        );
+    }
+
+    #[test]
+    fn terminal_suffix_preserves_indivisible_logprob() {
+        let mut state = ChoiceJailState::new(0, false, None);
+        state.terminal_suffix_after_tool_call = true;
+        let mut chunk = text_chunk_with_logprobs(" message");
+        let choice = &mut chunk.data.as_mut().unwrap().choices[0];
+        choice.delta.role = None;
+        let token = &mut choice.logprobs.as_mut().unwrap().content.as_mut().unwrap()[0];
+        token.token = " message".to_string();
+        token.bytes = Some(b" message".to_vec());
+        choice
+            .logprobs
+            .as_mut()
+            .unwrap()
+            .content
+            .as_mut()
+            .unwrap()
+            .truncate(1);
+        let original = choice.clone();
+        let mut emissions = vec![ChoiceEmission::Content(original.clone())];
+        state.hold_terminal_suffix(
+            &mut emissions,
+            crate::tool_calling::xtml::TERMINAL_MARKER_POLICY,
+        );
+
+        assert_eq!(emissions[0].choice(), &original);
+        assert!(state.terminal_suffix_buffer.is_empty());
     }
 
     #[tokio::test]
