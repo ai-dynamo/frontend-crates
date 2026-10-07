@@ -117,7 +117,7 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 # Labels and structured metadata must identify the same captured version.
 def _assert_candidate_versioned(candidate, location):
     if candidate.get("parse_mode") == "unified" and candidate.get("impl") == "dynamo":
-        assert candidate["label"] == candidate["version"], location
+        assert candidate["label"] == table._full_label("dynamo_v2", candidate["version"], "stream"), location
         return
     version = table._version_of_label(candidate["label"])
     assert version, f"{location}: unversioned candidate {candidate['label']!r}"
@@ -784,8 +784,8 @@ def test_unified_source_selection_inherits_previous_family_capture(
 
 @pytest.mark.parametrize("impl,version,mode,want", [
     ("dynamo_v2", "0.6.0", "stream",
-     "Dynamo v2 Rust 0.6.0 (stream)"),
-    ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
+     "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"),
+    ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
     ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),
 ])
@@ -793,13 +793,14 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
-@pytest.mark.parametrize("mode", ["stream", "stream, Combined & Unified"])
-def test_current_label_is_stable_before_and_after_release(monkeypatch, mode):
+@pytest.mark.parametrize("input_mode", ["stream", "stream, Combined & Unified"])
+def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mode):
     producer = {"crate_version": "0.7.9", "kind": "unpublished", "source_id": "sha256:abc123"}
     monkeypatch.setattr(table, "_dynamo_v2_producer", lambda: producer)
-    label = table._full_label("dynamo_v2", "0.7.9", mode)
+    mode = "stream, Combined & Unified"
+    label = table._full_label("dynamo_v2", "0.7.9", input_mode)
     assert label == f"Dynamo v2 Rust 0.7.9 ({mode})"
-    previous = table._full_label("dynamo_v2", "0.7.8", mode)
+    previous = table._full_label("dynamo_v2", "0.7.8", input_mode)
     assert previous == f"Dynamo v2 Rust 0.7.8 ({mode})"
     assert table._candidate_name_key(label) == table._candidate_name_key(previous) == "dynamo v2 rust"
     assert table._version_of_label(label) == "0.7.9"
@@ -810,16 +811,17 @@ def test_current_label_is_stable_before_and_after_release(monkeypatch, mode):
             ("current", "0.7.9"), ("previous", "0.7.8"),
         ]
     producer["kind"] = "release"
-    assert table._full_label("dynamo_v2", "0.7.9", mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
+    assert table._full_label("dynamo_v2", "0.7.9", input_mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
 
 
-def test_unified_reference_displays_only_its_semantic_version(model_v2):
+def test_unified_dynamo_labels_identify_stream_combined_and_unified(model_v2):
     producer = table._dynamo_v2_producer()
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     expected = producer["crate_version"]
-    assert reference["label"] == expected
-    assert reference["label_html"] == expected
+    full_label = f"Dynamo v2 Rust {expected} (stream, Combined & Unified)"
+    assert reference["label"] == full_label
+    assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]
 
     tooltip_labels = [
@@ -830,7 +832,7 @@ def test_unified_reference_displays_only_its_semantic_version(model_v2):
         if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
     ]
     assert tooltip_labels
-    assert set(tooltip_labels) == {expected}
+    assert set(tooltip_labels) == {full_label}
 
 
 def test_tc_source_capture_versions_survive_label_parsing():
