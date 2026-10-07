@@ -260,6 +260,9 @@ fn reference_argument_cases_preserve_results_at_every_split() {
                 "glm_ref_encoded_targets",
                 "glm_ref_json_looking_strings",
                 "glm_ref_scalar_types",
+                "unused_reference_graph_parameter_types",
+                "nullable_reference_alias_literals",
+                "local_schema_id_preserves_type",
             ]
             .iter()
             .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
@@ -287,7 +290,7 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 32);
+    assert_eq!(checked, 56);
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

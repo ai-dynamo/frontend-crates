@@ -32,7 +32,10 @@ def matches_schema(
     _references: tuple[str, ...] = (),
 ) -> bool:
     root_schema = schema if root_schema is None else root_schema
-    assert schema.keys() <= {"type", "properties", "items", "anyOf", "oneOf", "const",
+    if "$id" in schema:
+        # Corpus $id controls are scalar declarations; reference scopes remain unsupported.
+        assert schema.keys() <= {"$id", "type", "const", "enum"}, schema
+    assert schema.keys() <= {"$id", "type", "properties", "items", "anyOf", "oneOf", "const",
                              "enum", "nullable", "minLength", "required", "$ref", "$defs", "definitions"}, schema
     if "$ref" in schema:
         reference = schema["$ref"]
@@ -42,7 +45,7 @@ def matches_schema(
             return False
     kind = schema.get("type")
     kinds = kind if isinstance(kind, list) else [kind] if kind else []
-    if schema.get("nullable") is True:
+    if kinds and schema.get("nullable") is True:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
              "number": type(value) in (int, float),

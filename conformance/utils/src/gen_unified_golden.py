@@ -2001,24 +2001,28 @@ EDGE += [
 EDGE += [
     (
         scenario,
-        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
-                         'the tool parameters root; the referenced definition controls null coercion.'),
+        null_description(label, detail),
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop"},
-        OnlyFamilies({"glm47": (
-            _NULL_TEXT_INPUTS["glm47"],
-            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
-        )}),
-        {"glm47": [{"name": "get_weather", "parameters": {
+        OnlyFamilies({
+            family: (
+                _NULL_TEXT_INPUTS[family],
+                D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
+            )
+            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+        }),
+        {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}]},
+        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
     )
-    for scenario, label, schema, value in (
-        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
-        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    for scenario, label, schema, value, detail in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
+         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
+         'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
 ]
 
@@ -2042,6 +2046,44 @@ EDGE.append((
 # Keep historical scenario IDs and raw spellings; applicability is shared.
 # GLM/Qwen consult schemas; explicitly typed grammars test value preservation.
 for scenario, description, parameters, raw_arguments, arguments in (
+    (
+        "unused_reference_graph_parameter_types",
+        'An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget.',
+        {"type": "object", "$defs": {
+            f"N{i}": ({"type": "string"} if i == 6 else {"allOf": [
+                {"$ref": f"#/$defs/N{i + 1}"} for _ in range(4)
+            ]}) for i in range(7)
+        }, "properties": {
+            "a": {"$ref": "#/$defs/N0"}, "count": {"type": "integer"},
+            "flag": {"type": "boolean"}, "text": {"type": "string"},
+        }},
+        {"count": "42", "flag": "false", "text": "null"},
+        {"count": 42, "flag": False, "text": "null"},
+    ),
+    (
+        "nullable_reference_alias_literals",
+        'Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null".',
+        {"type": "object", "$defs": {
+            "ConstAlias": {"$ref": "#/$defs/ConstText"},
+            "EnumAlias": {"$ref": "#/$defs/EnumText"},
+            "ConstText": {"type": "string", "const": "null"},
+            "EnumText": {"type": "string", "enum": ["null"]},
+        }, "properties": {
+            "const_text": {"$ref": "#/$defs/ConstAlias", "nullable": True},
+            "enum_text": {"$ref": "#/$defs/EnumAlias", "nullable": True},
+        }},
+        {"const_text": "null", "enum_text": "null"},
+        {"const_text": "null", "enum_text": "null"},
+    ),
+    (
+        "local_schema_id_preserves_type",
+        'A directly declared integer remains typed when a local $id disables reference resolution.',
+        {"type": "object", "properties": {
+            "count": {"type": "integer", "$id": "https://example.com/count"},
+        }},
+        {"count": "42"},
+        {"count": 42},
+    ),
     (
         "glm_ref_object",
         'PR #271 compatibility control: a local object reference keeps JSON object text as an object.',

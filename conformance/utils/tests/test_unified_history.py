@@ -301,6 +301,36 @@ def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_pa
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
 
 
+def test_schema_v3_retains_a_new_captured_version_when_all_results_match(tmp_path):
+    root = _store(tmp_path / "store")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    source = loose / "dynamo_v2-0.5.2/gemma4/UNIFIED.1-1.yaml"
+    document = unified_history.load_yaml(source)
+    document["captured_with"] = {"dynamo_v2": "0.5.3"}
+    document["capture_origin"] = {
+        "crate_version": "0.5.3",
+        "source_sha256": "a" * 64,
+        "git_commit": "b" * 40,
+    }
+    target = loose / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml"
+    target.parent.mkdir(parents=True)
+    target.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    changed = unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert changed == [history.capture_path("dynamo_v2-0.5.3")]
+    assert history.captures["dynamo_v2-0.5.3"]["provenance"] == {
+        "status": "captured",
+        "origin": {
+        "crate_version": "0.5.3",
+        "source_sha256": "a" * 64,
+        "git_commit": "b" * 40,
+        },
+    }
+
+
 def test_schema_v3_ignores_generated_oracle_directories_but_rejects_malformed_captures(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"

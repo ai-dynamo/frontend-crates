@@ -116,7 +116,7 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 
 # Labels and structured metadata must identify the same captured version.
 def _assert_candidate_versioned(candidate, location):
-    if candidate.get("parse_mode") == "unified" and candidate.get("key") == "dynamo":
+    if candidate.get("parse_mode") == "unified" and candidate.get("impl") == "dynamo":
         assert candidate["label"] == candidate["version"], location
         return
     version = table._version_of_label(candidate["label"])
@@ -321,7 +321,7 @@ def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
+    assert release["label"] == "0.6.0"
     assert release["default_bucket"] == "C"
 
 
@@ -377,7 +377,7 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
-    assert [markup.count('class="case-variant"') for markup in rendered] == [7, 5]
+    assert [markup.count('class="case-variant"') for markup in rendered] == [8, 5]
     assert "nullable: true" in rendered[1]
     assert "intersection" in rendered[0]
 
@@ -764,6 +764,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
     assert candidates["dynamo"]["version"] == selected
     assert candidates["dynamo"]["label"] == selected
+    assert candidates[f"dynamo@{previous}"]["label"] == previous
     assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
@@ -793,11 +794,11 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
 
 
 @pytest.mark.parametrize("mode", ["stream", "stream, Combined & Unified"])
-def test_unpublished_current_label_projects_existing_producer_identity(monkeypatch, mode):
+def test_current_label_is_stable_before_and_after_release(monkeypatch, mode):
     producer = {"crate_version": "0.7.9", "kind": "unpublished", "source_id": "sha256:abc123"}
     monkeypatch.setattr(table, "_dynamo_v2_producer", lambda: producer)
     label = table._full_label("dynamo_v2", "0.7.9", mode)
-    assert label == f"Dynamo v2 Rust 0.7.9 [unpublished sha256:abc123] ({mode})"
+    assert label == f"Dynamo v2 Rust 0.7.9 ({mode})"
     previous = table._full_label("dynamo_v2", "0.7.8", mode)
     assert previous == f"Dynamo v2 Rust 0.7.8 ({mode})"
     assert table._candidate_name_key(label) == table._candidate_name_key(previous) == "dynamo v2 rust"
@@ -816,8 +817,9 @@ def test_unified_reference_displays_only_its_semantic_version(model_v2):
     producer = table._dynamo_v2_producer()
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
-    assert reference["label"] == producer["crate_version"]
-    assert reference["label_html"] == producer["crate_version"]
+    expected = producer["crate_version"]
+    assert reference["label"] == expected
+    assert reference["label_html"] == expected
     assert reference["version"] == producer["crate_version"]
 
     tooltip_labels = [
@@ -828,7 +830,7 @@ def test_unified_reference_displays_only_its_semantic_version(model_v2):
         if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
     ]
     assert tooltip_labels
-    assert set(tooltip_labels) == {producer["crate_version"]}
+    assert set(tooltip_labels) == {expected}
 
 
 def test_tc_source_capture_versions_survive_label_parsing():
@@ -1154,6 +1156,45 @@ def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
             assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
 
 
+def _assert_unmeasured_versions(cmp: dict, candidate_keys: list[str]) -> None:
+    for key in candidate_keys:
+        result = cmp[key]
+        assert result["na"] == 1 and result["sig"] == 0, key
+
+
+def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: dict) -> None:
+    tab = _tab(model_v2, "tab-unified")
+    dynamo_candidates = [candidate for candidate in tab["candidates"] if candidate.get("impl") == "dynamo"]
+    current = next(candidate for candidate in dynamo_candidates if candidate["key"] == "dynamo")
+    current_version = tuple(map(int, current["version"].split(".")))
+    older_keys = [
+        candidate["key"]
+        for candidate in dynamo_candidates
+        if candidate["key"] != "dynamo"
+        and tuple(map(int, candidate["version"].split("."))) < current_version
+    ]
+    assert current["version"] == "0.7.18"
+    scenarios = (
+        "glm_ref_object",
+        "glm_ref_encoded_targets",
+        "glm_ref_json_looking_strings",
+        "glm_ref_scalar_types",
+    )
+    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    for row in tab["rows"]:
+        family = row["family"]
+        for scenario in scenarios:
+            cmp = leaf_cells(row)[scenario]["cmp"]
+            assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
+            if family in peer_families:
+                _assert_unmeasured_versions(cmp, older_keys)
+            else:
+                assert cmp["dynamo@0.7.8"]["na"] == 0, (family, scenario, "original_capture")
+
+    with pytest.raises(AssertionError):
+        _assert_unmeasured_versions({"dynamo@0.7.17": {"na": 0, "sig": 1}}, ["dynamo@0.7.17"])
+
+
 @pytest.mark.parametrize("scenario,sub,arguments", [
     ("glm_ref_object", "7-9", {"payload": {"x": 1}}),
     ("glm_ref_encoded_targets", "7-11", {"space": 42, "utf8_plus": 42, "pointer": 42}),
@@ -1361,7 +1402,8 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, t
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            assert len(cell["variants"]) == count + int(mixed) + int(refs)
+            qwen_ref = tab_id == "tab-unified" and row["family"] == "qwen3" and label == "7-5"
+            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
             if tab_id.endswith("streamv1"):
@@ -1369,3 +1411,23 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict, t
                     for key in ("dynamo_v1-9-1-0", "dynamo_v2-0-7-4"):
                         assert leaf["cmp"][key]["na"] == 0
         assert len(groups[0] & groups[1]) == int(mixed)
+
+
+def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
+    scenario = "guided_response_rejected_header_quote_ownership"
+    tab = _tab(model_v2, "tab-unified")
+    column = next(c for c in tab["columns"] if c["sub"] == scenario)
+    assert column["label"] == "35-5"
+    assert column["group_key"] == "unified_gdeepseek_v4"
+    group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
+    assert group["label"] == "DeepSeek V4-specific tests"
+    assert group["span"] == 1
+    assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
+    assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
+    for row in tab["rows"]:
+        cell = row["cells"][scenario]
+        assert cell["col_group"] == column["group_key"]
+        if row["family"] != "deepseek_v4":
+            assert cell["status"] == "na"
+    glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
+    assert [r[0] for r in glossary["rows"]] == ["35-5"]

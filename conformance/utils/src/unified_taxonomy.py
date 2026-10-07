@@ -54,6 +54,9 @@ UNIFIED_TAX = {
     "glm_ref_encoded_targets": (7, "11"),
     "glm_ref_json_looking_strings": (7, "12"),
     "glm_ref_scalar_types": (7, "13"),
+    "unused_reference_graph_parameter_types": (7, "14"),
+    "nullable_reference_alias_literals": (7, "15"),
+    "local_schema_id_preserves_type": (7, "16"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
@@ -177,6 +180,7 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
+    "deepseek_v4": "DeepSeek V4-specific tests",
     "gemma": "Gemma-specific tests",
     "glm5": "GLM-specific tests",
     "kimi": "Kimi-specific tests",
@@ -193,6 +197,21 @@ def tax(scenario):
     divergent copy of the same fact, free to drift from what the harness applies.
     """
     return UNIFIED_TAX.get(scenario, (9, scenario))
+
+
+# Display placement may change without renumbering published capture IDs.
+_DISPLAY_GROUP = {"guided_response_rejected_header_quote_ownership": "deepseek_v4"}
+
+
+def display_tax(scenario):
+    group, sub = tax(scenario)
+    return _DISPLAY_GROUP.get(scenario, group), sub
+
+
+def display_sort_key(scenario):
+    group, _ = display_tax(scenario)
+    group_key = (0, group) if isinstance(group, int) else (1, str(group))
+    return group_key, taxonomy_sort_key(scenario)
 
 
 def taxonomy_sort_key(scenario):

@@ -1594,9 +1594,8 @@ def _update_from_loose(
                 for case_id, record in records.items()
                 if "parser_path" in record["document"]
             }
-            # Extraction may derive a complete semantic release directory from
-            # an earlier checkpoint. That inherited view is not a new capture.
-            if not changes and not metadata_changes and not document_overrides:
+            # Derived release views have no source origin; identical captured runs do.
+            if not changes and not metadata_changes and not document_overrides and not origins:
                 continue
             capture = {
                 "runtime_version": runtime_version,

@@ -33,7 +33,7 @@ The release workflow honors this [manual version override](../RELEASING.md#manua
 
 ## Case applicability
 
-Before adding a conformance case, inspect every registered family. Shared behaviors need family-native inputs and authored expected outputs for every applicable family. Explain genuine exclusions using the grammar or request-mode limitation; discovering a bug in one family does not justify limiting its coverage to that family. Use numeric Unified groups for shared behaviors and named family sections for cases tied to one family's grammar. Preserve previously published IDs. List every newly added conformance ID, its meaning, applicable families, and intentional exclusions in the PR description.
+Before adding a conformance case, inspect every registered family. Always evaluate every new or existing single-family case against every registered family when adding, changing, or reviewing it. Determine whether the behavior can be expressed in another family's native grammar and request mode. If it can, author inputs and expected outputs for every applicable family and place the case in a shared section. If it cannot, document the grammar or mode limitation and move the case into a named family-specific test section. Discovering a bug in one family does not justify limiting coverage to that family. Use numeric Unified groups for shared behaviors; preserve published IDs when changing display placement. List every newly added conformance ID, its meaning, applicable families, and intentional exclusions in the PR description.
 
 ## Ownership
 

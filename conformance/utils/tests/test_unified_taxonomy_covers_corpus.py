@@ -554,7 +554,7 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
-        "arg_string_null_ref": {"glm47"},
+        "arg_string_null_ref": {"glm47", "qwen3"},
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
         "glm_ref_json_looking_strings": set(FAMILIES),
@@ -616,6 +616,16 @@ def test_glm_reference_goldens_use_the_tool_parameters_root(scenario: str, value
     assert not matches_schema({"city": value}, parameters)
 
 
+def test_qwen_reference_string_null_uses_root_schema_and_native_input() -> None:
+    case = build_cases("qwen3")["UNIFIED.arg_string_null_ref.qwen3"]
+    parameters = case["tools"][0]["parameters"]
+    assert parameters["properties"]["city"] == {"$ref": "#/$defs/City"}
+    assert parameters["$defs"]["City"] == {"type": "string"}
+    assert case["golden"][0]["arguments"] == {"city": "null"}
+    assert matches_schema({"city": "null"}, parameters)
+    _assert_input_carries_events("qwen3", "arg_string_null_ref", case)
+
+
 @pytest.mark.parametrize("scenario,label,arguments,references", [
     ("glm_ref_object", "7-9", {"payload": {"x": 1}},
      {"payload": "#/$defs/Payload"}),
@@ -651,6 +661,9 @@ def test_glm_type_reference_goldens_keep_raw_refs_and_schema_valid_arguments(
     ("glm_ref_encoded_targets", "pointer", "42"),
     ("glm_ref_json_looking_strings", "quoted_text", "hello"),
     ("glm_ref_scalar_types", "narrowed", "42"),
+    ("unused_reference_graph_parameter_types", "count", "42"),
+    ("nullable_reference_alias_literals", "const_text", None),
+    ("local_schema_id_preserves_type", "count", "42"),
 ])
 def test_reference_input_oracle_rejects_changed_golden_values(
     family: str, scenario: str, key: str, value: object,
@@ -767,24 +780,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 111,
-            "deepseek_v41": 110,
-            "gemma4": 112,
-            "glm47": 113,
-            "kimi_k2": 110,
-            "kimi_k3": 118,
-            "muse_glimmer": 114,
-            "qwen3": 110,
+            "deepseek_v4": 114,
+            "deepseek_v41": 113,
+            "gemma4": 115,
+            "glm47": 116,
+            "kimi_k2": 113,
+            "kimi_k3": 121,
+            "muse_glimmer": 117,
+            "qwen3": 114,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 898
+    assert sum(per_family.values()) == 923
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 129
+    assert len(UNIFIED_TAX) == 132
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -977,18 +990,23 @@ def _assert_retained_capture_coverage(captured, expected):
 def _assert_reference_measurements_start_at_introduction(store):
     shared_ids = {f"UNIFIED.{number}" for number in ("7-9", "7-11", "7-12", "7-13")}
     for (family, implementation), history in store.histories.items():
-        if implementation != "dynamo_v2" or family == "glm47":
+        if implementation != "dynamo_v2":
             continue
         for capture_id in history.ordered_capture_ids():
             measured = {
                 history.family.cases[case_id]["display_id"]
                 for case_id in history.resolve(capture_id)
             }
+            introduced_ids = {"UNIFIED.7-14", "UNIFIED.7-15", "UNIFIED.7-16"}
+            if family != "glm47":
+                introduced_ids |= shared_ids
+            if family == "qwen3":
+                introduced_ids.add("UNIFIED.7-5.ref")
             version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
-            if version < (0, 7, 16):
-                assert not measured & shared_ids, f"retrospective measurements in {family}/{capture_id}"
+            if version < (0, 7, 18):
+                assert not measured & introduced_ids, f"retrospective measurements in {family}/{capture_id}"
             else:
-                assert shared_ids <= measured, f"missing current measurements in {family}/{capture_id}"
+                assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
 
 
 def test_shared_reference_cases_start_at_their_introduction():
@@ -1540,3 +1558,22 @@ def test_malformed_recovery_contract_rejects_changed_stimulus(family, mutation):
         case["input_chunks"] = [case["input"][:1], case["input"][1:]]
     with pytest.raises(AssertionError):
         _assert_malformed_recovery(family, case)
+
+
+def test_schema_id_oracle_preserves_scalar_constraints_and_rejects_reference_scope():
+    schema = {"$id": "https://example.com/count", "type": "integer"}
+    assert matches_schema(42, schema)
+    assert not matches_schema("42", schema)
+    with pytest.raises(AssertionError):
+        matches_schema(42, {**schema, "$ref": "#/$defs/Count"})
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("scenario", [
+    "unused_reference_graph_parameter_types",
+    "nullable_reference_alias_literals",
+    "local_schema_id_preserves_type",
+])
+def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scenario):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])

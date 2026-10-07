@@ -9803,3 +9803,351 @@ cases:
         arguments:
           payload:
             x: 1
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-5.ref
+    historical_ids: []
+    request:
+      input: <tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: <function=get_weather>
+      - delta_text: <parameter=city>
+      - delta_text: 'null'
+      - delta_text: </parameter>
+      - delta_text: </function>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  unused_reference_graph_parameter_types:
+    lifecycle: active
+    scenario: unused_reference_graph_parameter_types
+    description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-14
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=capture_payload>
+
+        <parameter=count>
+
+        42
+
+        </parameter>
+
+        <parameter=flag>
+
+        false
+
+        </parameter>
+
+        <parameter=text>
+
+        null
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            N0:
+              allOf:
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+            N1:
+              allOf:
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+            N2:
+              allOf:
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+            N3:
+              allOf:
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+            N4:
+              allOf:
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+            N5:
+              allOf:
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+            N6:
+              type: string
+          properties:
+            a:
+              $ref: '#/$defs/N0'
+            count:
+              type: integer
+            flag:
+              type: boolean
+            text:
+              type: string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=capture_payload>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=count>
+      - delta_text: '
+
+          42
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=flag>
+      - delta_text: '
+
+          false
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=text>
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          flag: false
+          text: 'null'
+  nullable_reference_alias_literals:
+    lifecycle: active
+    scenario: nullable_reference_alias_literals
+    description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-15
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=capture_payload>
+
+        <parameter=const_text>
+
+        null
+
+        </parameter>
+
+        <parameter=enum_text>
+
+        null
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            ConstAlias:
+              $ref: '#/$defs/ConstText'
+            EnumAlias:
+              $ref: '#/$defs/EnumText'
+            ConstText:
+              type: string
+              const: 'null'
+            EnumText:
+              type: string
+              enum:
+              - 'null'
+          properties:
+            const_text:
+              $ref: '#/$defs/ConstAlias'
+              nullable: true
+            enum_text:
+              $ref: '#/$defs/EnumAlias'
+              nullable: true
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=capture_payload>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=const_text>
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=enum_text>
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          const_text: 'null'
+          enum_text: 'null'
+  local_schema_id_preserves_type:
+    lifecycle: active
+    scenario: local_schema_id_preserves_type
+    description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-16
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=capture_payload>
+
+        <parameter=count>
+
+        42
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+              $id: https://example.com/count
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=capture_payload>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=count>
+      - delta_text: '
+
+          42
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42

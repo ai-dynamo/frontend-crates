@@ -696,6 +696,16 @@ mod tests {
                 "null",
                 json!(null),
             ),
+            (
+                json!({"$ref":"#/$defs/NullableText", "type":"string", "nullable":true}),
+                "null",
+                json!(null),
+            ),
+            (
+                json!({"$ref":"#/$defs/NullableText", "type":"string", "nullable":true}),
+                "42",
+                json!("42"),
+            ),
             (json!({"$ref":"#/$defs/Text"}), "\"hi\"", json!("\"hi\"")),
             (
                 json!({"$ref":"#/$defs/ConstText", "nullable":true}),
@@ -748,6 +758,7 @@ mod tests {
                         "a/b~c":{"type":"integer"}, "Text":{"type":"string"},
                         "Object":{"type":"object"}, "ConstText":{"type":"string","const":"hello"},
                         "EnumText":{"type":"string","enum":["hello"]},
+                        "NullableText":{"type":["string","null"]},
                         "Scalar":{"type":["string","integer"]},
                         "Cycle":{"$ref":"#/$defs/Cycle"}
                     },
