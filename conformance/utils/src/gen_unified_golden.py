@@ -182,6 +182,16 @@ def _json_with_numeric_literals(value):
     return json.dumps(value, ensure_ascii=False)
 
 
+def _contains_numeric_literal(value):
+    if isinstance(value, NumericLiteral):
+        return True
+    if isinstance(value, dict):
+        return any(_contains_numeric_literal(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_numeric_literal(item) for item in value)
+    return False
+
+
 def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     # Raw spellings preserve published stimuli independently of the typed oracle.
     raw = raw_arguments if raw_arguments is not None else {
@@ -228,7 +238,8 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         ) for key, value in arguments.items())
         return k3_tools(k3_call(name, idx + 1, params))
     assert fam == "kimi_k2", fam
-    args = _json_with_numeric_literals(arguments)
+    args = (_json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
+            else json.dumps(arguments, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
 

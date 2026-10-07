@@ -1561,7 +1561,7 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     assert column["label"] == "35-5"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
-    assert group["label"] == "DeepSeek V4-specific tests"
+    assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
     assert group["span"] == 1
     assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
