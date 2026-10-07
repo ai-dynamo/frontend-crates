@@ -317,11 +317,11 @@ def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_
 
     requested = dynamo_v2_label(REPO)
     assert dynamo["version"] == requested
-    assert dynamo["label"] == requested
+    assert dynamo["label"] == table._full_label("dynamo_v2", requested, "stream")
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == "0.6.0"
+    assert release["label"] == table._full_label("dynamo_v2", "0.6.0", "stream")
     assert release["default_bucket"] == "C"
 
 
@@ -763,8 +763,8 @@ def test_unified_source_selection_inherits_previous_family_capture(
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
     assert candidates["dynamo"]["version"] == selected
-    assert candidates["dynamo"]["label"] == selected
-    assert candidates[f"dynamo@{previous}"]["label"] == previous
+    assert candidates["dynamo"]["label"] == table._full_label("dynamo_v2", selected, "stream")
+    assert candidates[f"dynamo@{previous}"]["label"] == table._full_label("dynamo_v2", previous, "stream")
     assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
