@@ -1552,3 +1552,23 @@ def test_numeric_columns_share_argument_heading_and_band(model_v2):
         assert len(groups) == 1
         assert groups[0]["label"] == heading
         assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)
+
+
+def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
+    scenario = "guided_response_rejected_header_quote_ownership"
+    tab = _tab(model_v2, "tab-unified")
+    column = next(c for c in tab["columns"] if c["sub"] == scenario)
+    assert column["label"] == "35-5"
+    assert column["group_key"] == "unified_gdeepseek_v4"
+    group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
+    assert group["label"] == "DeepSeek V4-specific tests"
+    assert group["span"] == 1
+    assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
+    assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
+    for row in tab["rows"]:
+        cell = row["cells"][scenario]
+        assert cell["col_group"] == column["group_key"]
+        if row["family"] != "deepseek_v4":
+            assert cell["status"] == "na"
+    glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
+    assert [r[0] for r in glossary["rows"]] == ["35-5"]
