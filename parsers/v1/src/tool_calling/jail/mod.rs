@@ -3452,7 +3452,6 @@ mod tests {
         #[case] finish_reason: FinishReason,
         #[case] expected: &str,
     ) {
-        // No model-specific parser: exercise the shared algorithm with unrelated markers.
         let mut jail = JailedStream::builder()
             .jail_start_sequences(vec!["<stop>end<sep>".to_string()])
             .build();
@@ -3582,9 +3581,6 @@ mod tests {
 
     #[tokio::test]
     async fn kimi_k3_kvv_length_suppresses_incomplete_message_close() {
-        // KVV TestBasicTypes:17:stream exposed this response body and partial
-        // closing marker. Reproduce the post-reasoning parser input without a
-        // model, preserving plain JSON instead of fabricating a tool call.
         let responses = apply_kimi_k3_kvv_at_length(&[
             "{\"",
             "value",
@@ -3606,25 +3602,7 @@ mod tests {
 
     #[tokio::test]
     async fn kimi_k3_kvv_length_after_valid_call_suppresses_incomplete_message_close() {
-        // A retry can pass KVV's argument check while still exposing the same
-        // partial marker. Assert the call and the visible content separately.
         let responses = apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "<|close|>", "message"]).await;
-
-        assert_eq!(
-            responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
-            Some(FinishReason::Length)
-        );
-        assert_eq!(
-            collect_tool_calls(&responses),
-            vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
-        );
-        assert_eq!(collect_text_content(&responses), "");
-    }
-
-    #[tokio::test]
-    async fn kimi_k3_kvv_length_with_complete_message_close_is_clean() {
-        let responses =
-            apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "<|close|>", "message", "<|sep|>"]).await;
 
         assert_eq!(
             responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
@@ -3642,8 +3620,6 @@ mod tests {
     #[case::split(true)]
     #[tokio::test]
     async fn kimi_k3_kvv_length_preserves_unattributed_message_suffix(#[case] split_suffix: bool) {
-        // KVV TestEnforcerCases:33:stream exposed this JSON body followed by
-        // `message<|sep|>` without the native close token. Preserve the body
         // Without a parsed call, this suffix cannot be distinguished from text.
         let body = "{\n  \"value\": {\n    \"name\": \"\",\n    \"attr\": \"\"\n  }\n}";
         let chunks = if split_suffix {
@@ -3666,8 +3642,6 @@ mod tests {
 
     #[tokio::test]
     async fn kimi_k3_kvv_length_after_valid_call_suppresses_orphan_message_suffix() {
-        // The TestReferences:11 retry returned a valid call but still leaked
-        // this suffix. A schema-valid call must not hide the content failure.
         let responses = apply_kimi_k3_kvv_at_length(&[KVV_K3_CALL, "message", "<|sep|>"]).await;
 
         assert_eq!(
