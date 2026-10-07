@@ -3,7 +3,9 @@
 
 use std::sync::Arc;
 
-use super::tokcfg::{ChatTemplate, fromjson, raise_exception, strftime_now, tojson};
+use super::tokcfg::{
+    ChatTemplate, fromjson, python_formatter, python_string, raise_exception, strftime_now, tojson,
+};
 use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
 use minijinja::{Environment, Value, context};
@@ -531,6 +533,8 @@ impl HfTokenizerConfigJsonFormatter {
         env.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
 
         env.add_filter("tojson", tojson);
+        env.add_filter("string", python_string);
+        env.set_formatter(python_formatter);
 
         // Templates that round-trip tool call `arguments` (a JSON string) back into an
         // object need this; minijinja has no builtin. Both spellings are in the wild.
@@ -844,5 +848,56 @@ mod tests {
             .unwrap();
 
         assert_eq!(result, "tool_reference 1.5.10");
+    }
+
+    fn render_hf(template: &str, ctx: Value) -> String {
+        let chat_template: ChatTemplate =
+            serde_json::from_value(json!({ "chat_template": template })).unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+        let template = formatter.env.get_template("default").unwrap();
+        template.render(ctx).unwrap()
+    }
+
+    /// HF's `tojson` is `json.dumps`, which writes floats as Python `repr`.
+    #[test]
+    fn test_tojson_formats_floats_like_python() {
+        let obj = json!({"a": 1e-6, "b": 0.00001, "c": 1e16, "d": 1.5e-7, "e": 0.1, "f": 1.0, "g": 123.456});
+        assert_eq!(
+            render_hf("{{ v | tojson }}", context! { v => obj }),
+            r#"{"a": 1e-06, "b": 1e-05, "c": 1e+16, "d": 1.5e-07, "e": 0.1, "f": 1.0, "g": 123.456}"#
+        );
+        assert_eq!(
+            render_hf(
+                "{{ v | tojson(indent=2) }}",
+                context! { v => json!({"a": 1e-6, "b": [1e16, 2]}) }
+            ),
+            "{\n  \"a\": 1e-06,\n  \"b\": [\n    1e+16,\n    2\n  ]\n}"
+        );
+    }
+
+    /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
+    #[test]
+    fn test_output_formats_floats_like_python() {
+        let values = vec![
+            Value::from(1e-6),
+            Value::from(1e16),
+            Value::from(f64::NAN),
+            Value::from(f64::INFINITY),
+            Value::from(f64::NEG_INFINITY),
+            Value::from(1.0),
+            Value::from(3),
+            Value::from("a<b&c"),
+            Value::from(true),
+        ];
+        for template in [
+            "{% for v in vs %}{{ v }}|{% endfor %}",
+            "{% for v in vs %}{{ v | string }}|{% endfor %}",
+        ] {
+            assert_eq!(
+                render_hf(template, context! { vs => values.clone() }),
+                "1e-06|1e+16|nan|inf|-inf|1.0|3|a<b&c|True|"
+            );
+        }
     }
 }

@@ -37,6 +37,7 @@ pub use dynamo_tokenizers;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
+mod python;
 mod template;
 
 pub use template::{

@@ -2362,6 +2362,101 @@ NORMAL MODE
         );
     }
 
+    /// MiniMax-M3's `to_xml` prints history argument floats with `{{ val }}`;
+    /// HF (vLLM/SGLang `json.loads` the arguments) renders Python `str(float)`.
+    #[test]
+    fn test_minimax_m3_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- set ns_token = ']<]minimax[>[' -%}
+{%- macro to_xml(val, ns) -%}
+{%- if val is mapping -%}
+{%- for k, v in val.items() if v is not none -%}
+{{ ns }}<{{ k }}>{{ to_xml(v, ns) }}{{ ns }}</{{ k }}>
+{%- endfor -%}
+{%- elif val is iterable and val is not string -%}
+{%- for item in val -%}
+{{ ns }}<item>{{ to_xml(item, ns) }}{{ ns }}</item>
+{%- endfor -%}
+{%- elif val is none -%}
+{%- elif val is boolean -%}
+{{ val | tojson }}
+{%- else -%}
+{{ val }}
+{%- endif -%}
+{%- endmacro -%}
+{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls -%}
+{%- if tool_call.function -%}
+{%- set tool_call = tool_call.function -%}
+{%- endif -%}
+{{- ns_token + '<invoke name="' + tool_call.name + '">' }}
+{%- set _args = tool_call.arguments -%}
+{%- for k, v in _args.items() if v is not none %}
+{{- ns_token + '<' + k + '>' -}}
+{{- to_xml(v, ns_token) -}}
+{{- ns_token + '</' + k + '>' }}
+{%- endfor -%}
+{{- ns_token + '</invoke>' ~ '\n' }}
+{%- endfor -%}
+{%- endfor -%}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "]<]minimax[>[<invoke name=\"fit\">]<]minimax[>[<tolerance>1e-07]<]minimax[>[</tolerance>]<]minimax[>[<bounds>]<]minimax[>[<item>1e-05]<]minimax[>[</item>]<]minimax[>[<item>1e+16]<]minimax[>[</item>]<]minimax[>[</bounds>]<]minimax[>[</invoke>\n"
+        );
+    }
+
+    /// Qwen3-Coder prints scalar history arguments with `| string`, which HF
+    /// renders as Python `str(float)`.
+    #[test]
+    fn test_qwen3_coder_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls %}
+    {%- if tool_call.function is defined %}
+        {%- set tool_call = tool_call.function %}
+    {%- endif %}
+    {%- for args_name, args_value in tool_call.arguments|items %}
+        {{- '<parameter=' + args_name + '>\n' }}
+        {%- set args_value = args_value | tojson | safe if args_value is mapping or (args_value is sequence and args_value is not string) else args_value | string %}
+        {{- args_value }}
+        {{- '\n</parameter>\n' }}
+    {%- endfor %}
+{%- endfor %}
+{%- endfor %}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "<parameter=tolerance>\n1e-07\n</parameter>\n<parameter=bounds>\n[1e-05, 1e+16]\n</parameter>\n"
+        );
+    }
+
     /// Tests string → array normalization for multimodal templates
     #[test]
     fn test_may_be_fix_msg_content_string_to_array() {
