@@ -149,6 +149,27 @@ fn unsupported_reference_scope_preserves_local_constraints() {
 }
 
 #[test]
+fn custom_direct_type_preserves_literal_eval_fallback() {
+    for type_name in ["custom", "vendor-object"] {
+        assert_calls(
+            json!({"type":"object","properties":{"x":{"type":type_name}}}),
+            &[("x", "{'a':1}")],
+            json!({"x":{"a":1}}),
+        );
+        assert_calls(
+            json!({"type":"object","properties":{"x":{"type":type_name}}}),
+            &[("x", "not a literal")],
+            json!({"x":"not a literal"}),
+        );
+    }
+    assert_calls(
+        json!({"type":"object","properties":{"x":{"type":"string"}}}),
+        &[("x", "{'a':1}")],
+        json!({"x":"{'a':1}"}),
+    );
+}
+
+#[test]
 fn reachable_large_self_reference_retains_complete_calls() {
     let mut properties = serde_json::Map::new();
     for i in 0..10 {

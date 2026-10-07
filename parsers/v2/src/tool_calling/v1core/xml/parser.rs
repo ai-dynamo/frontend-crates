@@ -616,6 +616,15 @@ fn convert_prepared_param_value(
                 param_schema.is_some_and(|schema| schema.allowed_types.contains(&category))
             })
         })
+        // Keep explicit custom types on the legacy literal-eval path when
+        // there are no recognized constraints to resolve instead.
+        .or_else(|| {
+            param_schema
+                .filter(|schema| schema.allowed_types.is_empty())
+                .and_then(|schema| schema.direct_type.as_ref())
+                .filter(|name| categorize_type(name).is_none())
+                .cloned()
+        })
         // References and allOf can leave a single effective boolean type without
         // a direct local `type`. Preserve the legacy malformed-boolean fallback
         // (`yes` -> false) for that constrained case.
