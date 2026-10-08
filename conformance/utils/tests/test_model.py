@@ -802,6 +802,10 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
+                    or "parser is not registered for" in reason
+                    or reason.startswith("No vLLM Rust Unified parser is registered for ")
+                    or "has no request-prefilled Response starting-state API" in reason
+                    or reason.startswith("Peer harness supports only native/default initialization and stop termination;")
                     or "no GuidedJson" in reason
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
@@ -1426,7 +1430,8 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
     assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
-    assert group["span"] == 1
+    group_columns = [c for c in tab["columns"] if c["group_key"] == column["group_key"]]
+    assert group["span"] == len(group_columns) == 2
     assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
     for row in tab["rows"]:
@@ -1435,4 +1440,4 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
         if row["family"] != "deepseek_v4":
             assert cell["status"] == "na"
     glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
-    assert [r[0] for r in glossary["rows"]] == ["35-5"]
+    assert {r[0] for r in glossary["rows"]} == {c["label"] for c in group_columns}

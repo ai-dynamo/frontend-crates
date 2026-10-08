@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2] / "fixtures-unified-v2" / "families"
 def test_existing_family_job_is_stable_and_preserves_request_shape():
     job = capture_unified_job.build_job(ROOT, "gemma4")
     assert job["family"] == "gemma4"
-    assert len(job["cases"]) == 112
+    assert len(job["cases"]) == 119
     assert [case["id"] for case in job["cases"]].count("UNIFIED.tool_only.gemma4") == 1
     case = next(
         case

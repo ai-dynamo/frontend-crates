@@ -149,6 +149,8 @@ def test_reader_keeps_legacy_capture_directories_readable(release_repo):
         {"0.6.0": {"records": {"gemma4/UNIFIED.1-1": {"format": "schema_v3"}}}},
     ) == "0.6.0"
 
+    manifest = release_repo / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('"0.6.0"', '"0.6.1"'))
     (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed() {}\n", encoding="utf-8")
     git(release_repo, "add", "parsers/v2/Cargo.toml", "parsers/v2/src/lib.rs")
     git(
@@ -166,6 +168,17 @@ def test_reader_keeps_legacy_capture_directories_readable(release_repo):
     assert recorded["kind"] == "unpublished"
     assert recorded["git_commit"] == commit
     assert identity.validate_capture_provenance(release_repo, recorded)["crate_version"] == "0.6.1"
+
+
+def test_legacy_capture_selection_does_not_mutate_capture_inventory(release_repo):
+    captures = {
+        "0.6.0": [{"format": "legacy"}],
+        "0.6.0.patch2": [{"format": "patch"}],
+    }
+    original = {label: list(records) for label, records in captures.items()}
+
+    assert identity.select_capture_label(release_repo, captures) == "0.6.0"
+    assert captures == original
 
 
 def test_capture_origin_rejects_a_different_producer_source(release_repo):

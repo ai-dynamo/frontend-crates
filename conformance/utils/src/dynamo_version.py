@@ -41,6 +41,29 @@ _EXTERNAL_GIT_ENV = (
 )
 
 
+def _capture_records(captures: dict, version: str) -> list:
+    layer = captures.get(version)
+    if isinstance(layer, dict):
+        records = layer.get("records")
+        return list(records.values()) if isinstance(records, dict) else []
+    return list(layer) if isinstance(layer, list) else []
+
+
+def _legacy_records(captures: dict, version: str) -> list:
+    records = _capture_records(captures, version)
+    for label in captures:
+        if isinstance(label, str) and re.fullmatch(rf"{re.escape(version)}\.patch\d+", label):
+            records.extend(_capture_records(captures, label))
+    return records
+
+
+def _legacy_record_matches_current_source(record: object, current: dict) -> bool:
+    return isinstance(record, dict) and all(
+        record.get(key) == current[key]
+        for key in ("crate_version", "source_sha256", "source_id", "source_paths")
+    )
+
+
 def git_subprocess_env() -> dict[str, str]:
     env = os.environ.copy()
     for name in _EXTERNAL_GIT_ENV:

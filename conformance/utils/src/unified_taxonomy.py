@@ -195,6 +195,9 @@ UNIFIED_GROUP_LABEL = {
     "gemma": "Single Family Test: Gemma 4 guided call-prefix boundaries",
     "glm5": "Single Family Test: GLM argument handling",
     "deepseek": "Single Family Test: DeepSeek V4.1 DSML invocation bodies",
+    "deepseek_v41": "Single Family Test: DeepSeek V4.1-specific tests",
+    "kimi_k2": "Single Family Test: Kimi K2-specific tests",
+    "qwen3": "Single Family Test: Qwen3-specific tests",
     "kimi": "Single Family Test: Kimi K3 XTML",
     "muse": "Single Family Test: Muse-specific",
 }
