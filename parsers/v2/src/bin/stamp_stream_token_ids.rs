@@ -105,6 +105,7 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
 
     let lines = src.split_inclusive('\n').collect::<Vec<_>>();
     let mut insertions = Vec::new();
+    let mut rewritten_lines = std::collections::BTreeMap::new();
     let mut line_index = 0;
     let mut chunk_index = 0;
     let mut chunks_indent = None;
@@ -133,7 +134,9 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
             continue;
         }
         let expected_item_indent = *item_indent.get_or_insert(indent);
-        if indent != expected_item_indent || !trimmed.starts_with("- delta_text:") {
+        if indent != expected_item_indent
+            || !(trimmed.starts_with("- delta_text:") || trimmed.starts_with("- delta_token_ids:"))
+        {
             line_index += 1;
             continue;
         }
@@ -158,11 +161,20 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
             end += 1;
         }
         if !already_stamped {
-            let indent = " ".repeat(field_indent);
+            // Put the new field before the scalar: adding a line break at EOF
+            // would change an unclipped block scalar's decoded text.
+            let indent = " ".repeat(expected_item_indent);
             insertions.push((
-                end,
-                format!("{indent}delta_token_ids: {}\n", ids_to_yaml_flow(ids)),
+                line_index,
+                format!("{indent}- delta_token_ids: {}\n", ids_to_yaml_flow(ids)),
             ));
+            rewritten_lines.insert(
+                line_index,
+                format!(
+                    "{indent}  {}",
+                    &lines[line_index][expected_item_indent + 2..]
+                ),
+            );
         }
         line_index = end;
     }
@@ -179,7 +191,44 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
             insertion_index += 1;
         }
         if let Some(line) = lines.get(line_index) {
-            out.push_str(line);
+            out.push_str(
+                rewritten_lines
+                    .get(&line_index)
+                    .map_or(*line, String::as_str),
+            );
+        }
+    }
+    // The source scanner deliberately supports a narrow YAML layout. Never
+    // overwrite a fixture if an insertion changed its parsed chunk text.
+    let stamped: Fixture = serde_yaml::from_str(&out)?;
+    anyhow::ensure!(
+        stamped.cases.len() == fixture.cases.len(),
+        "stamping changed case count"
+    );
+    let mut chunk_index = 0;
+    for ((before_key, before), (after_key, after)) in fixture.cases.iter().zip(stamped.cases.iter())
+    {
+        anyhow::ensure!(before_key == after_key, "stamping changed case order");
+        let before: Case = serde_yaml::from_value(before.clone())?;
+        let after: Case = serde_yaml::from_value(after.clone())?;
+        anyhow::ensure!(
+            before.chunks.len() == after.chunks.len(),
+            "stamping changed chunk count"
+        );
+        for (before, after) in before.chunks.iter().zip(&after.chunks) {
+            anyhow::ensure!(
+                before.delta_text == after.delta_text,
+                "stamping changed chunk text"
+            );
+            let expected = before
+                .delta_token_ids
+                .as_ref()
+                .unwrap_or(&chunk_ids[chunk_index].1);
+            anyhow::ensure!(
+                after.delta_token_ids.as_ref() == Some(expected),
+                "stamping changed token IDs"
+            );
+            chunk_index += 1;
         }
     }
     Ok(out)
@@ -288,12 +337,57 @@ mod tests {
     }
 
     #[test]
+    fn preserves_chunk_text_at_eof() {
+        // Exercise the newline boundary for plain, quoted, and block scalars.
+        for text in [
+            "Hello",
+            "''",
+            "'Hello'",
+            "|-\n        Hello",
+            "|\n        Hello",
+            ">-\n        Hello",
+        ] {
+            for ending in ["", "\n", "\r\n"] {
+                let src = format!("cases:\n  one:\n    chunks:\n    - delta_text: {text}{ending}");
+                let before: Fixture = serde_yaml::from_str(&src).expect("parse source");
+                let stamped = stamp_token_ids(&src).expect("stamp fixture");
+                let after: Fixture = serde_yaml::from_str(&stamped).expect("parse stamped fixture");
+                let before: Case =
+                    serde_yaml::from_value(before.cases.values().next().unwrap().clone()).unwrap();
+                let after: Case =
+                    serde_yaml::from_value(after.cases.values().next().unwrap().clone()).unwrap();
+                assert_eq!(
+                    before.chunks[0].delta_text, after.chunks[0].delta_text,
+                    "{src:?}"
+                );
+                assert_eq!(
+                    decode_harmony(after.chunks[0].delta_token_ids.as_ref().unwrap()).unwrap(),
+                    before.chunks[0].delta_text
+                );
+                assert_eq!(stamp_token_ids(&stamped).unwrap(), stamped);
+            }
+        }
+    }
+
+    #[test]
     fn preserves_exact_unrelated_numeric_scalars() {
         let src = "family: harmony\ncases:\n  one:\n    tools:\n    - parameters: {const: 9007199254740992.5}\n    golden: {value: 9007199254740992.5}\n    chunks:\n    - delta_text: Hello\n";
         let stamped = stamp_token_ids(src).expect("stamp fixture");
         assert!(stamped.contains("const: 9007199254740992.5"));
         assert!(stamped.contains("value: 9007199254740992.5"));
         assert!(!stamped.contains("9007199254740992.0"));
+    }
+
+    #[test]
+    fn rejects_source_edits_that_change_chunk_semantics() {
+        // A null token field and unusual item layouts are valid YAML, but the
+        // narrow source editor must reject them rather than corrupt the file.
+        for src in [
+            "cases:\n  one:\n    chunks:\n    - delta_text: Hello\n      delta_token_ids: null\n",
+            "cases:\n  one:\n    chunks:\n    - finish_reason: stop\n      delta_text: Hello\n",
+        ] {
+            assert!(stamp_token_ids(src).is_err(), "accepted unsupported layout");
+        }
     }
 
     #[test]
