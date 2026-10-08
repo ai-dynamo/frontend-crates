@@ -4,11 +4,17 @@ Reference taxonomy for the **unified** conformance surface: one parser owns the 
 
 The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed canonical files under `conformance/fixtures-unified-v2/families/` are derived from it.
 
+## Single-family case review
+
+Always evaluate single-family tests against every registered family when adding, changing, or reviewing them, following the [case applicability policy](../../../README.md#case-applicability). If another family can express the behavior, add family-native inputs and authored expected outputs for every applicable family and use a shared section. Otherwise, explain the grammar or request-mode limitation and place the case in a named family-specific test section. Preserve published IDs, capture history, and older unmeasured results when changing section placement.
+
 ## The oracle: GOLDEN is authored, not captured
 
 ## Capture version policy
 
 Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. This migration does not change the older stream or batch-on-stream storage. Changing an existing Unified input requires rerunning and updating every prior affected version.
+
+The shared-family coverage for `7-9`, `7-11`, `7-12`, and `7-13` is first measured in peer families at Dynamo v2 `0.7.18`. Earlier peer-family release cells remain unmeasured; they were not backfilled when coverage expanded. GLM was captured on the released Dynamo v2 `0.7.8` source under PR #271, and its existing history is preserved.
 
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 
@@ -82,6 +88,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`5-1`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
 - **`5-2`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
 - **`5-3`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
+- **`5-4`** (`malformed_json_then_two_valid_calls`) Across all eight families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
 
 ### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
 - **`6-1`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
@@ -93,11 +100,14 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`7-4`** (`arg_json_null`) The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
 - **`7-5`** (`arg_string_null`) The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
 - **`7-4.ref`** (`arg_json_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a nullable string definition on the tool parameters root. Split-chunk XML input with bare `null` must produce JSON null.
-- **`7-5.ref`** (`arg_string_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a string-only definition on the tool parameters root. Split-chunk XML input with bare `null` must preserve string `"null"`.
-- **`7-9`** (`glm_ref_object`) GLM-only compatibility control for PR #271: a local object reference converts JSON object text into an object. The ref remains unresolved in the request.
-- **`7-11`** (`glm_ref_encoded_targets`) GLM-only regression for PR #271: URI percent decoding and JSON Pointer unescaping resolve definition names containing a space, UTF-8 with literal `+`, and `/` plus `~`. Bare `42` becomes an integer for each target.
-- **`7-12`** (`glm_ref_json_looking_strings`) GLM-only regression for PR #271: referenced string fields preserve object-looking, array-looking, and quoted JSON text exactly, including literal quote characters. An inline string field with matching object-looking bytes is a control.
-- **`7-13`** (`glm_ref_scalar_types`) GLM-only regression for PR #271: integer, number, and boolean refs produce typed scalars. A sibling integer constraint narrows a string-or-integer ref; bare `42` must become an integer. All four probes use split-chunk native XML and keep request refs unresolved.
+- **`7-5.ref`** (`arg_string_null_ref`) GLM and Qwen regression: an unresolved local `$ref` points to a string-only definition on the tool parameters root. Split-chunk XML input with bare `null` must preserve string `"null"`.
+- **`7-9`** (`glm_ref_object`) Shared-family compatibility control for PR #271: a local object reference converts JSON object text into an object. The ref remains unresolved in the request.
+- **`7-11`** (`glm_ref_encoded_targets`) Shared-family regression for PR #271: URI percent decoding and JSON Pointer unescaping resolve definition names containing a space, UTF-8 with literal `+`, and `/` plus `~`. Bare `42` becomes an integer for each target.
+- **`7-12`** (`glm_ref_json_looking_strings`) Shared-family regression for PR #271: referenced string fields preserve object-looking, array-looking, and quoted JSON text exactly, including literal quote characters. An inline string field with matching object-looking bytes is a control.
+- **`7-13`** (`glm_ref_scalar_types`) Shared-family regression for PR #271: integer, number, and boolean refs produce typed scalars. A sibling integer constraint narrows a string-or-integer ref; bare `42` must become an integer. All four probes keep request refs unresolved.
+- **`7-14`** (`unused_reference_graph_parameter_types`) An unused compact reference graph precedes directly typed integer, boolean, and string fields. It must not change their types or discard the complete call.
+- **`7-15`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
+- **`7-16`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
 - **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
@@ -105,6 +115,12 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`8-3`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv1.8.c.
 - **`8-4`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv1.8.d.
 - **`8-5`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
+- **`8-6`** (`native_quoted_control_in_response`) A native control marker inside double-quoted visible response text stays literal prose.
+- **`8-7`** (`native_single_quoted_word_control`) A control marker inside a single-quoted word example stays literal prose.
+- **`8-8`** (`native_quoted_control_then_call`) Quoted control text stays visible, and the following real call still dispatches.
+- **`8-9`** (`native_unmatched_quote_then_call`) An unmatched quote before a real control marker cannot hide the following call.
+- **`8-10`** (`native_quoted_incomplete_header`) An incomplete native tool header inside quoted response text stays literal.
+- **`8-11`** (`native_single_quote_contraction_response`) A control marker inside a contraction-bearing single-quoted sentence stays literal prose.
 
 ### Group 10 — Reasoning span (`REASONING.*`)
 - **`10-1`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
@@ -132,9 +148,9 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 93 of the 112 taxonomy cases for this family.
-- Every taxonomy scenario declared for DeepSeek V4.1 is generated. The applicable cases include `30-13`; the Guided Decoding groups `31-1` through `35-2` except `muse-1`; the marker-discriminating Response row `50-4`; and `40-1` through `40-4` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 19 omitted cases are `kimi-1` through `kimi-8`, which require Kimi K3 XTML syntax; `gemma-1` through `gemma-2`, which require Gemma 4 guided call-prefix syntax; `glm5-1`, which requires GLM's argument-marker grammar; `7-4.mixed_labels`, which reproduces GLM's mixed nullable fields; `7-4.ref`, `7-5.ref`, `7-9`, `7-11`, `7-12`, and `7-13`, which probe GLM schema references; `muse-1`, whose non-Muse variant duplicates `35-1`. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 114 of the 134 taxonomy cases for this family.
+- Generated cases include `30-13`, the single-family `deepseek-1` case, Guided Decoding cases `31-1` through `35-4` except `muse-1` and `35-5`, the marker-discriminating Response row `50-4`, and `40-1` through `40-6` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
+- The 20 omitted cases are `kimi-1` through `kimi-8`, `gemma-1` through `gemma-2`, `glm5-1` and `glm5-2`, `7-4.mixed_labels`, `7-4.ref`, `7-5.ref`, `35-5`, and `muse-1` through `muse-4`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-5` tests DeepSeek V4's rejected-header quote ownership. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
 
 <!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
@@ -301,10 +317,14 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`34-3`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
 - **`34-6`** (`guided_json_unterminated_reasoning_then_wrapped_payload`) A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. `32-3` pins a wrapper around the payload OUTSIDE reasoning and `41.*` pins an unterminated thought on its own; neither asks what happens when the two meet, and that crossing is where both native families emitted the payload as REASONING and dispatched nothing. The client sees a plausible answer and never learns a call was lost. Contrast with `34-1`, where the same markup has PROSE behind it and is narration — what separates them is whether the guided payload follows, not which marker appeared.
 - **`34-7`** (`guided_json_bare_tool_header_recovers_inside_a_thought`) starts in Reasoning and routes through a native tool boundary into guided JSON. Both cases are generated for every supported family, with its own marker grammar; neither absence nor an `UNSUPPORTED` cell can hide a missing family input.
+- **`34-8`** (`guided_quoted_reasoning_closer_named`) A quoted reasoning closer does not end prefilled reasoning before the named-tool payload.
+- **`34-9`** (`guided_quoted_reasoning_closer_required`) A quoted reasoning closer does not end prefilled reasoning before the required-tool payload.
 
 ### Group 35 — Guided Decoding: markers in visible answers
 - **`35-1`** (`guided_json_quoted_bare_header_in_answer`) A response that already has a visible channel open contains its family's reasoning marker before the guided payload. The marker must not reopen a private channel, and the following JSON must still dispatch.
 - **`35-2`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text.
+- **`35-3`** (`guided_response_quoted_control_braces_named`) A quoted native opener with braces stays visible before a named-tool payload; the quoted brace cannot claim payload ownership.
+- **`35-4`** (`guided_response_quoted_control_braces_required`) The same quoted-control boundary holds for a required-tool payload.
 
 `31-3` and `31-4` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-1` through `31-4` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
 
@@ -317,6 +337,8 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`40-2`** (`prefilled_reasoning_with_guided_json`) Same, with the call as guided JSON.
 - **`40-3`** (`prefilled_reasoning_then_text_then_tool`) reasoning → visible prose → call. All three channels in one prefilled stream.
 - **`40-4`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
+- **`40-5`** (`native_quoted_control_in_reasoning`) A quoted native control marker inside a prefilled reasoning span remains literal reasoning text.
+- **`40-6`** (`native_single_quote_contraction_reasoning`) A control marker inside a contraction-bearing quote remains literal in prefilled reasoning.
 
 ### Group 41 — Prefilled reasoning, malformed
 - **`41-1`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
@@ -326,6 +348,12 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`50-4`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
 
 The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. Group 50 retains reasoning-marker stimuli that distinguish Response from default initialization; the ordinary native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
+
+### DeepSeek V4-specific
+
+- **`35-5`** (`guided_response_rejected_header_quote_ownership`) DeepSeek V4 rejects an incomplete invoke header in Response; its attribute quote cannot protect the following parameter markup as prose.
+
+This case retains its published `UNIFIED.35-5` ID. DeepSeek V4 independently recognizes parameter markers after rejecting an incomplete invoke header. DeepSeek V4.1 and Muse do not register parameter elements as independent guided control markers; GLM and Qwen do not use quoted invoke-name attributes, and Gemma and Kimi use different call envelopes. The exact rejected-header quote and subsequent parameter-stripping contract is therefore DeepSeek V4-specific. The report groups it under DeepSeek V4-specific tests.
 
 ### Gemma-specific
 
@@ -344,6 +372,8 @@ The marker-free prefilled-Response variants were removed because they emitted th
 - **`muse-1`** is the Muse tool-recipient header inside visible answer text. Its old `31-26` capture key remains a historical alias; this column is intentionally absent for non-Muse families because it would duplicate `35-1`.
 
 ## Authoring a case: what to check BEFORE adding one
+
+Numeric groups describe shared behaviors: inspect every registered family and author its native input and expected output wherever applicable. Named family sections hold grammar-specific cases; explain genuine exclusions. A bug discovered in one family does not justify restricting shared coverage to it. Preserve previously published IDs.
 
 Every rule here exists because a case was added that could not fail for the reason it claimed. Fake coverage is worse than no coverage — it renders green.
 

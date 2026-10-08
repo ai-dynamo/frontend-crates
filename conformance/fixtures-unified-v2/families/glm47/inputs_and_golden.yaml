@@ -6043,6 +6043,68 @@ cases:
         name: run
         arguments:
           cmd: before </tool_call><tool_call>get_weather</tool_call> after
+  glm47_reference_type_intersection:
+    lifecycle: active
+    scenario: glm47_reference_type_intersection
+    description: 'PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.'
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-2
+    historical_ids:
+    - UNIFIED.7-7
+    request:
+      input: <tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+            TextAlias:
+              $ref: '#/$defs/Text'
+            Count:
+              type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/TextAlias'
+              allOf:
+              - type: string
+            count:
+              $ref: '#/$defs/Count'
+              minimum: 1
+          required:
+          - payload
+          - count
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: payload
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '{"x":1}'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: count
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '42'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+          count: 42
   qwen_string_null:
     lifecycle: active
     scenario: arg_string_null
@@ -7025,3 +7087,1113 @@ cases:
         arguments:
           payload:
             x: 1
+  malformed_json_then_two_valid_calls:
+    lifecycle: active
+    scenario: malformed_json_then_two_valid_calls
+    description: 'An unfinished JSON string with explicit call closers precedes echo(value=é) and echo(value=Café). Deliver the entire native input in one push, then finish: marker-aligned delivery masks the Kimi K3 0.7.13 lost-call defect. Preserve family malformed-value fallbacks and both later calls.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-4
+    historical_ids: []
+    request:
+      input: <tool_call>bad<arg_key>value</arg_key><arg_value>{"x":"unfinished</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>é</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>Café</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: bad
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <tool_call>bad<arg_key>value</arg_key><arg_value>{"x":"unfinished</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>é</arg_value></tool_call><tool_call>echo<arg_key>value</arg_key><arg_value>Café</arg_value></tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments:
+          value: '{"x":"unfinished'
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: é
+      - kind: tool_call
+        name: echo
+        arguments:
+          value: Café
+  native_quoted_control_in_reasoning:
+    lifecycle: active
+    scenario: native_quoted_control_in_reasoning
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.40-5
+    historical_ids: []
+    request:
+      input: The literal "<tool_call>" marker is part of the explanation.
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <tool_call>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal "<tool_call>" marker is part of the explanation.
+  native_quoted_incomplete_header:
+    lifecycle: active
+    scenario: native_quoted_incomplete_header
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-10
+    historical_ids: []
+    request:
+      input: The literal `<tool_call>get_weather<arg_key>city</arg_key><arg_value>` header is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal `
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>
+      - delta_text: city
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '` header is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal `<tool_call>get_weather<arg_key>city</arg_key><arg_value>` header is part of the explanation.
+  native_quoted_control_in_response:
+    lifecycle: active
+    scenario: native_quoted_control_in_response
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-6
+    historical_ids: []
+    request:
+      input: The literal "<tool_call>" marker is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <tool_call>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal "<tool_call>" marker is part of the explanation.
+  native_single_quoted_word_control:
+    lifecycle: active
+    scenario: native_single_quoted_word_control
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-7
+    historical_ids: []
+    request:
+      input: The literal 'example <tool_call> marker' is part of the explanation.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''example '
+      - delta_text: <tool_call>
+      - delta_text: ' marker'' is part of the explanation.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal 'example <tool_call> marker' is part of the explanation.
+  native_quoted_control_then_call:
+    lifecycle: active
+    scenario: native_quoted_control_then_call
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-8
+    historical_ids: []
+    request:
+      input: The literal "<tool_call>" marker is part of the explanation.<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <tool_call>
+      - delta_text: '" marker is part of the explanation.'
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>
+      - delta_text: city
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: Paris
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal "<tool_call>" marker is part of the explanation.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  native_unmatched_quote_then_call:
+    lifecycle: active
+    scenario: native_unmatched_quote_then_call
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-9
+    historical_ids: []
+    request:
+      input: He said "maybe<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: He said "maybe
+      - delta_text: <tool_call>
+      - delta_text: get_weather
+      - delta_text: <arg_key>
+      - delta_text: city
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: Paris
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: He said "maybe
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_quoted_reasoning_closer_named:
+    lifecycle: active
+    scenario: guided_quoted_reasoning_closer_named
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    policy:
+    - I7
+    display_id: UNIFIED.34-8
+    historical_ids: []
+    request:
+      input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"city": "Paris"}'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: </think>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: </think>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't </think> marker' stays quoted.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_quoted_reasoning_closer_required:
+    lifecycle: active
+    scenario: guided_quoted_reasoning_closer_required
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    policy:
+    - I7
+    display_id: UNIFIED.34-9
+    historical_ids: []
+    request:
+      input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: </think>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: </think>
+      - delta_text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't </think> marker' stays quoted.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  native_single_quote_contraction_reasoning:
+    lifecycle: active
+    scenario: native_single_quote_contraction_reasoning
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.40-6
+    historical_ids: []
+    request:
+      input: The literal 'doesn't <tool_call> marker' stays quoted.
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: <tool_call>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't <tool_call> marker' stays quoted.
+  native_single_quote_contraction_response:
+    lifecycle: active
+    scenario: native_single_quote_contraction_response
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.8-11
+    historical_ids: []
+    request:
+      input: The literal 'doesn't <tool_call> marker' stays quoted.
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'The literal ''doesn''t '
+      - delta_text: <tool_call>
+      - delta_text: ' marker'' stays quoted.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The literal 'doesn't <tool_call> marker' stays quoted.
+  guided_response_quoted_control_braces_named:
+    lifecycle: active
+    scenario: guided_response_quoted_control_braces_named
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    policy:
+    - I7
+    display_id: UNIFIED.35-3
+    historical_ids: []
+    request:
+      input: 'The literal "<tool_call> { example }" stays visible. {"city": "Paris"}'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <tool_call>
+      - delta_text: ' { example }" stays visible. {"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'The literal "<tool_call> { example }" stays visible. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_quoted_control_braces_required:
+    lifecycle: active
+    scenario: guided_response_quoted_control_braces_required
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    policy:
+    - I7
+    display_id: UNIFIED.35-4
+    historical_ids: []
+    request:
+      input: 'The literal "<tool_call> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The literal "
+      - delta_text: <tool_call>
+      - delta_text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'The literal "<tool_call> { example }" stays visible. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  unused_reference_graph_parameter_types:
+    lifecycle: active
+    scenario: unused_reference_graph_parameter_types
+    description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-14
+    historical_ids: []
+    request:
+      input: <tool_call>capture_payload<arg_key>count</arg_key><arg_value>42</arg_value><arg_key>flag</arg_key><arg_value>false</arg_value><arg_key>text</arg_key><arg_value>null</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            N0:
+              allOf:
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+              - $ref: '#/$defs/N1'
+            N1:
+              allOf:
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+              - $ref: '#/$defs/N2'
+            N2:
+              allOf:
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+              - $ref: '#/$defs/N3'
+            N3:
+              allOf:
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+              - $ref: '#/$defs/N4'
+            N4:
+              allOf:
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+              - $ref: '#/$defs/N5'
+            N5:
+              allOf:
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+              - $ref: '#/$defs/N6'
+            N6:
+              type: string
+          properties:
+            a:
+              $ref: '#/$defs/N0'
+            count:
+              type: integer
+            flag:
+              type: boolean
+            text:
+              type: string
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: count
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '42'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: flag
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'false'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: text
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'null'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42
+          flag: false
+          text: 'null'
+  nullable_reference_alias_literals:
+    lifecycle: active
+    scenario: nullable_reference_alias_literals
+    description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-15
+    historical_ids: []
+    request:
+      input: <tool_call>capture_payload<arg_key>const_text</arg_key><arg_value>null</arg_value><arg_key>enum_text</arg_key><arg_value>null</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            ConstAlias:
+              $ref: '#/$defs/ConstText'
+            EnumAlias:
+              $ref: '#/$defs/EnumText'
+            ConstText:
+              type: string
+              const: 'null'
+            EnumText:
+              type: string
+              enum:
+              - 'null'
+          properties:
+            const_text:
+              $ref: '#/$defs/ConstAlias'
+              nullable: true
+            enum_text:
+              $ref: '#/$defs/EnumAlias'
+              nullable: true
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: const_text
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'null'
+      - delta_text: </arg_value>
+      - delta_text: <arg_key>
+      - delta_text: enum_text
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: 'null'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          const_text: 'null'
+          enum_text: 'null'
+  local_schema_id_preserves_type:
+    lifecycle: active
+    scenario: local_schema_id_preserves_type
+    description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
+    policy:
+    - I7
+    display_id: UNIFIED.7-16
+    historical_ids: []
+    request:
+      input: <tool_call>capture_payload<arg_key>count</arg_key><arg_value>42</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+              $id: https://example.com/count
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: capture_payload
+      - delta_text: <arg_key>
+      - delta_text: count
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '42'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: 42

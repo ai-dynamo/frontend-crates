@@ -227,8 +227,13 @@
       // (a real, non-error output) is a genuine disagreement with the failed Reference ->
       // red (a delta), not grey n/a. If nothing parsed to disagree with (no Compares, or
       // every Compare also threw / is unavailable), there is no delta -> neutral grey.
+      // Oracle-backed cells fail on a Reference error even with no Compare selected.
+      const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
       if (bd.err === 1) {
-        if (avail.length > 0) {
+        if (redOnDiff) {
+          cell.classList.add('cmp-leak'); if (marker) { marker.textContent = '✗'; }
+          if (countThis) { counts.problem++; }
+        } else if (avail.length > 0) {
           cell.classList.add('cmp-leak'); if (marker) { marker.textContent = String(avail.length) + 'Δ'; }
           if (countThis) { counts.problem++; }
         } else {
@@ -239,7 +244,6 @@
       }
       const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
-      const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
       // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle, and the cell color
       // reflects ONLY the REF — the starred engine (`base`, default Dynamo) — measured
       // against golden. A red cell means the REF's own output diverges from golden. The

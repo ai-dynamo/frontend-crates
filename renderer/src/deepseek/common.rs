@@ -6,6 +6,8 @@
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
 
+use crate::python::PyJsonFormatter;
+
 /// Special tokens for DeepSeek prompt formatting.
 pub mod tokens {
     pub const BOS: &str = "<｜begin▁of▁sentence｜>";
@@ -126,57 +128,15 @@ pub(crate) enum NormalizeNonText {
     LeaveUntouched,
 }
 
-// Serialize a JSON value to match Python's `json.dumps(ensure_ascii=False)` spacing.
-// Python's default separators are `(', ', ': ')`; we use a custom `Formatter`
-// so escape sequences inside strings can't confuse state tracking.
+// Serialize a JSON value to match Python's `json.dumps(ensure_ascii=False)` spacing
+// and float spelling. We use a custom `Formatter` so escape sequences inside strings
+// can't confuse state tracking.
 pub(crate) fn to_json(value: &JsonValue) -> String {
     use serde::Serialize;
-    use serde_json::ser::Formatter;
-    use std::io;
-
-    struct PythonFormatter;
-
-    impl Formatter for PythonFormatter {
-        fn begin_array_value<W: ?Sized + io::Write>(
-            &mut self,
-            writer: &mut W,
-            first: bool,
-        ) -> io::Result<()> {
-            if first {
-                Ok(())
-            } else {
-                writer.write_all(b", ")
-            }
-        }
-
-        fn begin_object_key<W: ?Sized + io::Write>(
-            &mut self,
-            writer: &mut W,
-            first: bool,
-        ) -> io::Result<()> {
-            if first {
-                Ok(())
-            } else {
-                writer.write_all(b", ")
-            }
-        }
-
-        fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-            writer.write_all(b": ")
-        }
-
-        fn write_f64<W: ?Sized + io::Write>(
-            &mut self,
-            writer: &mut W,
-            value: f64,
-        ) -> io::Result<()> {
-            writer.write_all(python_float_repr(value).as_bytes())
-        }
-    }
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
     let mut buf = Vec::with_capacity(64);
-    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PythonFormatter);
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
     value
         .serialize(&mut ser)
         .expect("JsonValue serialization to Vec<u8> is infallible");
@@ -392,17 +352,13 @@ pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
                 .unwrap_or(false);
 
             if can_merge {
-                let last = merged.last_mut().unwrap();
-                let appended = last
-                    .as_object_mut()
-                    .and_then(|o| o.get_mut("content_blocks"))
+                // The reference appends only the text; the merged user's own fields are dropped.
+                if let Some(blocks) = merged
+                    .last_mut()
+                    .and_then(|last| last.get_mut("content_blocks"))
                     .and_then(|v| v.as_array_mut())
-                    .map(|blocks| {
-                        blocks.push(text_block);
-                    })
-                    .is_some();
-                if appended {
-                    preserve_user_fields(last, &msg);
+                {
+                    blocks.push(text_block);
                 }
             } else {
                 // Rendering reads content_blocks; retaining content would copy
@@ -431,7 +387,12 @@ pub(crate) fn sort_tool_results_by_call_order(mut messages: Vec<JsonValue>) -> V
     for msg in &mut messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
         if role == "assistant" {
-            if let Some(tcs) = msg.get("tool_calls").and_then(|t| t.as_array()) {
+            // Like the reference's `if msg.get("tool_calls")`, an empty list keeps the order.
+            if let Some(tcs) = msg
+                .get("tool_calls")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 last_order.clear();
                 for (idx, tc) in tcs.iter().enumerate() {
                     let id = tc
@@ -614,87 +575,11 @@ pub(crate) fn inject_tools_and_response_format(
     Ok(())
 }
 
-/// Python's `repr(float)`, which `json.dumps` uses: the shortest round-trip digits,
-/// fixed notation for exponents in [-4, 16) (always with a fraction, `100.0`),
-/// otherwise scientific with a signed, two-digit exponent (`1e-06`, `1e+16`).
-fn python_float_repr(value: f64) -> String {
-    // serde_json's ryu picks the same shortest digits as Python, halfway ties
-    // included (`{:e}` breaks some differently); only the notation is respelled.
-    let shortest = serde_json::Number::from_f64(value)
-        .expect("JSON floats are finite")
-        .to_string();
-    let (sign, unsigned) = match shortest.strip_prefix('-') {
-        Some(unsigned) => ("-", unsigned),
-        None => ("", shortest.as_str()),
-    };
-    let (mantissa, exponent) = match unsigned.split_once('e') {
-        Some((mantissa, exponent)) => (mantissa, exponent.parse().expect("ryu exponent")),
-        None => (unsigned, 0),
-    };
-    let (integer, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
-    let all_digits = format!("{integer}{fraction}");
-    let significant = all_digits.trim_start_matches('0');
-    let digits = significant.trim_end_matches('0');
-    if digits.is_empty() {
-        return format!("{sign}0.0");
-    }
-    let leading_zeros = (all_digits.len() - significant.len()) as i32;
-    let exponent: i32 = exponent + integer.len() as i32 - 1 - leading_zeros;
-    if (-4..16).contains(&exponent) {
-        let point = exponent + 1;
-        let fixed = if point <= 0 {
-            format!("0.{}{digits}", "0".repeat(point.unsigned_abs() as usize))
-        } else if point as usize >= digits.len() {
-            format!("{digits}{}.0", "0".repeat(point as usize - digits.len()))
-        } else {
-            format!(
-                "{}.{}",
-                &digits[..point as usize],
-                &digits[point as usize..]
-            )
-        };
-        format!("{sign}{fixed}")
-    } else {
-        let (head, tail) = digits.split_at(1);
-        let mantissa = if tail.is_empty() {
-            head.to_string()
-        } else {
-            format!("{head}.{tail}")
-        };
-        let exponent_sign = if exponent < 0 { '-' } else { '+' };
-        format!(
-            "{sign}{mantissa}e{exponent_sign}{:02}",
-            exponent.unsigned_abs()
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
     #[test]
-    fn floats_match_python_json_dumps() {
-        for (value, python) in [
-            (0.000001, "1e-06"),
-            (0.0001, "0.0001"),
-            (0.00001234, "1.234e-05"),
-            (1e16, "1e+16"),
-            (1e15, "1000000000000000.0"),
-            (1.5e-7, "1.5e-07"),
-            (2.5, "2.5"),
-            (100.0, "100.0"),
-            (0.1, "0.1"),
-            (-0.0, "-0.0"),
-            (0.0, "0.0"),
-            (-123.456, "-123.456"),
-            (1.7976931348623157e308, "1.7976931348623157e+308"),
-            (5e-324, "5e-324"),
-            // Exactly halfway between two shortest candidates.
-            (1e15 + 0.25, "1000000000000000.2"),
-            (1e14 + 0.125, "100000000000000.12"),
-        ] {
-            assert_eq!(python_float_repr(value), python, "{value:?}");
-        }
+    fn to_json_writes_python_floats() {
         let value = serde_json::json!({"a": 0.000001, "b": [1e16, 3]});
         assert_eq!(to_json(&value), r#"{"a": 1e-06, "b": [1e+16, 3]}"#);
     }
@@ -703,31 +588,30 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn merged_user_blocks_preserve_metadata_and_order() {
+    fn merged_users_drop_their_metadata_like_the_reference() {
+        // Expected output comes from the official DeepSeek-V4-Flash encoding_dsv4.py:
+        // a user merged into a group drops its fields; a group's task stops merging.
         let merged = merge_tool_messages(vec![
-            serde_json::json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
-            serde_json::json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
-            serde_json::json!({"role": "user", "content": "two", "task": "action"}),
-            serde_json::json!({"role": "user", "content": "separate"}),
+            json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
+            json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
+            json!({"role": "user", "content": "two", "task": "action"}),
+            json!({"role": "assistant", "content": "a"}),
+            json!({"role": "user", "content": "three", "task": "action"}),
+            json!({"role": "user", "content": "four", "wo_eos": true}),
         ]);
-        assert_eq!(merged.len(), 2);
-        assert!(
-            merged
-                .iter()
-                .all(|message| message.get("content").is_none())
-        );
         assert_eq!(
-            merged[0]["content_blocks"],
-            serde_json::json!([
-                {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
-                {"type": "text", "text": "one"},
-                {"type": "text", "text": "two"}
-            ])
+            merged,
+            [
+                json!({"role": "user", "content_blocks": [
+                    {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
+                    {"type": "text", "text": "one"},
+                    {"type": "text", "text": "two"}
+                ]}),
+                json!({"role": "assistant", "content": "a"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "three"}], "task": "action"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "four"}], "wo_eos": true}),
+            ]
         );
-        assert_eq!(merged[0]["task"], "action");
-        assert_eq!(merged[0]["wo_eos"], true);
-        assert_eq!(merged[0]["mask"], serde_json::json!([1, 0]));
-        assert_eq!(merged[1]["content_blocks"][0]["text"], "separate");
     }
 
     #[test]

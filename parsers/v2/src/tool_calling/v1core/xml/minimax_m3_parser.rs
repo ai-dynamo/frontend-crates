@@ -391,10 +391,17 @@ fn parse_nested_minimax_xml(
             } else {
                 None
             };
+            // Whitespace before a child tag is formatting; before `</tag>` (or at the end of a
+            // truncated value) it is the leaf value.
+            let closes_leaf = chunks
+                .get(chunk_index + 1)
+                .is_none_or(|next| next.starts_with("</"));
             stack.push(StackItem {
                 tag: Some(tag),
                 value: child_value,
-                texts: if trailing_text.trim().is_empty() {
+                texts: if trailing_text.is_empty()
+                    || (trailing_text.trim().is_empty() && !closes_leaf)
+                {
                     Vec::new()
                 } else {
                     vec![trailing_text.to_string()]
@@ -1047,6 +1054,32 @@ mod tests {
         let raw = format!("\n  {TOK}<item>a{TOK}</item>\n  {TOK}<item>b{TOK}</item>\n");
         let parsed = parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config);
         assert_eq!(parsed, json!(["a", "b"]));
+    }
+
+    #[test]
+    fn pretty_printed_nested_string_leaves_keep_whitespace() {
+        let config = MiniMaxM3ParserConfig::default();
+        let schema = json!({"type": "object", "properties": {
+            "name": {"type": "string"},
+            "sep": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}}
+        }});
+        // Whitespace-only leaves are values: the template emits `<sep>  </sep>` verbatim.
+        let raw = format!(
+            "\n{TOK}<name>  src  {TOK}</name>\n{TOK}<sep>  {TOK}</sep>\n{TOK}<tags>\n\
+             {TOK}<item> a b {TOK}</item>\n{TOK}<item>\tc\n{TOK}</item>\n\
+             {TOK}<item>\n{TOK}</item>\n{TOK}</tags>\n"
+        );
+        assert_eq!(
+            parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+            json!({"name": "  src  ", "sep": "  ", "tags": [" a b ", "\tc\n", "\n"]})
+        );
+        // A truncated value that ends after a start tag keeps that whitespace as the leaf.
+        let raw = format!("{TOK}<sep>  ");
+        assert_eq!(
+            parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+            json!({"sep": "  "})
+        );
     }
 
     // Finding 2: honor the schema before coercing the literal string "null".

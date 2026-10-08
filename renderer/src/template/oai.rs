@@ -2362,6 +2362,101 @@ NORMAL MODE
         );
     }
 
+    /// MiniMax-M3's `to_xml` prints history argument floats with `{{ val }}`;
+    /// HF (vLLM/SGLang `json.loads` the arguments) renders Python `str(float)`.
+    #[test]
+    fn test_minimax_m3_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- set ns_token = ']<]minimax[>[' -%}
+{%- macro to_xml(val, ns) -%}
+{%- if val is mapping -%}
+{%- for k, v in val.items() if v is not none -%}
+{{ ns }}<{{ k }}>{{ to_xml(v, ns) }}{{ ns }}</{{ k }}>
+{%- endfor -%}
+{%- elif val is iterable and val is not string -%}
+{%- for item in val -%}
+{{ ns }}<item>{{ to_xml(item, ns) }}{{ ns }}</item>
+{%- endfor -%}
+{%- elif val is none -%}
+{%- elif val is boolean -%}
+{{ val | tojson }}
+{%- else -%}
+{{ val }}
+{%- endif -%}
+{%- endmacro -%}
+{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls -%}
+{%- if tool_call.function -%}
+{%- set tool_call = tool_call.function -%}
+{%- endif -%}
+{{- ns_token + '<invoke name="' + tool_call.name + '">' }}
+{%- set _args = tool_call.arguments -%}
+{%- for k, v in _args.items() if v is not none %}
+{{- ns_token + '<' + k + '>' -}}
+{{- to_xml(v, ns_token) -}}
+{{- ns_token + '</' + k + '>' }}
+{%- endfor -%}
+{{- ns_token + '</invoke>' ~ '\n' }}
+{%- endfor -%}
+{%- endfor -%}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "]<]minimax[>[<invoke name=\"fit\">]<]minimax[>[<tolerance>1e-07]<]minimax[>[</tolerance>]<]minimax[>[<bounds>]<]minimax[>[<item>1e-05]<]minimax[>[</item>]<]minimax[>[<item>1e+16]<]minimax[>[</item>]<]minimax[>[</bounds>]<]minimax[>[</invoke>\n"
+        );
+    }
+
+    /// Qwen3-Coder prints scalar history arguments with `| string`, which HF
+    /// renders as Python `str(float)`.
+    #[test]
+    fn test_qwen3_coder_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls %}
+    {%- if tool_call.function is defined %}
+        {%- set tool_call = tool_call.function %}
+    {%- endif %}
+    {%- for args_name, args_value in tool_call.arguments|items %}
+        {{- '<parameter=' + args_name + '>\n' }}
+        {%- set args_value = args_value | tojson | safe if args_value is mapping or (args_value is sequence and args_value is not string) else args_value | string %}
+        {{- args_value }}
+        {{- '\n</parameter>\n' }}
+    {%- endfor %}
+{%- endfor %}
+{%- endfor %}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "<parameter=tolerance>\n1e-07\n</parameter>\n<parameter=bounds>\n[1e-05, 1e+16]\n</parameter>\n"
+        );
+    }
+
     /// Tests string → array normalization for multimodal templates
     #[test]
     fn test_may_be_fix_msg_content_string_to_array() {
@@ -3174,6 +3269,66 @@ NORMAL_MODE
         assert!(
             formatter.tool_use_template_handles_tool_calls_arguments_string,
             "tool_use template branches on `arguments is string`"
+        );
+    }
+
+    /// Tool-call loop of unsloth's Qwen3.8 template (unsloth/Qwen3.8-27B): it
+    /// renders mapping arguments as `<parameter=...>` and uses `arguments is
+    /// string` only to reject strings.
+    const QWEN38_REJECTS_STRING_ARGS_TEMPLATE: &str = r##"{%- for message in messages %}
+    {%- if message.role == "assistant" and message.tool_calls %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}
+            {%- if tool_call.arguments is mapping %}
+                {%- for args_name, args_value in tool_call.arguments|items %}
+                    {{- '<parameter=' + args_name + '>\n' + args_value + '\n</parameter>\n' }}
+                {%- endfor %}
+            {%- elif tool_call.arguments is string %}
+                {%- if tool_call.arguments|trim %}
+                    {{- raise_exception('Tool call arguments were passed as a JSON string.') }}
+                {%- endif %}
+            {%- endif %}
+            {{- '</function>\n</tool_call>' }}
+        {%- endfor %}
+    {%- else %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endfor %}"##;
+
+    /// A template that mentions `arguments is string` only to reject strings
+    /// must still get parsed arguments; otherwise every request with a tool call
+    /// in its history fails.
+    #[test]
+    fn test_template_rejecting_string_arguments_gets_objects() {
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": QWEN38_REJECTS_STRING_ARGS_TEMPLATE,
+        }))
+        .unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+        assert!(!formatter.default_template_handles_tool_calls_arguments_string);
+        assert!(!formatter.tool_use_template_handles_tool_calls_arguments_string);
+
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "qwen3.8",
+            "messages": [
+                {"role": "user", "content": "What's the weather in San Francisco?"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call_sf",
+                    "type": "function",
+                    "function": {"name": "get_weather", "arguments": "{\"location\": \"San Francisco\"}"}
+                }]},
+                {"role": "tool", "tool_call_id": "call_sf", "content": "Foggy"}
+            ],
+        }))
+        .unwrap();
+        let rendered = formatter.render(&request).unwrap();
+        assert!(
+            rendered.contains("<parameter=location>\nSan Francisco\n</parameter>"),
+            "{rendered}"
         );
     }
 

@@ -2265,6 +2265,309 @@ changes:
           - kind: text
             text: done
         - expected: []
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: e1b753e60a4b76849fbf321fc31e4ab17d4d3d187690759206ae6c2905b01569
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "{ example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{ example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: d8f3590b617177676ed52e86922241585457be0873fbfdd0c212e49aeccfae1a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "{ example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{ example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    stimulus:
+      ref: current
+      semantic_sha256: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    stimulus:
+      ref: current
+      semantic_sha256: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    stimulus:
+      ref: current
+      semantic_sha256: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    stimulus:
+      ref: current
+      semantic_sha256: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    stimulus:
+      ref: current
+      semantic_sha256: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    stimulus:
+      ref: current
+      semantic_sha256: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    stimulus:
+      ref: current
+      semantic_sha256: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    stimulus:
+      ref: current
+      semantic_sha256: c507debfe3be3c599e2625ca84e55aed8319caaee67d17d223e653c9c66ecefc
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  guided_response_rejected_header_quote_ownership:
+    case_key: UNIFIED.35-5
+    stimulus:
+      ref: current
+      semantic_sha256: 0f41122dd6f50d5a28992d64cd95bdbe60931193ab6bc9c0d315ee2cb87e4757
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <｜DSML｜invoke name="f"x
+        - kind: tool_call
+          name: f
+          arguments:
+            x: ok
+        chunks:
+        - expected:
+          - kind: text
+            text: <｜DSML｜invoke name="f"
+        - expected:
+          - kind: text
+            text: x
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"ok"}'
+            complete: true
 metadata_changes:
   arg_marker_in_string: {}
   arg_unicode: {}
@@ -2346,4 +2649,69 @@ metadata_changes:
   two_calls: {}
   two_calls_same_name: {}
   two_reason_spans: {}
+  guided_quoted_reasoning_closer_named:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+  guided_quoted_reasoning_closer_required:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_quoted_control_braces_named:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+  guided_response_quoted_control_braces_required:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  native_quoted_control_in_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_incomplete_header:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_control_in_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quoted_word_control:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_control_then_call:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_unmatched_quote_then_call:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  guided_response_rejected_header_quote_ownership:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
 document_overrides: {}

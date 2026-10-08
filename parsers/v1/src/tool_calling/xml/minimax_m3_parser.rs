@@ -330,7 +330,8 @@ fn parse_nested_minimax_xml(
     let mut stack = vec![StackItem {
         tag: None,
         value: root_value,
-        texts: if leading_text.is_empty() {
+        // Whitespace-only text before the first tag is formatting, not data.
+        texts: if leading_text.trim().is_empty() {
             Vec::new()
         } else {
             vec![leading_text.to_string()]
@@ -353,7 +354,9 @@ fn parse_nested_minimax_xml(
                     break;
                 }
             }
-            if !trailing_text.is_empty() {
+            // Skip whitespace-only formatting between tags; otherwise it would
+            // append a spurious array element (or `$text`) to the parent node.
+            if !trailing_text.trim().is_empty() {
                 stack
                     .last_mut()
                     .expect("stack has current item")
@@ -377,10 +380,17 @@ fn parse_nested_minimax_xml(
             } else {
                 None
             };
+            // Whitespace before a child tag is formatting; before `</tag>` (or at the end of a
+            // truncated value) it is the leaf value.
+            let closes_leaf = chunks
+                .get(chunk_index + 1)
+                .is_none_or(|next| next.starts_with("</"));
             stack.push(StackItem {
                 tag: Some(tag),
                 value: child_value,
-                texts: if trailing_text.is_empty() {
+                texts: if trailing_text.is_empty()
+                    || (trailing_text.trim().is_empty() && !closes_leaf)
+                {
                     Vec::new()
                 } else {
                     vec![trailing_text.to_string()]
@@ -388,7 +398,7 @@ fn parse_nested_minimax_xml(
                 schema: child_schema,
                 root_schema,
             });
-        } else if !chunk.is_empty() {
+        } else if !chunk.trim().is_empty() {
             stack
                 .last_mut()
                 .expect("stack has current item")
@@ -1015,6 +1025,84 @@ NS|</tool_call>"#;
         assert_eq!(args["shipping"]["city"], "Singapore");
         assert_eq!(args["shipping"]["zip"], 18956);
     }
+
+    #[test]
+    fn pretty_printed_nested_array_has_no_spurious_whitespace_item() {
+        let tok = "]<]minimax[>[";
+        let tools = vec![ToolDefinition {
+            name: "view".into(),
+            parameters: Some(serde_json::json!({"type": "object", "properties": {
+                "view_range": {"type": "array", "items": {"type": "integer"}}
+            }})),
+            strict: None,
+        }];
+        let input = format!(
+            "{tok}<tool_call>\n{tok}<invoke name=\"view\">{tok}<view_range>\n\
+             {tok}<item>1{tok}</item>\n{tok}<item>50{tok}</item>\n{tok}</view_range>\
+             {tok}</invoke>\n{tok}</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_minimax_m3(&input, &MiniMaxM3ParserConfig::default(), Some(&tools))
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let (_, args) = call_name_and_args(&calls[0]);
+        assert_eq!(args, serde_json::json!({"view_range": [1, 50]}));
+    }
+
+    #[test]
+    fn pretty_printed_nested_object_has_no_spurious_whitespace_text() {
+        let tok = "]<]minimax[>[";
+        let schema = serde_json::json!({"type": "object", "properties": {
+            "depth": {"type": "integer"},
+            "filter": {"type": "object", "properties": {"name": {"type": "string"}}}
+        }});
+        let raw = format!(
+            "\n  {tok}<depth>2{tok}</depth>\n  {tok}<filter>\n    \
+             {tok}<name>src{tok}</name>\n  {tok}</filter>\n"
+        );
+        assert_eq!(
+            parse_nested_minimax_xml(
+                &raw,
+                Some(&schema),
+                &schema,
+                &MiniMaxM3ParserConfig::default()
+            ),
+            serde_json::json!({"depth": 2, "filter": {"name": "src"}})
+        );
+    }
+
+    #[test]
+    fn pretty_printed_nested_string_leaves_keep_whitespace() {
+        let tok = "]<]minimax[>[";
+        let schema = serde_json::json!({"type": "object", "properties": {
+            "name": {"type": "string"},
+            "sep": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}}
+        }});
+        // Whitespace-only leaves are values: the template emits `<sep>  </sep>` verbatim.
+        let raw = format!(
+            "\n{tok}<name>  src  {tok}</name>\n{tok}<sep>  {tok}</sep>\n{tok}<tags>\n\
+             {tok}<item> a b {tok}</item>\n{tok}<item>\tc\n{tok}</item>\n\
+             {tok}<item>\n{tok}</item>\n{tok}</tags>\n"
+        );
+        assert_eq!(
+            parse_nested_minimax_xml(
+                &raw,
+                Some(&schema),
+                &schema,
+                &MiniMaxM3ParserConfig::default()
+            ),
+            serde_json::json!({"name": "  src  ", "sep": "  ", "tags": [" a b ", "\tc\n", "\n"]})
+        );
+        // A truncated value that ends after a start tag keeps that whitespace as the leaf.
+        let config = MiniMaxM3ParserConfig::default();
+        let raw = format!("{tok}<sep>  ");
+        assert_eq!(
+            parse_nested_minimax_xml(&raw, Some(&schema), &schema, &config),
+            serde_json::json!({"sep": "  "})
+        );
+    }
+
     #[test]
     fn null_coercion_respects_full_schema_constraints() {
         for (label, schema, expected) in [

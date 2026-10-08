@@ -280,6 +280,8 @@ impl InvokeEmitter for Qwen3Emitter {
                 .and_then(|properties| properties.get(parameter))
                 .is_some_and(|schema| {
                     schema.get("type").and_then(serde_json::Value::as_str) == Some("string")
+                        && schema.get("$ref").is_none()
+                        && schema.get("allOf").is_none()
                         && schema.get("nullable").and_then(serde_json::Value::as_bool) != Some(true)
                 });
             if !streamable {
@@ -632,9 +634,19 @@ mod tests {
     }
 
     fn assert_argument_chunks(schema: serde_json::Value, raw: &str, expected: serde_json::Value) {
+        let mut root = serde_json::json!({"type": "object", "properties": {}});
+        root["properties"]["location"] = schema;
+        assert_argument_root_chunks(root, raw, expected);
+    }
+
+    fn assert_argument_root_chunks(
+        schema: serde_json::Value,
+        raw: &str,
+        expected: serde_json::Value,
+    ) {
         use crate::unified::UnifiedParserExt;
         let mut tools = weather_tools();
-        tools[0].parameters["properties"]["location"] = schema.clone();
+        tools[0].parameters = schema.clone();
         let input = format!(
             "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
         );
@@ -665,6 +677,95 @@ mod tests {
                     arguments: serde_json::json!({"location": expected}),
                 }],
                 "unified schema {schema}, width {width}"
+            );
+        }
+    }
+
+    #[test]
+    fn referenced_arguments_use_root_schema_and_sibling_constraints() {
+        use serde_json::json;
+        for (property, raw, expected) in [
+            (json!({"$ref":"#/$defs/a%7E1b%7E0c"}), "42", json!(42)),
+            (
+                json!({"$ref":"#/$defs/a%7E1b%7E0c", "nullable":true}),
+                "42",
+                json!(42),
+            ),
+            (
+                json!({"$ref":"#/$defs/a%7E1b%7E0c", "nullable":true}),
+                "null",
+                json!(null),
+            ),
+            (
+                json!({"$ref":"#/$defs/NullableText", "type":"string", "nullable":true}),
+                "null",
+                json!(null),
+            ),
+            (
+                json!({"$ref":"#/$defs/NullableText", "type":"string", "nullable":true}),
+                "42",
+                json!("42"),
+            ),
+            (json!({"$ref":"#/$defs/Text"}), "\"hi\"", json!("\"hi\"")),
+            (
+                json!({"$ref":"#/$defs/ConstText", "nullable":true}),
+                "null",
+                json!("null"),
+            ),
+            (
+                json!({"$ref":"#/$defs/EnumText", "nullable":true}),
+                "null",
+                json!("null"),
+            ),
+            (
+                json!({"$ref":"#/$defs/Text", "const":"hello", "nullable":true}),
+                "null",
+                json!("null"),
+            ),
+            (
+                json!({"type":"string", "enum":["hello"], "nullable":true}),
+                "null",
+                json!("null"),
+            ),
+            (
+                json!({"$ref":"#/$defs/Object"}),
+                "{\"x\":1}",
+                json!({"x":1}),
+            ),
+            (
+                json!({"$ref":"#/$defs/Scalar", "allOf":[{"type":"integer"}]}),
+                "42",
+                json!(42),
+            ),
+            (
+                json!({"$ref":"#/$defs/Text", "type":"integer"}),
+                "42",
+                json!("42"),
+            ),
+            (json!({"$ref":"#/$defs/Cycle"}), "42", json!("42")),
+            (json!({"$ref":"#/$defs/Missing"}), "42", json!("42")),
+            (
+                json!({"$ref":"https://example.com/schema"}),
+                "42",
+                json!("42"),
+            ),
+            (json!({"$ref":"#/$defs/%FF"}), "42", json!("42")),
+        ] {
+            assert_argument_root_chunks(
+                json!({
+                    "type":"object",
+                    "$defs": {
+                        "a/b~c":{"type":"integer"}, "Text":{"type":"string"},
+                        "Object":{"type":"object"}, "ConstText":{"type":"string","const":"hello"},
+                        "EnumText":{"type":"string","enum":["hello"]},
+                        "NullableText":{"type":["string","null"]},
+                        "Scalar":{"type":["string","integer"]},
+                        "Cycle":{"$ref":"#/$defs/Cycle"}
+                    },
+                    "properties":{"location":property}
+                }),
+                raw,
+                expected,
             );
         }
     }

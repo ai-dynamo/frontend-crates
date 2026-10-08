@@ -196,14 +196,15 @@ struct HfTokenizerConfigJsonFormatter {
     /// for it (no MM-aware routing benefit either way).
     image_placeholder_template: Option<&'static str>,
     /// True if the `default` template branches on `tool_call.arguments is string`
-    /// (Qwen3, Hermes, etc.). When true and rendering through `default`, skip
-    /// pre-parsing the JSON-string `tool_calls[].function.arguments` into an
-    /// object — the template wants the raw string verbatim. Pre-parsing forces
-    /// the `tojson`-with-object branch and re-emits with minijinja's compact
-    /// separators, which breaks append-only prefix matching across multi-step
-    /// tool-use turns. Tracked separately for `default` and `tool_use` because
-    /// HF configs may register different sources for each, and because
-    /// `arguments is string` is tool_calls-specific — legacy
+    /// and renders string arguments verbatim (Qwen3, Hermes, etc.; templates that
+    /// only use the test to reject strings don't count). When true and rendering
+    /// through `default`, skip pre-parsing the JSON-string
+    /// `tool_calls[].function.arguments` into an object — the template wants the
+    /// raw string verbatim. Pre-parsing forces the `tojson`-with-object branch and
+    /// re-emits with minijinja's compact separators, which breaks append-only
+    /// prefix matching across multi-step tool-use turns. Tracked separately for
+    /// `default` and `tool_use` because HF configs may register different sources
+    /// for each, and because `arguments is string` is tool_calls-specific — legacy
     /// `function_call.arguments` lives outside that branch and is still
     /// normalized unconditionally.
     default_template_handles_tool_calls_arguments_string: bool,

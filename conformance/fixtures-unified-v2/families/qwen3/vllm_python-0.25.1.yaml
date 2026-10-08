@@ -2485,5 +2485,297 @@ changes:
         - expected:
           - kind: text
             text: done
+  retired__30_14:
+    case_key: UNIFIED.30-14
+    stimulus:
+      ref: current
+      semantic_sha256: 74c75b624e7a0b131421b0264aa2dbce343182b8d01ab8c517e537a8dadca68b
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<function=get_weather[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '<function=get_weather[{"name": "get_weather", "arguments": {"city": "a >'
+        - expected:
+          - kind: reasoning
+            text: ' b"}}]'
+        - expected: []
+  retired__31_31:
+    case_key: UNIFIED.qwen3-1
+    stimulus:
+      ref: current
+      semantic_sha256: 415fa9e4e38da97fe399cd6cf1acece868f120f1845b2d2828c935d7192d2aaa
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <function=éaaaaaaaaax
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <function=éaaaaaaaaax
+        - expected: []
+  retired__31_32:
+    case_key: UNIFIED.qwen3-2
+    stimulus:
+      ref: current
+      semantic_sha256: 5dd4e68ebebd58785334115cfc229dd5326116e7a0a663fb3ceeb44b107c0278
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <function=éaaaaaaaaax</function>
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <function=éaaaaaaaaax</function>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_33:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: 921049a85ac95a456732c0344f424f962c405d8e091bd7506ccee8634d8a4d74
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <function=f>
+
+            <parameter=x>
+
+            é🙂<par{value}
+
+            </parameter>
+
+            </function> after'
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <function=f>
+        - expected:
+          - kind: reasoning
+            text: '
+
+              '
+        - expected:
+          - kind: reasoning
+            text: <parameter=x>
+        - expected:
+          - kind: reasoning
+            text: '
+
+              é🙂'
+        - expected:
+          - kind: reasoning
+            text: '<par{value}
+
+              </parameter>'
+        - expected:
+          - kind: reasoning
+            text: '
+
+              '
+        - expected:
+          - kind: reasoning
+            text: </function>
+        - expected:
+          - kind: reasoning
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_34:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: 5fba74326e95f4e6438e668e1b90392bd233190c1b4b59367917ac83bf3aa532
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '{"city":"Rome"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected:
+          - kind: text
+            text: <function=f>
+        - expected:
+          - kind: text
+            text: <parameter=x>
+        - expected:
+          - kind: text
+            text: '{"city":"Rome"}'
+        - expected:
+          - kind: text
+            text: </parameter>
+        - expected:
+          - kind: text
+            text: </function>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_35:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: e9bf9ad77d7fc089ef8bc29bbf3da7eb3fb3f3a4fa7f2cad7011b7f786dff625
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected:
+          - kind: text
+            text: <function=f>
+        - expected:
+          - kind: text
+            text: <parameter=x>
+        - expected:
+          - kind: text
+            text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+        - expected:
+          - kind: text
+            text: </parameter>
+        - expected:
+          - kind: text
+            text: </function>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_36:
+    case_key: UNIFIED.qwen3-3
+    stimulus:
+      ref: current
+      semantic_sha256: ce2f9bfd5ded480ddefec3c05ec07d85d63f9851288d6760c3b454c1120c8794
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <function=x</function>[{"name":"f","arguments":{}}]
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <function=
+        - expected:
+          - kind: reasoning
+            text: x
+        - expected:
+          - kind: reasoning
+            text: </function>
+        - expected:
+          - kind: reasoning
+            text: '[{"name":"f","arguments":{}}]'
+        - expected: []
+  retired__31_40:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: 5570e671c12fe02023fffbe1d4211300e0f200c580ddbbc950bd8c706c91c099
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <function=f>
+
+            <parameter=x>
+
+            quoted'
+        - kind: text
+          text: '
+
+            </parameter>
+
+            </function> after[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <function=f>
+        - expected:
+          - kind: reasoning
+            text: '
+
+              '
+        - expected:
+          - kind: reasoning
+            text: <parameter=x>
+        - expected:
+          - kind: reasoning
+            text: '
+
+              '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              </parameter>'
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected:
+          - kind: text
+            text: </function>
+        - expected:
+          - kind: text
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

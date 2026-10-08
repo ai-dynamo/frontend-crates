@@ -6,4 +6,13 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-{}
+gemma4:
+  UNIFIED.malformed_json_then_two_valid_calls.gemma4:
+    golden:
+      note: An unfinished native string consumes both later echo calls; parser fix is outside this capture change.
+      actual: ''
+deepseek_v41:
+  UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
+    golden:
+      note: Malformed object parameter raises before either later echo call; parser fix is outside this capture change.
+      actual: 'ERROR: native push: EOF while parsing a string at line 1 column 16'

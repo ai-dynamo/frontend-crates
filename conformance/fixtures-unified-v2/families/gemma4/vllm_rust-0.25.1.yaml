@@ -2005,5 +2005,59 @@ changes:
         - expected:
           - kind: text
             text: done
+  gemma4_guided_json_malformed_call_prefix_before_reasoning:
+    case_key: UNIFIED.gemma-2
+    stimulus:
+      ref: current
+      semantic_sha256: d5bb412bb0e0db2c51e56b9cb6f41d5b4026537fd6ddc14828fee6b508063122
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  gemma4_guided_json_visible_call_prose_before_reasoning:
+    case_key: UNIFIED.gemma-1
+    stimulus:
+      ref: current
+      semantic_sha256: 75aeb249340d7845cc9c3d13cd6eec129f527b31761a28ec141641f4affe7255
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  retired__30_14:
+    case_key: UNIFIED.30-14
+    stimulus:
+      ref: current
+      semantic_sha256: c087204239efcd0293d55fb7b26b7abab3a65d5eca004bcf151db77fc15338c6
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  retired__31_33:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: 4d16fc16d5301cc811584b5dc1b2da7f89b5e65ac7cf0990d3459187bc869afb
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  retired__31_39:
+    case_key: UNIFIED.gemma-3
+    stimulus:
+      ref: current
+      semantic_sha256: c2543436c68764eb8a421a4aaf792ac11a76ff30dd23abc27d2d7fbd6310d056
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  retired__31_40:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: ba81199d539b82da21bd430b60c9889ad69faaec7d4534359121a58f763b716e
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
 metadata_changes: {}
 document_overrides: {}
