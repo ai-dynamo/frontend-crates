@@ -226,15 +226,11 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
         while self.resync_cursor < input.len() {
             let cursor = self.resync_cursor;
             let rest = &input[cursor..];
-            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
-                if !flush {
-                    return None;
-                }
+            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() && !flush {
+                return None;
             }
-            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() {
-                if !flush {
-                    return None;
-                }
+            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() && !flush {
+                return None;
             }
             if rest.starts_with(STRING_DELIM) {
                 if self.resync_candidate.is_some() {
@@ -276,20 +272,17 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
             }
             if cursor > 0 && rest.starts_with(TOOL_CALL_START) {
                 let after_marker = &rest[TOOL_CALL_START.len()..];
-                if CALL_PREFIX.starts_with(after_marker) {
-                    if !flush {
-                        return None;
-                    }
+                if CALL_PREFIX.starts_with(after_marker) && !flush {
+                    return None;
                 }
                 if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
                     && after_prefix.find('{').is_none()
                     && after_prefix
                         .chars()
                         .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+                    && !flush
                 {
-                    if !flush {
-                        return None;
-                    }
+                    return None;
                 }
                 if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
                     && let Some(name_len) = after_prefix
@@ -326,10 +319,8 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                         }
                         return Some(start);
                     }
-                    if TOOL_CALL_END.starts_with(rest) {
-                        if !flush {
-                            return None;
-                        }
+                    if TOOL_CALL_END.starts_with(rest) && !flush {
+                        return None;
                     }
                     if !rest.chars().next()?.is_whitespace() {
                         self.resync_candidate = None;
