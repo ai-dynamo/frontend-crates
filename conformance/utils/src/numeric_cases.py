@@ -16,6 +16,10 @@ NUMERIC_DESCRIPTIONS = {
     "7-15": "Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md.",
 }
 
+# These report-only aliases keep aggregate headings distinct from the existing
+# Unified cases named 7-14 and 7-15. The captured leaf IDs remain unchanged.
+NUMERIC_DISPLAY_LABELS = {"7-14": "7-17", "7-14.string": "7-18", "7-15": "7-19"}
+
 # (variant, schema, input token, expected JSON token). Expectations are decimal
 # arithmetic, independent of parser output; the spelling also drives unit tests.
 INTEGRAL_VARIANTS = [

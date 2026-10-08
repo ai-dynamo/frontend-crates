@@ -1,6 +1,6 @@
 # Numeric conformance follow-ups
 
-These reproduced failures remain red in the conformance report. PR #339 adds numeric cases, measured captures, and qualification tooling; parser fixes belong in follow-up work. The report groups numeric variants under `UNIFIED.7-14.*`, `UNIFIED.7-14.string.*`, `UNIFIED.7-15.*`, and their `TOOLCALLING.streamv1` equivalents; each popup names the full scenario ID listed below. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
+These reproduced failures remain red in the conformance report. PR #339 adds numeric cases, measured captures, and qualification tooling; parser fixes belong in follow-up work. The report uses aliases `7-17`, `7-18`, and `7-19` for grouped numeric results; these are headings, not case IDs, and each popup retains the canonical leaf ID. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
 
 ## TODO NUM-1: preserve decimal values through argument parsing
 
@@ -8,7 +8,7 @@ The original `0.7.14` qualification capture rounds exact decimal tokens when it 
 
 - Affected Unified families in the original capture: `deepseek_v4`, `deepseek_v41`, `glm47`, `kimi_k2`, and `muse_glimmer` each round all six values below; `gemma4` rounds five and drops the exponent argument, which is tracked separately under NUM-2. This is 35 failing Unified family/case results: five families round all six values, and Gemma rounds five.
 - Affected tool-stream families in the original capture: `deepseek_v4`, `glm47`, `harmony`, `harmony_text`, `kimi_k2`, `minimax_m3`, and `muse_glimmer` each round all six values below; `gemma4` rounds five and drops the exponent argument, which is tracked separately under NUM-2. This is 47 failing stream family/case results: seven families round all six values, and Gemma rounds five.
-- Case IDs: suffixes `round_down`, `round_up`, `quarter`, `exponent`, `small`, and `negative` under both `UNIFIED.7-15.*` and `TOOLCALLING.streamv1.7-15.*`.
+- Case IDs: the `round_down`, `round_up`, `quarter`, `exponent`, `small`, and `negative` leaves in the `7-15` family for Unified and tool-stream.
 - Historical Dynamo v1 jail captures also round all six values for `deepseek_v4`, `glm47`, `harmony_text`, `kimi_k2`, `kimi_k3`, `minimax_m2`, `minimax_m3`, and `qwen3_coder`, and round five values for `gemma4`, in each of `dynamo_v1-9.1.0`, `dynamo_v1-9.2.4`, and `dynamo_v1-9.2.8`: 159 additional rounding failures. Gemma's exponent drop is tracked separately under NUM-2.
 - Input: one native tool call with arguments `{"value":<token>}` and schema `{"type":"object","properties":{"value":{"type":"number"}}}`; the request does not declare `required`.
 - Expected and actual argument values from the original qualification source `9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9`, crate `dynamo-parsers-v2 0.7.14`, source SHA-256 `9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af`:
@@ -59,10 +59,10 @@ The Dynamo v1 jail emits no tool call for any fractional numeric case in Muse Gl
 
 ## TODO NUM-5: emit numbers for integer-only GLM schemas
 
-GLM returns integral decimal and exponent tokens as strings even when the request permits only integers. The expanded `7-14.*` probes retain numeric expected values so these schema violations remain red. GLM string preference under an integer/string union is separate: the new integral-number probes use integer-only schemas, and the three fractional-string probes retain the union.
+GLM returns integral decimal and exponent tokens as strings even when the request permits only integers. The expanded integer-valued `7-14` probes retain numeric expected values so these schema violations remain red. GLM string preference under an integer/string union is separate: the new integral-number probes use integer-only schemas, and the three fractional-string probes retain the union.
 
 - Concrete input: bare argument text `42.0` under `{"type":["integer","null"],"const":42}`. Expected `{"value":42.0}`; actual `{"value":"42.0"}`.
-- Affected Unified cases: all nine integral leaves under `UNIFIED.7-14.*`. Source-backed current captures and the exact allowlist in `conformance/unified-known-divergences.yaml` record the failures; the independent decimal oracle keeps their string-versus-number differences visible.
+- Affected Unified cases: all nine integral leaves in the `7-14` family, shown under report alias `7-17`. Source-backed current captures and the exact allowlist in `conformance/unified-known-divergences.yaml` record the failures; the independent decimal oracle keeps their string-versus-number differences visible.
 
 ## Historical captures that could not be measured
 

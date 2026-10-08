@@ -1478,9 +1478,9 @@ def test_numeric_columns_share_argument_heading_and_band(model_v2):
                             ("tab-toolcalling-streamv1", "Args")]:
         tab = _tab(model_v2, tab_id)
         columns = tab["columns"]
-        numeric_labels = {"7-14.*", "7-14.string.*", "7-15.*"}
+        numeric_labels = {"7-17", "7-18", "7-19"}
         numeric = [column for column in columns if column["label"] in numeric_labels]
-        assert [column["label"] for column in numeric] == ["7-14.*", "7-14.string.*", "7-15.*"]
+        assert [column["label"] for column in numeric] == ["7-17", "7-18", "7-19"]
         previous = next(column for column in columns
                         if column["group_key"] == numeric[0]["group_key"]
                         and column["label"] not in numeric_labels)
@@ -1549,13 +1549,14 @@ def test_bare_schema_cases_remain_independent_of_numeric_groups(model_v2):
             assert cell["case_id"] == f"UNIFIED.{label}"
             assert "variants" not in cell
             assert cell["status"] != "na"
-    numeric_columns = [c for c in tab["columns"] if c["label"] in {"7-14.*", "7-15.*"}]
-    assert len(numeric_columns) == 2
+    numeric_columns = [c for c in tab["columns"] if c["label"] in {"7-17", "7-18", "7-19"}]
+    assert len(numeric_columns) == 3
+    source_groups = {"7-17": "7-14.", "7-18": "7-14.", "7-19": "7-15."}
     for column in numeric_columns:
         for row in tab["rows"]:
             cell = row["cells"].get(column["sub"])
             if cell and cell.get("variants"):
-                assert all(leaf["case_id"].startswith("UNIFIED." + column["label"][:-1])
+                assert all(leaf["case_id"].startswith("UNIFIED." + source_groups[column["label"]])
                            for leaf in cell["variants"])
 
 
@@ -1572,7 +1573,7 @@ def test_nested_minimax_markup_stays_in_its_named_family_section(mode):
 def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_id):
     tab = _tab(model_v2, tab_id)
     columns = {column["label"]: column for column in tab["columns"]}
-    counts = {"7-14.*": 9, "7-14.string.*": 3, "7-15.*": 7}
+    counts = {"7-17": 9, "7-18": 3, "7-19": 7}
     schema_families = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
     for row in tab["rows"]:
         if row.get("section"):
@@ -1580,7 +1581,7 @@ def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_
         for label, count in counts.items():
             cell = row["cells"][columns[label]["sub"]]
             assert len(cell["variants"]) == count, (tab_id, row["family"], label)
-            assert (cell["status"] == "na") == (label == "7-14.string.*" and row["family"] not in schema_families)
+            assert (cell["status"] == "na") == (label == "7-18" and row["family"] not in schema_families)
 
 
 @pytest.mark.parametrize("mode", ["batch", "streamv1"])

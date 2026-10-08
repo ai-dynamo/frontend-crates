@@ -7,7 +7,12 @@ import hashlib
 import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
-from numeric_cases import NUMERIC_DESCRIPTIONS, applicable as numeric_applicable, numeric_group
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_DISPLAY_LABELS,
+    applicable as numeric_applicable,
+    numeric_group,
+)
 
 VARIANT_DESCRIPTIONS = {**NULL_DESCRIPTIONS, **NUMERIC_DESCRIPTIONS}
 
@@ -94,7 +99,7 @@ def group_null_variants(tab: dict) -> None:
             continue
         root = next((column for column in members if column["label"] == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_label = (parent + ".*" if parent in NUMERIC_DESCRIPTIONS
+        display_label = (NUMERIC_DISPLAY_LABELS[parent] if parent in NUMERIC_DESCRIPTIONS
                          else root["label"] if len(members) == 1 else parent)
         display_labels[root["label"]] = display_label
         display_descriptions[display_label] = description
