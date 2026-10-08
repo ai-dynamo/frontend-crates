@@ -175,6 +175,8 @@ def build_shards(
     *,
     history_root=None,
     trees=None,
+    excluded_unified_capture_dirs=frozenset(),
+    required_unified_capture_dirs=None,
 ):
     """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
     shards = []
@@ -196,7 +198,7 @@ def build_shards(
                 or (capture_root / "golden").is_dir()
             )
             required_capture_dirs = frozenset()
-            if complete_snapshot:
+            if complete_snapshot and required_unified_capture_dirs is None:
                 required_capture_dirs = frozenset(
                     path.name
                     for path in capture_root.iterdir()
@@ -204,6 +206,11 @@ def build_shards(
                     and path.name.startswith("dynamo_v2-")
                     and "+pr" not in path.name
                 )
+            elif complete_snapshot:
+                required_capture_dirs = frozenset(required_unified_capture_dirs)
+            # Keep explicitly excluded versions out of the completeness set; the
+            # history updater separately verifies that each exclusion already exists.
+            required_capture_dirs -= excluded_unified_capture_dirs
             update_options = {
                 "complete_snapshot": complete_snapshot,
                 "required_capture_dirs": required_capture_dirs,
@@ -673,6 +680,8 @@ def package_snapshot(
     unified_only=False,
     approved_stream_replacements=frozenset(),
     stream_capture_receipt=None,
+    excluded_unified_capture_dirs=frozenset(),
+    required_unified_capture_dirs=None,
 ):
     conformance_root = ROOT / "conformance"
     manifest_path = ROOT / MANIFEST_REL
@@ -706,9 +715,24 @@ def package_snapshot(
 
             print("\nBuilding shards…")
             if trees is not None:
-                shards = build_shards(loose_root, blobs_dir, prune, history_root=candidate_history, trees=trees)
+                shards = build_shards(
+                    loose_root,
+                    blobs_dir,
+                    prune,
+                    history_root=candidate_history,
+                    trees=trees,
+                    excluded_unified_capture_dirs=excluded_unified_capture_dirs,
+                    required_unified_capture_dirs=required_unified_capture_dirs,
+                )
             else:
-                shards = build_shards(loose_root, blobs_dir, prune, history_root=candidate_history)
+                shards = build_shards(
+                    loose_root,
+                    blobs_dir,
+                    prune,
+                    history_root=candidate_history,
+                    excluded_unified_capture_dirs=excluded_unified_capture_dirs,
+                    required_unified_capture_dirs=required_unified_capture_dirs,
+                )
 
             print(f"\nStaging store candidate for: {FIXTURES_DIR}")
             sync_store(
@@ -812,6 +836,18 @@ def main():
         metavar="IMPLEMENTATION-VERSION",
         help="Skip importing this Unified capture directory; all case IDs must already be in YAML history",
     )
+    ap.add_argument(
+        "--require-unified-capture-dir",
+        action="append",
+        default=None,
+        metavar="IMPLEMENTATION-VERSION",
+        help="Require this capture directory to contain all active Unified families and cases",
+    )
+    ap.add_argument(
+        "--allow-partial-unified-captures",
+        action="store_true",
+        help="Do not require every historical Dynamo capture to contain every active family and case",
+    )
     args = ap.parse_args()
     if args.stream_only and args.unified_only:
         ap.error("--stream-only and --unified-only cannot be combined")
@@ -819,6 +855,8 @@ def main():
         ap.error("scoped package modes cannot be combined with --prune")
     if args.replace_stream_case and not args.stream_only:
         ap.error("--replace-stream-case requires --stream-only")
+    if args.allow_partial_unified_captures and args.require_unified_capture_dir is not None:
+        ap.error("--allow-partial-unified-captures cannot be combined with --require-unified-capture-dir")
     invalid_replacements = [
         case_id
         for case_id in args.replace_stream_case
@@ -864,6 +902,14 @@ def main():
         unified_only=args.unified_only,
         approved_stream_replacements=frozenset(args.replace_stream_case),
         stream_capture_receipt=receipt,
+        excluded_unified_capture_dirs=frozenset(args.exclude_unified_capture_dir),
+        required_unified_capture_dirs=(
+            frozenset(args.require_unified_capture_dir)
+            if args.require_unified_capture_dir is not None
+            else frozenset()
+            if args.allow_partial_unified_captures
+            else None
+        ),
     )
 
 

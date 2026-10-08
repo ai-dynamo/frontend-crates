@@ -270,7 +270,7 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
     assert not (history_root / "families/gemma4/dynamo_v2-0.1.0.yaml").exists()
 
 
-def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
+def test_unified_only_package_stages_tree_and_exclusions(tmp_path, monkeypatch):
     conformance = tmp_path / "conformance"
     fixtures = conformance / "fixtures"
     history = conformance / "fixtures-unified-v2"
@@ -284,6 +284,8 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
     staged_trees = []
     built_trees = []
+    built_exclusions = []
+    built_required_captures = []
     monkeypatch.setattr(
         package_fixtures,
         "stage_fixtures",
@@ -292,7 +294,12 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(
         package_fixtures,
         "build_shards",
-        lambda _loose, _blobs, _prune, *, history_root, trees: built_trees.extend(trees) or [],
+        lambda _loose, _blobs, _prune, *, history_root, trees, excluded_unified_capture_dirs, required_unified_capture_dirs: (
+            built_trees.extend(trees)
+            or built_exclusions.extend(excluded_unified_capture_dirs)
+            or built_required_captures.extend(required_unified_capture_dirs)
+            or []
+        ),
     )
     monkeypatch.setattr(package_fixtures, "sync_store", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(package_fixtures, "merge_shards", lambda *_args, **_kwargs: [])
@@ -306,10 +313,14 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
         dry_run=True,
         prune=False,
         unified_only=True,
+        excluded_unified_capture_dirs=frozenset({"dynamo_v2-0.7.8"}),
+        required_unified_capture_dirs=frozenset({"dynamo_v2-0.7.16"}),
     )
 
     assert staged_trees == ["unified"]
     assert built_trees == ["unified"]
+    assert built_exclusions == ["dynamo_v2-0.7.8"]
+    assert built_required_captures == ["dynamo_v2-0.7.16"]
 
 
 @pytest.mark.parametrize(
@@ -319,17 +330,35 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
         "excluded_capture_dirs",
         "capture_dirs",
         "expected_required_capture_dirs",
+        "required_unified_capture_dirs",
     ),
     [
-        ((), False, frozenset(), (), frozenset()),
-        (("inputs", "golden"), True, frozenset(), (), frozenset()),
-        ((), False, frozenset({"vllm_python-0.27.1"}), (), frozenset()),
+        ((), False, frozenset(), (), frozenset(), None),
+        (("inputs", "golden"), True, frozenset(), (), frozenset(), None),
+        ((), False, frozenset({"vllm_python-0.27.1"}), (), frozenset(), None),
         (
             ("inputs", "golden"),
             True,
             frozenset({"dynamo_v2-0.7.8"}),
             ("dynamo_v2-0.7.8",),
-            frozenset({"dynamo_v2-0.7.8"}),
+            frozenset(),
+            None,
+        ),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset(),
+            ("dynamo_v2-0.7.8", "dynamo_v2-0.7.16"),
+            frozenset({"dynamo_v2-0.7.16"}),
+            frozenset({"dynamo_v2-0.7.16"}),
+        ),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset({"dynamo_v2-0.7.16"}),
+            ("dynamo_v2-0.7.16",),
+            frozenset(),
+            frozenset(),
         ),
     ],
 )
@@ -341,6 +370,7 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
     excluded_capture_dirs,
     capture_dirs,
     expected_required_capture_dirs,
+    required_unified_capture_dirs,
 ):
     stage = tmp_path / "stage"
     (stage / "unified").mkdir(parents=True)
@@ -383,6 +413,7 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
         blobs,
         history_root=history,
         excluded_unified_capture_dirs=excluded_capture_dirs,
+        required_unified_capture_dirs=required_unified_capture_dirs,
     )
 
     expected = {
@@ -422,7 +453,15 @@ def test_package_staging_failure_preserves_live_generation(
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
     monkeypatch.setattr(package_fixtures, "stage_fixtures", lambda _source, _destination: None)
 
-    def build_shards(_loose, _blobs, _prune, *, history_root):
+    def build_shards(
+        _loose,
+        _blobs,
+        _prune,
+        *,
+        history_root,
+        excluded_unified_capture_dirs,
+        required_unified_capture_dirs,
+    ):
         if failure_stage == "history":
             (history_root / "generation").write_text("partial history")
             raise OSError("injected failure after history mutation")

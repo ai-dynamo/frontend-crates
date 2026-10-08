@@ -371,6 +371,284 @@ changes:
           - kind: text
             text: </｜DSML｜tool_calls>
         - expected: []
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-11
+    stimulus:
+      ref: current
+      semantic_sha256: 145a58d50a3db718c315336821735c4083768e7fff0f645137031f89119f4488
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: '42'
+            utf8_plus: '42'
+            pointer: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"space": "42'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "utf8_plus": "42'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "pointer": "42'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-12
+    stimulus:
+      ref: current
+      semantic_sha256: d3277b74cceceee3c7bda2b129669db3c7d594eef39929bd1175ee9e62372241
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{\"x\":1}'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "array_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '[1,2]'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "quoted_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: \"hello\"
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "inline_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{\"x\":1}'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-9
+    stimulus:
+      ref: current
+      semantic_sha256: e5b0a91059802463886e7688c1cd90d80ff356729e2cc1c84fb7213ba2c182ef
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"payload": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": 1}}'
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-13
+    stimulus:
+      ref: current
+      semantic_sha256: 8935a0ed00a39e75c89fe78a26f62468d931c26d3aefde4309440fddaa283916
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: '42'
+            ratio: '3.5'
+            flag: 'true'
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": "42'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "ratio": "3.5'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "flag": "true'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "narrowed": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 42}
+        - expected: []
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: e1b753e60a4b76849fbf321fc31e4ab17d4d3d187690759206ae6c2905b01569
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. {"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"city": "Paris"}'
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: d8f3590b617177676ed52e86922241585457be0873fbfdd0c212e49aeccfae1a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
   guided_response_rejected_header_quote_ownership:
     case_key: UNIFIED.35-5
     stimulus:
@@ -388,6 +666,36 @@ changes:
         - expected:
           - kind: text
             text: x[{"name":"f","arguments":{"x":"ok"}}]
+        - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-16
+    stimulus:
+      ref: current
+      semantic_sha256: 96c011031fe10e203b36c868c1afa5842163abbcf8af3dcbfc11ae40d812f669
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 42}
+        - expected: []
         - expected: []
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-4
@@ -421,6 +729,261 @@ changes:
             name: echo
             arguments: '{"value": "Café"}'
         - expected: []
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    stimulus:
+      ref: current
+      semantic_sha256: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal
+        - expected:
+          - kind: reasoning
+            text: ' "'
+        - expected: []
+        - expected: []
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    stimulus:
+      ref: current
+      semantic_sha256: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: '" marker is part of the explanation.'
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    stimulus:
+      ref: current
+      semantic_sha256: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: '" marker is part of the explanation.'
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜tool_calls>
+        - expected: []
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    stimulus:
+      ref: current
+      semantic_sha256: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: '` header is part of the explanation.'
+        - expected: []
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    stimulus:
+      ref: current
+      semantic_sha256: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    stimulus:
+      ref: current
+      semantic_sha256: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    stimulus:
+      ref: current
+      semantic_sha256: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <｜DSML｜tool_calls> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: ' marker'' is part of the explanation.'
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    stimulus:
+      ref: current
+      semantic_sha256: c507debfe3be3c599e2625ca84e55aed8319caaee67d17d223e653c9c66ecefc
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜tool_calls>
+        - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-15
+    stimulus:
+      ref: current
+      semantic_sha256: d09b8dd2fb228b7cbb62f779af12f3e14d6a5c4a9e5af164b07e5741c1609498
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "enum_text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
   qwen_string_null:
     case_key: UNIFIED.7-4
     stimulus:
@@ -449,6 +1012,53 @@ changes:
           - kind: tool_call
             name: null
             arguments: null}
+        - expected: []
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-14
+    stimulus:
+      ref: current
+      semantic_sha256: 0a6b8cc56c72e491f32004ed5d83e187873f05028f0446e9657e99638560a30d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '42, "flag": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'false, "text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
         - expected: []
         - expected: []
 metadata_changes: {}

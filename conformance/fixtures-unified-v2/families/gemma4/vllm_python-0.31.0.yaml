@@ -1,0 +1,763 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.31.0
+document:
+  mode: unified
+changes:
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: '42'
+            utf8_plus: '42'
+            pointer: '42'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space": "42", "utf8_plus": "42'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "pointer": "42"}'
+        - expected: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: '42'
+            ratio: '3.5'
+            flag: 'true'
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": "42", "ratio": "3.5", "flag": "true'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '", "narrowed": 42}'
+        - expected: []
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: tool_call
+          name: ' "get_weather", "arguments": '
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+  guided_json_gt_in_argument_trailing_close:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"a > b"'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"a > b\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll use
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+  guided_json_orphan_tool_close_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_schema_error_nameless_element_trailing_close:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+            '}}, {"arguments"': {}
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"", "}}, {\"arguments\"": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{}}'
+        - expected: []
+  guided_json_schema_error_not_a_call_trailing_close:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"shape"}'
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "shape"}'
+            arguments: '{}'
+        - expected: []
+  guided_json_syntax_error_trailing_close:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+        - expected: []
+        - expected: []
+  guided_json_syntax_error_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': ''
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: null
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"\"city\"": ""}'
+        - expected: []
+  guided_json_tool_close_after_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+        - expected: []
+  guided_json_tool_open_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+  guided_json_wrapped_in_tool_markup:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: '"Paris"}'
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "Paris"}'
+            arguments: '{}'
+  guided_response_quoted_control_braces_required:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: '"get_weather", "arguments":'
+          arguments:
+            '"city"': '"Paris"'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: ' "get_weather", "arguments": '
+            arguments: '{"\"city\"": "\"Paris\"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+  native_quoted_control_in_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quoted_word_control:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+        - expected: []
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check that. '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check that. '
+        - expected: []
+        - expected: []
+  retired__31_40:
+    case_key: UNIFIED.34-11
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before call:f{x:<|"|>thought
+
+            quoted'
+        - kind: text
+          text: '<|"|>} after[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before call:f{x:'
+        - expected:
+          - kind: reasoning
+            text: <|"|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'thought
+
+              quoted'
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|"|>
+        - expected:
+          - kind: text
+            text: '}'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__50_a:
+    absent: true
+  retired__50_b:
+    absent: true
+  retired__50_c:
+    absent: true
+  retired__51_a:
+    absent: true
+  retired__51_b:
+    absent: true
+  retired__muse_1:
+    absent: true
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_markup_only_emits_nothing:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first thoughtthought
+
+            second thought'
+        - kind: text
+          text: interlude done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first thought
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'interlude '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: second thought
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "flag": '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'false, "text": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_gt_in_argument_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_gt_in_argument_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_narrated_invoke_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_orphan_tool_close_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_nameless_element_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_nameless_element_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_not_a_call_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_not_a_call_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_syntax_error_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_syntax_error_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_tool_close_after_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_tool_open_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_wrapped_in_tool_markup:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  orphan_close_after_prose:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  retired__31_40:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  tool_block_never_closed_then_text:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  tool_markup_only_emits_nothing:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  two_reason_spans:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null

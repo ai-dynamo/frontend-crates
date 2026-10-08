@@ -192,19 +192,45 @@ def test_history_partial_new_peer_capture_inherits_omitted_rows(tmp_path):
 
 def test_history_rejects_excluded_capture_with_unrecorded_case(tmp_path):
     root = _store(tmp_path / "store")
-    _write_capture(root, "0.5.0", {"text_only": _change()}, implementation="vllm_python")
     _add_backfill_case(root)
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    _add_loose_backfill_record(loose, "0.5.0", "captured", implementation="vllm_python")
+    omitted = loose / "dynamo_v2-0.5.1/gemma4"
+    omitted.mkdir(parents=True)
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    (omitted / prior.name).write_bytes(prior.read_bytes())
+    _add_loose_backfill_record(loose, "0.5.1", "captured")
 
     with pytest.raises(ValueError, match="unrecorded cases: new_case"):
         unified_history.update_store_from_loose(
             root,
             loose,
             complete_snapshot=False,
-            excluded_capture_dirs={"vllm_python-0.5.0"},
+            excluded_capture_dirs={"dynamo_v2-0.5.1"},
         )
+
+
+def test_history_excludes_sparse_capture_against_latest_prior_checkpoint(tmp_path):
+    root = _store(tmp_path / "store")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    omitted = loose / "dynamo_v2-0.5.1/gemma4"
+    omitted.mkdir(parents=True)
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    (omitted / prior.name).write_bytes(prior.read_bytes())
+
+    unified_history.update_store_from_loose(
+        root,
+        loose,
+        complete_snapshot=False,
+        excluded_capture_dirs={"dynamo_v2-0.5.1"},
+    )
+
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert "dynamo_v2-0.5.1" not in history.captures
+    assert history.resolve("dynamo_v2-0.5.2")["text_only"]["observation"] == _change()[
+        "observation"
+    ]
 
 
 def test_history_excluded_capture_keeps_yaml_result_for_known_case(tmp_path):
@@ -233,6 +259,51 @@ def test_history_excluded_capture_keeps_yaml_result_for_known_case(tmp_path):
         "vllm_python-0.5.0"
     )
     assert resolved["text_only"]["observation"] == _change()["observation"]
+
+
+def test_history_excluded_capture_does_not_parse_capture_stimulus(tmp_path):
+    root = _store(tmp_path / "store")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    document = unified_history.load_yaml(path)
+    document["cases"]["UNIFIED.1-1"]["capture_stimulus"] = {"invalid": {}}
+    path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    unified_history.update_store_from_loose(
+        root,
+        loose,
+        complete_snapshot=False,
+        excluded_capture_dirs={"dynamo_v2-0.5.0"},
+    )
+
+    resolved = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
+        "dynamo_v2-0.5.0"
+    )
+    assert resolved["text_only"]["observation"] == _change()["observation"]
+
+
+def test_history_imports_explicit_partial_capture_stimulus(tmp_path):
+    root = _store(tmp_path / "store")
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    new_capture = loose / "dynamo_v2-0.5.1/gemma4"
+    new_capture.mkdir(parents=True)
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    path = new_capture / prior.name
+    path.write_bytes(prior.read_bytes())
+    document = unified_history.load_yaml(path)
+    record = document["cases"]["UNIFIED.1-1"]
+    record["capture_input"] = {"input": "older request"}
+    record["capture_stimulus"] = {"partial": {"input": "older request"}}
+    path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
+
+    resolved = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.5.1")
+    assert resolved["text_only"]["stimulus"] == {
+        "partial": {"input": "older request"}
+    }
 
 
 def test_history_complete_peer_snapshot_rejects_omitted_recorded_active_rows(tmp_path):

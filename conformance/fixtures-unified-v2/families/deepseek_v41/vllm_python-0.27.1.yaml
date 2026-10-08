@@ -368,6 +368,404 @@ changes:
           - kind: reasoning
             text: </｜DSML｜ calls>
         - expected: []
+  deepseek_v41_json_invocation_body:
+    case_key: UNIFIED.deepseek-1
+    stimulus:
+      ref: current
+      semantic_sha256: 57b69f6d50c202b9526bf4eb2b54f844bdee5fa4856b9fda9e2b31e4a678e171
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<｜DSML｜ calls>
+
+            <｜DSML｜ invoke name="inspect">
+
+            {"value": " café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}
+
+            </｜DSML｜ invoke>
+
+            <｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>
+
+            </｜DSML｜ calls>'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '
+
+              <｜DSML｜ invoke name="inspect">'
+        - expected:
+          - kind: reasoning
+            text: '
+
+              {"value": " café 🐈'
+        - expected:
+          - kind: reasoning
+            text: ' </｜DSML｜ invoke>'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' </｜DSML｜ calls>'
+        - expected:
+          - kind: reasoning
+            text: ' &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}'
+        - expected:
+          - kind: reasoning
+            text: '
+
+              </｜DSML｜ invoke>'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '
+
+              <｜DSML｜ invoke name="done">'
+        - expected:
+          - kind: reasoning
+            text: '{}'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '
+
+              </｜DSML｜ calls>'
+        - expected: []
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-11
+    stimulus:
+      ref: current
+      semantic_sha256: d63909a461fbba0ae72018b7840f5fd44774a46ec7755d1d31d82248369141a0
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="space" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="utf8_plus" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="pointer" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="space" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="utf8_plus" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="pointer" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-12
+    stimulus:
+      ref: current
+      semantic_sha256: 96a4f959e50746e593b8b6b6df99322146ff3a92320d003ab53899116acdbaac
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="object_text" string="true">{"x":1}</｜DSML｜ parameter><｜DSML｜ parameter name="array_text" string="true">[1,2]</｜DSML｜ parameter><｜DSML｜ parameter name="quoted_text" string="true">"hello"</｜DSML｜ parameter><｜DSML｜ parameter name="inline_text" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="object_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="array_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: '[1,2]'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="quoted_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: '"hello'
+        - expected:
+          - kind: reasoning
+            text: '"</｜DSML｜ parameter>'
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="inline_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-9
+    stimulus:
+      ref: current
+      semantic_sha256: 6625217533798ad82809633ab0bbe9aceedda3bb51881ed1d65ec50d9a935034
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="payload" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="payload" string="false">
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-13
+    stimulus:
+      ref: current
+      semantic_sha256: 42cd1f71174668a4923c9c5e4c06824e7d7ad3915b0e173c46857314d5cbeb53
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="ratio" string="false">3.5</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">true</｜DSML｜ parameter><｜DSML｜ parameter name="narrowed" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="count" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="ratio" string="false">
+        - expected:
+          - kind: reasoning
+            text: '3.5'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="flag" string="false">
+        - expected:
+          - kind: reasoning
+            text: 'true'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="narrowed" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: 3edf2509bbc1da5b457cd11dd01da6618313b19c777be1a84915522ab738e98d
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. {"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜ calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"city": "Paris"}'
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: 36e8859f9ee32d67d9f12e9efa36ba94756582276bba3fe5775d8b2931037fa5
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜ calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-16
+    stimulus:
+      ref: current
+      semantic_sha256: c06a645796c37e06cd57ffa45180bfa4d3dc49a813a1796e29db881490b25c8b
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="count" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-4
     stimulus:
@@ -382,6 +780,258 @@ changes:
         - expected:
           - kind: reasoning
             text: <｜DSML｜ calls><｜DSML｜ invoke name="bad"><｜DSML｜ parameter name="value" string="false">{"x":"unfinished</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="value" string="true">é</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="value" string="true">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        - expected: []
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    stimulus:
+      ref: current
+      semantic_sha256: f7fb476ee8d0f41048d83f0bd1d797e6a998dcbb0310ba3758aea59bf2dffc0f
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal
+        - expected:
+          - kind: reasoning
+            text: ' "<｜DSML｜ calls>'
+        - expected:
+          - kind: reasoning
+            text: '" marker is part of the explanation.'
+        - expected: []
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    stimulus:
+      ref: current
+      semantic_sha256: 9e372d116ce21f69d07b52c0c5d1b166af41fd250528afc67624d6fc0af41746
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜ calls>'
+        - expected:
+          - kind: text
+            text: '" marker is part of the explanation.'
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    stimulus:
+      ref: current
+      semantic_sha256: a18e3d12277c6e233190e207c3a17f494a495ad98dadc6ce5fd5804f290b6a1f
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜ calls>'
+        - expected:
+          - kind: text
+            text: '" marker is part of the explanation.'
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected: []
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    stimulus:
+      ref: current
+      semantic_sha256: 804a6ae778340a69d8f4bffc0ad11884495b6cec7931fb73ee506fc69c136c0c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">` header is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: '` header is part of the explanation.'
+        - expected: []
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    stimulus:
+      ref: current
+      semantic_sha256: f5b0287f169b910b83926fbcec6d865d81f35d5c688bfae25cf94a629f9ae0fc
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected:
+          - kind: reasoning
+            text: ' <｜DSML｜ calls>'
+        - expected:
+          - kind: reasoning
+            text: ' marker'' stays quoted.'
+        - expected: []
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    stimulus:
+      ref: current
+      semantic_sha256: 0878d362793a1d9602445ab1dd6d82d173c34979925dd31f420a46a457b57cf7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    stimulus:
+      ref: current
+      semantic_sha256: 0185121ac1442ca05f7d42759dc78051a8646e4e4c15f014b1fbaa8132f008af
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <｜DSML｜ calls> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' marker'' is part of the explanation.'
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    stimulus:
+      ref: current
+      semantic_sha256: 1dcc856116db867c64ed54bbbbddeb4234d3c45b13d83b8c312a1b502343b76f
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-15
+    stimulus:
+      ref: current
+      semantic_sha256: e51043efc92daa4828ab86230a847e8967703bbd69deaafa619272d39999b955
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="const_text" string="true">null</｜DSML｜ parameter><｜DSML｜ parameter name="enum_text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="const_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: 'null'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="enum_text" string="true">
+        - expected:
+          - kind: reasoning
+            text: 'null'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
         - expected: []
   prefilled_reasoning_then_text:
     case_key: UNIFIED.40-4
@@ -605,6 +1255,57 @@ changes:
         - expected:
           - kind: reasoning
             text: <｜DSML｜ parameter name="city" string="false">
+        - expected:
+          - kind: reasoning
+            text: 'null'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ calls>
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-14
+    stimulus:
+      ref: current
+      semantic_sha256: 82fd9413a42f27132074935b121f04112e58e8bfb0485b286a94be55ed88ac0a
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">false</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="capture_payload">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="count" string="false">
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="flag" string="false">
+        - expected:
+          - kind: reasoning
+            text: 'false'
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="text" string="true">
         - expected:
           - kind: reasoning
             text: 'null'

@@ -8,6 +8,10 @@ document:
   mode: unified
 changes:
   malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 6fc5ae94578218d433a32cfefaaf22bc1a65665b45da5c28bcb0338ce615f5a7
     observation:
       value:
         assembled:
@@ -38,10 +42,6 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
-    case_key: UNIFIED.5-4
-    stimulus:
-      ref: current
-      semantic_sha256: 6fc5ae94578218d433a32cfefaaf22bc1a65665b45da5c28bcb0338ce615f5a7
 metadata_changes: {}
 document_overrides:
   guided_quoted_reasoning_closer_named:

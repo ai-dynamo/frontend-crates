@@ -8,16 +8,16 @@ document:
   mode: unified
 changes:
   malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
     observation:
       value:
         assembled: []
         chunks:
         - expected: []
         - expected: []
-    case_key: UNIFIED.5-4
-    stimulus:
-      ref: current
-      semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
 metadata_changes: {}
 document_overrides:
   guided_quoted_reasoning_closer_named:

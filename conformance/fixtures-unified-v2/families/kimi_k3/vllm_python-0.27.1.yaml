@@ -1075,6 +1075,387 @@ changes:
           - kind: reasoning
             text: <|sep|>
         - expected: []
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-11
+    stimulus:
+      ref: current
+      semantic_sha256: dd0a8d99fe266f69c3ef8424a5b15ff090b6ad048916a0ce3d01f50fe6c8c11f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="space" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="utf8_plus" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="pointer" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-12
+    stimulus:
+      ref: current
+      semantic_sha256: 6aa5bfef852c01e2225dd6138186aeae282c9012aff114023b81f3959bd3591b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="object_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="array_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '[1,2]'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="quoted_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '"hello"'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="inline_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-9
+    stimulus:
+      ref: current
+      semantic_sha256: 1c20ec3b3654a29f84512699a420f6ef0f4deefd26709ec5a38c3c48fa1edf97
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="payload" type="object"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '{"x":1}'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-13
+    stimulus:
+      ref: current
+      semantic_sha256: cfaf0f1e543b9ca86babeef0305cce4ccfa6af0bd89c6f2fa53a89b6004d6651
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="count" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="ratio" type="number"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '3.5'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="flag" type="boolean"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: 'true'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="narrowed" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
   guided_json_after_reasoning:
     observation:
       value:
@@ -1798,6 +2179,114 @@ changes:
           - kind: reasoning
             text: <|sep|>
         - expected: []
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: 82cf4277658e3bbeb15b49d67608b01b86b822bed9d5d9edaa62ba808eba56db
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.<|close|>think<|sep|>{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: <|close|>
+        - expected:
+          - kind: text
+            text: think
+        - expected:
+          - kind: text
+            text: <|sep|>
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: a66a24d6f085ae85239a2c5daef2ba056d637e8c90116a03e0d48883e99680b5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.<|close|>think<|sep|>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: <|close|>
+        - expected:
+          - kind: text
+            text: think
+        - expected:
+          - kind: text
+            text: <|sep|>
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: df889cf810d8602944a347e0a883a3ca330fa35ec049b06c63294d6750e5b962
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|open|>call { example }" stays visible. {"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|open|>call { example }" stays visible. {"city": "Paris"}'
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: 9bf343e0b1ab1d9d2f0bc422d25a744d8b36d20eb04133759dcbfeeb0981d400
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|open|>call { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|open|>call { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
   interstitial_text:
     observation:
       value:
@@ -2414,6 +2903,65 @@ changes:
           - kind: reasoning
             text: <|sep|>
         - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-16
+    stimulus:
+      ref: current
+      semantic_sha256: 2869ce6f2f2008374b87ee12c7b319973059b6e5902d92af72dc02df694c0ab5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="count" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-4
     stimulus:
@@ -2597,6 +3145,289 @@ changes:
         - expected:
           - kind: reasoning
             text: '2'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    stimulus:
+      ref: current
+      semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<|open|>call" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call" marker is part of the explanation.
+        - expected: []
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    stimulus:
+      ref: current
+      semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|open|>call" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>call" marker is part of the explanation.
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    stimulus:
+      ref: current
+      semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|open|>call" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>call" marker is part of the explanation.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    stimulus:
+      ref: current
+      semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    stimulus:
+      ref: current
+      semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|open|>call marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call marker' stays quoted.
+        - expected: []
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    stimulus:
+      ref: current
+      semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <|open|>call marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>call marker' stays quoted.
+        - expected: []
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    stimulus:
+      ref: current
+      semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <|open|>call marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>call marker' is part of the explanation.
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    stimulus:
+      ref: current
+      semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-15
+    stimulus:
+      ref: current
+      semantic_sha256: 9415b420875e30667e71b25ec444a4f03e1f53802b3e03c2775ba90d1745ace0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="const_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: 'null'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="enum_text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: 'null'
         - expected: []
         - expected:
           - kind: reasoning
@@ -5559,6 +6390,101 @@ changes:
             text: response
         - expected:
           - kind: text
+            text: <|sep|>
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-14
+    stimulus:
+      ref: current
+      semantic_sha256: 589b05fe34b5babd65ebdb8963f2caef5c258de51adcc00b0212142a41e74edb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>tools
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>call tool="capture_payload" index="1"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="count" type="integer"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: '42'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="flag" type="boolean"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: 'false'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|open|>argument key="text" type="string"
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected:
+          - kind: reasoning
+            text: 'null'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>argument
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>call
+        - expected:
+          - kind: reasoning
+            text: <|sep|>
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|close|>tools
+        - expected:
+          - kind: reasoning
             text: <|sep|>
         - expected: []
 metadata_changes: {}
