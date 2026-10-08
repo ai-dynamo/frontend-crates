@@ -35,6 +35,7 @@ pub mod models;
 pub mod processor;
 pub mod registry;
 pub mod token_layout;
+pub mod video;
 
 /// A multimodal preprocessing failure.
 #[derive(Debug)]
