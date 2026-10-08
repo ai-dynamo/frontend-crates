@@ -24,7 +24,17 @@ import yaml
 
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
-from numeric_cases import NUMERIC_VARIANTS, NUMERIC_DESCRIPTIONS, NumericLiteral, applicable, arguments_json
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_VARIANTS,
+    SCHEMA_DIRECTED_FAMILIES,
+    NumericLiteral,
+    applicable,
+    arguments_json,
+    numeric_description,
+    numeric_expected,
+    numeric_schema,
+)
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
@@ -2026,8 +2036,8 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
-# GLM's XML values have no native type marker. Keep these references unresolved
-# in the request so the parser must consult definitions on the parameters root.
+# Only schema-directed grammars can distinguish a reference from the equivalent
+# inline type. Typed JSON passthrough would duplicate the ordinary null probes.
 EDGE += [
     (
         scenario,
@@ -2038,19 +2048,20 @@ EDGE += [
         {"finish_reason": "stop"},
         OnlyFamilies({
             family: (
-                _NULL_TEXT_INPUTS[family],
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+            for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
+        }}] for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
-         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+         '`city` uses a local $ref to the tool parameters root; resolving its nullable definition must turn bare null text into JSON null.'),
         ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
          'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
@@ -2058,19 +2069,20 @@ EDGE += [
 
 EDGE.append((
     "arg_null_mixed_labels",
-    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
     ["I7"],
     [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop"},
     OnlyFamilies({family: (
-        "<tool_call>set_labels"
+        ("<tool_call>set_labels"
         "<arg_key>label</arg_key><arg_value>null</arg_value>"
         "<arg_key>note</arg_key><arg_value>null</arg_value>"
-        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
-    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>") if family == "glm47"
+        else r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
+    ) for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
@@ -2246,15 +2258,17 @@ EDGE.append((
 
 
 EDGE += [
-    (scenario, NUMERIC_DESCRIPTIONS[label.split(".")[0]] + f" Input {raw}; expected {expected}.",
+    (scenario, numeric_description(label) + f" Input {raw}; expected {expected}.",
      ["I7"], [{"kind": "tool_call", "name": "get_weather", "arguments": arguments_json(expected)}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      OnlyFamilies({family: (r_tool(family, "get_weather", "value", NumericLiteral(raw), 0),
-                             VLLM_UNCAPTURABLE.get(family, M), M)
+                             VLLM_UNCAPTURABLE.get(family, M), M,
+                             [{"kind": "tool_call", "name": "get_weather",
+                               "arguments": arguments_json(numeric_expected(family, label, raw, expected))}])
                    for family in FAMILIES if applicable(family, label)}),
      {family: [{"name": "get_weather", "parameters": {
-         "type": "object", "properties": {"value": schema}}}]
+         "type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}]
       for family in FAMILIES if applicable(family, label)})
     for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
 ]

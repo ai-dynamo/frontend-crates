@@ -1053,4 +1053,22 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null

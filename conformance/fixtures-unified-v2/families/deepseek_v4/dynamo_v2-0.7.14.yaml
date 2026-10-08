@@ -210,5 +210,165 @@ changes:
             complete: true
         - expected: []
         - expected: []
-metadata_changes: {}
-document_overrides: {}
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: c9221fef971c170c143d9d0ffd7ed94aff21dcec8d994bab7c4395282697e1e6
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-14.const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 0378d6735b79f6d4c37c1ce5858c003bcefe1044299e17d8d1208beefbdafe71
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-14.const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: e6783a9680467a3037f57fbf2d0ed809ea6c0fc7a8b35539cdb661a9ff3ec76d
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-14.enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: eaf10098d97d7958150123953b335b28b2b6bb47b8598ba1f833d41bef2dc414
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-14.enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: c416b8cd11e444a96f8800260563c8fbb6a7918c6b265d189bb63354a2f4ab1f
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-14.large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: c21262407fdd7a5b3802305d57abf41a4743b02e59d48e99230e26ba2cde95a7
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-14.large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 0770f7e6c451e79d66d1f7d6470043059c667c2eb2f2d8e74fbb3d84b1419418
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-14.negative
+    stimulus:
+      ref: current
+      semantic_sha256: 429c6245c94017074feaa6e9721c0be316fccfd1a04f87397dc9efece457187f
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-14.negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 6e2d71e5d30630e3c7bc916c997c19fd01ba20fd1cfd2afdb5e1900f6489619c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-14.zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: 95592bc113dbfec9aaf52792d6deeb63ef23c15f7a14775ed3ce5ed59e8d0a37
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+metadata_changes:
+  arg_null_mixed_labels: {}
+  arg_numeric_14_const_decimal: {}
+  arg_numeric_14_const_exponent: {}
+  arg_numeric_14_enum_decimal: {}
+  arg_numeric_14_enum_exponent: {}
+  arg_numeric_14_large_decimal: {}
+  arg_numeric_14_large_exponent: {}
+  arg_numeric_14_negative: {}
+  arg_numeric_14_negative_exponent: {}
+  arg_numeric_14_zero_underflow: {}
+document_overrides:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.14
+      capture_origin: null
+      inherited_from: null

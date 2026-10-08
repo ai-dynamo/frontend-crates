@@ -13,10 +13,75 @@ gemma4:
       actual: ''
   UNIFIED.arg_numeric_15_exponent.gemma4:
     golden:
-      note: "TODO NUM-2 in numeric-failures.md: Gemma drops exponent-form arguments. Keep the numeric report red until the parser is fixed."
-      actual: "tool_call(get_weather, {})"
+      note: 'TODO NUM-2 in numeric-failures.md: Gemma drops exponent-form arguments. Keep the numeric report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_const_exponent.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_enum_exponent.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_large_decimal.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":9007199254740992.0})
+  UNIFIED.arg_numeric_14_large_exponent.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_negative.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_negative_exponent.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
+  UNIFIED.arg_numeric_14_zero_underflow.gemma4:
+    golden:
+      note: 'TODO NUM-1/NUM-2 in numeric-failures.md: Gemma rounds integer-valued decimal text or drops exponent-form arguments. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {})
 deepseek_v41:
   UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
     golden:
       note: Malformed object parameter raises before either later echo call; parser fix is outside this capture change.
       actual: 'ERROR: native push: EOF while parsing a string at line 1 column 16'
+glm47:
+  UNIFIED.arg_numeric_14_const_decimal.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"42.0"})
+  UNIFIED.arg_numeric_14_const_exponent.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"4.2e1"})
+  UNIFIED.arg_numeric_14_enum_decimal.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"42.0"})
+  UNIFIED.arg_numeric_14_enum_exponent.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"4.2e1"})
+  UNIFIED.arg_numeric_14_large_decimal.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"9007199254740993.0"})
+  UNIFIED.arg_numeric_14_large_exponent.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"9.007199254740993e15"})
+  UNIFIED.arg_numeric_14_negative.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"-4.2E+1"})
+  UNIFIED.arg_numeric_14_negative_exponent.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"4200e-2"})
+  UNIFIED.arg_numeric_14_zero_underflow.glm47:
+    golden:
+      note: 'TODO NUM-5 in numeric-failures.md: GLM emits a string where the request requires an integer. Keep the report red until the parser is fixed.'
+      actual: tool_call(get_weather, {"value":"0.0e-400"})

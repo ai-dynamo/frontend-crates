@@ -34,5 +34,531 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 0787ab8c2229e3c2d6391cdb11e439f4e66a0f0fb22982c92550526404a2caee
-metadata_changes: {}
-document_overrides: {}
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: abc10d92399449907b75536e57b210c1aed5b44d0486d0c205519b4e9e69393c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-14.const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: e60b53a491ed777f80e713a0f51ca6b495f28e59eb437792cc4dbe8eaa098b96
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-14.const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 5b39391dc70707a54733238ddd10dd60c7b9b7ecea8a9885c75b51b1a6126a78
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-14.enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 55758f18452d34a2ad8069c421e365e1be358dda549cba36906fa586c45ff821
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-14.enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 1f7bf8250db98429529e2bce07cbe08cec5ebe232690491aa1a6b90e6f37eb8a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-14.large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 7fb4684c887b9c3703d785720702e96423535467fc665ad075224418b28c6e65
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-14.large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 770bf45b4b0cc39aa82006a4c69320775dedfd775f2d9ebc28c2c2ddadbce0f2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.007199254740993e15}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-14.negative
+    stimulus:
+      ref: current
+      semantic_sha256: 1b57f8afc1cc8374c618d5e90112b2005d478b3b584cabdca91c00ad3670634d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-4.2E+1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-14.negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 3efeb0d12f7ca3aab2b625fbd37f7fabdf43bacf9ce374f43c1583b53ea5f013
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4200e-2}'
+            complete: true
+        - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-14.zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: a07610dfd8c6274463953fbca6a67af0b1f0936e76819d28fc92ca111ebc6c56
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.0e-400}'
+            complete: true
+        - expected: []
+metadata_changes:
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_zero_underflow:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        git_commit: e95987e402a103c190dd8e99b86fa96b9f3594b0
+      inherited_from: null

@@ -2268,4 +2268,94 @@ changes:
             text: done
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.9
+      capture_origin:
+        crate_version: 0.7.9
+        source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+        git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+      inherited_from: null

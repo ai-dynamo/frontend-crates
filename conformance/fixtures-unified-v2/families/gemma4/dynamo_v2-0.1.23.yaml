@@ -2155,6 +2155,206 @@ changes:
             arguments: '{"value":0.1}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
     case_key: UNIFIED.7-15.small
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 4872b7b85e01d931049fa9c3b0ab9508cf173de856c9b8674c498dbe204df32c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-14.const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: f950e2ad9f6f1b8f7c37b6c29883f1b60cb953560fd561f0ae7e8283ed5af1c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-14.const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 04fd2a2e7d8d3e55f9e25cbe71349c7bfd0149a1be763715902ac6d64a9bb6b2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-14.enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: e5174405a9b9ddc1fee875c612ce8831ed05cf9490882a9104baa3606350e568
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-14.enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 0938292b56798c1f7d7e47170e99bfb78a06da3c48790ae206ba90f0251fa2b3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-14.large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: bf80223d35bbb51976540595cb68cfd1f8a1b98c4ff3777c84091bad025fc872
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.0}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-14.large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 7de650daac5940935de924586d0e16e1649a0a227ceef7b2cf7f713324617ad4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-14.negative
+    stimulus:
+      ref: current
+      semantic_sha256: 2d0fab1de452ca15ecc6fbbf3bb596db5fd0bd8a264c4b039d5081a568240625
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-14.negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 963801f8f31fa2fb2b1881a45c3356429c22ac6c00439d6ab23eea16227e5a45
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-14.zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: f740ab8cd8ee265acec8bc6937bb8f62134d04597555013e72d4e0ec47490bc1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
 metadata_changes:
   arg_marker_in_string:
     init:
@@ -2686,6 +2886,56 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_zero_underflow:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
 document_overrides:
   retired__50_a:
     parser_path: split
@@ -2697,3 +2947,93 @@ document_overrides:
     parser_path: split
   retired__51_b:
     parser_path: split
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null

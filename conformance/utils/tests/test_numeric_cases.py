@@ -33,7 +33,7 @@ def test_numeric_oracle_and_native_input_are_independent(scenario, label, schema
         assert (key in cases) == applicable(family, label)
         if key in cases:
             assert raw in cases[key]["input"]
-            assert cases[key]["golden"][0]["arguments"] == '{"value":' + expected + '}'
+            assert canonical_arguments(cases[key]["golden"][0]["arguments"]) == canonical_arguments('{"value":' + expected + '}')
             if family != "deepseek_v41":
                 stream_family = "qwen3_coder" if family == "qwen3" else family
                 other = stream.build_cases(stream_family)["TOOLCALLING.streamv1." + label]
@@ -85,8 +85,8 @@ def test_minimax_m2_is_stream_only():
     assert len(stream.build_cases("minimax_m2")) == len(NUMERIC_VARIANTS)
 
 
-def test_integral_conversion_inapplicability_is_distinct_from_missing_capture():
-    labels = ["7-14.const_decimal", "7-14.const_exponent"]
+def test_string_fallback_inapplicability_is_distinct_from_missing_capture():
+    labels = ["7-14.fraction_near_integer", "7-14.fraction_fallback"]
 
     def missing(label, family):
         return {
@@ -110,14 +110,14 @@ def test_integral_conversion_inapplicability_is_distinct_from_missing_capture():
 
     group_null_variants(tab)
 
-    cell = tab["rows"][0]["cells"]["7-14.const_decimal"]
+    cell = tab["rows"][0]["cells"]["7-14.fraction_near_integer"]
     assert cell["status"] == "na"
     assert cell["kind"] == "cell"
     assert cell["cmp"]["dynamo_v2-0.7.14"]["na"] == 1
     assert all(variant["status"] == "na" for variant in cell["variants"])
     assert all(
         variant["tooltip"]["na_note"]
-        == "This family does not use the shared integral-decimal conversion contract."
+        == "This grammar does not coerce untyped fractional text through an integer/string schema."
         for variant in cell["variants"]
     )
     assert cell_state(cell, tab["candidates"][0])[0] == "na"
@@ -130,7 +130,7 @@ def test_integral_conversion_inapplicability_is_distinct_from_missing_capture():
         "stats": {},
     }
     group_null_variants(supported)
-    supported_cell = supported["rows"][0]["cells"]["7-14.const_decimal"]
+    supported_cell = supported["rows"][0]["cells"]["7-14.fraction_near_integer"]
     assert supported_cell["status"] != "na"
     assert cell_state(supported_cell, supported["candidates"][0])[0] == "empty"
     assert all(variant["kind"] == "missing" for variant in supported_cell["variants"])
@@ -175,8 +175,35 @@ def test_numeric_groups_do_not_claim_independent_schema_cases(label):
 
 
 def test_every_authored_numeric_leaf_keeps_its_group():
-    for _, label, *_ in NUMERIC_VARIANTS:
-        assert numeric_group(label) == label.split(".", 1)[0]
+    for _, label, _, _, expected in NUMERIC_VARIANTS:
+        assert numeric_group(label) == ("7-14.string" if expected.startswith('"') else label.split(".", 1)[0])
+
+
+def test_numeric_applicability_separates_numbers_from_schema_string_coercion():
+    for family in set(unified.FAMILIES) | set(stream.V2_FAMILIES):
+        cases = stream.build_cases("qwen3_coder" if family == "qwen3" else family)
+        for _, label, _, raw, expected in NUMERIC_VARIANTS:
+            if expected.startswith('"'):
+                assert applicable(family, label) == (family in {
+                    "qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"})
+            else:
+                assert applicable(family, label)
+                case = cases["TOOLCALLING.streamv1." + label]
+                assert matches_schema(json.loads(raw, parse_float=Decimal),
+                                      case["tools"][0]["parameters"]["properties"]["value"])
+                assert canonical_arguments('{"value":' + raw + '}') == canonical_arguments('{"value":' + expected + '}')
+
+
+def test_new_glm_and_m3_integral_probes_do_not_require_numeric_union_preference():
+    for family in ("glm47", "minimax_m3"):
+        numeric = stream.build_cases(family)["TOOLCALLING.streamv1.7-14.large_decimal"]
+        assert numeric["tools"][0]["parameters"]["properties"]["value"] == {"type": "integer"}
+        fallback = stream.build_cases(family)["TOOLCALLING.streamv1.7-14.fraction_fallback"]
+        assert fallback["tools"][0]["parameters"]["properties"]["value"] == {"type": ["integer", "string"]}
+        assert fallback["golden"]["calls"][0]["arguments"] == '{"value":"42.5"}'
+    for family in ("qwen3_coder", "minimax_m2"):
+        original = stream.build_cases(family)["TOOLCALLING.streamv1.7-14.large_decimal"]
+        assert original["tools"][0]["parameters"]["properties"]["value"] == {"type": ["integer", "string"]}
 
 
 @pytest.mark.parametrize("family", ["qwen3", "deepseek_v4"])
@@ -203,4 +230,4 @@ def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
     for root, prefix in [("7-14.const_decimal", "7-14."), ("7-15.ordinary", "7-15.")]:
         assert cells[root]["case_id"] == "UNIFIED." + prefix + "*"
         assert all(leaf["case_id"].startswith("UNIFIED." + prefix) for leaf in cells[root]["variants"])
-    assert (cells["7-14.const_decimal"]["status"] == "na") == (family == "deepseek_v4")
+    assert cells["7-14.const_decimal"]["status"] != "na"

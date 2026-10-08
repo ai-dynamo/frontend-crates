@@ -19,7 +19,7 @@ def variant_group(label):
 def aggregate_cells(cells, parent, description, *, display_label=None):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
-    result["case_id"] = (result.get("case_id") or "").split(parent, 1)[0] + (display_label or parent)
+    result["case_id"] = (result.get("case_id") or "").split(parent.split(".", 1)[0], 1)[0] + (display_label or parent)
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
@@ -83,25 +83,32 @@ def group_null_variants(tab: dict) -> None:
     columns = tab["columns"]
     display_labels: dict[str, str] = {}
     display_descriptions: dict[str, str] = {}
-    for parent, description in VARIANT_DESCRIPTIONS.items():
-        members = [column for column in columns if variant_group(column["label"]) == parent]
+    sections = [(parent, description, group_key)
+                for parent, description in VARIANT_DESCRIPTIONS.items()
+                for group_key in dict.fromkeys(column["group_key"] for column in columns
+                                               if variant_group(column["label"]) == parent)]
+    for parent, description, group_key in sections:
+        members = [column for column in columns
+                   if variant_group(column["label"]) == parent and column["group_key"] == group_key]
         if not members:
             continue
         root = next((column for column in members if column["label"] == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_label = parent + ".*" if parent in NUMERIC_DESCRIPTIONS else parent
+        display_label = (parent + ".*" if parent in NUMERIC_DESCRIPTIONS
+                         else root["label"] if len(members) == 1 else parent)
         display_labels[root["label"]] = display_label
         display_descriptions[display_label] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
-        mixed = [column for column in columns if column["label"].startswith("7-4.mixed_")]
+        mixed = [column for column in columns if column["label"].startswith("7-4.mixed_")
+                 and column["group_key"] == group_key]
         referenced = members + (mixed if parent == "7-5" else [])
         root["desc"] = description
         for row in tab["rows"]:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             inapplicable = []
-            if parent == "7-14" and not numeric_applicable(row["family"], root["label"]):
+            if parent in NUMERIC_DESCRIPTIONS and not numeric_applicable(row["family"], root["label"]):
                 prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
                 for column in members:
                     cell = row["cells"].get(column["sub"])
@@ -122,7 +129,7 @@ def group_null_variants(tab: dict) -> None:
                     tooltip.update(
                         head=f"{case_id} — {row['family']}",
                         description=description,
-                        na_note="This family does not use the shared integral-decimal conversion contract.",
+                        na_note="This grammar does not coerce untyped fractional text through an integer/string schema.",
                     )
                     cell["tooltip"] = tooltip
                     inapplicable.append(cell)
@@ -151,7 +158,7 @@ def group_null_variants(tab: dict) -> None:
                     "init": None,
                     "candidates": [],
                     "variants": [cell["tooltip"] for cell in inapplicable],
-                    "na_note": "This family does not use the shared integral-decimal conversion contract.",
+                    "na_note": "This grammar does not coerce untyped fractional text through an integer/string schema.",
                 }
                 row["cells"][root["sub"]] = grouped
         for column in members:

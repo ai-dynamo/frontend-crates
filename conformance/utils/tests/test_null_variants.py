@@ -61,6 +61,21 @@ def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str) -> None:
         assert "7-4.mixed_labels" in {child["sub"] for child in row["cells"][parent]["variants"]}
 
 
+def test_aggregation_never_moves_a_family_specific_leaf_into_a_generic_section():
+    labels = ["7-4", "7-4.anyof", "7-4.ref"]
+    tab = {"id": "tab-unified", "columns": [
+        {"label": label, "sub": label, "group_key": "glm_specific" if label.endswith(".ref") else "7"}
+        for label in labels],
+        "rows": [{"family": "glm47", "cells": {label: make_cell(label) for label in labels}}],
+        "column_groups": [{"key": "7", "span": 2}, {"key": "glm_specific", "span": 1}], "stats": {}}
+    original = copy.deepcopy(tab["rows"][0])
+    group_null_variants(tab)
+    assert [(column["label"], column["group_key"]) for column in tab["columns"]] == [
+        ("7-4", "7"), ("7-4.ref", "glm_specific")]
+    assert tab["rows"][0]["cells"]["7-4.ref"] == original["cells"]["7-4.ref"]
+    assert "7-4.ref" not in {leaf["sub"] for leaf in tab["rows"][0]["cells"]["7-4"]["variants"]}
+
+
 @pytest.mark.parametrize("scenario,label,schema,value,description", NULL_VARIANTS)
 def test_authored_oracle_satisfies_all_schema_constraints(scenario, label, schema, value, description):
     assert matches_schema(value, schema)
@@ -72,7 +87,7 @@ def test_authored_oracle_satisfies_all_schema_constraints(scenario, label, schem
 @pytest.mark.parametrize("family", FAMILIES)
 def test_stream_variants_have_distinct_ids_and_independent_goldens(family):
     cases = build_cases(family)
-    assert len(cases) == len(NULL_VARIANTS) + int(family in {"glm47", "minimax_m3"})
+    assert len(cases) == len(NULL_VARIANTS) + 2
     stimuli = []
     for case in cases.values():
         tool = case["tools"][0]
@@ -120,7 +135,7 @@ def test_missing_fixture_variant_remains_visible_and_incomplete():
         assert missing in result["variants"]
 
 
-def test_other_families_do_not_gain_missing_mixed_probes():
+def test_applicable_families_keep_missing_mixed_probes_as_missing_evidence():
     labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5"]
     row = {"family": "qwen3", "cells": {label: make_cell(label) for label in labels}}
     row["cells"]["7-4.mixed_labels"].update(kind="missing", status="missing", cmp=None)
@@ -128,5 +143,5 @@ def test_other_families_do_not_gain_missing_mixed_probes():
                                                 for label in labels], "rows": [row],
            "column_groups": [{"key": "7", "span": 4}], "stats": {}}
     group_null_variants(tab)
-    assert "7-4.mixed_labels" not in leaf_cells(row)
-    assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+    assert leaf_cells(row)["7-4.mixed_labels"]["kind"] == "missing"
+    assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "empty"

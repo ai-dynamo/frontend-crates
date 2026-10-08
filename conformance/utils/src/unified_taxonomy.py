@@ -215,6 +215,16 @@ def display_tax(scenario):
     return _DISPLAY_GROUP.get(scenario, group), sub
 
 
+def validate_family_sections(scenario_families):
+    """Reject singleton applicability in generic sections before aggregation."""
+    misplaced = {scenario: sorted(families) for scenario, families in scenario_families.items()
+                 if len(families) == 1 and (
+                     isinstance(display_tax(scenario)[0], int)
+                     or not UNIFIED_GROUP_LABEL[display_tax(scenario)[0]].startswith("Single Family Test:"))}
+    if misplaced:
+        raise ValueError(f"Single-family cases must NEVER appear in generic sections: {misplaced}")
+
+
 def display_sort_key(scenario):
     group, _ = display_tax(scenario)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))

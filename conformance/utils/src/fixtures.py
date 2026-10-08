@@ -300,27 +300,25 @@ BATCH_SUB_CASE_GROUPS = [
             "7.f",
             "7-4",
             "7-5",
-            "7-6",
-            "7-7",
-            "7-8",
             "7-9",
-            "7-10",
             "7-11",
             "7-12",
             "7-13",
             "7.g",
             "7.h",
             "7.i",
-            "7.j",
             "7.k",
             "7.l",
             "7.m",
             "7.n",
             "7.o", "7.p", "7.q", "7.r", "7.s", "7.t", "7.u", "7.v", "7.w",
             "7-14",
+            "7-14.string",
             "7-15",
         ),
     ),
+    ("Single Family Test: Inkling", ("11.c",)),
+    ("Single Family Test: MiniMax M3", ("7.j", "7.m", "7.n", "7-6", "7-7", "7-8", "7-10")),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
     ("Unknown tools", ("13", "13.a", "13.c")),
     (
@@ -346,7 +344,8 @@ SPLIT_PARENT_SUBCASES = {
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
     ("Partial-token", ("50",)),
-    ("Reasoning projection", ("51.a", "51.b")),
+    ("Reasoning projection", ("51.a",)),
+    ("Single Family Test: DeepSeek V4", ("51.b",)),
 ]
 
 SUB_CASE_GROUPS_BY_MODE = {

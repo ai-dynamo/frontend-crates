@@ -377,7 +377,7 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
-    assert [markup.count('class="case-variant"') for markup in rendered] == [8, 5]
+    assert [markup.count('class="case-variant"') for markup in rendered] == [9, 7]
     assert "nullable: true" in rendered[1]
     assert "intersection" in rendered[0]
 
@@ -411,7 +411,7 @@ def test_minimax_nested_union_fixtures_preserve_history_and_input(
         cell = row["cells"][sub]
         assert cell["case_id"] == f"TOOLCALLING.{mode}.{sub}"
         assert columns[sub]["label"] == sub
-        assert columns[sub]["group_key"] == "args"
+        assert columns[sub]["group_key"] == "single_family_test_minimax_m3"
         assert cell_state(cell, candidates[fixed_key])[0] == "green", sub
         assert cell_state(cell, candidates[baseline_key])[0] == ("green" if sub == "7-8" else "red"), sub
         tip = cell["tooltip"]
@@ -1302,9 +1302,9 @@ def test_numbered_cases_keep_argument_group_and_natural_fallback_order(mode: str
         "13-10", "7-15.ordinary", "7-14.const_decimal", "7-8", "13-2.variant", "7-6", "7-5", "13-2", "7-7", "8.a", "7.a", "13.a",
     )}
     assert table.fixtures._discover_sub_cases(mode, cases) == [
-        "7.a", "7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
+        "7.a", "7-14.const_decimal", "7-15.ordinary", "7-6", "7-7", "7-8", "8.a", "13.a", "13-2", "13-2.variant", "13-10",
     ]
-    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-6", "7-7", "7-8", "7-14.const_decimal", "7-15.ordinary"))
+    assert all(table.fixtures._subcase_group_key(mode, sub) == "args" for sub in ("7-14.const_decimal", "7-15.ordinary"))
     assert table.fixtures._subcase_band_class(mode, "7-14.const_decimal") == table.fixtures._subcase_band_class(mode, "7.a")
     assert table.fixtures._subcase_band_class(mode, "7-15.ordinary") == table.fixtures._subcase_band_class(mode, "7.a")
 
@@ -1374,14 +1374,13 @@ def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2)
     for row in tab["rows"]:
         if row.get("family") not in families:
             continue
-        mixed = row["family"] == "glm47"
-        refs = row["family"] == "glm47"
+        mixed = True
+        refs = row["family"] in {"glm47", "qwen3"}
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = row["family"] == "qwen3" and label == "7-5"
-            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
+            assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
         assert len(groups[0] & groups[1]) == int(mixed)
@@ -1479,11 +1478,12 @@ def test_numeric_columns_share_argument_heading_and_band(model_v2):
                             ("tab-toolcalling-streamv1", "Args")]:
         tab = _tab(model_v2, tab_id)
         columns = tab["columns"]
-        numeric = [column for column in columns if column["label"] in {"7-14.*", "7-15.*"}]
-        assert [column["label"] for column in numeric] == ["7-14.*", "7-15.*"]
+        numeric_labels = {"7-14.*", "7-14.string.*", "7-15.*"}
+        numeric = [column for column in columns if column["label"] in numeric_labels]
+        assert [column["label"] for column in numeric] == ["7-14.*", "7-14.string.*", "7-15.*"]
         previous = next(column for column in columns
                         if column["group_key"] == numeric[0]["group_key"]
-                        and column["label"] not in {"7-14.*", "7-15.*"})
+                        and column["label"] not in numeric_labels)
         assert all(column["group_key"] == previous["group_key"] for column in numeric)
         assert all(column["band"] == previous["band"] for column in numeric)
         groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
@@ -1519,14 +1519,13 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
     for row in tab["rows"]:
         if row.get("family") not in families:
             continue
-        mixed = row["family"] == "glm47" or (tab_id.endswith("streamv1") and row["family"] == "minimax_m3")
-        refs = tab_id == "tab-unified" and row["family"] == "glm47"
+        mixed = True
+        refs = tab_id == "tab-unified" and row["family"] in {"glm47", "qwen3"}
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = tab_id == "tab-unified" and row["family"] == "qwen3" and label == "7-5"
-            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
+            assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
             if tab_id.endswith("streamv1"):
@@ -1558,3 +1557,51 @@ def test_bare_schema_cases_remain_independent_of_numeric_groups(model_v2):
             if cell and cell.get("variants"):
                 assert all(leaf["case_id"].startswith("UNIFIED." + column["label"][:-1])
                            for leaf in cell["variants"])
+
+
+@pytest.mark.parametrize("mode", ["batch", "streamv1"])
+def test_nested_minimax_markup_stays_in_its_named_family_section(mode):
+    labels = ["7.j", "7.m", "7.n", "7-6", "7-7", "7-8", "7-10"]
+    groups, columns = table._columns_model(mode, labels)
+    owners = {group["key"]: group["label"] for group in groups}
+    assert len(columns) == len(labels)
+    assert all(owners[column["group_key"]] == "Single Family Test: MiniMax M3" for column in columns)
+
+
+@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
+def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_id):
+    tab = _tab(model_v2, tab_id)
+    columns = {column["label"]: column for column in tab["columns"]}
+    counts = {"7-14.*": 9, "7-14.string.*": 3, "7-15.*": 7}
+    schema_families = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
+    for row in tab["rows"]:
+        if row.get("section"):
+            continue
+        for label, count in counts.items():
+            cell = row["cells"][columns[label]["sub"]]
+            assert len(cell["variants"]) == count, (tab_id, row["family"], label)
+            assert (cell["status"] == "na") == (label == "7-14.string.*" and row["family"] not in schema_families)
+
+
+@pytest.mark.parametrize("mode", ["batch", "streamv1"])
+def test_inkling_header_cases_stay_in_their_named_family_section(mode):
+    groups, columns = table._columns_model(mode, ["11.c"])
+    owners = {group["key"]: group["label"] for group in groups}
+    assert len(columns) == 1
+    assert all(owners[column["group_key"]] == "Single Family Test: Inkling" for column in columns)
+
+
+def test_deepseek_mixed_dialects_stay_in_their_named_family_section():
+    groups, columns = table._columns_model("streamv1", ["51.a", "51.b"])
+    owners = {group["key"]: group["label"] for group in groups}
+    assert owners[columns[0]["group_key"]] == "Reasoning projection"
+    assert owners[columns[1]["group_key"]] == "Single Family Test: DeepSeek V4"
+
+
+@pytest.mark.parametrize("case_id,section", [
+    *[(f"REASONING.batch.3.{suffix}", "Single Family Test: GPT-OSS") for suffix in "cdef"],
+    ("REASONING.batch.7", "Single Family Test: Inkling"),
+    ("REASONING.batch.7.a", "Single Family Test: Inkling"),
+])
+def test_reasoning_native_grammar_cases_stay_in_named_sections(case_id, section):
+    assert table.reasoning_table._case_group_label(case_id) == section

@@ -2959,37 +2959,37 @@ metadata_changes:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_negative:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_ordinary:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_quarter:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_round_down:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_round_up:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
   arg_numeric_15_small:
     init:
       starting_state: None
       tool_output_mode: Native
-      named_tool:
+      named_tool: null
 document_overrides:
   arg_marker_in_string:
     capture_provenance:
@@ -3112,13 +3112,13 @@ document_overrides:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.4
-      capture_origin:
+      capture_origin: null
       inherited_from: 0.3.4
   guided_json_malformed_json:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.4
-      capture_origin:
+      capture_origin: null
       inherited_from: 0.3.4
   guided_json_marker_inside_argument:
     capture_provenance:
@@ -3304,19 +3304,19 @@ document_overrides:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.4
-      capture_origin:
+      capture_origin: null
       inherited_from: 0.3.4
   guided_json_syntax_error_trailing_close:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.4
-      capture_origin:
+      capture_origin: null
       inherited_from: 0.3.4
   guided_json_syntax_error_wrapped:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.3.4
-      capture_origin:
+      capture_origin: null
       inherited_from: 0.3.4
   guided_json_tool_close_after_payload:
     capture_provenance:
@@ -3705,3 +3705,93 @@ document_overrides:
         source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
         git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
       inherited_from: 0.6.0
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.11
+      capture_origin:
+        crate_version: 0.7.11
+        source_sha256: 5c1b2b7c8956bec49286f1ec224cd26c26fcd0902729e991aab040e0dd9353a4
+        git_commit: 4c87e6e3d9ad56353b172d577326e55b05aec559
+      inherited_from: null

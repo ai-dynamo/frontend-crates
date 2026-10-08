@@ -640,4 +640,112 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+document_overrides:
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_fraction_fallback:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_fraction_near_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_fraction_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null

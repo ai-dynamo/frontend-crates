@@ -11,7 +11,7 @@ import yaml_fast
 
 import gen_unified_golden as unified
 from gen_null_stream_cases import native_call
-from numeric_cases import NUMERIC_VARIANTS, NUMERIC_DESCRIPTIONS, NumericLiteral, applicable, arguments_json
+from numeric_cases import NUMERIC_VARIANTS, NumericLiteral, applicable, arguments_json, numeric_description, numeric_schema, numeric_expected
 from refresh_dynamo_captures import V2_FAMILIES
 
 
@@ -20,6 +20,7 @@ def build_cases(family):
     for _, label, schema, raw, expected in NUMERIC_VARIANTS:
         if not applicable(family, label):
             continue
+        expected = numeric_expected(family, label, raw, expected)
         if family in {"minimax_m2", "minimax_m3", "qwen3_coder"}:
             text = native_call(family, "get_weather", {"value": NumericLiteral(raw)})
         elif family in {"harmony", "harmony_text"}:
@@ -28,9 +29,9 @@ def build_cases(family):
         else:
             text = unified.r_tool(family, "get_weather", "value", NumericLiteral(raw), 0)
         cases[f"TOOLCALLING.streamv1.{label}"] = {
-            "description": NUMERIC_DESCRIPTIONS[label.split(".")[0]] + f" Input {raw}; expected {expected}.",
+            "description": numeric_description(label) + f" Input {raw}; expected {expected}.",
             "ref": "https://github.com/ai-dynamo/frontend-crates/pull/339",
-            "tools": [{"name": "get_weather", "parameters": {"type": "object", "properties": {"value": schema}}}],
+            "tools": [{"name": "get_weather", "parameters": {"type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}],
             "golden": {"calls": [{"name": "get_weather", "arguments": arguments_json(expected)}], "normal_text": ""},
             "chunks": [{"delta_text": char} for char in text] + [{"delta_text": "", "finish_reason": "stop"}],
         }

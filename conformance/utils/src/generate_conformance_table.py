@@ -2551,6 +2551,14 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             families.append(f)
         by_key[(f, s)] = c
 
+    # Applicability belongs to authored scenarios; a partial fixture tree is
+    # missing evidence, not proof that a shared case belongs to one family.
+    unified_taxonomy.validate_family_sections({
+        scenario: gen_unified_golden.scenario_families(scenario)
+        if scenario in authored_scenarios else
+        {family for family, name in by_key if name == scenario}
+        for scenario in scenarios})
+
     # Numbered taxonomy + axis labels — single source in unified_taxonomy.py (shared
     # with explode_unified_fixtures.py so the numbering can't drift). See UNIFIED_CASES.md.
     UNIFIED_GROUP_LABEL = unified_taxonomy.UNIFIED_GROUP_LABEL

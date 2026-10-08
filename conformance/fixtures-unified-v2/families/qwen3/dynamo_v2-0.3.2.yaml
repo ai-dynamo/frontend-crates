@@ -3211,6 +3211,70 @@ changes:
         - expected: []
         - expected: []
     case_key: UNIFIED.7-15.small
+  arg_json_null_ref:
+    case_key: UNIFIED.7-4.ref
+    stimulus:
+      ref: current
+      semantic_sha256: f7794a80a0c556b20d0da6b7df74d93ac864f5b5eadfbfa40c5f81874064f9e1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: b890a527fb32b9d696b354035883caa2f2bfccfeec9214a03685019252015502
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":null}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:
@@ -3367,4 +3431,22 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null

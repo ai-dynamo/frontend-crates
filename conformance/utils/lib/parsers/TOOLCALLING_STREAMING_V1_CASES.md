@@ -1,5 +1,11 @@
 # Tool-Call Streaming Parser Cases
 
+A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, including after variant aggregation. Before classifying a case as family-specific, inspect every registered family and add native inputs and independent expected outputs wherever the behavior applies. Missing captures do not make an applicable family inapplicable; retain them as missing evidence. Preserve published case IDs when changing display placement.
+
+Nested-tag probes `7.j`, `7.m`, `7.n`, `7-6`, `7-7`, `7-8`, and `7-10` appear under `Single Family Test: MiniMax M3` when present. They test type coercion or whitespace between recursive markup children, which other registered grammars do not emit. Local-reference and literal-entity probes remain generic where other families can express their inputs; absent applicable captures remain missing evidence.
+
+Inkling's consumed generation-primer header (`11.c`) appears under `Single Family Test: Inkling`; other registered grammars do not use this primer mode. Header-name precedence (`11.a`) remains generic because both Inkling and Muse can express an outer routing name that conflicts with the embedded invocation name. The streaming mixed-DSML-dialect probe `51.b` appears under `Single Family Test: DeepSeek V4`; only that native adapter accepts both dialects in the same stream. Shared reasoning projection `51.a` remains generic.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 
@@ -46,16 +52,16 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.d`** Nested object + array. Streaming form of `TOOLCALLING.batch.7.d`.
 - **`TOOLCALLING.streamv1.7.e`** Large / deep JSON-edge argument payload. Streaming form of `TOOLCALLING.batch.7.e`.
 - **`TOOLCALLING.streamv1.7.f`** Numeric precision edge preserves integer-like number literal. Streaming form of `TOOLCALLING.batch.7.f`.
-- **`TOOLCALLING.streamv1.7-6`** Nested members retain declared types through a unique object branch in the request tool schema's `anyOf` or `oneOf`. Integers, booleans, scalar string alternatives, nullable objects, and actual child objects survive incremental parsing. Streaming form of `TOOLCALLING.batch.7-6` (PR #270).
-- **`TOOLCALLING.streamv1.7-7`** Null-only `const: null` and `enum: [null]` alternatives in the request tool schema do not make `anyOf` or `oneOf` object selection ambiguous. The unique object branch keeps its nested `page` field an integer. Streaming form of `TOOLCALLING.batch.7-7` (PR #270).
-- **`TOOLCALLING.streamv1.7-8`** Ambiguous object unions in the request tool schema preserve the existing string fallback for nested scalar values. Streaming form of `TOOLCALLING.batch.7-8` (PR #270).
+- **`TOOLCALLING.streamv1.7-6`** Single Family Test (MiniMax M3): Nested members retain declared types through a unique object branch in the request tool schema's `anyOf` or `oneOf`. Integers, booleans, scalar string alternatives, nullable objects, and actual child objects survive incremental parsing. Streaming form of `TOOLCALLING.batch.7-6` (PR #270).
+- **`TOOLCALLING.streamv1.7-7`** Single Family Test (MiniMax M3): Null-only `const: null` and `enum: [null]` alternatives in the request tool schema do not make `anyOf` or `oneOf` object selection ambiguous. The unique object branch keeps its nested `page` field an integer. Streaming form of `TOOLCALLING.batch.7-7` (PR #270).
+- **`TOOLCALLING.streamv1.7-8`** Single Family Test (MiniMax M3): Ambiguous object unions in the request tool schema preserve the existing string fallback for nested scalar values. Streaming form of `TOOLCALLING.batch.7-8` (PR #270).
 - **`TOOLCALLING.streamv1.7-9`** Local parameter references preserve declared object types across chunks. Streaming form of `TOOLCALLING.batch.7-9` (PR #273).
-- **`TOOLCALLING.streamv1.7-10`** Nested properties, array items, and additional properties resolve references before coercion. Streaming form of `TOOLCALLING.batch.7-10` (PR #273).
+- **`TOOLCALLING.streamv1.7-10`** Single Family Test (MiniMax M3): Nested properties, array items, and additional properties resolve references before coercion. Streaming form of `TOOLCALLING.batch.7-10` (PR #273).
 - **`TOOLCALLING.streamv1.7-11`** URI-encoded local reference fragments resolve their definitions before coercion. Streaming form of `TOOLCALLING.batch.7-11` (PR #273).
 - **`TOOLCALLING.streamv1.7.g`** Composed scalar schemas preserve integer, number, and boolean argument values. Streaming regression for frontend-crates #248.
 - **`TOOLCALLING.streamv1.7.h`** Family-native string arguments preserve leading and trailing whitespace, whitespace-only text, and empty strings. Streaming regression for frontend-crates #247.
 - **`TOOLCALLING.streamv1.7.i`** GLM argument strings and object values preserve literal XML entity text. Streaming regression for frontend-crates #249.
-- **`TOOLCALLING.streamv1.7.j`** MiniMax M3 preserves nested integer values when an object wins a nullable union. Streaming regression for frontend-crates #270.
+- **`TOOLCALLING.streamv1.7.j`** Single Family Test (MiniMax M3): MiniMax M3 preserves nested integer values when an object wins a nullable union. Streaming regression for frontend-crates #270.
 - **`TOOLCALLING.streamv1.7.k`** GLM resolves local schema references before coercing string and integer arguments. This case does not distinguish sibling type intersections. Streaming regression for frontend-crates #271.
 - **`TOOLCALLING.streamv1.7.l`** MiniMax M3 resolves a local parameter reference before parsing object arguments. Streaming regression for frontend-crates #273.
 - **`TOOLCALLING.streamv1.7.m`** Single Family Test (MiniMax M3): whitespace between nested argument tags is formatting, not array items or `$text`. Streaming form of `TOOLCALLING.batch.7.m` (PR #360).
@@ -113,7 +119,8 @@ All registered families are inspected and use native grammar. v1 batch excludes 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
 ## Numeric argument fidelity (#339)
 
-- **`TOOLCALLING.streamv1.7-14.*`** Integral decimal/exponent conversion: 12 variants cover const/enum constraints, integral values above 2^53, signed exponents, underflowing zero, and fractional fallback under integer/string schemas. Applies only to Qwen3-Coder and MiniMax-M2; MiniMax-M2 has no Unified interface.
+- **`TOOLCALLING.streamv1.7-14.*`** Integer-valued decimal/exponent fidelity: nine variants cover const/enum constraints, integral values above 2^53, signed exponents, and underflowing zero across all supported numeric grammars. Existing Qwen3-Coder/MiniMax M2 integer/string schemas remain unchanged; new GLM/MiniMax M3 integral probes use integer-only schemas because those parsers prefer strings when a union permits them.
+- **`TOOLCALLING.streamv1.7-14.string.*`** Three fractional-string probes apply to Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3. Under an integer/string schema, fractional text must remain an exact string. Explicitly typed JSON grammars preserve model-provided types and do not apply this coercion. Unified includes Qwen3-Coder and GLM for these probes; MiniMax M2/M3 have no Unified interface.
 - **`TOOLCALLING.streamv1.7-15.*`** Fractional numeric preservation: seven variants cover ordinary fractions, values that round upward or downward in binary floating point, negative values, small fractions, and exponent notation. Each supported family uses its native number syntax.
 
 `numeric_cases.py` owns the shared variant inventory. Input and expected decimal tokens remain strings during generation; GOLDEN arguments use raw JSON strings in the packaged report to avoid binary floating-point rounding. The Rust assembled-event harness still uses `serde_json::Value`; its numeric equality is not the precision oracle. The report compares captured argument fragments with the independent exact-decimal oracle, and the parser unit tests retain exact spelling and exhaustive splits. Measured defects remain red and are tracked in `numeric-failures.md`; no production fix is included.

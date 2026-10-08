@@ -11,7 +11,8 @@ class NumericLiteral(str):
 
 
 NUMERIC_DESCRIPTIONS = {
-    "7-14": "Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md.",
+    "7-14": "Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md.",
+    "7-14.string": "Schema-directed fractional string fallback: Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md.",
     "7-15": "Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md.",
 }
 
@@ -54,7 +55,11 @@ NUMERIC_VARIANTS = [
 
 
 # Bare IDs are independent schema cases; only authored leaves belong here.
-_NUMERIC_GROUPS = {label: label.split(".", 1)[0] for _, label, *_ in NUMERIC_VARIANTS}
+_STRING_FALLBACK_LABELS = {label for _, label, _, _, expected in NUMERIC_VARIANTS
+                         if expected.startswith('"')}
+_NUMERIC_GROUPS = {label: "7-14.string" if label in _STRING_FALLBACK_LABELS
+                  else label.split(".", 1)[0] for _, label, *_ in NUMERIC_VARIANTS}
+SCHEMA_DIRECTED_FAMILIES = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
 
 
 def numeric_group(label):
@@ -62,7 +67,28 @@ def numeric_group(label):
 
 
 def applicable(family, label):
-    return numeric_group(label) == "7-15" or family in {"qwen3", "qwen3_coder", "minimax_m2"}
+    group = numeric_group(label)
+    return group is not None and (group != "7-14.string" or family in SCHEMA_DIRECTED_FAMILIES)
+
+
+def numeric_schema(family, label, schema):
+    # The original Qwen/M2 union probes are immutable. GLM/M3 prefer strings in
+    # that union, so their new numeric-fidelity probes require an integer alone.
+    if numeric_group(label) == "7-14" and family in {"glm47", "minimax_m3"} and schema.get("type") == ["integer", "string"]:
+        return {"type": "integer"}
+    return schema
+
+
+def numeric_description(label):
+    return NUMERIC_DESCRIPTIONS[numeric_group(label)]
+
+
+def numeric_expected(family, label, raw, expected):
+    # Normalization is an existing Qwen/M2 contract. Other grammars may retain
+    # the numeric spelling; the independent decimal oracle compares its value.
+    if numeric_group(label) == "7-14" and family not in {"qwen3", "qwen3_coder", "minimax_m2"}:
+        return raw
+    return expected
 
 
 def arguments_json(token):

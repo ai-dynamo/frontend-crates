@@ -7,8 +7,7 @@ golden_document:
   mode: unified
   captured_with:
     golden: v1
-cases:
-  arg_json_null_anyof:
+cases:  arg_json_null_anyof:
     lifecycle: active
     scenario: arg_json_null_anyof
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
@@ -251,7 +250,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -287,7 +286,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -323,7 +322,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -359,7 +358,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -395,7 +394,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -431,7 +430,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -467,7 +466,7 @@ cases:
       init:
         starting_state: None
         tool_output_mode: Native
-        named_tool:
+        named_tool: null
       finish_reason: stop
       tools:
       - name: get_weather
@@ -13323,3 +13322,351 @@ cases:
           count: 42
           flag: false
           text: 'null'
+  arg_numeric_14_const_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_const_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.const_decimal
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">42.0</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: '42.0'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+  arg_numeric_14_const_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_const_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.const_exponent
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">4.2e1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: 4.2e1
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+  arg_numeric_14_enum_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.enum_decimal
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">42.0</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: '42.0'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+  arg_numeric_14_enum_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.enum_exponent
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">4.2e1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: 4.2e1
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+  arg_numeric_14_large_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_large_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.large_decimal
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">9007199254740993.0</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: '9007199254740993.0'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.0}'
+  arg_numeric_14_large_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_large_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.large_exponent
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">9.007199254740993e15</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: 9.007199254740993e15
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.007199254740993e15}'
+  arg_numeric_14_negative:
+    lifecycle: active
+    scenario: arg_numeric_14_negative
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.negative
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">-4.2E+1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: '-4.2E+1'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-4.2E+1}'
+  arg_numeric_14_negative_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_negative_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.negative_exponent
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">4200e-2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: 4200e-2
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4200e-2}'
+  arg_numeric_14_zero_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_zero_underflow
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-14.zero_underflow
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="value" string="false">0.0e-400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="value" string="false">
+      - delta_text: '0.0e-400'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.0e-400}'

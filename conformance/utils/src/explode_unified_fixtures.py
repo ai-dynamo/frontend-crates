@@ -29,7 +29,7 @@ import yaml
 import yaml_fast
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dynamo_version import validate_capture_provenance  # noqa: E402
+from dynamo_version import compact_capture_origin, validate_capture_provenance  # noqa: E402
 from gen_unified_golden import build_cases
 from capture_stimulus import capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
@@ -116,10 +116,7 @@ def main():
             if captured_with is not None:
                 d["captured_with"] = captured_with
                 if "dynamo_v2" in captured_with:
-                    d["capture_origin"] = {
-                        key: provenance[key]
-                        for key in ("crate_version", "source_sha256", "git_commit")
-                    }
+                    d["capture_origin"] = compact_capture_origin(provenance)
             d["cases"] = {}
             docs[k] = d
         return docs[k]["cases"]

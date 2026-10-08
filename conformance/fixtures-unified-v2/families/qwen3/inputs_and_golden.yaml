@@ -7,8 +7,7 @@ golden_document:
   mode: unified
   captured_with:
     golden: v1
-cases:
-  arg_json_null_anyof:
+cases:  arg_json_null_anyof:
     lifecycle: active
     scenario: arg_json_null_anyof
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
@@ -269,7 +268,7 @@ cases:
   arg_numeric_14_const_decimal:
     lifecycle: active
     scenario: arg_numeric_14_const_decimal
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0; expected 42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.const_decimal
@@ -336,7 +335,7 @@ cases:
   arg_numeric_14_const_exponent:
     lifecycle: active
     scenario: arg_numeric_14_const_exponent
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4.2e1; expected 42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.const_exponent
@@ -403,7 +402,7 @@ cases:
   arg_numeric_14_enum_decimal:
     lifecycle: active
     scenario: arg_numeric_14_enum_decimal
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0; expected 42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.enum_decimal
@@ -471,7 +470,7 @@ cases:
   arg_numeric_14_enum_exponent:
     lifecycle: active
     scenario: arg_numeric_14_enum_exponent
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4.2e1; expected 42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.enum_exponent
@@ -539,7 +538,7 @@ cases:
   arg_numeric_14_fraction_fallback:
     lifecycle: active
     scenario: arg_numeric_14_fraction_fallback
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.5; expected "42.5".'
+    description: 'Schema-directed fractional string fallback: Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 42.5; expected "42.5".'
     policy:
     - I7
     display_id: UNIFIED.7-14.fraction_fallback
@@ -605,7 +604,7 @@ cases:
   arg_numeric_14_fraction_near_integer:
     lifecycle: active
     scenario: arg_numeric_14_fraction_near_integer
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 42.0000000000000001; expected "42.0000000000000001".'
+    description: 'Schema-directed fractional string fallback: Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 42.0000000000000001; expected "42.0000000000000001".'
     policy:
     - I7
     display_id: UNIFIED.7-14.fraction_near_integer
@@ -671,7 +670,7 @@ cases:
   arg_numeric_14_fraction_underflow:
     lifecycle: active
     scenario: arg_numeric_14_fraction_underflow
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 1e-400; expected "1e-400".'
+    description: 'Schema-directed fractional string fallback: Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 1e-400; expected "1e-400".'
     policy:
     - I7
     display_id: UNIFIED.7-14.fraction_underflow
@@ -737,7 +736,7 @@ cases:
   arg_numeric_14_large_decimal:
     lifecycle: active
     scenario: arg_numeric_14_large_decimal
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
     policy:
     - I7
     display_id: UNIFIED.7-14.large_decimal
@@ -803,7 +802,7 @@ cases:
   arg_numeric_14_large_exponent:
     lifecycle: active
     scenario: arg_numeric_14_large_exponent
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
     policy:
     - I7
     display_id: UNIFIED.7-14.large_exponent
@@ -869,7 +868,7 @@ cases:
   arg_numeric_14_negative:
     lifecycle: active
     scenario: arg_numeric_14_negative
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.negative
@@ -935,7 +934,7 @@ cases:
   arg_numeric_14_negative_exponent:
     lifecycle: active
     scenario: arg_numeric_14_negative_exponent
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 4200e-2; expected 42.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
     policy:
     - I7
     display_id: UNIFIED.7-14.negative_exponent
@@ -1001,7 +1000,7 @@ cases:
   arg_numeric_14_zero_underflow:
     lifecycle: active
     scenario: arg_numeric_14_zero_underflow
-    description: 'Integral decimal/exponent conversion: Qwen3-Coder and MiniMax-M2 convert mathematically integral decimal tokens under literal or integer/string schemas; fractional tokens fall back to strings. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
     policy:
     - I7
     display_id: UNIFIED.7-14.zero_underflow

@@ -38,7 +38,7 @@ from pathlib import Path
 
 import yaml
 
-from dynamo_version import capture_source_fingerprint, crate_version, dynamo_v2_label, dynamo_v2_provenance
+from dynamo_version import compact_capture_origin, capture_source_fingerprint, crate_version, dynamo_v2_label, dynamo_v2_provenance
 from fixture_snapshot import fixture_snapshot_root
 import stream_capture_archive
 
@@ -202,12 +202,10 @@ def refresh_batch(v1_ver: str) -> None:
 
 
 def refresh_stream(v2_ver: str, receipt_path: Path | None = None) -> None:
-    producer = None
-    if receipt_path is not None:
-        dynamo_v2_label(ROOT, v2_ver)
-        producer = dynamo_v2_provenance(ROOT, "current")
-        if producer["source_sha256"] != capture_source_fingerprint(ROOT, v2_ver):
-            raise ValueError(f"stream capture source does not match release {v2_ver}; pin a new unpublished version")
+    dynamo_v2_label(ROOT, v2_ver)
+    producer = dynamo_v2_provenance(ROOT, "current")
+    if producer["source_sha256"] != capture_source_fingerprint(ROOT, v2_ver):
+        raise ValueError(f"stream capture source does not match release {v2_ver}; pin a new unpublished version")
     tree = ensure_tree("fixtures-stream-v1")
     inputs = tree / "inputs"
     # The current-version dir is (re)written in place; OLDER version dirs
@@ -270,6 +268,7 @@ def refresh_stream(v2_ver: str, receipt_path: Path | None = None) -> None:
                 "family": family,
                 "mode": src.get("mode", "streamv1"),
                 "captured_with": {"dynamo_v2": v2_ver},
+                "capture_origin": compact_capture_origin(producer),
                 "cases": cases_out,
             }
             dst = out_root / family / fp.name
