@@ -719,6 +719,93 @@ mod tests {
     }
 
     #[test]
+    fn unterminated_string_keeps_later_calls_at_every_split() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:{x:<|\"|>unfinished}}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>Café<|\"|>}<tool_call|>",
+        );
+        let expected = vec![
+            call("echo", serde_json::json!({"value": "é"})),
+            call("echo", serde_json::json!({"value": "Café"})),
+        ];
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            assert_eq!(
+                events(&[], &[&input[..split], &input[split..]]),
+                expected,
+                "split={split}"
+            );
+        }
+
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(index, ch)| &input[index..index + ch.len_utf8()])
+            .collect();
+        assert_eq!(events(&[], &chunks), expected);
+    }
+
+    #[test]
+    fn eof_recovery_keeps_tool_markers_inside_a_valid_string_as_data() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:<|\"|>unfinished}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>quoted <|tool_call>call:fake{}<tool_call|><|\"|>}<tool_call|>",
+        );
+        let expected = vec![call(
+            "echo",
+            serde_json::json!({
+                "value": "quoted <|tool_call>call:fake{}<tool_call|>"
+            }),
+        )];
+        for split in 0..=input.len() {
+            let mut parser = gemma4_unified(&[]);
+            let mut deltas = parser.push(&input[..split]).expect("push");
+            deltas.extend(parser.push(&input[split..]).expect("push"));
+            assert!(
+                !assemble(&deltas)
+                    .iter()
+                    .any(|event| matches!(event, UnifiedEvent::ToolCall { .. })),
+                "ambiguous recovery emitted a call before EOF at split={split}"
+            );
+            deltas.extend(parser.finish().expect("finish").events);
+            assert_eq!(assemble(&deltas), expected, "split={split}");
+        }
+    }
+
+    #[test]
+    fn missing_wrapper_recovery_ignores_tool_markers_in_a_closed_string() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>quoted ",
+            "<|tool_call>call:fake{}<tool_call|><|\"|>}",
+            "<|tool_call>call:echo{value:<|\"|>y<|\"|>}<tool_call|>",
+        );
+        let expected = vec![call("echo", serde_json::json!({"value": "y"}))];
+        for split in 0..=input.len() {
+            assert_eq!(
+                events(&[], &[&input[..split], &input[split..]]),
+                expected,
+                "split={split}"
+            );
+        }
+    }
+
+    #[test]
+    fn recovered_closed_call_is_emitted_before_finish() {
+        let mut parser = gemma4_unified(&[]);
+        let mut deltas = parser
+            .push("<|tool_call>call:broken{note:<|\"|>x<|\"|>}")
+            .expect("push");
+        deltas.extend(
+            parser
+                .push("<|tool_call>call:echo{value:<|\"|>y<|\"|>}<tool_call|>")
+                .expect("push"),
+        );
+        assert_eq!(
+            assemble(&deltas),
+            vec![call("echo", serde_json::json!({"value": "y"}))]
+        );
+    }
+
+    #[test]
     fn later_balanced_call_with_trailing_whitespace_is_recovered_at_eof() {
         let input = concat!(
             "<|tool_call>call:broken{note:<|\"|>unterminated",
