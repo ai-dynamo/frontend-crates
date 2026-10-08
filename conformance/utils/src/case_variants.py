@@ -16,10 +16,10 @@ def variant_group(label):
     return null_group(label) or numeric_group(label)
 
 
-def aggregate_cells(cells, parent, description):
+def aggregate_cells(cells, parent, description, *, display_label=None):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
-    result["case_id"] = (result.get("case_id") or "").split(parent, 1)[0] + parent
+    result["case_id"] = (result.get("case_id") or "").split(parent, 1)[0] + (display_label or parent)
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
@@ -82,13 +82,16 @@ def group_null_variants(tab: dict) -> None:
         return
     columns = tab["columns"]
     display_labels: dict[str, str] = {}
+    display_descriptions: dict[str, str] = {}
     for parent, description in VARIANT_DESCRIPTIONS.items():
         members = [column for column in columns if variant_group(column["label"]) == parent]
         if not members:
             continue
         root = next((column for column in members if column["label"] == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_labels[root["label"]] = parent
+        display_label = parent + ".*" if parent in NUMERIC_DESCRIPTIONS else parent
+        display_labels[root["label"]] = display_label
+        display_descriptions[display_label] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
         mixed = [column for column in columns if column["label"].startswith("7-4.mixed_")]
@@ -98,7 +101,7 @@ def group_null_variants(tab: dict) -> None:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             inapplicable = []
-            if numeric_group(parent) == "7-14" and not numeric_applicable(row["family"], parent):
+            if parent == "7-14" and not numeric_applicable(row["family"], root["label"]):
                 prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
                 for column in members:
                     cell = row["cells"].get(column["sub"])
@@ -130,12 +133,12 @@ def group_null_variants(tab: dict) -> None:
                         and row["cells"][column["sub"]].get("kind") in {"cell", "missing"}
                         and row["cells"][column["sub"]].get("status") != "na"]
             if len(children) > 1:
-                row["cells"][root["sub"]] = aggregate_cells(children, parent, description)
+                row["cells"][root["sub"]] = aggregate_cells(children, parent, description, display_label=display_label)
             elif inapplicable:
                 grouped = copy.deepcopy(inapplicable[0])
                 grouped.update(
                     sub=root["sub"],
-                    case_id=f"{prefix}.{parent}",
+                    case_id=f"{prefix}.{display_label}",
                     kind="cell",
                     status="na",
                     red_on_diff=False,
@@ -177,6 +180,6 @@ def group_null_variants(tab: dict) -> None:
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
     for group in tab.get("glossary", []):
         group["rows"] = [(display_labels.get(label, label),
-                          VARIANT_DESCRIPTIONS.get(display_labels.get(label, label), desc))
+                          display_descriptions.get(display_labels.get(label, label), desc))
                          for label, desc in group["rows"]
                          if variant_group(label) is None or label in display_labels]

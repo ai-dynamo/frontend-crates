@@ -1479,11 +1479,11 @@ def test_numeric_columns_share_argument_heading_and_band(model_v2):
                             ("tab-toolcalling-streamv1", "Args")]:
         tab = _tab(model_v2, tab_id)
         columns = tab["columns"]
-        numeric = [column for column in columns if column["label"] in {"7-14", "7-15"}]
-        assert [column["label"] for column in numeric] == ["7-14", "7-15"]
+        numeric = [column for column in columns if column["label"] in {"7-14.*", "7-15.*"}]
+        assert [column["label"] for column in numeric] == ["7-14.*", "7-15.*"]
         previous = next(column for column in columns
                         if column["group_key"] == numeric[0]["group_key"]
-                        and column["label"] not in {"7-14", "7-15"})
+                        and column["label"] not in {"7-14.*", "7-15.*"})
         assert all(column["group_key"] == previous["group_key"] for column in numeric)
         assert all(column["band"] == previous["band"] for column in numeric)
         groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
@@ -1536,39 +1536,25 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
         assert len(groups[0] & groups[1]) == int(mixed)
 
 
-def test_numeric_columns_share_argument_heading_and_band(model_v2):
-    for tab_id, heading in [("tab-unified", "TC Argument fidelity"),
-                            ("tab-toolcalling-streamv1", "Args")]:
-        tab = _tab(model_v2, tab_id)
-        columns = tab["columns"]
-        numeric = [column for column in columns if column["label"] in {"7-14", "7-15"}]
-        assert [column["label"] for column in numeric] == ["7-14", "7-15"]
-        previous = next(column for column in columns
-                        if column["group_key"] == numeric[0]["group_key"]
-                        and column["label"] not in {"7-14", "7-15"})
-        assert all(column["group_key"] == previous["group_key"] for column in numeric)
-        assert all(column["band"] == previous["band"] for column in numeric)
-        groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
-        assert len(groups) == 1
-        assert groups[0]["label"] == heading
-        assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)
-
-
-def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
-    scenario = "guided_response_rejected_header_quote_ownership"
+def test_bare_schema_cases_remain_independent_of_numeric_groups(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    column = next(c for c in tab["columns"] if c["sub"] == scenario)
-    assert column["label"] == "35-5"
-    assert column["group_key"] == "unified_gdeepseek_v4"
-    group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
-    assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
-    assert group["span"] == 1
-    assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
-    assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
-    for row in tab["rows"]:
-        cell = row["cells"][scenario]
-        assert cell["col_group"] == column["group_key"]
-        if row["family"] != "deepseek_v4":
-            assert cell["status"] == "na"
-    glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
-    assert [r[0] for r in glossary["rows"]] == ["35-5"]
+    for scenario, label in [("unused_reference_graph_parameter_types", "7-14"),
+                            ("nullable_reference_alias_literals", "7-15")]:
+        column = next(c for c in tab["columns"] if c["sub"] == scenario)
+        assert column["label"] == label
+        assert "numeric" not in column["desc"].lower()
+        for row in tab["rows"]:
+            if row.get("family") not in table.gen_unified_golden.FAMILIES:
+                continue
+            cell = row["cells"][scenario]
+            assert cell["case_id"] == f"UNIFIED.{label}"
+            assert "variants" not in cell
+            assert cell["status"] != "na"
+    numeric_columns = [c for c in tab["columns"] if c["label"] in {"7-14.*", "7-15.*"}]
+    assert len(numeric_columns) == 2
+    for column in numeric_columns:
+        for row in tab["rows"]:
+            cell = row["cells"].get(column["sub"])
+            if cell and cell.get("variants"):
+                assert all(leaf["case_id"].startswith("UNIFIED." + column["label"][:-1])
+                           for leaf in cell["variants"])

@@ -53,9 +53,12 @@ NUMERIC_VARIANTS = [
 ]
 
 
+# Bare IDs are independent schema cases; only authored leaves belong here.
+_NUMERIC_GROUPS = {label: label.split(".", 1)[0] for _, label, *_ in NUMERIC_VARIANTS}
+
+
 def numeric_group(label):
-    parent = label.split(".", 1)[0]
-    return parent if parent in NUMERIC_DESCRIPTIONS else None
+    return _NUMERIC_GROUPS.get(label)
 
 
 def applicable(family, label):
