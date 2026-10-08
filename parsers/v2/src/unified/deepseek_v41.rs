@@ -346,7 +346,19 @@ impl InvokeEmitter for DeepSeekV41 {
             let value = if string {
                 Value::String(raw.to_string())
             } else {
-                serde_json::from_str(raw)?
+                match serde_json::from_str(raw) {
+                    Ok(value) => value,
+                    Err(error) if error.is_eof() => {
+                        tracing::warn!(
+                            why = "deepseek_v41_truncated_json_parameter",
+                            tool_index,
+                            recovered_bytes = invoke.len(),
+                            "Dropping incomplete DeepSeek V4.1 invocation"
+                        );
+                        return Ok(None);
+                    }
+                    Err(error) => return Err(error.into()),
+                }
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),
@@ -661,6 +673,26 @@ mod tests {
             "guided prefix examined {examined} bytes for a {}-byte name",
             name.len()
         );
+    }
+
+    #[test]
+    fn malformed_json_parameter_keeps_later_calls_at_every_split() {
+        let input = concat!(
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"x\":\"unfinished</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">é</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+        );
+        let expected = vec![
+            UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value": "é"}),
+            },
+            UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value": "Café"}),
+            },
+        ];
+        assert_every_split_with_init(input, UnifiedParserInit::default(), expected);
     }
 
     #[test]

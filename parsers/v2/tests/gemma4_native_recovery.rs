@@ -91,6 +91,39 @@ fn assert_both_adapters(input: &str, expected_text: &str) {
     assert_unified_at_every_split(input, expected_text);
 }
 
+fn assert_no_calls_at_every_split(input: &str) {
+    let tools = weather_tools();
+    for chunks in chunkings(input) {
+        let mut parser = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
+        let mut output = ToolParseResult::default();
+        for chunk in &chunks {
+            output.append(parser.push(chunk).expect("push"));
+        }
+        output.append(parser.finish().expect("finish"));
+        assert!(
+            output.coalesce_calls().calls.is_empty(),
+            "tool-only emitted a false call for chunks={chunks:?}"
+        );
+
+        let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
+            .expect("Gemma unified parser");
+        parser
+            .initialize_request(UnifiedParserInit::default())
+            .expect("native request");
+        let mut events = Vec::new();
+        for chunk in &chunks {
+            events.extend(parser.push(chunk).expect("push"));
+        }
+        events.extend(parser.finish().expect("finish").events);
+        assert!(
+            assemble(&events)
+                .iter()
+                .all(|event| !matches!(event, UnifiedEvent::ToolCall { .. })),
+            "unified emitted a false call for chunks={chunks:?}"
+        );
+    }
+}
+
 fn assert_both_adapters_at_chunk_sizes(input: &str, chunk_sizes: &[usize], expected_calls: usize) {
     let tools = weather_tools();
     for &chunk_size in chunk_sizes {
@@ -170,9 +203,107 @@ fn incomplete_intermediate_block_does_not_hide_a_later_valid_block() {
 }
 
 #[test]
+fn malformed_outer_quote_closes_after_an_incomplete_candidate_key() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>outer",
+        "<|tool_call>call:fake{<|\"|>}",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
+    );
+    assert_both_adapters(input, "");
+    assert_both_adapters_at_chunk_sizes(input, &[1, 4, 16], 1);
+}
+
+#[test]
+fn empty_nested_object_keeps_array_string_value_context() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>outer",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>,vals:[{},<|\"|>x<|\"|>]}",
+    );
+    let mut chunkings = chunkings(input);
+    chunkings.extend([1, 4, 16].into_iter().map(|size| {
+        input
+            .as_bytes()
+            .chunks(size)
+            .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
+            .collect()
+    }));
+    let tools = weather_tools();
+    for chunks in chunkings {
+        let mut tool_only = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
+        let mut tool_output = ToolParseResult::default();
+        for chunk in &chunks {
+            tool_output.append(tool_only.push(chunk).expect("tool-only push"));
+        }
+        tool_output.append(tool_only.finish().expect("tool-only finish"));
+        assert_eq!(
+            tool_output.coalesce_calls().calls.len(),
+            1,
+            "chunks={chunks:?}"
+        );
+
+        let mut unified = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
+            .expect("Gemma unified parser");
+        unified
+            .initialize_request(UnifiedParserInit::default())
+            .expect("native request");
+        let mut events = Vec::new();
+        for chunk in &chunks {
+            events.extend(unified.push(chunk).expect("unified push"));
+        }
+        events.extend(unified.finish().expect("unified finish").events);
+        let call_count = assemble(&events)
+            .into_iter()
+            .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+            .count();
+        assert_eq!(call_count, 1, "chunks={chunks:?}");
+    }
+}
+
+#[test]
 fn string_data_cannot_become_a_resynchronization_target() {
     let input = concat!(
         "<|tool_call>call:broken{note:<|\"|>",
+        "<|tool_call>call:get_weather{city:<|\"|>TRAP1<|\"|>}<tool_call|>more",
+        "<|tool_call>call:get_weather{city:<|\"|>TRAP2<|\"|>}<tool_call|>",
+        "<|\"|>}",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
+    );
+    assert_both_adapters(input, "");
+}
+
+#[test]
+fn closed_quoted_string_at_eof_cannot_recover_its_marker_text() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>x",
+        "<|tool_call>call:get_weather{city:<|\"|>TRAP<|\"|>}<tool_call|>y<|\"|>",
+    );
+    assert_no_calls_at_every_split(input);
+}
+
+#[test]
+fn closed_outer_quote_releases_a_later_candidate_after_an_incomplete_fake() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>x",
+        "<|tool_call>call:get_weather{city:<|\"|>TRAP<|\"|>}<tool_call|>y<|\"|>}",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
+    );
+    assert_both_adapters(input, "");
+}
+
+#[test]
+fn ambiguous_balanced_call_without_wrapper_close_recovers_at_eof() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>unterminated",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}",
+    );
+    assert_both_adapters(input, "");
+}
+
+#[test]
+fn second_marker_inside_quoted_outer_value_stays_data_until_the_quote_closes() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>x",
+        "<|tool_call>call:fake{open",
         "<|tool_call>call:get_weather{city:<|\"|>TRAP<|\"|>}<tool_call|>",
         "<|\"|>}",
         "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
