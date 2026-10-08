@@ -12,7 +12,7 @@
 use crate::{MmError, Result};
 
 /// Resolved vision configuration, with the same field names as SGLang/HF.
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct DeepseekV41GeometrySpec {
     pub vision_patch_size: u32,
     pub vision_downsample_ratio: u32,
@@ -22,7 +22,7 @@ pub struct DeepseekV41GeometrySpec {
 }
 
 /// Grids and full placeholder span for one image; all dimensions are height/width.
-#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
 pub struct DeepseekV41ImagePlan {
     pub resized_height: u32,
     pub resized_width: u32,

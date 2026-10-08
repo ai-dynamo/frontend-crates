@@ -54,20 +54,26 @@ def generate(source):
     ]
     rng = random.Random(41)
     dimensions += [(rng.randrange(1, 10000), rng.randrange(1, 10000)) for _ in range(20)]
-    cases = []
+    groups = []
     for spec in specs:
+        cases = []
         for width, height in dimensions:
             lh, lw, h, w = namespace["plan_image_grid"](width, height, SimpleNamespace(**spec))
             p = spec["vision_patch_size"]
-            cases.append(dict(width=width, height=height, spec=spec, plan=dict(
+            cases.append([width, height, dict(
                 resized_height=h, resized_width=w, vit_height=h // p, vit_width=w // p,
                 llm_height=lh, llm_width=lw,
                 num_image_tokens=namespace["num_image_tokens"](lh, lw),
-            )))
+            )])
+        groups.append(
+            '    {"spec": ' + json.dumps(spec) + ', "cases": [\n'
+            + ',\n'.join('      ' + json.dumps(case) for case in cases)
+            + '\n    ]}'
+        )
     return (
         '{\n  "source": ' + json.dumps(SOURCE) + ',\n  "source_sha256": '
-        + json.dumps(hashlib.sha256(source).hexdigest()) + ',\n  "cases": [\n'
-        + ',\n'.join('    ' + json.dumps(case, separators=(',', ':')) for case in cases)
+        + json.dumps(hashlib.sha256(source).hexdigest()) + ',\n  "groups": [\n'
+        + ',\n'.join(groups)
         + '\n  ]\n}\n'
     )
 

@@ -19,22 +19,22 @@ fn spec() -> DeepseekV41GeometrySpec {
 #[test]
 fn matches_pinned_sglang_geometry() {
     #[derive(serde::Deserialize)]
-    struct Case {
-        width: u32,
-        height: u32,
+    struct Group {
         spec: DeepseekV41GeometrySpec,
-        plan: DeepseekV41ImagePlan,
+        // Original width/height and expected plan.
+        cases: Vec<(u32, u32, DeepseekV41ImagePlan)>,
     }
     #[derive(serde::Deserialize)]
     struct Fixture {
-        cases: Vec<Case>,
+        groups: Vec<Group>,
     }
     let fixture: Fixture =
         serde_json::from_str(include_str!("fixtures/deepseek_v41/geometry.json")).unwrap();
-    for (index, case) in fixture.cases.iter().enumerate() {
-        let actual = plan_image_grid(case.width, case.height, &case.spec)
-            .unwrap_or_else(|error| panic!("case {index}: {error}"));
-        assert_eq!(actual, case.plan, "case {index}: {:?}", case.spec);
+    for group in fixture.groups {
+        for (width, height, expected) in group.cases {
+            let actual = plan_image_grid(width, height, &group.spec).unwrap();
+            assert_eq!(actual, expected, "{width}x{height}, {:?}", group.spec);
+        }
     }
 }
 
@@ -53,33 +53,31 @@ fn rejects_invalid_inputs_and_configuration() {
             Err(MmError::InvalidInput { .. })
         ));
     }
-    let mut invalid = spec();
-    invalid.vision_patch_size = 0;
-    assert!(matches!(
-        plan_image_grid(1, 1, &invalid),
-        Err(MmError::InvalidInput { .. })
-    ));
-    invalid = spec();
-    invalid.vision_downsample_ratio = 0;
-    assert!(matches!(
-        plan_image_grid(1, 1, &invalid),
-        Err(MmError::InvalidInput { .. })
-    ));
-    for budget in 0..4 {
-        invalid = spec();
-        invalid.vision_max_n_token = budget;
+    let reject = |config: DeepseekV41GeometrySpec| {
         assert!(matches!(
-            plan_image_grid(1, 1, &invalid),
+            plan_image_grid(1, 1, &config),
             Err(MmError::InvalidInput { .. })
         ));
+    };
+    reject(DeepseekV41GeometrySpec {
+        vision_patch_size: 0,
+        ..spec()
+    });
+    reject(DeepseekV41GeometrySpec {
+        vision_downsample_ratio: 0,
+        ..spec()
+    });
+    for budget in 0..4 {
+        reject(DeepseekV41GeometrySpec {
+            vision_max_n_token: budget,
+            ..spec()
+        });
     }
     for ratio in [0.0, -1.0, f64::NAN, f64::INFINITY] {
-        invalid = spec();
-        invalid.vision_max_wh_ratio = Some(ratio);
-        assert!(matches!(
-            plan_image_grid(1, 1, &invalid),
-            Err(MmError::InvalidInput { .. })
-        ));
+        reject(DeepseekV41GeometrySpec {
+            vision_max_wh_ratio: Some(ratio),
+            ..spec()
+        });
     }
 }
 

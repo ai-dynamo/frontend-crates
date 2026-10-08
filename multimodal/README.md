@@ -277,38 +277,25 @@ Three layers, all pinned to bitwise-equality:
 
 ## 5. DSV4.1 geometry planning
 
-`models::deepseek_v41::plan_image_grid(width, height, &spec)` computes a
-pixel-free plan from original image dimensions and an explicit
-`DeepseekV41GeometrySpec`. Supply the same resolved vision settings on the
-frontend and encoder: `vision_patch_size`, `vision_downsample_ratio`,
-`vision_min_pixels`, `vision_max_n_token`, and `vision_max_wh_ratio`.
+`models::deepseek_v41::plan_image_grid(width, height, &spec)` returns resized
+dimensions, ViT/LLM grids, and the full `llm_height * (llm_width + 1) + 2`
+placeholder span, including row separators and boundary positions. Supply
+the same resolved `DeepseekV41GeometrySpec` on the frontend and encoder.
 
-The returned `DeepseekV41ImagePlan` contains resized dimensions, ViT and LLM
-grids, and the complete placeholder span: `llm_height * (llm_width + 1) + 2`.
-This span includes row separators and two boundary positions; it is not just
-the number of image feature cells. For example, a 3-by-2 LLM grid occupies
-11 prompt positions.
+The pixel-free planner mirrors [pinned SGLang](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py).
+Invalid inputs/settings and unrepresentable `u32` output dimensions return
+errors. Full pixel processing, registry activation, and frontend/worker
+integration remain separate work.
 
-The planner mirrors SGLang's asymmetric width/height cap, minimum-pixel
-upscaling, patch alignment, token-budget shrink, and extreme-aspect branches
-at [`ffac53d7`](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py).
-It rejects zero input dimensions, invalid settings, unsatisfiable plans, and
-output dimensions outside `u32`. No image pixels are read or allocated.
-
-This API does not register a full DSV4.1 processor: fetching, pixel
-preprocessing, vision encoding, prompt expansion, and worker acceptance of
-pre-expanded spans remain the consumer's responsibility. Tests replay
-Python-derived geometry fixtures; regenerate/check them with:
+Regenerate/check the Python-derived fixtures with:
 
 ```sh
 python3 multimodal/tests/fixtures/deepseek_v41/generate.py
 python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 ```
 
-The generator uses only Python's standard library and executes the pinned
-source's pure geometry functions, without importing torch, numpy, or PIL.
-The fixture settings are deliberately varied mathematical test inputs, not
-asserted model defaults.
+The stdlib-only generator executes the pinned source's pure geometry
+functions. Fixture settings are mathematical test inputs, not model defaults.
 
 ## 6. Roadmap
 
