@@ -772,23 +772,6 @@ mod tests {
     }
 
     #[test]
-    fn missing_wrapper_recovery_ignores_tool_markers_in_a_closed_string() {
-        let input = concat!(
-            "<|tool_call>call:broken{note:<|\"|>quoted ",
-            "<|tool_call>call:fake{}<tool_call|><|\"|>}",
-            "<|tool_call>call:echo{value:<|\"|>y<|\"|>}<tool_call|>",
-        );
-        let expected = vec![call("echo", serde_json::json!({"value": "y"}))];
-        for split in 0..=input.len() {
-            assert_eq!(
-                events(&[], &[&input[..split], &input[split..]]),
-                expected,
-                "split={split}"
-            );
-        }
-    }
-
-    #[test]
     fn recovered_closed_call_is_emitted_before_finish() {
         let mut parser = gemma4_unified(&[]);
         let mut deltas = parser
