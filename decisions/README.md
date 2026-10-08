@@ -7,6 +7,8 @@ Runtime-independent canonical types and numerical reduction for text decision ev
 
 `render_question_prompt` creates prompt-format 1 semantic text. Model chat templating, answer-position token verification, revision binding, and inference remain executor responsibilities. `reduce_vocab_logprobs` accepts complete full-vocabulary-normalized candidate log probabilities, not head logits. Temperature changes conditional probabilities without changing measured vocabulary label mass. Missing cache measurements remain unknown.
 
-The transport owns authentication, body limits, model/alias lookup, request-ID headers, admission, deadlines, cancellation, routing, metrics, and cache isolation. The crate does not depend on an HTTP framework, asynchronous runtime, or model engine. Request adapters and response projection build on this core in subsequent work.
+`parse_request` performs duplicate-safe JSON decoding and dialect validation. `/v1/decisions` defaults to OpenAI; `nvext.format=sglang_native` selects the native contract. `/v1/systemone` uses Jev without a selector. Unsupported mixed schemas, modalities, and engine controls are rejected before execution. The default text profile allows at most 128 questions and explicitly disabled thinking only.
 
-Run `cargo test -p dynamo-decisions` for canonical capability, numerical, rendering, and error fixtures. No GPU is required.
+The transport owns authentication, body limits, model/alias lookup, request-ID headers, admission, deadlines, cancellation, routing, metrics, and cache isolation. The crate does not depend on an HTTP framework, asynchronous runtime, or model engine. Response projection builds on this core in subsequent work.
+
+Run `cargo test -p dynamo-decisions` for canonical capability, numerical, request validation, rendering, and error fixtures. No GPU is required.
