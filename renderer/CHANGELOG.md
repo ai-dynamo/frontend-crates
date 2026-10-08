@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0] - 2026-10-08
+
+### Breaking changes
+
+- Use `dynamo-protocols` 8.0 for the protocol types exposed in the public API.
+  Consumers sharing those types must upgrade to protocols 8.x.
+
+## [7.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.1.0...dynamo-renderer-v7.1.1) - 2026-10-08
+
+### Bug fixes
+
+- *(renderer)* Join reasoning segments for string-only reasoning templates ([#367](https://github.com/ai-dynamo/frontend-crates/pull/367))
+
+## [7.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.4...dynamo-renderer-v7.1.0) - 2026-10-08
+
+### Features
+
+- *(renderer)* Report Kimi K3 generation stub as pending segments ([#341](https://github.com/ai-dynamo/frontend-crates/pull/341))
+
+### Chore
+
+- *(renderer)* Spell floats like vLLM and SGLang in HF chat templates ([#368](https://github.com/ai-dynamo/frontend-crates/pull/368))
+
+## [7.0.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.3...dynamo-renderer-v7.0.4) - 2026-10-08
+
+### Bug fixes
+
+- *(renderer)* Match DeepSeek V4 reference on empty tool lists and merged tasks ([#366](https://github.com/ai-dynamo/frontend-crates/pull/366))
+
 ## [7.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.2...dynamo-renderer-v7.0.3) - 2026-10-07
 
 ### Bug fixes

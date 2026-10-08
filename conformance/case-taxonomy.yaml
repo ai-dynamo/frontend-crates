@@ -121,6 +121,8 @@ suites:
           "11": {desc: URI-encoded local references resolve before type coercion, required: false}
           "12": {desc: "Referenced strings preserve JSON-looking object, array, and quoted text", required: false}
           "13": {desc: "Scalar references retain integer, number, and boolean types while intersecting sibling constraints", required: false}
+          m: {desc: "MiniMax M3 treats whitespace between nested argument tags as formatting, not array items or mixed text", required: false}
+          n: {desc: MiniMax M3 preserves whitespace-only and padded string leaves inside nested arguments, required: false}
       "8":
         title: Narration around calls
         required: true
@@ -261,6 +263,8 @@ suites:
           j: {desc: MiniMax M3 preserves nested scalar types when an object wins a nullable union, required: false}
           k: {desc: GLM resolves local references before coercing string and integer arguments. This case does not distinguish sibling type intersections., required: false}
           l: {desc: MiniMax M3 resolves a local object reference before coercing arguments, required: false}
+          m: {desc: "MiniMax M3 treats whitespace between nested argument tags as formatting, not array items or mixed text", required: false}
+          n: {desc: MiniMax M3 preserves whitespace-only and padded string leaves inside nested arguments, required: false}
       "8":
         title: Narration around calls
         required: true

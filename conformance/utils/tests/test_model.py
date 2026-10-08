@@ -1076,14 +1076,15 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
     tab = _tab(model_v2, "tab-unified")
     dynamo_candidates = [candidate for candidate in tab["candidates"] if candidate.get("impl") == "dynamo"]
     current = next(candidate for candidate in dynamo_candidates if candidate["key"] == "dynamo")
-    current_version = tuple(map(int, current["version"].split(".")))
+    # Peer families first captured these reference scenarios at 0.7.18.
+    introduced = (0, 7, 18)
     older_keys = [
         candidate["key"]
         for candidate in dynamo_candidates
         if candidate["key"] != "dynamo"
-        and tuple(map(int, candidate["version"].split("."))) < current_version
+        and tuple(map(int, candidate["version"].split("."))) < introduced
     ]
-    assert current["version"] == "0.7.18"
+    assert tuple(map(int, current["version"].split("."))) >= introduced
     scenarios = (
         "glm_ref_object",
         "glm_ref_encoded_targets",

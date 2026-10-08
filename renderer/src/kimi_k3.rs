@@ -55,7 +55,11 @@ impl KimiK3Formatter {
         }
     }
 
-    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<RenderedSegment>> {
+    /// Render the conversation into segments, also returning how many trailing
+    /// segments form the assistant generation stub (`<|open|>think<|sep|>` or
+    /// `<|open|>response<|sep|>`). Moonshot's K3 API feeds that stub to the
+    /// model but excludes it from reported `usage.prompt_tokens`.
+    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<ChatSegments> {
         let messages = crate::messages_to_json(req).context("Failed to convert K3 messages")?;
         let Value::Array(messages) = messages else {
             anyhow::bail!("Kimi K3 messages must be an array");
@@ -118,11 +122,25 @@ impl OAIPromptFormatter for KimiK3Formatter {
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?).into_text())
+        Ok(self.build_segments(req)?.into_prompt().into_text())
     }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?))
+        Ok(self.build_segments(req)?.into_prompt())
+    }
+}
+
+struct ChatSegments {
+    segments: Vec<RenderedSegment>,
+    /// Trailing segments that open the assistant channel for generation.
+    /// Zero when no generation prompt was added or a partial assistant
+    /// message is being continued.
+    pending_segments: usize,
+}
+
+impl ChatSegments {
+    fn into_prompt(self) -> RenderedPrompt {
+        RenderedPrompt::segmented_with_pending(self.segments, self.pending_segments)
     }
 }
 
@@ -817,8 +835,9 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-) -> Result<Vec<RenderedSegment>> {
+) -> Result<ChatSegments> {
     let mut segments = Vec::new();
+    let mut pending_segments = 0usize;
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
 
@@ -1031,14 +1050,22 @@ fn build_chat_segments(
             "message",
             [("role".to_string(), "assistant".to_string())],
         );
+        // Only the channel-opening tag is the "pending" stub under Moonshot's
+        // accounting; the assistant message header above still counts as
+        // prompt. Measure it rather than assuming its segment count.
+        let before_channel_tag = segments.len();
         open_tag(
             &mut segments,
             if thinking { "think" } else { "response" },
             [],
         );
+        pending_segments = segments.len() - before_channel_tag;
     }
 
-    Ok(segments)
+    Ok(ChatSegments {
+        segments,
+        pending_segments,
+    })
 }
 
 #[cfg(test)]
@@ -2155,5 +2182,97 @@ mod tests {
             "{\"a\": 1, \"b\": [true, false]}",
             "<|close|>argument<|sep|>"
         )));
+    }
+
+    fn pending_texts(prompt: &RenderedPrompt) -> Vec<String> {
+        let segments = prompt.segments().unwrap();
+        segments[segments.len() - prompt.pending_segments()..]
+            .iter()
+            .map(|segment| segment.text.clone())
+            .collect()
+    }
+
+    #[test]
+    fn non_thinking_generation_stub_is_reported_as_pending_segments() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "response", "<|sep|>"]);
+        // The assistant message header stays part of the prompt proper.
+        let pending = prompt.pending_encode_segments().unwrap();
+        assert_eq!(pending.len(), 3);
+        assert!(pending[0].allow_special, "open marker is a control token");
+        assert!(!pending[1].allow_special, "channel name is ordinary text");
+        assert!(pending[2].allow_special, "sep marker is a control token");
+        assert!(prompt.as_str().ends_with(concat!(
+            "<|open|>message role=\"assistant\"<|sep|>",
+            "<|open|>response<|sep|>"
+        )));
+    }
+
+    #[test]
+    fn thinking_generation_stub_is_reported_as_pending_segments() {
+        let request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "think", "<|sep|>"]);
+    }
+
+    #[test]
+    fn response_format_instructions_are_prompt_not_pending() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request.response_format = Some(json!({
+            "type": "json_schema",
+            "json_schema": {
+                "name": "capital_answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {"capital": {"type": "boolean"}},
+                    "required": ["capital"],
+                    "additionalProperties": false
+                }
+            }
+        }));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "response", "<|sep|>"]);
+        let stub_start = prompt.as_str().len() - "<|open|>response<|sep|>".len();
+        let schema_at = prompt
+            .as_str()
+            .find("type=\"response-format\"")
+            .expect("response_format renders a system message");
+        assert!(
+            schema_at < stub_start,
+            "schema instructions precede the stub"
+        );
+    }
+
+    #[test]
+    fn no_generation_prompt_has_no_pending_segments() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request.add_generation_prompt = false;
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 0);
+        assert!(prompt.pending_encode_segments().unwrap().is_empty());
+        assert!(prompt.as_str().ends_with("<|end_of_msg|>"));
+    }
+
+    #[test]
+    fn partial_assistant_continuation_has_no_pending_segments() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 0);
     }
 }
