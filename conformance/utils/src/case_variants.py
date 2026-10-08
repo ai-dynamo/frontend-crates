@@ -8,7 +8,12 @@ import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
 import unified_taxonomy
-from numeric_cases import NUMERIC_DESCRIPTIONS, applicable as numeric_applicable, numeric_group
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_DISPLAY_LABELS,
+    applicable as numeric_applicable,
+    numeric_group,
+)
 
 VARIANT_DESCRIPTIONS = {**NULL_DESCRIPTIONS, **NUMERIC_DESCRIPTIONS}
 
@@ -116,7 +121,7 @@ def group_null_variants(tab: dict) -> None:
             continue
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_group = (parent + ".*" if parent in NUMERIC_DESCRIPTIONS
+        display_group = (NUMERIC_DISPLAY_LABELS[parent] if parent in NUMERIC_DESCRIPTIONS
                          else root["label"] if len(members) == 1 else display_label(parent))
         display_labels[root["label"]] = display_group
         display_descriptions[display_group] = description
