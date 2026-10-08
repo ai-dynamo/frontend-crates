@@ -239,13 +239,14 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
     ]
 
 
-def test_recorded_known_error_is_bound_and_must_match_exactly(tmp_path):
+def test_recorded_error_for_resolved_divergence_is_rejected(tmp_path):
     current = _input("same") | {"scenario": "malformed_json_then_two_valid_calls"}
     error = "native push: EOF while parsing a string at line 1 column 16"
     record = {"capture_input": capture_stimulus.capture_input(current), "error": error}
     _write(tmp_path, "inputs", current, "UNIFIED.5-4")
     _write(tmp_path, "capture", record, "UNIFIED.5-4")
-    assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
+    with pytest.raises(ValueError, match="unexpected error"):
+        capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
     for invalid in ({"error": error + " changed"}, {"assembled": []}, {"chunks": []}):
         _write(tmp_path, "capture", record | invalid, "UNIFIED.5-4")
         with pytest.raises(ValueError, match="unexpected error"):
