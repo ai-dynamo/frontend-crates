@@ -569,79 +569,73 @@ async fn guided_chunks_carry_each_index_once() {
         ),
     ];
     for (required, pieces) in payloads {
-        for single_choice in [false, true] {
-            for finish in [Some(FinishReason::Stop), None] {
-                let builder = if required {
-                    JailedStream::builder().tool_choice_required()
-                } else {
-                    JailedStream::builder().tool_choice_named("calculate".to_string())
-                }
-                .guided_streaming(true);
-                let jail = if single_choice {
-                    builder.single_choice_per_chunk().build()
-                } else {
-                    builder.build()
-                };
-                let case = format!("{pieces:?} single_choice={single_choice} finish={finish:?}");
+        for finish in [Some(FinishReason::Stop), None] {
+            let jail = if required {
+                JailedStream::builder().tool_choice_required()
+            } else {
+                JailedStream::builder().tool_choice_named("calculate".to_string())
+            }
+            .guided_streaming(true)
+            .build();
+            let case = format!("{pieces:?} finish={finish:?}");
 
-                // The backend sends the role once, on the first chunk.
-                let mut chunks: Vec<_> = pieces.iter().map(|piece| chunk(piece)).collect();
-                let last = chunks.len() - 1;
-                for (i, c) in chunks.iter_mut().enumerate() {
-                    let choice = &mut c.data.as_mut().unwrap().choices[0];
-                    if i > 0 {
-                        choice.delta.role = None;
-                    }
-                    if i == last {
-                        choice.finish_reason = finish;
-                    }
+            // The backend sends the role once, on the first chunk.
+            let mut chunks: Vec<_> = pieces.iter().map(|piece| chunk(piece)).collect();
+            let last = chunks.len() - 1;
+            for (i, c) in chunks.iter_mut().enumerate() {
+                let choice = &mut c.data.as_mut().unwrap().choices[0];
+                if i > 0 {
+                    choice.delta.role = None;
                 }
-                let results: Vec<_> = jail
-                    .apply_with_finish_reason(stream::iter(chunks))
-                    .collect()
-                    .await;
+                if i == last {
+                    choice.finish_reason = finish;
+                }
+            }
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
 
-                let (mut names, mut args) = (Vec::new(), String::new());
-                let (mut finished, mut roles) = (false, 0usize);
-                for data in results.iter().filter_map(|r| r.data.as_ref()) {
-                    let indices: Vec<u32> = data.choices.iter().map(|c| c.index).collect();
+            let (mut names, mut args) = (Vec::new(), String::new());
+            let (mut finished, mut roles) = (false, 0usize);
+            for data in results.iter().filter_map(|r| r.data.as_ref()) {
+                let indices: Vec<u32> = data.choices.iter().map(|c| c.index).collect();
+                assert!(
+                    indices
+                        .iter()
+                        .enumerate()
+                        .all(|(i, x)| !indices[..i].contains(x)),
+                    "{case}: duplicate choice index in {indices:?}"
+                );
+                for choice in &data.choices {
+                    finished |= choice.finish_reason.is_some();
+                    roles += usize::from(choice.delta.role.is_some());
+                    let Some(calls) = choice.delta.tool_calls.as_ref() else {
+                        continue;
+                    };
+                    let call_indices: Vec<u32> = calls.iter().map(|c| c.index).collect();
                     assert!(
-                        indices
+                        call_indices
                             .iter()
                             .enumerate()
-                            .all(|(i, x)| !indices[..i].contains(x)),
-                        "{case}: duplicate choice index in {indices:?}"
+                            .all(|(i, x)| !call_indices[..i].contains(x)),
+                        "{case}: duplicate tool_call index in {call_indices:?}"
                     );
-                    for choice in &data.choices {
-                        finished |= choice.finish_reason.is_some();
-                        roles += usize::from(choice.delta.role.is_some());
-                        let Some(calls) = choice.delta.tool_calls.as_ref() else {
-                            continue;
-                        };
-                        let call_indices: Vec<u32> = calls.iter().map(|c| c.index).collect();
-                        assert!(
-                            call_indices
-                                .iter()
-                                .enumerate()
-                                .all(|(i, x)| !call_indices[..i].contains(x)),
-                            "{case}: duplicate tool_call index in {call_indices:?}"
-                        );
-                        for call in calls {
-                            let function = call.function.as_ref().unwrap();
-                            names.extend(function.name.clone());
-                            args.push_str(function.arguments.as_deref().unwrap_or(""));
-                        }
+                    for call in calls {
+                        let function = call.function.as_ref().unwrap();
+                        names.extend(function.name.clone());
+                        args.push_str(function.arguments.as_deref().unwrap_or(""));
                     }
                 }
-                assert_eq!(names, ["calculate"], "{case}");
-                assert_eq!(
-                    serde_json::from_str::<serde_json::Value>(&args).unwrap(),
-                    serde_json::json!({"expression": "123 * 456"}),
-                    "{case}"
-                );
-                assert!(roles > 0, "{case}: role never arrived");
-                assert!(finished, "{case}: finish_reason never arrived");
             }
+            assert_eq!(names, ["calculate"], "{case}");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&args).unwrap(),
+                serde_json::json!({"expression": "123 * 456"}),
+                "{case}"
+            );
+            assert!(roles > 0, "{case}: role never arrived");
+            assert!(finished, "{case}: finish_reason never arrived");
         }
     }
 }

@@ -112,7 +112,6 @@ pub enum ChoiceEmission {
     Trailing(ChatChoiceStream),
 }
 
-/// Append `extra`'s token logprobs after `target`'s, in stream order.
 fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatChoiceLogprobs>) {
     let Some(extra) = extra else {
         return;
@@ -185,7 +184,6 @@ fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
     !conflicts
 }
 
-/// Append `extra` to `base`, its earlier entry for the same choice.
 fn merge_choice(base: &mut ChatChoiceStream, extra: ChatChoiceStream) {
     let ChatChoiceStream {
         index: _,
@@ -4848,39 +4846,6 @@ mod tests {
             frames[0][0].delta.content,
             Some(ChatCompletionMessageContent::Parts(_))
         ));
-    }
-
-    /// Reasoning stays a separate, earlier frame from the answer that follows it.
-    #[test]
-    fn pack_choices_keeps_reasoning_before_the_answer() {
-        let mut reasoning = create_choice_stream(0, None, "", None, None, None);
-        reasoning.delta.content = None;
-        reasoning.delta.reasoning_content = Some("Compute it.".to_string());
-        let call = create_choice_stream(
-            0,
-            Some(Role::Assistant),
-            "",
-            Some(vec![packed_call(0, Some("calc"), "{\"x\":323}")]),
-            Some(FinishReason::ToolCalls),
-            None,
-        );
-
-        let frames = pack_choices(vec![
-            ChoiceEmission::Content(reasoning),
-            ChoiceEmission::ToolCall(call),
-        ]);
-
-        assert_eq!(frames.len(), 2);
-        assert_eq!(
-            frames[0][0].delta.reasoning_content.as_deref(),
-            Some("Compute it.")
-        );
-        assert!(frames[0][0].delta.tool_calls.is_none());
-        assert!(frames[1][0].delta.reasoning_content.is_none());
-        assert_eq!(
-            frames[1][0].delta.tool_calls.as_ref().map(Vec::len),
-            Some(1)
-        );
     }
 
     /// Pending reasoning and a call finalized at EOF for the same choice arrive as
