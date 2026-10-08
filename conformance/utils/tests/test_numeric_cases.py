@@ -222,12 +222,13 @@ def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
            "column_groups": [{"key": "7", "span": len(labels)}], "stats": {},
            "glossary": [{"rows": [(label, "schema " + label) for label in labels]}]}
     group_null_variants(tab)
-    assert [column["label"] for column in tab["columns"]] == ["7-14", "7-15", "7-14.*", "7-15.*"]
+    assert [column["label"] for column in tab["columns"]] == ["7-14", "7-15", "7-17", "7-19"]
     for label in labels[:2]:
         assert cells[label] == original[label]
         assert next(c for c in tab["columns"] if c["label"] == label)["desc"] == "schema " + label
         assert (label, "schema " + label) in tab["glossary"][0]["rows"]
     for root, prefix in [("7-14.const_decimal", "7-14."), ("7-15.ordinary", "7-15.")]:
-        assert cells[root]["case_id"] == "UNIFIED." + prefix + "*"
+        alias = "7-17" if root.startswith("7-14") else "7-19"
+        assert cells[root]["case_id"] == "UNIFIED." + alias
         assert all(leaf["case_id"].startswith("UNIFIED." + prefix) for leaf in cells[root]["variants"])
     assert cells["7-14.const_decimal"]["status"] != "na"
