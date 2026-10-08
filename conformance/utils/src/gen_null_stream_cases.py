@@ -4,12 +4,14 @@
 
 import argparse
 import copy
+import subprocess
 from pathlib import Path
 
 import yaml
 
 import gen_unified_golden as unified
 from numeric_cases import NumericLiteral
+from refresh_dynamo_captures import V2_FAMILIES
 from null_cases import (
     MIXED_CASE_FAMILIES, MIXED_GREP_ARGS, MIXED_GREP_SCHEMA, MIXED_LABELS_ARGS, MIXED_LABELS_SCHEMA,
     NULL_VARIANTS, null_description,
@@ -45,9 +47,13 @@ def native_call(family, name, arguments):
             for key, value in arguments.items()
         )
         return f"<tool_call><function={name}>{parameters}</function></tool_call>"
-    key, value = next(iter(arguments.items()))
-    assert len(arguments) == 1
-    return unified.r_tool(family, name, key, value, 0)
+    if family in {"harmony", "harmony_text"}:
+        return (f"<|channel|>commentary to=functions.{name} <|constrain|>json<|message|>"
+                + unified._json_with_numeric_literals(arguments) + "<|call|>")
+    if len(arguments) == 1:
+        key, value = next(iter(arguments.items()))
+        return unified.r_tool(family, name, key, value, 0)
+    return unified.r_tool_arguments(family, name, arguments, 0)
 
 
 def make_case(family, name, schema, arguments, description, strict=None):
@@ -84,19 +90,22 @@ def build_cases(family):
     return cases
 
 
-FAMILIES = ("deepseek_v4", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer",
-            "qwen3_coder", "minimax_m2", "minimax_m3")
+FAMILIES = V2_FAMILIES
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--token-stamper", type=Path, required=True,
+                        help="Built stamp_stream_token_ids binary for Harmony token inputs")
     args = parser.parse_args()
     for family in FAMILIES:
         path = args.output / family / "TOOLCALLING.streamv1.7-null.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(yaml.safe_dump({"family": family, "mode": "streamv1", "cases": build_cases(family)},
                                        sort_keys=False, allow_unicode=True, width=4096))
+        if family in {"harmony", "harmony_text"}:
+            subprocess.run([str(args.token_stamper.resolve()), "--input", str(path)], check=True)
 
 
 if __name__ == "__main__":

@@ -21,7 +21,8 @@ def aggregate_cells(cells, parent, description, *, display_label=None):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
     case_id = result.get("case_id") or ""
-    prefix = "UNIFIED." if case_id.startswith("UNIFIED.") else case_id.split(parent, 1)[0]
+    parent_key = parent.split(".", 1)[0]
+    prefix = "UNIFIED." if case_id.startswith("UNIFIED.") else case_id.split(parent_key, 1)[0]
     result["case_id"] = prefix + (display_label or parent)
     result["kind"] = "cell"
     result["status"] = "ok"
@@ -101,8 +102,13 @@ def group_null_variants(tab: dict) -> None:
 
     display_labels: dict[str, str] = {}
     display_descriptions: dict[str, str] = {}
-    for parent, description in VARIANT_DESCRIPTIONS.items():
-        members = [column for column in columns if variant_group(metadata_label(column)) == parent]
+    sections = [(parent, description, group_key)
+                for parent, description in VARIANT_DESCRIPTIONS.items()
+                for group_key in dict.fromkeys(column["group_key"] for column in columns
+                                               if variant_group(metadata_label(column)) == parent)]
+    for parent, description, group_key in sections:
+        members = [column for column in columns
+                   if variant_group(metadata_label(column)) == parent and column["group_key"] == group_key]
         if unified:
             # Display sorting must not change the parent oracle or variant order.
             members.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
@@ -110,12 +116,14 @@ def group_null_variants(tab: dict) -> None:
             continue
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_group = parent + ".*" if parent in NUMERIC_DESCRIPTIONS else display_label(parent)
+        display_group = (parent + ".*" if parent in NUMERIC_DESCRIPTIONS
+                         else root["label"] if len(members) == 1 else display_label(parent))
         display_labels[root["label"]] = display_group
         display_descriptions[display_group] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
-        mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")]
+        mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")
+                 and column["group_key"] == group_key]
         if unified:
             mixed.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
         referenced = members + (mixed if parent == "7-5" else [])
@@ -127,7 +135,7 @@ def group_null_variants(tab: dict) -> None:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             inapplicable = []
-            if parent == "7-14" and not numeric_applicable(row["family"], root["label"]):
+            if parent in NUMERIC_DESCRIPTIONS and not numeric_applicable(row["family"], root["label"]):
                 prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
                 for column in members:
                     cell = row["cells"].get(column["sub"])
@@ -148,7 +156,7 @@ def group_null_variants(tab: dict) -> None:
                     tooltip.update(
                         head=f"{case_id} — {row['family']}",
                         description=description,
-                        na_note="This family does not use the shared integral-decimal conversion contract.",
+                        na_note="This grammar does not coerce untyped fractional text through an integer/string schema.",
                     )
                     cell["tooltip"] = tooltip
                     inapplicable.append(cell)
@@ -179,7 +187,7 @@ def group_null_variants(tab: dict) -> None:
                     "init": None,
                     "candidates": [],
                     "variants": [cell["tooltip"] for cell in inapplicable],
-                    "na_note": "This family does not use the shared integral-decimal conversion contract.",
+                    "na_note": "This grammar does not coerce untyped fractional text through an integer/string schema.",
                 }
                 row["cells"][root["sub"]] = grouped
         for column in members:

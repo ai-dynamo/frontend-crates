@@ -53,6 +53,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
+from numeric_cases import canonical_events
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -61,6 +62,7 @@ from unified_taxonomy import (  # noqa: E402
     numbered_id,
     tax,
     taxonomy_sort_key,
+    validate_family_sections,
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
@@ -178,6 +180,25 @@ def test_every_used_group_has_a_label() -> None:
         f"group(s) {missing} are used by the corpus but absent from UNIFIED_GROUP_LABEL "
         f"in {TAXONOMY_FILE}."
     )
+
+
+def _authored_scenario_families():
+    families = defaultdict(set)
+    for family in FAMILIES:
+        for case_id in build_cases(family):
+            families[case_id[len("UNIFIED."):].rsplit(".", 1)[0]].add(family)
+    return families
+
+
+def test_single_family_cases_never_enter_generic_sections():
+    validate_family_sections(_authored_scenario_families())
+
+
+def test_section_guard_rejects_one_family_coverage_disguised_as_generic():
+    families = _authored_scenario_families()
+    families["arg_numeric_14_const_decimal"] = {"qwen3"}
+    with pytest.raises(ValueError, match="must NEVER appear in generic sections"):
+        validate_family_sections(families)
 
 
 def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
@@ -671,6 +692,7 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
+        "arg_null_mixed_labels": set(FAMILIES),
         "arg_string_null_ref": {"glm47", "qwen3", "nemotron_v3"},
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
@@ -1890,6 +1912,9 @@ def _assert_cross_family_contract(corpus):
                 # These native spellings are ambiguous. Validate each family's
                 # established interpretation, then compare the shared scenario.
                 events = [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": probe["value"]}}]
+
+            if scenario.startswith("arg_numeric_"):
+                events = canonical_events(events)
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
                 expected_type = "string" if value is not None else ["string", "null"]
