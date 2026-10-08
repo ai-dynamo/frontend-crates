@@ -179,6 +179,7 @@ build_stage_conformance() {
   # Keep the current conformance harness owned by conformance/utils while presenting
   # it in Dynamo's staged tests/parity layout for imports and template lookup.
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
+  \cp -f "$ROOT/conformance/case-taxonomy.yaml" "$STAGE/case-taxonomy.yaml"
   # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"

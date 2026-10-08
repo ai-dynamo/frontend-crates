@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [9.2.12](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.11...dynamo-parsers-v9.2.12) - 2026-10-08
+
+### Bug fixes
+
+- *(jail)* Emit each index once per chunk under guided streaming ([#352](https://github.com/ai-dynamo/frontend-crates/pull/352))
+
+## [9.2.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.10...dynamo-parsers-v9.2.11) - 2026-10-08
+
+### Bug fixes
+
+- *(kimi-k3)* Generate unique tool-call IDs across turns ([#353](https://github.com/ai-dynamo/frontend-crates/pull/353))
+
+## [9.2.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.8...dynamo-parsers-v9.2.9) - 2026-10-07
+
+### Bug fixes
+
+- *(parsers)* Suppress K3 marker leaks and fix empty XML tool calls ([#331](https://github.com/ai-dynamo/frontend-crates/pull/331))
+
+## [9.2.7] - 2026-10-02
+
+### Bug fixes
+
+- Preserve GLM47 calls to unknown tools for request-scoped validation by the executor, and refresh the V1 conformance capture.
+
 ## [9.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.2...dynamo-parsers-v9.2.3) - 2026-10-01
 
 ### Bug fixes

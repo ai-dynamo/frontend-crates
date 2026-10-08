@@ -40,6 +40,7 @@ UNIFIED_TAX = {
     # Group 5 — Truncation / recovery (streamv1.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
+    "malformed_json_then_two_valid_calls": (5, "4"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
@@ -53,10 +54,31 @@ UNIFIED_TAX = {
     "glm_ref_encoded_targets": (7, "11"),
     "glm_ref_json_looking_strings": (7, "12"),
     "glm_ref_scalar_types": (7, "13"),
+    "unused_reference_graph_parameter_types": (7, "14"),
+    "nullable_reference_alias_literals": (7, "15"),
+    "local_schema_id_preserves_type": (7, "16"),
+    "deepseek_v41_json_invocation_body": ("deepseek", "1"),
+    "glm47_reference_type_intersection": ("glm5", "2"),
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
     "narrated_calls": (8, "5"),
+    "native_quoted_control_in_response": (8, "6"),
+    "native_single_quoted_word_control": (8, "7"),
+    "native_quoted_control_then_call": (8, "8"),
+    "native_unmatched_quote_then_call": (8, "9"),
+    "native_quoted_control_in_reasoning": (40, "5"),
+    "native_quoted_incomplete_header": (8, "10"),
+    "native_single_quote_contraction_response": (8, "11"),
+    "native_single_quote_contraction_reasoning": (40, "6"),
+    "guided_quoted_reasoning_closer_named": (34, "8"),
+    "guided_quoted_reasoning_closer_required": (34, "9"),
+    "guided_response_quoted_control_braces_named": (35, "3"),
+    "guided_response_quoted_control_braces_required": (35, "4"),
+    "guided_response_rejected_header_quote_ownership": (35, "5"),
+    "muse_quoted_reserved_eom_argument": ("muse", "2"),
+    "muse_quoted_reserved_eot_argument": ("muse", "3"),
+    "muse_quoted_reserved_start_argument": ("muse", "4"),
     # Group 10 — Reasoning span (REASONING.*), reasoning-only
     "reason_only": (10, "1"), "reason_then_content": (10, "2"),
     "two_reason_spans": (10, "3"), "reason_unterminated": (10, "4"),
@@ -160,10 +182,12 @@ UNIFIED_GROUP_LABEL = {
     35: "Guided Decoding — markers in visible answers",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
-    "gemma": "Gemma 4 guided call-prefix boundaries",
-    "glm5": "GLM 5 argument-marker boundaries",
-    "kimi": "Kimi K3 XTML",
-    "muse": "Muse-specific",
+    "deepseek_v4": "Single Family Test: DeepSeek V4-specific tests",
+    "gemma": "Single Family Test: Gemma 4 guided call-prefix boundaries",
+    "glm5": "Single Family Test: GLM argument handling",
+    "deepseek": "Single Family Test: DeepSeek V4.1 DSML invocation bodies",
+    "kimi": "Single Family Test: Kimi K3 XTML",
+    "muse": "Single Family Test: Muse-specific",
 }
 
 
@@ -176,6 +200,21 @@ def tax(scenario):
     divergent copy of the same fact, free to drift from what the harness applies.
     """
     return UNIFIED_TAX.get(scenario, (9, scenario))
+
+
+# Display placement may change without renumbering published capture IDs.
+_DISPLAY_GROUP = {"guided_response_rejected_header_quote_ownership": "deepseek_v4"}
+
+
+def display_tax(scenario):
+    group, sub = tax(scenario)
+    return _DISPLAY_GROUP.get(scenario, group), sub
+
+
+def display_sort_key(scenario):
+    group, _ = display_tax(scenario)
+    group_key = (0, group) if isinstance(group, int) else (1, str(group))
+    return group_key, taxonomy_sort_key(scenario)
 
 
 def taxonomy_sort_key(scenario):
@@ -202,6 +241,8 @@ def numbered_id(scenario):
 # read-side bridge from their former labels to the scenario-owned current label.
 # Current inputs and goldens use ``numbered_id`` and never write these aliases.
 LEGACY_CASE_LABELS = {
+    "7-6": "deepseek_v41_json_invocation_body",
+    "7-7": "glm47_reference_type_intersection",
     "1.a": "tool_only",
     "2.a": "two_calls", "2.b": "two_calls_same_name",
     "3.a": "text_only",

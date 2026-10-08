@@ -99,6 +99,82 @@ def test_explicit_unified_na_is_not_empty():
 
 
 @pytest.fixture
+def known_divergence_report(tmp_path):
+    model = _model({})
+    def cell(sub, red):
+        return {
+            "sub": sub, "kind": "cell", "status": "ok", "red_on_diff": True,
+            "cmp": {
+                "dynamo": {"sig": 2 if red else 1, "na": 0, "err": 0, "leak": 0},
+                "golden": {"sig": 1, "na": 0, "err": 0, "leak": 0},
+            },
+        }
+    # Both leaves share one already-red display column. The green sibling must
+    # still fail independently if its observed result starts diverging.
+    model["tabs"][0]["rows"][0]["cells"]["case"] = {
+        "variants": [cell("case_nullable", True), cell("case_union", False)],
+    }
+    registry = tmp_path / "known.yaml"
+    registry.write_text(
+        "qwen3:\n  UNIFIED.case_nullable.qwen3:\n    golden:\n      actual: recorded\n"
+    )
+    return model, registry
+
+
+def test_known_divergences_validate_grouped_fixture_leaves(known_divergence_report):
+    model, registry = known_divergence_report
+    _load_validator().validate_unified_known_divergences(model, registry, ["qwen3"])
+
+
+@pytest.mark.parametrize("damage, message", [
+    ("unexpected_red", "differs from known divergences"),
+    ("stale", "differs from known divergences"),
+    ("missing_leaf", "differs from known divergences"),
+    ("empty", "differs from known divergences"),
+    ("missing_family", "families differ"),
+    ("duplicate_family", "duplicate family rows"),
+    ("unknown_family", "unknown families"),
+    ("wrong_case_family", "invalid case ID"),
+    ("no_leaves", "no applicable fixture leaves"),
+    ("all_na", "no applicable fixture leaves"),
+])
+def test_known_divergences_reject_report_damage(known_divergence_report, damage, message):
+    model, registry = known_divergence_report
+    rows = model["tabs"][0]["rows"]
+    leaves = rows[0]["cells"]["case"]["variants"]
+    if damage == "unexpected_red":
+        leaves[1]["cmp"]["dynamo"]["sig"] = 2
+    elif damage == "stale":
+        leaves[0]["cmp"]["dynamo"]["sig"] = 1
+    elif damage == "missing_leaf":
+        leaves.pop(0)
+    elif damage == "empty":
+        del leaves[1]["cmp"]["dynamo"]
+    elif damage == "missing_family":
+        rows.clear()
+    elif damage == "duplicate_family":
+        rows.append(rows[0])
+    elif damage == "unknown_family":
+        registry.write_text("unknown: {}\n")
+    elif damage == "wrong_case_family":
+        registry.write_text("qwen3:\n  UNIFIED.case_nullable.other:\n    golden: {}\n")
+    elif damage == "no_leaves":
+        rows[0]["cells"].clear()
+    elif damage == "all_na":
+        for leaf in leaves:
+            leaf["status"] = "na"
+    with pytest.raises(ValueError, match=message):
+        _load_validator().validate_unified_known_divergences(model, registry, ["qwen3"])
+
+
+def test_non_golden_known_checks_do_not_allow_display_red(known_divergence_report):
+    model, registry = known_divergence_report
+    registry.write_text("qwen3:\n  UNIFIED.case_nullable.qwen3:\n    chunk_invariance: {}\n")
+    with pytest.raises(ValueError, match="differs from known divergences"):
+        _load_validator().validate_unified_known_divergences(model, registry, ["qwen3"])
+
+
+@pytest.fixture
 def inventory_report(tmp_path):
     fixtures = tmp_path / "unified"
     sources = ("dynamo_v2-0.6.1", "dynamo_v2-0.6.0", "vllm_python-0.26.0", "vllm_rust-0.26.0")

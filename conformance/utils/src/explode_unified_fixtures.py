@@ -152,6 +152,9 @@ def main():
             "chunks": [{"expected": ch.get("dynamo") or []} for ch in chunks],
         }
 
+        if c.get("dynamo_error"):
+            slot(ddir, fam)[key] = {"capture_input": capture_input(c), "error": c["dynamo_error"]}
+
         # peer engine overlays
         for impl in ("vllm_python", "vllm_rust", "sglang_python"):
             res = (caps[impl].get("results") or {}).get(cid)

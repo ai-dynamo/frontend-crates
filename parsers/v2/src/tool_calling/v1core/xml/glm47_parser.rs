@@ -499,13 +499,13 @@ fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<boo
     }
 }
 
-fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
+pub(super) fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
     ["$id", "$dynamicRef", "$recursiveRef"]
         .iter()
         .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())
 }
 
-fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
+pub(super) fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
     // URI percent-decoding precedes JSON Pointer's ~0/~1 decoding.
     let pointer = reference.strip_prefix('#')?;
     let decoded;

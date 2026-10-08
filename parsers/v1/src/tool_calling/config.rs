@@ -393,6 +393,18 @@ pub struct InklingParserConfig {
     pub allow_eof_recovery: bool,
 }
 
+/// Parser-owned rules for suppressing reserved terminal fragments at a token limit.
+/// Empty rules preserve ordinary text, including incomplete marker prefixes.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct TerminalMarkerPolicy {
+    /// Full end marker and the minimum reserved prefix that identifies it as markup.
+    pub truncated_end_markers: &'static [(&'static str, &'static str)],
+    /// Exact orphan suffixes to hold across chunks and suppress only at a token limit.
+    pub orphan_end_suffixes: &'static [&'static str],
+    /// Require an immediately preceding tool call, with no intervening visible prose.
+    pub orphan_suffix_after_tool_call_only: bool,
+}
+
 /// Parser-specific configuration
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -421,6 +433,13 @@ pub enum ParserConfig {
 }
 
 impl ParserConfig {
+    pub(crate) fn terminal_marker_policy(&self) -> TerminalMarkerPolicy {
+        match self {
+            Self::KimiK3(_) => super::xtml::TERMINAL_MARKER_POLICY,
+            _ => TerminalMarkerPolicy::default(),
+        }
+    }
+
     /// Get the tool call start tokens for this parser configuration
     /// Returns a vector of start tokens that indicate the beginning of a tool call
     pub fn tool_call_start_tokens(&self) -> Vec<String> {
