@@ -173,6 +173,16 @@ def group_null_variants(tab: dict) -> None:
     tab["columns"] = [column for column in columns if column["sub"] not in hidden]
     for column in tab["columns"]:
         column["label"] = display_labels.get(column["label"], column["label"])
+    numeric_labels = set(NUMERIC_DISPLAY_LABELS.values())
+    numeric_positions = [index for index, column in enumerate(tab["columns"])
+                         if column["label"] in numeric_labels]
+    numeric_order = {label: index for index, label in enumerate(NUMERIC_DISPLAY_LABELS.values())}
+    ordered_numeric_columns = sorted(
+        (tab["columns"][index] for index in numeric_positions),
+        key=lambda column: numeric_order[column["label"]],
+    )
+    for index, column in zip(numeric_positions, ordered_numeric_columns):
+        tab["columns"][index] = column
     for row in tab["rows"]:
         for sub in hidden:
             row["cells"].pop(sub, None)

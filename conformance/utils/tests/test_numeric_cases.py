@@ -209,7 +209,8 @@ def test_new_glm_and_m3_integral_probes_do_not_require_numeric_union_preference(
 @pytest.mark.parametrize("family", ["qwen3", "deepseek_v4"])
 def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
     labels = ["7-14", "7-15", "7-14.const_decimal", "7-14.const_exponent",
-              "7-15.ordinary", "7-15.round_down"]
+              "7-14.fraction_fallback", "7-14.fraction_near_integer",
+              "7-14.fraction_underflow", "7-15.ordinary", "7-15.round_down"]
     cells = {label: {"sub": label, "case_id": "UNIFIED." + label, "family": family,
                      "kind": "cell", "status": "ok", "red_on_diff": True,
                      "cmp": {"golden": {"sig": 1}, "dynamo": {"sig": 2}},
@@ -222,13 +223,15 @@ def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
            "column_groups": [{"key": "7", "span": len(labels)}], "stats": {},
            "glossary": [{"rows": [(label, "schema " + label) for label in labels]}]}
     group_null_variants(tab)
-    assert [column["label"] for column in tab["columns"]] == ["7-14", "7-15", "7-17", "7-19"]
+    assert [column["label"] for column in tab["columns"]] == [
+        "7-14", "7-15", "7-17", "7-18", "7-19"]
     for label in labels[:2]:
         assert cells[label] == original[label]
         assert next(c for c in tab["columns"] if c["label"] == label)["desc"] == "schema " + label
         assert (label, "schema " + label) in tab["glossary"][0]["rows"]
     for root, prefix in [("7-14.const_decimal", "7-14."), ("7-15.ordinary", "7-15.")]:
-        alias = "7-17" if root.startswith("7-14") else "7-19"
+        alias = "7-17" if root.startswith("7-14") else "7-18"
         assert cells[root]["case_id"] == "UNIFIED." + alias
         assert all(leaf["case_id"].startswith("UNIFIED." + prefix) for leaf in cells[root]["variants"])
     assert cells["7-14.const_decimal"]["status"] != "na"
+    assert cells["7-14.fraction_fallback"]["case_id"] == "UNIFIED.7-19"
