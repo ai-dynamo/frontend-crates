@@ -779,6 +779,15 @@ fn schema_type_match(
         ty.as_array()
             .map_or_else(|| matches(ty), |types| types.iter().any(matches))
     });
+    // A string-valued const is already a type constraint. In GLM XML its
+    // contents are literal text, even when they look like a JSON string.
+    // Intersect with an explicit type rather than overriding it, and let the
+    // existing ref/composition traversal apply this hint to nested constants.
+    if expected == "string"
+        && let Some(value) = schema.get("const")
+    {
+        hint = Some(hint.unwrap_or(true) && value.is_string());
+    }
     // Modern JSON Schema applies $ref siblings as additional constraints.
     hint = match (hint, reference_hint) {
         (Some(left), Some(right)) => Some(left && right),
