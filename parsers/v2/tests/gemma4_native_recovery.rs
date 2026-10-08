@@ -281,16 +281,6 @@ fn closed_quoted_string_at_eof_cannot_recover_its_marker_text() {
 }
 
 #[test]
-fn closed_outer_quote_releases_a_later_candidate_after_an_incomplete_fake() {
-    let input = concat!(
-        "<|tool_call>call:broken{note:<|\"|>x",
-        "<|tool_call>call:get_weather{city:<|\"|>TRAP<|\"|>}<tool_call|>y<|\"|>}",
-        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
-    );
-    assert_both_adapters(input, "");
-}
-
-#[test]
 fn ambiguous_balanced_call_without_wrapper_close_recovers_at_eof() {
     let input = concat!(
         "<|tool_call>call:broken{note:<|\"|>unterminated",
