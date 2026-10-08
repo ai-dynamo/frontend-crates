@@ -147,6 +147,58 @@ fn detect_tool_calls_arguments_string(
         .is_ok_and(|rendered| rendered.contains(arguments))
 }
 
+/// Detects whether a template renders a string `reasoning_content` but not the
+/// segment array (`segments[i]` precedes `tool_calls[i]`) that interleaved
+/// reasoning arrives as, so `render` should join the segments first.
+///
+/// MiniMax-M2 and Qwen3 read `reasoning_content` only when it `is string` and
+/// otherwise render an empty think block; a template that prints the field
+/// as-is would emit the array's repr. The control-char sentinels survive
+/// neither, while a template that reads the segments emits at least one.
+/// `arguments_string` matches the tool-call arguments shape `render` sends.
+fn detect_reasoning_string_requirement(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    arguments_string: bool,
+) -> bool {
+    const FIRST: &str = "\u{1}dynamo_reasoning_probe_first\u{1}";
+    const LAST: &str = "\u{1}dynamo_reasoning_probe_last\u{1}";
+    let Ok(template) = env.get_template(template_name) else {
+        return false;
+    };
+    let arguments = if arguments_string {
+        json!("{}")
+    } else {
+        json!({})
+    };
+    let render = |reasoning: serde_json::Value| {
+        let ctx = context! {
+            messages => json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "reasoning_content": reasoning, "tool_calls": [{
+                    "id": "call_probe",
+                    "type": "function",
+                    "function": {"name": "probe", "arguments": arguments}
+                }]},
+                {"role": "tool", "tool_call_id": "call_probe", "content": "r"}
+            ]),
+            add_generation_prompt => true,
+            tools => tools,
+            bos_token => tok.bos,
+            eos_token => tok.eos,
+            unk_token => tok.unk,
+        };
+        template.render(&ctx).unwrap_or_default()
+    };
+    if !render(json!(FIRST)).contains(FIRST) {
+        return false;
+    }
+    let array_out = render(json!([FIRST, LAST]));
+    !(array_out.contains(FIRST) || array_out.contains(LAST))
+}
+
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
 /// Returns true if the template only works with array format.
 fn detect_content_array_usage(env: &Environment) -> bool {
@@ -649,6 +701,22 @@ impl HfTokenizerConfigJsonFormatter {
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
         let tool_use_system_normalization =
             detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
+        let default_template_requires_reasoning_string = default_template_handles_reasoning
+            && detect_reasoning_string_requirement(
+                &env,
+                "default",
+                &default_probe_tools,
+                &probe_tokens,
+                default_template_handles_tool_calls_arguments_string,
+            );
+        let tool_use_template_requires_reasoning_string = tool_use_template_handles_reasoning
+            && detect_reasoning_string_requirement(
+                &env,
+                "tool_use",
+                &tool_use_probe_tools,
+                &probe_tokens,
+                tool_use_template_handles_tool_calls_arguments_string,
+            );
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,
@@ -659,6 +727,8 @@ impl HfTokenizerConfigJsonFormatter {
             exclude_tools_when_tool_choice_none,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
+            default_template_requires_reasoning_string,
+            tool_use_template_requires_reasoning_string,
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,

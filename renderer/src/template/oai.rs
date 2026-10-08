@@ -316,6 +316,34 @@ fn inject_reasoning_content_into_messages(messages: &mut serde_json::Value) {
     }
 }
 
+/// Join `reasoning_content` segments into the flat string a template that only
+/// renders it when it `is string` expects; given the array, such templates
+/// silently drop the prior turn's reasoning. The flat form matches
+/// `ReasoningContent::to_flat_string` (non-empty segments joined by `\n`) and how
+/// SGLang merges consecutive reasoning items.
+fn join_reasoning_content_segments_in_messages(messages: &mut serde_json::Value) {
+    let Some(msgs) = messages.as_array_mut() else {
+        return;
+    };
+
+    for msg in msgs.iter_mut() {
+        if msg.get("role").and_then(|r| r.as_str()) != Some("assistant") {
+            continue;
+        }
+        if let Some(reasoning) = msg.get_mut("reasoning_content")
+            && let Some(segments) = reasoning.as_array()
+        {
+            let joined = segments
+                .iter()
+                .filter_map(|s| s.as_str())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n");
+            *reasoning = joined.into();
+        }
+    }
+}
+
 /// Default [`OAIChatLikeRequest`] impl for the bare `dynamo-protocols` chat
 /// request. Lets any consumer (e.g. a standalone OpenAI frontend over an
 /// engine) render HF chat templates directly from the wire type, without
@@ -517,12 +545,14 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             template_name,
             template_handles_tool_calls_args_string,
             template_handles_reasoning,
+            template_requires_reasoning_string,
             system_normalization,
         ) = if has_tools {
             (
                 "tool_use",
                 self.tool_use_template_handles_tool_calls_arguments_string,
                 self.tool_use_template_handles_reasoning,
+                self.tool_use_template_requires_reasoning_string,
                 self.tool_use_system_normalization,
             )
         } else {
@@ -530,6 +560,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
                 "default",
                 self.default_template_handles_tool_calls_arguments_string,
                 self.default_template_handles_reasoning,
+                self.default_template_requires_reasoning_string,
                 self.default_system_normalization,
             )
         };
@@ -569,6 +600,8 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // would produce duplicate <think> blocks.
         if !template_handles_reasoning {
             inject_reasoning_content_into_messages(&mut messages_for_template);
+        } else if template_requires_reasoning_string {
+            join_reasoning_content_segments_in_messages(&mut messages_for_template);
         }
 
         let ctx = context! {
@@ -2796,6 +2829,66 @@ NORMAL_MODE
         );
     }
 
+    /// An assistant turn with reasoning and two tool calls, then their results.
+    fn reasoning_tool_call_turn(reasoning: serde_json::Value) -> serde_json::Value {
+        let call = |id: &str, expr: &str| {
+            json!({"id": id, "type": "function",
+                "function": {"name": "calc", "arguments": json!({"expr": expr}).to_string()}})
+        };
+        json!([
+            {"role": "user", "content": "sqrt(144) + sqrt(256)?"},
+            {"role": "assistant", "content": null, "reasoning_content": reasoning,
+                "tool_calls": [call("call_0", "sqrt(144)"), call("call_1", "sqrt(256)")]},
+            {"role": "tool", "tool_call_id": "call_0", "content": "12"},
+            {"role": "tool", "tool_call_id": "call_1", "content": "16"}
+        ])
+    }
+
+    /// MiniMax-M2's assistant branch: `reasoning_content` renders only when it
+    /// `is string`, so the segment array the Responses and Anthropic converters
+    /// send with tool calls must reach it joined, not as an array.
+    #[test]
+    fn test_string_reasoning_template_joins_reasoning_content_segments() {
+        const MINIMAX_REASONING_TMPL: &str = r#"{%- for message in messages -%}
+{%- if message.role == 'assistant' -%}
+{{- ']~b]ai' ~ '\n' -}}
+{%- set reasoning_content = '' -%}
+{%- if message.reasoning_content is string -%}
+{%- set reasoning_content = message.reasoning_content -%}
+{%- endif -%}
+{%- if reasoning_content -%}
+{{- '<think>' ~ '\n' ~ reasoning_content ~ '\n' ~ '</think>' ~ '\n\n' -}}
+{%- endif -%}
+{%- for tool_call in message.tool_calls -%}
+{{- '<invoke name="' ~ tool_call.function.name ~ '">' -}}
+{%- endfor -%}
+{{- '[e~[\n' -}}
+{%- else -%}
+{{- ']~b]' ~ message.role ~ '\n' ~ message.content ~ '[e~[\n' -}}
+{%- endif -%}
+{%- endfor -%}"#;
+        let f = formatter_for(MINIMAX_REASONING_TMPL);
+        // HF transformers render of this template with the equivalent string.
+        let expected = concat!(
+            "]~b]user\nsqrt(144) + sqrt(256)?[e~[\n",
+            "]~b]ai\n<think>\nCheck both.\nThen add.\n</think>\n\n",
+            "<invoke name=\"calc\"><invoke name=\"calc\">[e~[\n",
+            "]~b]tool\n12[e~[\n]~b]tool\n16[e~[\n",
+        );
+        // `default` (no tools) and `tool_use` are probed separately.
+        for render in [render_shape, render_shape_with_tools] {
+            for reasoning in [
+                json!(["Check both.", "Then add.", ""]),
+                json!("Check both.\nThen add."),
+            ] {
+                assert_eq!(
+                    render(&f, reasoning_tool_call_turn(reasoning)).unwrap(),
+                    expected
+                );
+            }
+        }
+    }
+
     #[test]
     fn test_inject_reasoning_content_text_variant() {
         let mut messages = serde_json::json!([
@@ -3355,5 +3448,31 @@ NORMAL_MODE
             suffix.ends_with("<|im_start|>assistant\n<think>\n"),
             "appended bytes must end with the next generation prompt, got: {suffix}"
         );
+    }
+
+    /// Qwen3 reads `reasoning_content` only when it `is string`, so segments sent
+    /// with tool calls must render exactly as the equivalent string does (keeping
+    /// the append-only prefix above), with and without tools.
+    #[test]
+    fn test_qwen3_thinking_renders_reasoning_content_segments_as_string() {
+        let formatter = qwen3_thinking_formatter();
+        assert!(formatter.default_template_requires_reasoning_string);
+        assert!(formatter.tool_use_template_requires_reasoning_string);
+
+        for render in [render_shape, render_shape_with_tools] {
+            let segments = json!(["Check both.", "Then add.", ""]);
+            let rendered = render(&formatter, reasoning_tool_call_turn(segments)).unwrap();
+            assert!(
+                rendered.contains(
+                    "<|im_start|>assistant\n<think>\nCheck both.\nThen add.\n</think>\n\n<tool_call>"
+                ),
+                "{rendered}"
+            );
+            let string = json!("Check both.\nThen add.");
+            assert_eq!(
+                rendered,
+                render(&formatter, reasoning_tool_call_turn(string)).unwrap()
+            );
+        }
     }
 }
