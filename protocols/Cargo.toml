@@ -22,6 +22,7 @@ keywords = ["llm", "genai", "inference", "openai", "anthropic"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
+utoipa = { version = "5", features = ["indexmap"], optional = true }
 # Upstream OpenAI types (types-only, no HTTP client)
 async-openai = { workspace = true, features = [
     "batch-types",
@@ -37,6 +38,7 @@ async-openai = { workspace = true, features = [
 # Serialization
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
+indexmap.workspace = true
 derive_builder.workspace = true
 
 # Type support
