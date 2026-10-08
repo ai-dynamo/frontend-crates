@@ -48,10 +48,11 @@ def test_visible_null_issue_groups_follow_display_grouping():
 def test_stream_regression_cases_share_their_parent_case_bands():
     assert fixtures._subcase_group_key("streamv1", "7.g") == "args"
     assert fixtures._subcase_group_key("streamv1", "7.h") == "args"
-    for case_id in ("7.i", "7.j", "7.k", "7.l"):
+    for case_id in ("7.i", "7.k", "7.l"):
         assert fixtures._subcase_group_key("streamv1", case_id) == "args"
+    assert fixtures._subcase_group_key("streamv1", "7.j") == "single_family_test_minimax_m3"
     assert fixtures._subcase_group_key("streamv1", "51.a") == "reasoning_projection"
-    assert fixtures._subcase_group_key("streamv1", "51.b") == "reasoning_projection"
+    assert fixtures._subcase_group_key("streamv1", "51.b") == "single_family_test_deepseek_v4"
     assert "50.a" not in fixtures._discover_sub_cases("streamv1", {("deepseek_v4", "50.a"): {}, ("deepseek_v4", "51.a"): {}})
 
 pytestmark = pytest.mark.skipif(

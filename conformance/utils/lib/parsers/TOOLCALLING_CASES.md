@@ -1,5 +1,11 @@
 # Tool-Call Parser Corner Cases
 
+A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, including after variant aggregation. Before classifying a case as family-specific, inspect every registered family and add native inputs and independent expected outputs wherever the behavior applies. Missing captures do not make an applicable family inapplicable; retain them as missing evidence. Preserve published case IDs when changing display placement.
+
+Nested-tag probes `7.j`, `7.m`, `7.n`, `7-6`, `7-7`, `7-8`, and `7-10` appear under `Single Family Test: MiniMax M3` when present. They test type coercion or whitespace between recursive markup children, which other registered grammars do not emit. Local-reference and literal-entity probes remain generic where other families can express their inputs; absent applicable captures remain missing evidence.
+
+Inkling's consumed generation-primer header (`11.c`) appears under `Single Family Test: Inkling`; other registered grammars do not use this primer mode. Header-name precedence (`11.a`) remains generic because both Inkling and Muse can express an outer routing name that conflicts with the embedded invocation name. The streaming mixed-DSML-dialect probe `51.b` appears under `Single Family Test: DeepSeek V4`; only that native adapter accepts both dialects in the same stream. Shared reasoning projection `51.a` remains generic.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 
@@ -339,14 +345,14 @@ Null coercion probes remain in the capture archive and are displayed only in Uni
 
 The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
 
-- **`TOOLCALLING.batch.7-6`** Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
-- **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
-- **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
+- **`TOOLCALLING.batch.7-6`** Single Family Test (MiniMax M3): Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
+- **`TOOLCALLING.batch.7-7`** Single Family Test (MiniMax M3): Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
+- **`TOOLCALLING.batch.7-8`** Single Family Test (MiniMax M3): Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
 
 The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases. GLM adds batch and Unified probes for PR #271 under `7-9`, `7-11`, `7-12`, and `7-13`; those request schemas retain unresolved refs so the parser must consult the tool parameters root.
 
 - **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
-- **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
+- **`TOOLCALLING.batch.7-10`** Single Family Test (MiniMax M3): Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
 - **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type. GLM also covers UTF-8 with a literal `+`, and encoded `~1` / `~0` escapes for definition names containing `/` and `~`.
 - **`TOOLCALLING.batch.7-12`** GLM referenced strings preserve JSON-looking object text, array text, and quoted text, including the literal quote characters. An inline string field with the same object-looking bytes is a control.
 - **`TOOLCALLING.batch.7-13`** GLM references to integer, number, and boolean definitions retain those scalar types. A sibling integer constraint narrows a referenced string-or-integer definition, so bare `42` becomes an integer.
