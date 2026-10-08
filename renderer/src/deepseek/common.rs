@@ -392,17 +392,13 @@ pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
                 .unwrap_or(false);
 
             if can_merge {
-                let last = merged.last_mut().unwrap();
-                let appended = last
-                    .as_object_mut()
-                    .and_then(|o| o.get_mut("content_blocks"))
+                // The reference appends only the text; the merged user's own fields are dropped.
+                if let Some(blocks) = merged
+                    .last_mut()
+                    .and_then(|last| last.get_mut("content_blocks"))
                     .and_then(|v| v.as_array_mut())
-                    .map(|blocks| {
-                        blocks.push(text_block);
-                    })
-                    .is_some();
-                if appended {
-                    preserve_user_fields(last, &msg);
+                {
+                    blocks.push(text_block);
                 }
             } else {
                 // Rendering reads content_blocks; retaining content would copy
@@ -431,7 +427,12 @@ pub(crate) fn sort_tool_results_by_call_order(mut messages: Vec<JsonValue>) -> V
     for msg in &mut messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
         if role == "assistant" {
-            if let Some(tcs) = msg.get("tool_calls").and_then(|t| t.as_array()) {
+            // Like the reference's `if msg.get("tool_calls")`, an empty list keeps the order.
+            if let Some(tcs) = msg
+                .get("tool_calls")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 last_order.clear();
                 for (idx, tc) in tcs.iter().enumerate() {
                     let id = tc
@@ -703,31 +704,30 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn merged_user_blocks_preserve_metadata_and_order() {
+    fn merged_users_drop_their_metadata_like_the_reference() {
+        // Expected output comes from the official DeepSeek-V4-Flash encoding_dsv4.py:
+        // a user merged into a group drops its fields; a group's task stops merging.
         let merged = merge_tool_messages(vec![
-            serde_json::json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
-            serde_json::json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
-            serde_json::json!({"role": "user", "content": "two", "task": "action"}),
-            serde_json::json!({"role": "user", "content": "separate"}),
+            json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
+            json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
+            json!({"role": "user", "content": "two", "task": "action"}),
+            json!({"role": "assistant", "content": "a"}),
+            json!({"role": "user", "content": "three", "task": "action"}),
+            json!({"role": "user", "content": "four", "wo_eos": true}),
         ]);
-        assert_eq!(merged.len(), 2);
-        assert!(
-            merged
-                .iter()
-                .all(|message| message.get("content").is_none())
-        );
         assert_eq!(
-            merged[0]["content_blocks"],
-            serde_json::json!([
-                {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
-                {"type": "text", "text": "one"},
-                {"type": "text", "text": "two"}
-            ])
+            merged,
+            [
+                json!({"role": "user", "content_blocks": [
+                    {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
+                    {"type": "text", "text": "one"},
+                    {"type": "text", "text": "two"}
+                ]}),
+                json!({"role": "assistant", "content": "a"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "three"}], "task": "action"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "four"}], "wo_eos": true}),
+            ]
         );
-        assert_eq!(merged[0]["task"], "action");
-        assert_eq!(merged[0]["wo_eos"], true);
-        assert_eq!(merged[0]["mask"], serde_json::json!([1, 0]));
-        assert_eq!(merged[1]["content_blocks"][0]["text"], "separate");
     }
 
     #[test]
