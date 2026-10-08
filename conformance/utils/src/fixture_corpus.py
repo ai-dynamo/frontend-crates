@@ -24,11 +24,14 @@ def load(p):
 
 
 def version_key(ver: str):
-    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", ver)
+    """Order releases, post releases, then append-only patches of each release."""
+    patch_match = re.fullmatch(r"(.+)\.patch(\d+)", ver)
+    version = patch_match.group(1) if patch_match else ver
+    patch = int(patch_match.group(2)) if patch_match else 0
+    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", version)
     release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
     post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
+    return (release, post, patch)
 
 
 def split_sel(sel: str):

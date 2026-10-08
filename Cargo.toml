@@ -36,10 +36,10 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "9.2.8" }
+dynamo-parsers = { path = "parsers/v1", version = "9.2.12" }
 dynamo-protocols = { path = "protocols", version = "7.0.0" }
-dynamo-renderer = { path = "renderer", version = "7.0.0" }
-dynamo-tokenizers = { path = "tokenizers", version = "3.0.0" }
+dynamo-renderer = { path = "renderer", version = "7.1.1" }
+dynamo-tokenizers = { path = "tokenizers", version = "3.1.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.1"
 futures = "0.3"

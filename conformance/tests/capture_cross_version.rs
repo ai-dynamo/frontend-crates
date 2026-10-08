@@ -43,28 +43,14 @@ use std::path::{Path, PathBuf};
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::create_tool_parser_for_family;
 #[cfg(not(conformance_split_only))]
-use dynamo_parsers_v2::{
-    UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family,
-};
+use dynamo_parsers_v2::{UnifiedEvent, assemble, create_unified_parser_for_family};
 use serde_json::{Value, json};
 
 mod common;
+use common::unified_capture::{self as capture, CaptureFailure, capture_step, chunk_input};
 use common::unified_tools as tools;
 
 type Captured = (Vec<Vec<serde_yaml::Value>>, Vec<serde_yaml::Value>);
-
-#[derive(Debug)]
-enum CaptureFailure {
-    Unavailable(String),
-    Error(String),
-}
-
-fn capture_step<T, E: std::fmt::Display>(
-    result: Result<T, E>,
-    stage: &str,
-) -> Result<T, CaptureFailure> {
-    result.map_err(|error| CaptureFailure::Error(format!("{stage}: {error:#}")))
-}
 
 fn capture_record(
     result: Result<Captured, CaptureFailure>,
@@ -180,7 +166,8 @@ fn capture_producer_records_init_and_identity() {
         "guided": {"input": "{\"city\":\"Paris\"}", "init": {
             "tool_output_mode": "GuidedJson", "named_tool": "get_weather"
         }},
-        "reasoning": {"input": "hidden<channel|>visible", "init": {"starting_state": "Reasoning"}},
+        "reasoning": {"input": "hidden<channel|>visible", "init": {"starting_state": "Reasoning"},
+            "chunks": [{"delta_text":"hidden<channel|>visible"}, {"delta_text":""}, {"delta_text":"‹finish›"}]},
         "native": {"input": "plain response"}
     }});
     std::fs::write(
@@ -238,6 +225,13 @@ fn capture_producer_records_init_and_identity() {
             case["capture_input"]["input"],
             fixture["cases"][key]["input"]
         );
+        if let Some(requested) = fixture["cases"][key].get("chunks") {
+            assert_eq!(&case["capture_input"]["chunks"], requested);
+            assert_eq!(
+                case["chunks"].as_array().unwrap().len(),
+                requested.as_array().unwrap().len()
+            );
+        }
         let expected_tools = fixture["cases"][key]
             .get("tools")
             .cloned()
@@ -343,7 +337,7 @@ fn native_parser_errors_reach_capture_records() {
         let mut parser: Box<dyn dynamo_parsers_v2::UnifiedParser> =
             Box::new(FailingParser { on_finish });
         let init = common::Init::default();
-        let record = capture_record(native_capture(&mut parser, "text", &init), &init);
+        let record = capture_record(native_capture(&mut parser, &["text".into()], &init), &init);
         assert_eq!(
             record["error"].as_str().unwrap(),
             if on_finish {
@@ -521,37 +515,6 @@ fn split_path_chunks_with_parsers(
     Ok(rows)
 }
 
-/// Marker-aligned chunking, byte-for-byte `unified_render::chunk_input`. The per-chunk
-/// rows are compared across columns, so a different split would surface as a parser
-/// difference that is really a harness difference.
-fn chunk_input(input: &str) -> Vec<String> {
-    let bytes = input.as_bytes();
-    let mut chunks = Vec::new();
-    let mut i = 0;
-    let mut text_start = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'<' {
-            if text_start < i {
-                chunks.push(input[text_start..i].to_string());
-            }
-            let mut j = i + 1;
-            while j < bytes.len() && bytes[j] != b'>' {
-                j += 1;
-            }
-            let end = (j + 1).min(bytes.len());
-            chunks.push(input[i..end].to_string());
-            i = end;
-            text_start = i;
-        } else {
-            i += 1;
-        }
-    }
-    if text_start < bytes.len() {
-        chunks.push(input[text_start..].to_string());
-    }
-    chunks
-}
-
 #[cfg(not(conformance_split_only))]
 fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {
     serde_yaml::to_value(ev).expect("event serializes")
@@ -671,28 +634,23 @@ fn split_path_capture_with_parsers(
 #[cfg(not(conformance_split_only))]
 fn native_capture(
     parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
-    input: &str,
+    chunks: &[String],
     init: &common::Init,
 ) -> Result<Captured, CaptureFailure> {
     apply_init(parser, init)?;
-    let mut deltas = Vec::new();
-    let mut rows = Vec::new();
-    for ch in chunk_input(input) {
-        let chunk = capture_step(parser.push(&ch), "native push")?;
-        rows.push(chunk.iter().map(delta_to_yaml).collect());
-        deltas.extend(chunk);
-    }
-    let tail = capture_step(parser.finish(), "native finish")?;
-    if !tail.is_empty() {
-        rows.push(tail.iter().map(delta_to_yaml).collect());
-        deltas.extend(tail);
-    }
+    let captured = capture::native_capture(parser, chunks)?;
+    let deltas: Vec<_> = captured.iter().flatten().cloned().collect();
+    let rows = captured
+        .iter()
+        .map(|row| row.iter().map(delta_to_yaml).collect())
+        .collect();
     Ok((rows, assemble(&deltas).iter().map(ev_to_yaml).collect()))
 }
 
-fn capture_case(
+fn capture_case_with_chunks(
     family: &str,
     input: &str,
+    chunks: &[String],
     init: &common::Init,
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<Captured, CaptureFailure> {
@@ -704,7 +662,7 @@ fn capture_case(
                     "this build has no request initialization API".into(),
                 ));
             }
-            return native_capture(&mut parser, input, init);
+            return native_capture(&mut parser, chunks, init);
         }
         Err(error) => format!("{error:#}"),
     };
@@ -718,6 +676,11 @@ fn capture_case(
             "split capture cannot apply the requested initialization".into(),
         ));
     }
+    assert_eq!(
+        chunks,
+        chunk_input(input),
+        "legacy split capture cannot replay this schedule"
+    );
     let (rows, assembled) =
         split_path_capture_with_parsers(&reasoning, &tool, input, tool_schemas)?;
     let rows = rows
@@ -783,7 +746,7 @@ fn capture_rejects_missing_or_malformed_input_fields() {
         (
             6,
             "cases: {probe: {input: text, chunks: []}}",
-            "requested chunks",
+            "recorded schedule requires finish",
         ),
         (
             7,
@@ -881,9 +844,15 @@ fn capture_this_build_against_the_current_corpus() {
                     .map(|value| serde_json::to_value(value).expect("case tools schema JSON"));
                 let tool_schema_json =
                     common::unified_tool_schemas_for_case(tool_schema_json.as_ref());
-                let mut record =
-                    capture_record(capture_case(&family, input, &init, &tool_schemas), &init);
-                let chunks: Vec<_> = chunk_input(input)
+                let recorded: Option<Vec<capture::InputChunk>> = cdoc
+                    .get("chunks")
+                    .map(|value| serde_yaml::from_value(value.clone()).expect("requested chunks"));
+                let schedule = capture::replay_chunks(input, recorded.as_deref());
+                let mut record = capture_record(
+                    capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
+                    &init,
+                );
+                let chunks: Vec<_> = schedule
                     .into_iter()
                     .chain(std::iter::once("‹finish›".to_string()))
                     .map(|text| serde_json::json!({"delta_text":text}))
@@ -897,18 +866,6 @@ fn capture_this_build_against_the_current_corpus() {
                     },
                     "finish_reason":finish_reason, "tools":tool_schema_json, "chunks":chunks,
                 });
-                // This driver computes its delivery schedule. Refuse metadata that
-                // would claim it executed different tools or chunks. The completion
-                // reason is request metadata: this API's finish() takes no reason.
-                for field in ["chunks"] {
-                    if let Some(requested) = cdoc.get(field) {
-                        assert_eq!(
-                            serde_json::to_value(requested).unwrap(),
-                            stimulus[field],
-                            "capture driver cannot apply requested {field}"
-                        );
-                    }
-                }
                 record.as_mapping_mut().unwrap().insert(
                     "capture_input".into(),
                     serde_yaml::to_value(stimulus).unwrap(),

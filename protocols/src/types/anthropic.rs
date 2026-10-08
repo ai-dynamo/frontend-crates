@@ -376,38 +376,42 @@ impl Serialize for ToolResultContentBlock {
     }
 }
 
+fn take_field(value: &mut serde_json::Value, field: &str) -> Option<serde_json::Value> {
+    value.as_object_mut()?.remove(field)
+}
+
+fn take_required_string<E: serde::de::Error>(
+    value: &mut serde_json::Value,
+    field: &'static str,
+) -> Result<String, E> {
+    match take_field(value, field) {
+        Some(serde_json::Value::String(text)) => Ok(text),
+        _ => Err(E::missing_field(field)),
+    }
+}
+
 impl<'de> Deserialize<'de> for ToolResultContentBlock {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let value = serde_json::Value::deserialize(deserializer)?;
+        let mut value = serde_json::Value::deserialize(deserializer)?;
         match value.get("type").and_then(|value| value.as_str()) {
             Some("text") => {
-                let text = value
-                    .get("text")
-                    .and_then(|value| value.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("text"))?;
-                Ok(Self::Text {
-                    text: text.to_string(),
-                })
+                let text = take_required_string::<D::Error>(&mut value, "text")?;
+                Ok(Self::Text { text })
             }
             Some("image") => {
-                let source = value
-                    .get("source")
-                    .cloned()
+                let source = take_field(&mut value, "source")
                     .ok_or_else(|| serde::de::Error::missing_field("source"))
                     .and_then(|value| {
                         serde_json::from_value(value).map_err(serde::de::Error::custom)
                     })?;
                 Ok(Self::Image { source })
             }
-            None => match value.get("text").and_then(|value| value.as_str()) {
-                Some(text) => Ok(Self::Text {
-                    text: text.to_string(),
-                }),
-                None => Ok(Self::Other(value)),
-            },
+            None if value.get("text").is_some_and(serde_json::Value::is_string) => Ok(Self::Text {
+                text: take_required_string::<D::Error>(&mut value, "text")?,
+            }),
             _ => Ok(Self::Other(value)),
         }
     }
@@ -421,27 +425,15 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = serde_json::Value::deserialize(deserializer)?;
-        let block_type = value
-            .get("type")
-            .and_then(|t| t.as_str())
-            .unwrap_or("")
-            .to_string();
+        let mut value = serde_json::Value::deserialize(deserializer)?;
+        let block_type = value.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
-        match block_type.as_str() {
+        match block_type {
             "text" => {
-                let text = value
-                    .get("text")
-                    .and_then(|t| t.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("text"))?
-                    .to_string();
-                let citations: Option<Vec<serde_json::Value>> = value
-                    .get("citations")
-                    .cloned()
+                let text = take_required_string::<D::Error>(&mut value, "text")?;
+                let citations: Option<Vec<serde_json::Value>> = take_field(&mut value, "citations")
                     .and_then(|v| serde_json::from_value(v).ok());
-                let cache_control: Option<CacheControl> = value
-                    .get("cache_control")
-                    .cloned()
+                let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
                 Ok(AnthropicContentBlock::Text {
                     text,
@@ -451,25 +443,16 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
             }
             "image" => {
                 let source: AnthropicImageSource =
-                    serde_json::from_value(value.get("source").cloned().unwrap_or_default())
+                    serde_json::from_value(take_field(&mut value, "source").unwrap_or_default())
                         .map_err(serde::de::Error::custom)?;
                 Ok(AnthropicContentBlock::Image { source })
             }
             "tool_use" => {
-                let id = value
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("id"))?
-                    .to_string();
-                let name = value
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("name"))?
-                    .to_string();
-                let input = value.get("input").cloned().unwrap_or(serde_json::json!({}));
-                let cache_control: Option<CacheControl> = value
-                    .get("cache_control")
-                    .cloned()
+                let id = take_required_string::<D::Error>(&mut value, "id")?;
+                let name = take_required_string::<D::Error>(&mut value, "name")?;
+                let input =
+                    take_field(&mut value, "input").unwrap_or_else(|| serde_json::json!({}));
+                let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
                 Ok(AnthropicContentBlock::ToolUse {
                     id,
@@ -479,19 +462,11 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
                 })
             }
             "tool_result" => {
-                let tool_use_id = value
-                    .get("tool_use_id")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("tool_use_id"))?
-                    .to_string();
-                let content: Option<ToolResultContent> = value
-                    .get("content")
-                    .cloned()
-                    .and_then(|v| serde_json::from_value(v).ok());
+                let tool_use_id = take_required_string::<D::Error>(&mut value, "tool_use_id")?;
+                let content: Option<ToolResultContent> =
+                    take_field(&mut value, "content").and_then(|v| serde_json::from_value(v).ok());
                 let is_error = value.get("is_error").and_then(|v| v.as_bool());
-                let cache_control: Option<CacheControl> = value
-                    .get("cache_control")
-                    .cloned()
+                let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
                 Ok(AnthropicContentBlock::ToolResult {
                     tool_use_id,
@@ -501,19 +476,9 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
                 })
             }
             "thinking" => {
-                let thinking = value
-                    .get("thinking")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("thinking"))?
-                    .to_string();
-                let signature = value
-                    .get("signature")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("signature"))?
-                    .to_string();
-                let cache_control: Option<CacheControl> = value
-                    .get("cache_control")
-                    .cloned()
+                let thinking = take_required_string::<D::Error>(&mut value, "thinking")?;
+                let signature = take_required_string::<D::Error>(&mut value, "signature")?;
+                let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
                 Ok(AnthropicContentBlock::Thinking {
                     thinking,
@@ -522,37 +487,20 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
                 })
             }
             "redacted_thinking" => {
-                let data = value
-                    .get("data")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("data"))?
-                    .to_string();
+                let data = take_required_string::<D::Error>(&mut value, "data")?;
                 Ok(AnthropicContentBlock::RedactedThinking { data })
             }
             "server_tool_use" => {
-                let id = value
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("id"))?
-                    .to_string();
-                let name = value
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("name"))?
-                    .to_string();
-                let input = value.get("input").cloned().unwrap_or(serde_json::json!({}));
+                let id = take_required_string::<D::Error>(&mut value, "id")?;
+                let name = take_required_string::<D::Error>(&mut value, "name")?;
+                let input =
+                    take_field(&mut value, "input").unwrap_or_else(|| serde_json::json!({}));
                 Ok(AnthropicContentBlock::ServerToolUse { id, name, input })
             }
             "web_search_tool_result" => {
-                let tool_use_id = value
-                    .get("tool_use_id")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| serde::de::Error::missing_field("tool_use_id"))?
-                    .to_string();
-                let content = value
-                    .get("content")
-                    .cloned()
-                    .unwrap_or(serde_json::json!([]));
+                let tool_use_id = take_required_string::<D::Error>(&mut value, "tool_use_id")?;
+                let content =
+                    take_field(&mut value, "content").unwrap_or_else(|| serde_json::json!([]));
                 Ok(AnthropicContentBlock::WebSearchToolResult {
                     tool_use_id,
                     content,
@@ -865,48 +813,63 @@ pub struct AnthropicCountTokensResponse {
 impl AnthropicCountTokensRequest {
     /// Estimate input token count using a `len/3` heuristic.
     pub fn estimate_tokens(&self) -> u32 {
-        let mut total_len: usize = 0;
+        estimate_input_tokens(&self.messages, self.system.as_ref(), self.tools.as_deref())
+    }
+}
 
-        if let Some(system) = &self.system {
-            total_len += system.text.len();
-        }
+impl AnthropicCreateMessageRequest {
+    /// Estimate input token count using the same `len/3` heuristic as `/count_tokens`.
+    pub fn estimate_tokens(&self) -> u32 {
+        estimate_input_tokens(&self.messages, self.system.as_ref(), self.tools.as_deref())
+    }
+}
 
-        for msg in &self.messages {
-            // Count role
-            total_len += match msg.role {
-                AnthropicRole::User => 4,
-                AnthropicRole::Assistant => 9,
-                AnthropicRole::System => 6,
-            };
-            // Count content
-            match &msg.content {
-                AnthropicMessageContent::Text { content } => total_len += content.len(),
-                AnthropicMessageContent::Blocks { content } => {
-                    for block in content {
-                        total_len += estimate_block_len(block);
-                    }
+fn estimate_input_tokens(
+    messages: &[AnthropicMessage],
+    system: Option<&SystemContent>,
+    tools: Option<&[AnthropicTool]>,
+) -> u32 {
+    let mut total_len: usize = 0;
+
+    if let Some(system) = system {
+        total_len += system.text.len();
+    }
+
+    for msg in messages {
+        // Count role
+        total_len += match msg.role {
+            AnthropicRole::User => 4,
+            AnthropicRole::Assistant => 9,
+            AnthropicRole::System => 6,
+        };
+        // Count content
+        match &msg.content {
+            AnthropicMessageContent::Text { content } => total_len += content.len(),
+            AnthropicMessageContent::Blocks { content } => {
+                for block in content {
+                    total_len += estimate_block_len(block);
                 }
             }
         }
+    }
 
-        if let Some(tools) = &self.tools {
-            for tool in tools {
-                total_len += tool.name.len();
-                if let Some(desc) = &tool.description {
-                    total_len += desc.len();
-                }
-                if let Some(schema) = &tool.input_schema {
-                    total_len += schema.to_string().len();
-                }
+    if let Some(tools) = tools {
+        for tool in tools {
+            total_len += tool.name.len();
+            if let Some(desc) = &tool.description {
+                total_len += desc.len();
+            }
+            if let Some(schema) = &tool.input_schema {
+                total_len += schema.to_string().len();
             }
         }
+    }
 
-        let tokens = total_len / 3;
-        if tokens == 0 && total_len > 0 {
-            1
-        } else {
-            tokens as u32
-        }
+    let tokens = total_len / 3;
+    if tokens == 0 && total_len > 0 {
+        1
+    } else {
+        tokens as u32
     }
 }
 
@@ -980,7 +943,8 @@ mod tests {
                     "media_type": "application/pdf",
                     "data": "aGVsbG8="
                 }
-            }
+            },
+            {"type": "", "text": "not legacy text"}
         ]);
         let content: ToolResultContent = serde_json::from_value(input.clone()).unwrap();
 
@@ -989,10 +953,16 @@ mod tests {
         };
         assert!(matches!(blocks[1], ToolResultContentBlock::Image { .. }));
         assert!(matches!(blocks[2], ToolResultContentBlock::Other(_)));
+        assert!(matches!(blocks[3], ToolResultContentBlock::Other(_)));
         assert_eq!(serde_json::to_value(content).unwrap(), input);
 
-        let legacy: ToolResultContentBlock =
-            serde_json::from_value(serde_json::json!({"text": "legacy"})).unwrap();
-        assert!(matches!(legacy, ToolResultContentBlock::Text { .. }));
+        for input in [
+            serde_json::json!({"text": "legacy"}),
+            serde_json::json!({"type": null, "text": "legacy"}),
+            serde_json::json!({"type": false, "text": "legacy"}),
+        ] {
+            let legacy: ToolResultContentBlock = serde_json::from_value(input).unwrap();
+            assert!(matches!(legacy, ToolResultContentBlock::Text { .. }));
+        }
     }
 }

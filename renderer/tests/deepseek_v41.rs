@@ -449,14 +449,16 @@ mod media_order_tests {
 
     #[test]
     fn raw_task_groups_keep_tool_results_with_their_user_turn() {
+        // Orders match the official V4.1 encoder; a user merged into an open group
+        // drops its task, so the task must start the group to keep results apart.
         for (ids, task, expected) in [
             (vec!["a", "b", "c"], json!("action"), vec![0, 1, 2, 3, 5, 4]),
-            (vec!["a", "b", "c"], Value::Null, vec![0, 5, 2, 3, 4, 1]),
+            (vec!["a", "b", "c"], Value::Null, vec![0, 1, 5, 3, 4, 2]),
         ] {
             let mut messages = vec![
                 assistant(&ids),
-                tool(ids.last().unwrap(), 1),
                 json!({"role":"user","content":"TASK_USER", "task":task}),
+                tool(ids.last().unwrap(), 1),
                 json!({"role":"user","content":"NEXT_USER"}),
             ];
             messages.extend(ids[..ids.len() - 1].iter().rev().map(|id| tool(id, 1)));
@@ -474,7 +476,7 @@ mod media_order_tests {
                 .iter()
                 .map(|index| {
                     let label = match index {
-                        2 => "TASK_USER".to_owned(),
+                        1 => "TASK_USER".to_owned(),
                         3 => "NEXT_USER".to_owned(),
                         _ => format!("RESULT[{index}]"),
                     };

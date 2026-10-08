@@ -1,0 +1,45 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.5
+    git_commit: 78b638363d55a580564859769392a52c0203448f
+    source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+document:
+  mode: unified
+changes:
+  glm47_reference_type_intersection:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload: '{"x":1}'
+            count: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload":"{\"x\":1}","count":"42"}'
+            complete: true
+        - expected: []
+    case_key: UNIFIED.7-7
+    stimulus:
+      ref: current
+      semantic_sha256: 9d436633af0c5f9e00fdb31d0abf3fc111ac6b9dca10f164ce44a383faa41c2d
+metadata_changes: {}
+document_overrides: {}

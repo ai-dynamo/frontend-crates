@@ -174,6 +174,246 @@ fn named_unknown_tool_returns_error() {
     );
 }
 
+fn empty_object_tool() -> ToolDefinition {
+    ToolDefinition {
+        name: "get_server_time".to_string(),
+        parameters: Some(json!({
+            "type": "object", "properties": {}, "required": [], "additionalProperties": false
+        })),
+        strict: None,
+    }
+}
+
+// Opt-in CPU checks: XGRAMMAR_PYTHON=python3 cargo test -p dynamo-parsers --lib
+// tool_calling::structural_tag::tests::empty_xml_tool -- --ignored --nocapture
+fn check_empty_xml_grammar(check: &str) {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    use crate::tool_calling::parsers::get_tool_parser_map;
+
+    let tools = [empty_object_tool()];
+    let mut cases = Vec::new();
+    for parser in ["qwen3_coder", "nemotron_nano"] {
+        let builder = get_tool_parser_map()[parser]
+            .structural_tag_builder
+            .as_ref()
+            .unwrap();
+        for choice in [
+            ToolChoice::Auto,
+            ToolChoice::Required,
+            ToolChoice::Named("get_server_time".to_string()),
+        ] {
+            let tag = build_unwrap(
+                builder,
+                &choice,
+                &tools,
+                Some(false),
+                StructuralTagSchemaMode::Auto,
+            );
+            cases.push(json!({"parser": parser, "choice": format!("{choice:?}"), "tag": tag}));
+        }
+    }
+    // Compile actual Rust tags with a byte vocabulary; no model, TRT, or GPU.
+    let script = r#"
+import importlib.metadata
+import json
+import sys
+import xgrammar as xg
+
+info = xg.TokenizerInfo([bytes([i]) for i in range(256)] + [b""], stop_token_ids=[256])
+compiler = xg.GrammarCompiler(info, max_threads=1)
+results = []
+for case in json.load(sys.stdin):
+    result = {"parser": case["parser"], "choice": case["choice"]}
+    try:
+        compiled = compiler.compile_structural_tag(json.dumps(case["tag"]))
+        tag = case["tag"]["format"]["tags"][0]
+        matcher = xg.GrammarMatcher(compiled)
+        assert matcher.accept_string(tag["begin"] + tag["end"]), "empty call rejected"
+        assert matcher.accept_token(256), "empty call cannot stop"
+        assert matcher.is_terminated(), "empty call did not terminate"
+        if sys.argv[1] == "bounded_body":
+            # The native vLLM failure generated 2039 tabs inside this empty body.
+            for body in ["\t", " " * 32, "\n" * 32, "<parameter=unexpected>x</parameter>"]:
+                matcher = xg.GrammarMatcher(compiled)
+                assert matcher.accept_string(tag["begin"]), "opening envelope rejected"
+                assert not matcher.accept_string(body), f"empty tool admits {body!r}"
+        result["passed"] = True
+    except Exception as exc:
+        result.update(passed=False, error=str(exc))
+    results.append(result)
+print(json.dumps({"xgrammar": importlib.metadata.version("xgrammar"), "checks": results}, indent=2))
+assert all(result["passed"] for result in results), "empty XML grammar regression"
+"#;
+    let python = std::env::var("XGRAMMAR_PYTHON").unwrap_or_else(|_| "python3".to_string());
+    let mut child = Command::new(python)
+        .env("TVM_FFI_DISABLE_TORCH_C_DLPACK", "1")
+        .args(["-c", script, check])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start Python with CPU XGrammar installed");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&serde_json::to_vec(&cases).unwrap())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    assert!(
+        output.status.success(),
+        "CPU XGrammar {check} regression failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+#[ignore = "requires CPU XGrammar installed for XGRAMMAR_PYTHON"]
+fn empty_xml_tool_compiles_and_terminates() {
+    check_empty_xml_grammar("termination");
+}
+
+#[test]
+#[ignore = "requires CPU XGrammar installed for XGRAMMAR_PYTHON"]
+fn empty_xml_tool_rejects_argument_whitespace_loop() {
+    check_empty_xml_grammar("bounded_body");
+}
+
+#[tokio::test]
+async fn closed_empty_xml_body_round_trips_empty_arguments() {
+    use crate::tool_calling::parsers::{get_tool_parser_map, try_tool_call_parse};
+
+    for parser in ["qwen3_coder", "nemotron_nano"] {
+        let config = &get_tool_parser_map()[parser];
+        for omit_required in [false, true] {
+            let mut tool = empty_object_tool();
+            if omit_required {
+                tool.parameters
+                    .as_mut()
+                    .unwrap()
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("required");
+            }
+            let tools = [tool];
+            let tag = build_unwrap(
+                config.structural_tag_builder.as_ref().unwrap(),
+                &ToolChoice::Named("get_server_time".to_string()),
+                &tools,
+                None,
+                StructuralTagSchemaMode::Auto,
+            );
+            let call = &tag["format"]["tags"][0];
+            assert_eq!(
+                call["content"],
+                json!({"type": "const_string", "value": ""})
+            );
+            let native = format!(
+                "{}{}",
+                call["begin"].as_str().unwrap(),
+                call["end"].as_str().unwrap()
+            );
+            let (calls, _) = try_tool_call_parse(&native, config, Some(&tools))
+                .await
+                .unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].function.name, "get_server_time");
+            assert_eq!(
+                serde_json::from_str::<Value>(&calls[0].function.arguments).unwrap(),
+                json!({})
+            );
+        }
+    }
+}
+
+#[test]
+fn empty_xml_rewrite_preserves_other_schema_constraints() {
+    let xml_builder = ToolCallConfig::qwen3_coder()
+        .structural_tag_builder
+        .unwrap();
+    for patch in [
+        json!({"properties": {"unit": {"type": "string"}}}),
+        json!({"additionalProperties": true}),
+        json!({"required": ["missing"]}),
+        json!({"minProperties": 1}),
+        json!({"patternProperties": {".*": {"type": "string"}}}),
+        json!({"$ref": "#/$defs/args", "$defs": {"args": {"type": "object"}}}),
+        json!({"allOf": [{"minProperties": 1}]}),
+        json!({"not": {}}),
+        json!({"description": "Empty arguments"}),
+    ] {
+        let mut tool = empty_object_tool();
+        let schema = tool.parameters.as_mut().unwrap().as_object_mut().unwrap();
+        schema.extend(patch.as_object().unwrap().clone());
+        let tag = build_unwrap(
+            &xml_builder,
+            &ToolChoice::Required,
+            &[tool.clone()],
+            None,
+            StructuralTagSchemaMode::Auto,
+        );
+        assert_eq!(
+            tag["format"]["tags"][0]["content"]["json_schema"],
+            tool.parameters.unwrap()
+        );
+    }
+}
+
+#[test]
+fn empty_xml_rewrite_respects_style_and_schema_policy() {
+    let mut tool = empty_object_tool();
+    for style in [
+        JsonSchemaStyle::Json,
+        JsonSchemaStyle::MinimaxXml,
+        JsonSchemaStyle::DeepseekXml,
+    ] {
+        let config = TriggeredTagsConfig {
+            content_style: style,
+            ..sample_config()
+        };
+        let tag = build_unwrap(
+            &StructuralTagBuilder::TriggeredTags(config),
+            &ToolChoice::Required,
+            &[tool.clone()],
+            None,
+            StructuralTagSchemaMode::Auto,
+        );
+        assert_eq!(
+            tag["format"]["tags"][0]["content"]["json_schema"],
+            tool.parameters.as_ref().unwrap().clone()
+        );
+    }
+    tool.strict = Some(false);
+    let xml_builder = ToolCallConfig::qwen3_coder()
+        .structural_tag_builder
+        .unwrap();
+    let relaxed = build_unwrap(
+        &xml_builder,
+        &ToolChoice::Required,
+        &[tool.clone()],
+        None,
+        StructuralTagSchemaMode::Auto,
+    );
+    assert_eq!(
+        relaxed["format"]["tags"][0]["content"]["json_schema"],
+        json!(true)
+    );
+    let strict = build_unwrap(
+        &xml_builder,
+        &ToolChoice::Required,
+        &[tool],
+        None,
+        StructuralTagSchemaMode::Strict,
+    );
+    assert_eq!(
+        strict["format"]["tags"][0]["content"],
+        json!({"type": "const_string", "value": ""})
+    );
+}
+
 #[test]
 fn required_with_empty_tools_returns_error() {
     let c = ctx(
