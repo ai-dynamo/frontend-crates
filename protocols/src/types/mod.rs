@@ -10,6 +10,7 @@
 pub mod anthropic;
 mod chat;
 mod completion;
+pub mod decisions;
 mod embeddings;
 pub mod realtime;
 pub mod responses;
