@@ -1143,13 +1143,18 @@ dependencies = [
 name = "dynamo-multimodal"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "blake3",
  "gif",
  "image",
+ "ipnet",
  "rayon",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "tokio",
  "turbojpeg",
+ "url",
  "xxhash-rust",
 ]
 
