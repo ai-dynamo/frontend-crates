@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import json
 import sys
 import tarfile
@@ -17,7 +18,7 @@ import gen_numeric_stream_cases as stream
 import generate_conformance_table as report
 from case_variants import group_null_variants
 from markers import candidate_sig
-from numeric_cases import NUMERIC_VARIANTS, applicable, canonical_arguments
+from numeric_cases import NUMERIC_VARIANTS, applicable, canonical_arguments, numeric_group
 from unified_taxonomy import numbered_id
 from validate_conformance_status import cell_state
 
@@ -166,3 +167,40 @@ def test_nonfinite_numbers_are_invalid_and_never_match_zero(token):
     assert report._unified_classify("qwen3", golden, actual) == "ARG_MISMATCH"
     assert candidate_sig({"calls": [{"name": "f", "arguments": raw}]}) != candidate_sig(
         {"calls": [{"name": "f", "arguments": finite}]})
+
+
+@pytest.mark.parametrize("label", ["7-14", "7-15", "7-14.unrelated", "7-15.unrelated"])
+def test_numeric_groups_do_not_claim_independent_schema_cases(label):
+    assert numeric_group(label) is None
+
+
+def test_every_authored_numeric_leaf_keeps_its_group():
+    for _, label, *_ in NUMERIC_VARIANTS:
+        assert numeric_group(label) == label.split(".", 1)[0]
+
+
+@pytest.mark.parametrize("family", ["qwen3", "deepseek_v4"])
+def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
+    labels = ["7-14", "7-15", "7-14.const_decimal", "7-14.const_exponent",
+              "7-15.ordinary", "7-15.round_down"]
+    cells = {label: {"sub": label, "case_id": "UNIFIED." + label, "family": family,
+                     "kind": "cell", "status": "ok", "red_on_diff": True,
+                     "cmp": {"golden": {"sig": 1}, "dynamo": {"sig": 2}},
+                     "tooltip": {"head": label, "description": "schema " + label}}
+             for label in labels}
+    original = copy.deepcopy(cells)
+    tab = {"id": "tab-unified", "columns": [{"label": label, "sub": label,
+            "desc": "schema " + label, "group_key": "7"} for label in labels],
+           "rows": [{"family": family, "cells": cells}], "candidates": [{"key": "dynamo"}],
+           "column_groups": [{"key": "7", "span": len(labels)}], "stats": {},
+           "glossary": [{"rows": [(label, "schema " + label) for label in labels]}]}
+    group_null_variants(tab)
+    assert [column["label"] for column in tab["columns"]] == ["7-14", "7-15", "7-14.*", "7-15.*"]
+    for label in labels[:2]:
+        assert cells[label] == original[label]
+        assert next(c for c in tab["columns"] if c["label"] == label)["desc"] == "schema " + label
+        assert (label, "schema " + label) in tab["glossary"][0]["rows"]
+    for root, prefix in [("7-14.const_decimal", "7-14."), ("7-15.ordinary", "7-15.")]:
+        assert cells[root]["case_id"] == "UNIFIED." + prefix + "*"
+        assert all(leaf["case_id"].startswith("UNIFIED." + prefix) for leaf in cells[root]["variants"])
+    assert (cells["7-14.const_decimal"]["status"] == "na") == (family == "deepseek_v4")

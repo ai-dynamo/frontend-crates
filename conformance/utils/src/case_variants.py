@@ -17,12 +17,12 @@ def variant_group(label):
     return null_group(label) or numeric_group(label)
 
 
-def aggregate_cells(cells, parent, description):
+def aggregate_cells(cells, parent, description, *, display_label=None):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
     case_id = result.get("case_id") or ""
-    result["case_id"] = ("UNIFIED." if case_id.startswith("UNIFIED.")
-                         else case_id.split(parent, 1)[0]) + parent
+    prefix = "UNIFIED." if case_id.startswith("UNIFIED.") else case_id.split(parent, 1)[0]
+    result["case_id"] = prefix + (display_label or parent)
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
@@ -100,6 +100,7 @@ def group_null_variants(tab: dict) -> None:
         return null_group(unified_taxonomy.legacy_case_label(scenario) if scenario else label)
 
     display_labels: dict[str, str] = {}
+    display_descriptions: dict[str, str] = {}
     for parent, description in VARIANT_DESCRIPTIONS.items():
         members = [column for column in columns if variant_group(metadata_label(column)) == parent]
         if unified:
@@ -109,7 +110,9 @@ def group_null_variants(tab: dict) -> None:
             continue
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_labels[root["label"]] = display_label(parent)
+        display_group = parent + ".*" if parent in NUMERIC_DESCRIPTIONS else display_label(parent)
+        display_labels[root["label"]] = display_group
+        display_descriptions[display_group] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
         mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")]
@@ -124,7 +127,7 @@ def group_null_variants(tab: dict) -> None:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             inapplicable = []
-            if numeric_group(parent) == "7-14" and not numeric_applicable(row["family"], parent):
+            if parent == "7-14" and not numeric_applicable(row["family"], root["label"]):
                 prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
                 for column in members:
                     cell = row["cells"].get(column["sub"])
@@ -156,12 +159,14 @@ def group_null_variants(tab: dict) -> None:
                         and row["cells"][column["sub"]].get("kind") in {"cell", "missing"}
                         and row["cells"][column["sub"]].get("status") != "na"]
             if len(children) > 1:
-                row["cells"][root["sub"]] = aggregate_cells(children, display_label(parent), description)
+                row["cells"][root["sub"]] = aggregate_cells(
+                    children, parent, description, display_label=display_group
+                )
             elif inapplicable:
                 grouped = copy.deepcopy(inapplicable[0])
                 grouped.update(
                     sub=root["sub"],
-                    case_id=f"{prefix}.{parent}",
+                    case_id=f"{prefix}.{display_label}",
                     kind="cell",
                     status="na",
                     red_on_diff=False,
@@ -275,7 +280,7 @@ def group_unified_variants(tab):
     descriptions = {column["label"]: column["desc"] for column in tab["columns"]}
     for group in tab.get("glossary", []):
         group["rows"] = [(display_labels.get(label, label),
-                          VARIANT_DESCRIPTIONS.get(display_labels.get(label, label), desc))
+                          display_descriptions.get(display_labels.get(label, label), desc))
                          for label, desc in group["rows"]
                          if label not in hidden_labels and (variant_group(label) is None or label in display_labels)]
     refresh_variant_stats(tab, len(hidden))

@@ -1,6 +1,6 @@
 # Numeric conformance follow-ups
 
-These reproduced failures remain red in the conformance report. PR #339 adds numeric cases, measured captures, and qualification tooling; parser fixes belong in follow-up work. The report groups numeric variants under `UNIFIED.7-14`, `UNIFIED.7-15`, `TOOLCALLING.streamv1.7-14`, and `TOOLCALLING.streamv1.7-15`; each popup names the full scenario ID listed below.
+These reproduced failures remain red in the conformance report. PR #339 adds numeric cases, measured captures, and qualification tooling; parser fixes belong in follow-up work. The report groups numeric variants under `UNIFIED.7-14.*`, `UNIFIED.7-15.*`, `TOOLCALLING.streamv1.7-14.*`, and `TOOLCALLING.streamv1.7-15.*`; each popup names the full scenario ID listed below. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
 
 ## TODO NUM-1: preserve decimal values through argument parsing
 
