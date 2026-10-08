@@ -33,9 +33,14 @@ def producer(request, monkeypatch, tmp_path):
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
+    class Request(Box):
+        def __init__(self, **kwargs):
+            calls.append(("request", kwargs))
+            super().__init__(**kwargs)
+
     class Parser:
         def __init__(self, *args, **kwargs):
-            pass
+            calls.append(("parser_init", kwargs))
 
         def parse(self, text, *args):
             calls.append(("batch", text))
@@ -59,7 +64,7 @@ def producer(request, monkeypatch, tmp_path):
 
     modules = {
         "vllm": {"__version__": "0.25.1"},
-        "vllm.entrypoints.openai.chat_completion.protocol": {"ChatCompletionRequest": Box},
+        "vllm.entrypoints.openai.chat_completion.protocol": {"ChatCompletionRequest": Request},
         "vllm.parser.parser_manager": {"ParserManager": Manager},
         "sglang": {"__version__": "0.5.16"},
         "sglang.srt.entrypoints.openai.protocol": {"Function": Box, "Tool": Box},
@@ -100,7 +105,14 @@ def producer(request, monkeypatch, tmp_path):
 
 
 def _case(text="hi", **extra):
-    return {"id": "UNIFIED.text_only.gemma4", "family": "gemma4", "input": text, "chunks": [text], **extra}
+    return {
+        "id": "UNIFIED.text_only.gemma4",
+        "family": "gemma4",
+        "input": text,
+        "chunks": [text],
+        "tools": unified_tools(),
+        **extra,
+    }
 
 
 def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, tmp_path, monkeypatch):
@@ -407,12 +419,23 @@ def test_rust_anchor_comparison_projects_only_rust_results():
 
 @pytest.mark.parametrize("init", [{"starting_state": "Reasoning"}, {"starting_state": "Response"},
                                  {"tool_output_mode": "GuidedJson"}, {"named_tool": "f"}])
-def test_unsupported_requested_init_does_not_run_or_get_stamped_as_applied(producer, init):
-    _engine, run, calls = producer
+def test_requested_init_is_executed_only_by_engines_that_support_it(producer, init):
+    engine, run, calls = producer
     result = run(_case(init=init))
-    assert "unsupported request: init" in result["unavailable"]
-    assert result["capture_input"]["init"] == capture_stimulus.capture_input({})["init"]
-    assert not calls
+    rust_unsupported = engine == "vllm_rust" and (
+        init.get("starting_state") == "Response"
+        or init.get("tool_output_mode") == "GuidedJson"
+        or init.get("named_tool") is not None
+    )
+    if engine == "sglang_python" or rust_unsupported:
+        assert "unavailable" in result
+        assert result["capture_stimulus"]["unavailable"]["code"].endswith("_unsupported")
+        assert result["capture_input"]["init"] == init
+        assert not calls
+    else:
+        assert "unavailable" not in result
+        assert result["capture_input"]["init"] == init
+        assert calls
 
 
 def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
@@ -439,7 +462,9 @@ def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
 @pytest.mark.parametrize("returned", [{}, {"unexpected": {}}])
 def test_peer_result_cardinality_is_fail_closed(returned):
     with pytest.raises(ValueError, match="executed request"):
-        capture_stimulus.capture_peer_results([_case()], {"gemma4"}, lambda _cases: returned, tools=[])
+        capture_stimulus.capture_peer_results(
+            [_case()], {"gemma4"}, lambda _cases: returned, tools=unified_tools()
+        )
 
 
 def test_literal_finish_marker_is_not_an_unexecuted_terminal_operation(producer):
@@ -454,9 +479,28 @@ def test_literal_finish_marker_is_not_an_unexecuted_terminal_operation(producer)
         assert any(call[1] == "‹finish›" for call in calls)
 
 
-def test_peer_rejects_unapplied_tool_schema(producer):
-    _engine, run, calls = producer
-    result = run(_case(tools=[]))
-    assert "tools" in result["unavailable"]
-    assert result["capture_input"]["tools"] == unified_tools()
-    assert not calls
+def test_vllm_python_applies_case_specific_tool_schema(producer):
+    engine, run, calls = producer
+    tools = [{"name": "custom", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}}}]
+    result = run(_case(tools=tools))
+    if engine == "vllm_python":
+        expected = [{"type": "function", "function": tools[0]}]
+        assert "unavailable" not in result
+        assert result["capture_input"]["tools"] == tools
+        assert [call[1]["tools"] for call in calls if call[0] == "request"] == [expected]
+        assert [call[1]["tools"] for call in calls if call[0] == "parser_init"] == [expected, expected]
+    else:
+        assert result["capture_stimulus"]["unavailable"]["code"].endswith("_unsupported")
+        assert result["capture_input"]["tools"] == tools
+        assert not calls
+
+
+def test_rust_unregistered_family_keeps_input_and_uses_observation_unavailable(tmp_path, monkeypatch):
+    import capture_vllm_rust_unified as rust_capture
+
+    monkeypatch.setattr(rust_capture, "_vllm_rust_version", lambda *_args: "0.25.1")
+    case = _case(family="glm47", id="UNIFIED.text_only.glm47")
+    result = rust_capture.capture_job(tmp_path, {"cases": [case]})["results"][case["id"]]
+    assert result["capture_input"]["input"] == case["input"]
+    assert result["capture_observation"]["unavailable"]["code"] == "vllm_rust_parser_not_registered"
+    assert "capture_stimulus" not in result

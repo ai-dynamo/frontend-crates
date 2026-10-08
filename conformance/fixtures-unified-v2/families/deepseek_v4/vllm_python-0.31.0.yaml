@@ -1,0 +1,1102 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.31.0
+document:
+  mode: unified
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+        - kind: tool_call
+          name: f
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' <think>'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: quoted</think>
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' <｜DSML｜tool_calls>'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll use
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_syntax_error_wrapped:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_tool_open_before_payload:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_wrapped_in_tool_markup:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"city": "Paris"}'
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_rejected_header_quote_ownership:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f"<｜DSML｜parameter name="x" string="true
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: text
+            text: <｜DSML｜invoke name="f"<｜DSML｜parameter name="x" string="true">
+        - expected:
+          - kind: text
+            text: x[{"name":"f","arguments":{"x":"ok"}}]
+        - expected: []
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  native_quoted_control_in_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal '
+        - expected:
+          - kind: text
+            text: '"<｜DSML｜tool_calls>'
+        - expected:
+          - kind: text
+            text: '" marker is part of the explanation.'
+        - expected: []
+  native_single_quote_contraction_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+  native_single_quoted_word_control:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected:
+          - kind: text
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: text
+            text: ' marker'' is part of the explanation.'
+        - expected: []
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.Now answer.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now: reconsider'
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'Logging now:'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <think>
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: reconsider</think>
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. check Acheck B
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Sure.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' check A'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Before.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Before.
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I should check.
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. I should check.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Sure.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' I should check.'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  deepseek_v41_mixed_control_text_in_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_gt_in_argument_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_narrated_invoke_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_nameless_element_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_schema_error_not_a_call_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_syntax_error_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_tool_open_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_wrapped_in_tool_markup:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_rejected_header_quote_ownership:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  narrated_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_after_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_between_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_interleaved:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_markup_in_arg_with_text:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_tool_reason_tool_reason:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  text_between_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  text_reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  text_sandwich:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  tool_block_never_closed_then_text:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  tool_in_reason:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  tool_in_reason_with_text:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  trailing_text_after_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null

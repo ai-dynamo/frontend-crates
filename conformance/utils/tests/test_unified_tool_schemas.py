@@ -14,7 +14,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
-from unified_tools import unified_tools
+from unified_tools import openai_tools, unified_tools
 
 
 def _assert_value(value, schema):
@@ -143,7 +143,12 @@ def test_peer_request_schema_projection_matches_shared_definition(script):
     tree = ast.parse((SRC / script).read_text())
     assignments = [node for node in tree.body if isinstance(node, ast.Assign)
                    and any(isinstance(target, ast.Name) and target.id in {"TOOLS", "TOOL_SCHEMAS"} for target in node.targets)]
-    namespace = {"unified_tools": unified_tools, "Tool": SimpleNamespace, "Function": SimpleNamespace}
+    namespace = {
+        "unified_tools": unified_tools,
+        "openai_tools": openai_tools,
+        "Tool": SimpleNamespace,
+        "Function": SimpleNamespace,
+    }
     exec(compile(ast.Module(body=assignments, type_ignores=[]), script, "exec"), namespace)
     projected = namespace["TOOLS"]
     if script == "capture_sglang_unified.py":

@@ -7,137 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: b0757064fd8c10b92cc6e186cfba18e0c161de9c357f5f39ce894e5de0305932
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: " <|open|>think<|sep|>quoted<|close|>think<|sep|> <|open|>tools<|sep|> <|close|>tools<|sep|> <|close|>call<|sep|> &amp; \"x\"\\\n "
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":" <|open|>think<|sep|>quoted<|close|>think<|sep|> <|open|>tools<|sep|> <|close|>tools<|sep|> <|close|>call<|sep|> &amp; \"x\"\\\n "}'
-            complete: true
-        - expected: []
-  qwen_string_null:
-    case_key: UNIFIED.7-4
-    stimulus:
-      ref: current
-      semantic_sha256: 0685ab819beeaa264abcd872d1be4b610bcdffac4d8f6a6f2a29a7e8cba9b396
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-  arg_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: 2fa6875a428d80006bcdd265dc48b4b0a3910421f5606bbc924d11dc98ac98b7
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
   arg_json_null_anyof:
     case_key: UNIFIED.7-4.anyof
     stimulus:
@@ -284,6 +153,43 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 2fa6875a428d80006bcdd265dc48b4b0a3910421f5606bbc924d11dc98ac98b7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
             complete: true
         - expected: []
   arg_string_null_const:
@@ -508,138 +414,19 @@ changes:
             arguments: '{"city":"null"}'
             complete: true
         - expected: []
-  guided_quoted_reasoning_closer_named:
-    case_key: UNIFIED.34-8
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
     stimulus:
       ref: current
-      semantic_sha256: 82cf4277658e3bbeb15b49d67608b01b86b822bed9d5d9edaa62ba808eba56db
+      semantic_sha256: b0757064fd8c10b92cc6e186cfba18e0c161de9c357f5f39ce894e5de0305932
     observation:
       value:
         assembled:
-        - kind: reasoning
-          text: 'The literal ''doesn''t '
-        - kind: text
-          text: ' marker'' stays quoted.'
         - kind: tool_call
-          name: get_weather
+          name: f
           arguments:
-            city: Paris
+            x: " <|open|>think<|sep|>quoted<|close|>think<|sep|> <|open|>tools<|sep|> <|close|>tools<|sep|> <|close|>call<|sep|> &amp; \"x\"\\\n "
         chunks:
-        - expected:
-          - kind: reasoning
-            text: 'The literal ''doesn''t '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' marker'' stays quoted.'
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-  guided_quoted_reasoning_closer_required:
-    case_key: UNIFIED.34-9
-    stimulus:
-      ref: current
-      semantic_sha256: a66a24d6f085ae85239a2c5daef2ba056d637e8c90116a03e0d48883e99680b5
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'The literal ''doesn''t '
-        - kind: text
-          text: ' marker'' stays quoted.'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: 'The literal ''doesn''t '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' marker'' stays quoted.'
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-  guided_response_quoted_control_braces_named:
-    case_key: UNIFIED.35-3
-    stimulus:
-      ref: current
-      semantic_sha256: df889cf810d8602944a347e0a883a3ca330fa35ec049b06c63294d6750e5b962
-    observation:
-      error:
-        code: legacy_unclassified
-        detail: 'historical parser panic: attempt to subtract with overflow'
-  guided_response_quoted_control_braces_required:
-    case_key: UNIFIED.35-4
-    stimulus:
-      ref: current
-      semantic_sha256: 9bf343e0b1ab1d9d2f0bc422d25a744d8b36d20eb04133759dcbfeeb0981d400
-    observation:
-      error:
-        code: legacy_unclassified
-        detail: 'historical parser panic: attempt to subtract with overflow'
-  native_quoted_control_in_reasoning:
-    case_key: UNIFIED.40-5
-    stimulus:
-      ref: current
-      semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: The literal "
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: The literal "
-        - expected: []
-        - expected: []
-  native_single_quote_contraction_reasoning:
-    case_key: UNIFIED.40-6
-    stimulus:
-      ref: current
-      semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: 'The literal ''doesn''t '
-        chunks:
-        - expected:
-          - kind: reasoning
-            text: 'The literal ''doesn''t '
-        - expected: []
-        - expected: []
-  native_quoted_incomplete_header:
-    case_key: UNIFIED.8-10
-    stimulus:
-      ref: current
-      semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal `
-        chunks:
-        - expected:
-          - kind: text
-            text: The literal `
         - expected: []
         - expected: []
         - expected: []
@@ -650,74 +437,14 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  native_single_quote_contraction_response:
-    case_key: UNIFIED.8-11
-    stimulus:
-      ref: current
-      semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'The literal ''doesn''t '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'The literal ''doesn''t '
         - expected: []
         - expected: []
-  native_quoted_control_in_response:
-    case_key: UNIFIED.8-6
-    stimulus:
-      ref: current
-      semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal "
-        chunks:
-        - expected:
-          - kind: text
-            text: The literal "
         - expected: []
         - expected: []
-  native_single_quoted_word_control:
-    case_key: UNIFIED.8-7
-    stimulus:
-      ref: current
-      semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'The literal ''example '
-        chunks:
-        - expected:
-          - kind: text
-            text: 'The literal ''example '
         - expected: []
         - expected: []
-  native_quoted_control_then_call:
-    case_key: UNIFIED.8-8
-    stimulus:
-      ref: current
-      semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal "
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: text
-          text: <|close|>tools<|sep|>
-        chunks:
-        - expected:
-          - kind: text
-            text: The literal "
+        - expected: []
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -740,29 +467,23 @@ changes:
         - expected: []
         - expected:
           - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"Paris"}'
+            name: f
+            arguments: '{"x":" <|open|>think<|sep|>quoted<|close|>think<|sep|> <|open|>tools<|sep|> <|close|>tools<|sep|> <|close|>call<|sep|> &amp; \"x\"\\\n "}'
             complete: true
-          - kind: text
-            text: <|close|>tools<|sep|>
-  native_unmatched_quote_then_call:
-    case_key: UNIFIED.8-9
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
     stimulus:
       ref: current
-      semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
+      semantic_sha256: 0685ab819beeaa264abcd872d1be4b610bcdffac4d8f6a6f2a29a7e8cba9b396
     observation:
       value:
         assembled:
-        - kind: text
-          text: He said "maybe
         - kind: tool_call
           name: get_weather
           arguments:
-            city: Paris
+            city: null
         chunks:
-        - expected:
-          - kind: text
-            text: He said "maybe
         - expected: []
         - expected: []
         - expected: []
@@ -784,8 +505,9 @@ changes:
         - expected:
           - kind: tool_call
             name: get_weather
-            arguments: '{"city":"Paris"}'
+            arguments: '{"city":null}'
             complete: true
+        - expected: []
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:

@@ -1,0 +1,147 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.31.0
+document:
+  mode: unified
+changes: {}
+metadata_changes: {}
+document_overrides:
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  malformed_json_then_two_valid_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  muse_quoted_reserved_eom_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  muse_quoted_reserved_eot_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  muse_quoted_reserved_start_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.31.0
+      capture_origin: null
+      inherited_from: null

@@ -270,7 +270,7 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
     assert not (history_root / "families/gemma4/dynamo_v2-0.1.0.yaml").exists()
 
 
-def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
+def test_unified_only_package_stages_tree_and_exclusions(tmp_path, monkeypatch):
     conformance = tmp_path / "conformance"
     fixtures = conformance / "fixtures"
     history = conformance / "fixtures-unified-v2"
@@ -284,6 +284,8 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
     staged_trees = []
     built_trees = []
+    built_exclusions = []
+    built_required_captures = []
     monkeypatch.setattr(
         package_fixtures,
         "stage_fixtures",
@@ -292,7 +294,12 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(
         package_fixtures,
         "build_shards",
-        lambda _loose, _blobs, _prune, *, history_root, trees: built_trees.extend(trees) or [],
+        lambda _loose, _blobs, _prune, *, history_root, trees, excluded_unified_capture_dirs, required_unified_capture_dirs: (
+            built_trees.extend(trees)
+            or built_exclusions.extend(excluded_unified_capture_dirs)
+            or built_required_captures.extend(required_unified_capture_dirs)
+            or []
+        ),
     )
     monkeypatch.setattr(package_fixtures, "sync_store", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(package_fixtures, "merge_shards", lambda *_args, **_kwargs: [])
@@ -306,17 +313,53 @@ def test_unified_only_package_stages_only_unified_tree(tmp_path, monkeypatch):
         dry_run=True,
         prune=False,
         unified_only=True,
+        excluded_unified_capture_dirs=frozenset({"dynamo_v2-0.7.8"}),
+        required_unified_capture_dirs=frozenset({"dynamo_v2-0.7.16"}),
     )
 
     assert staged_trees == ["unified"]
     assert built_trees == ["unified"]
+    assert built_exclusions == ["dynamo_v2-0.7.8"]
+    assert built_required_captures == ["dynamo_v2-0.7.16"]
 
 
 @pytest.mark.parametrize(
-    ("current_roots", "complete_snapshot"),
+    (
+        "current_roots",
+        "complete_snapshot",
+        "excluded_capture_dirs",
+        "capture_dirs",
+        "expected_required_capture_dirs",
+        "required_unified_capture_dirs",
+    ),
     [
-        ((), False),
-        (("inputs", "golden"), True),
+        ((), False, frozenset(), (), frozenset(), None),
+        (("inputs", "golden"), True, frozenset(), (), frozenset(), None),
+        ((), False, frozenset({"vllm_python-0.27.1"}), (), frozenset(), None),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset({"dynamo_v2-0.7.8"}),
+            ("dynamo_v2-0.7.8",),
+            frozenset(),
+            None,
+        ),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset(),
+            ("dynamo_v2-0.7.8", "dynamo_v2-0.7.16"),
+            frozenset({"dynamo_v2-0.7.16"}),
+            frozenset({"dynamo_v2-0.7.16"}),
+        ),
+        (
+            ("inputs", "golden"),
+            True,
+            frozenset({"dynamo_v2-0.7.16"}),
+            ("dynamo_v2-0.7.16",),
+            frozenset(),
+            frozenset(),
+        ),
     ],
 )
 def test_build_shards_passes_exact_inactive_unified_capture_directories(
@@ -324,11 +367,17 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
     monkeypatch,
     current_roots,
     complete_snapshot,
+    excluded_capture_dirs,
+    capture_dirs,
+    expected_required_capture_dirs,
+    required_unified_capture_dirs,
 ):
     stage = tmp_path / "stage"
     (stage / "unified").mkdir(parents=True)
     for root in current_roots:
         (stage / "unified" / root).mkdir()
+    for capture_dir in capture_dirs:
+        (stage / "unified" / capture_dir).mkdir()
     history = tmp_path / "history"
     history.mkdir()
     blobs = tmp_path / "blobs"
@@ -347,9 +396,11 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
         *,
         complete_snapshot,
         required_capture_dirs,
+        **kwargs,
     ):
         observed["complete_snapshot"] = complete_snapshot
         observed["required_capture_dirs"] = required_capture_dirs
+        observed.update(kwargs)
         return []
 
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
@@ -357,12 +408,21 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
     monkeypatch.setattr(unified_history, "update_store_from_loose", update_store)
     monkeypatch.setattr(unified_history, "store_digest", lambda _root: ("0" * 64, 0))
 
-    package_fixtures.build_shards(stage, blobs, history_root=history)
+    package_fixtures.build_shards(
+        stage,
+        blobs,
+        history_root=history,
+        excluded_unified_capture_dirs=excluded_capture_dirs,
+        required_unified_capture_dirs=required_unified_capture_dirs,
+    )
 
-    assert observed == {
+    expected = {
         "complete_snapshot": complete_snapshot,
-        "required_capture_dirs": frozenset(),
+        "required_capture_dirs": expected_required_capture_dirs,
     }
+    if excluded_capture_dirs:
+        expected["excluded_capture_dirs"] = excluded_capture_dirs
+    assert observed == expected
 
 
 @pytest.mark.parametrize("failure_stage", ["history", "archives", "manifest"])
@@ -393,7 +453,15 @@ def test_package_staging_failure_preserves_live_generation(
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
     monkeypatch.setattr(package_fixtures, "stage_fixtures", lambda _source, _destination: None)
 
-    def build_shards(_loose, _blobs, _prune, *, history_root):
+    def build_shards(
+        _loose,
+        _blobs,
+        _prune,
+        *,
+        history_root,
+        excluded_unified_capture_dirs,
+        required_unified_capture_dirs,
+    ):
         if failure_stage == "history":
             (history_root / "generation").write_text("partial history")
             raise OSError("injected failure after history mutation")
@@ -2299,9 +2367,27 @@ def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_pa
 @pytest.mark.parametrize(("family", "old", "new"), [
     ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-1"),
     ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-2"),
+    ("kimi_k2", "UNIFIED.1-2", "UNIFIED.kimi_k2-1"),
+    ("deepseek_v41", "UNIFIED.7-3", "UNIFIED.7-3"),
+    ("deepseek_v41", "UNIFIED.deepseek_v41-1", "UNIFIED.7-3"),
+    ("qwen3", "UNIFIED.31-31", "UNIFIED.qwen3-1"),
+    ("qwen3", "UNIFIED.31-32", "UNIFIED.qwen3-2"),
+    ("deepseek_v4", "UNIFIED.31-38", "UNIFIED.deepseek_v4-1"),
+    ("gemma4", "UNIFIED.31-39", "UNIFIED.gemma-3"),
+    ("muse_glimmer", "UNIFIED.31-37", "UNIFIED.muse-5"),
+    ("muse_glimmer", "UNIFIED.50-2", "UNIFIED.muse-6"),
+    ("deepseek_v41", "UNIFIED.50-1", "UNIFIED.deepseek_v41-2"),
+    ("qwen3", "UNIFIED.31-36", "UNIFIED.qwen3-3"),
+    ("gemma4", "UNIFIED.31-33", "UNIFIED.34-10"),
+    ("qwen3", "UNIFIED.31-34", "UNIFIED.35-6"),
+    ("muse_glimmer", "UNIFIED.31-35", "UNIFIED.35-7"),
+    ("gemma4", "UNIFIED.31-40", "UNIFIED.34-11"),
     ("qwen3", "UNIFIED.31.a", "UNIFIED.31-1"),
     ("gemma4", "UNIFIED.31.x", "UNIFIED.34-6"),
     ("qwen3", "UNIFIED.31-29", "UNIFIED.31-29"),
+    ("gemma4", "UNIFIED.1-2", "UNIFIED.1-2"),
+    ("qwen3", "UNIFIED.7-3", "UNIFIED.7-3"),
+    ("deepseek_v41", "UNIFIED.31-36", "UNIFIED.31-36"),
     ("qwen3", "UNIFIED.30.m", "UNIFIED.30-13"),
     ("qwen3", "UNIFIED.1.a", "UNIFIED.1-1"),
     ("muse_glimmer", "UNIFIED.31-26", "UNIFIED.muse-1"),

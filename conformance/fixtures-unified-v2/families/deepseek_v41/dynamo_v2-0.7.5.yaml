@@ -8,6 +8,10 @@ document:
   mode: unified
 changes:
   deepseek_v41_json_invocation_body:
+    case_key: UNIFIED.7-6
+    stimulus:
+      ref: current
+      semantic_sha256: 57b69f6d50c202b9526bf4eb2b54f844bdee5fa4856b9fda9e2b31e4a678e171
     observation:
       value:
         assembled:
@@ -50,9 +54,5 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-    case_key: UNIFIED.7-6
-    stimulus:
-      ref: current
-      semantic_sha256: 57b69f6d50c202b9526bf4eb2b54f844bdee5fa4856b9fda9e2b31e4a678e171
 metadata_changes: {}
 document_overrides: {}

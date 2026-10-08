@@ -8,14 +8,14 @@ document:
   mode: unified
 changes:
   malformed_json_then_two_valid_calls:
-    observation:
-      error:
-        code: legacy_unclassified
-        detail: 'native push: EOF while parsing a string at line 1 column 16'
     case_key: UNIFIED.5-4
     stimulus:
       ref: current
       semantic_sha256: a7f43a11f9fdd37253809b088ccc30a3c4eece02700148d2ec3e70402a1bf7e9
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native push: EOF while parsing a string at line 1 column 16'
 metadata_changes: {}
 document_overrides:
   guided_quoted_reasoning_closer_named:
