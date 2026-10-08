@@ -149,37 +149,66 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
     )
 
 
+def _gemma_value(value):
+    if isinstance(value, str):
+        return f'<|"|>{value}<|"|>'
+    if isinstance(value, dict):
+        return "{" + ",".join(f"{key}:{_gemma_value(item)}" for key, item in value.items()) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(_gemma_value(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
 def r_tool(fam, name, key, val, idx):
-    assert val is None or isinstance(val, str), "r_tool accepts strings and JSON null"
-    value = "null" if val is None else val
-    string_attr = "false" if val is None else "true"
-    if fam == "deepseek_v41":
-        return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'<｜DSML｜ parameter name="{key}" string="{string_attr}">{value}'
-                f'</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>')
-    if fam == "deepseek_v4":
-        return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
-                f"<｜DSML｜parameter name=\"{key}\" string=\"{string_attr}\">{value}"
-                f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
+    return r_tool_arguments(fam, name, {key: val}, idx)
+
+
+def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
+    # Raw spellings preserve published stimuli independently of the typed oracle.
+    raw = raw_arguments if raw_arguments is not None else {
+        key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        for key, value in arguments.items()
+    }
+    if fam in ("deepseek_v4", "deepseek_v41"):
+        gap = " " if fam == "deepseek_v41" else ""
+        envelope = "calls" if gap else "tool_calls"
+        params = "".join(
+            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
+            for key, value in arguments.items()
+        )
+        return (f'<｜DSML｜{gap}{envelope}><｜DSML｜{gap}invoke name="{name}">'
+                f'{params}</｜DSML｜{gap}invoke></｜DSML｜{gap}{envelope}>')
     if fam == "gemma4":
-        argument = "null" if val is None else f'<|"|>{value}<|"|>'
-        return f"<|tool_call>call:{name}{{{key}:{argument}}}<tool_call|>"
+        native_values = {key: raw[key] if isinstance(value, str) else json.loads(raw[key])
+                         for key, value in arguments.items()}
+        return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
     if fam == "qwen3":
-        return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
-                f"{value}\n</parameter>\n</function>\n</tool_call>")
+        params = "\n".join(
+            f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw.items()
+        )
+        return f"<tool_call>\n<function={name}>\n{params}\n</function>\n</tool_call>"
     if fam == "glm47":
-        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
-                f"<arg_value>{value}</arg_value></tool_call>")
+        params = "".join(
+            f"<arg_key>{key}</arg_key><arg_value>{value}</arg_value>"
+            for key, value in raw.items()
+        )
+        return f"<tool_call>{name}{params}</tool_call>"
     if fam == "muse_glimmer":
-        argument = "null" if val is None else _atem_value(val)
+        params = "".join(
+            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) else raw[key]}</atem:parameter>\n'
+            for key, value in arguments.items()
+        )
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
-                f"<atem:invoke name=\"{name}\">\n"
-                f"<atem:parameter name=\"{key}\">{argument}</atem:parameter>\n"
+                f'<atem:invoke name="{name}">\n{params}'
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
     if fam == "kimi_k3":
-        argument_type = "null" if val is None else "string"
-        return k3_tools(k3_call(name, idx + 1, k3_argument(key, argument_type, value)))
-    args = json.dumps({key: val}, ensure_ascii=False)
+        types = {str: "string", type(None): "null", bool: "boolean", int: "integer",
+                 float: "number", dict: "object", list: "array"}
+        params = "".join(k3_argument(key, types[type(value)], raw[key])
+                         for key, value in arguments.items())
+        return k3_tools(k3_call(name, idx + 1, params))
+    assert fam == "kimi_k2", fam
+    args = json.dumps(arguments, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
 
@@ -1972,24 +2001,28 @@ EDGE += [
 EDGE += [
     (
         scenario,
-        null_description(label, 'GLM regression for PR #268: `city` uses a local $ref to '
-                         'the tool parameters root; the referenced definition controls null coercion.'),
+        null_description(label, detail),
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop"},
-        OnlyFamilies({"glm47": (
-            _NULL_TEXT_INPUTS["glm47"],
-            D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
-        )}),
-        {"glm47": [{"name": "get_weather", "parameters": {
+        OnlyFamilies({
+            family: (
+                _NULL_TEXT_INPUTS[family],
+                D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
+            )
+            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+        }),
+        {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}]},
+        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
     )
-    for scenario, label, schema, value in (
-        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None),
-        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null"),
+    for scenario, label, schema, value, detail in (
+        ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
+         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+        ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
+         'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
 ]
 
@@ -2010,9 +2043,47 @@ EDGE.append((
      for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
 
-# These valid-schema reference probes target GLM's untyped XML values. Keep the
-# request refs unresolved and author the expected values separately from the text.
+# Keep historical scenario IDs and raw spellings; applicability is shared.
+# GLM/Qwen consult schemas; explicitly typed grammars test value preservation.
 for scenario, description, parameters, raw_arguments, arguments in (
+    (
+        "unused_reference_graph_parameter_types",
+        'An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget.',
+        {"type": "object", "$defs": {
+            f"N{i}": ({"type": "string"} if i == 6 else {"allOf": [
+                {"$ref": f"#/$defs/N{i + 1}"} for _ in range(4)
+            ]}) for i in range(7)
+        }, "properties": {
+            "a": {"$ref": "#/$defs/N0"}, "count": {"type": "integer"},
+            "flag": {"type": "boolean"}, "text": {"type": "string"},
+        }},
+        {"count": "42", "flag": "false", "text": "null"},
+        {"count": 42, "flag": False, "text": "null"},
+    ),
+    (
+        "nullable_reference_alias_literals",
+        'Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null".',
+        {"type": "object", "$defs": {
+            "ConstAlias": {"$ref": "#/$defs/ConstText"},
+            "EnumAlias": {"$ref": "#/$defs/EnumText"},
+            "ConstText": {"type": "string", "const": "null"},
+            "EnumText": {"type": "string", "enum": ["null"]},
+        }, "properties": {
+            "const_text": {"$ref": "#/$defs/ConstAlias", "nullable": True},
+            "enum_text": {"$ref": "#/$defs/EnumAlias", "nullable": True},
+        }},
+        {"const_text": "null", "enum_text": "null"},
+        {"const_text": "null", "enum_text": "null"},
+    ),
+    (
+        "local_schema_id_preserves_type",
+        'A directly declared integer remains typed when a local $id disables reference resolution.',
+        {"type": "object", "properties": {
+            "count": {"type": "integer", "$id": "https://example.com/count"},
+        }},
+        {"count": "42"},
+        {"count": 42},
+    ),
     (
         "glm_ref_object",
         'PR #271 compatibility control: a local object reference keeps JSON object text as an object.',
@@ -2065,20 +2136,83 @@ for scenario, description, parameters, raw_arguments, arguments in (
         {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
     ),
 ):
-    input_text = "<tool_call>capture_payload" + "".join(
-        f"<arg_key>{key}</arg_key><arg_value>{raw}</arg_value>"
-        for key, raw in raw_arguments.items()
-    ) + "</tool_call>"
     EDGE.append((
-        scenario, description, ["I7"],
+        scenario, description + " GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.", ["I7"],
         [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop"},
-        OnlyFamilies({"glm47": (
-            input_text, D("UNSUPPORTED", "No peer capture is recorded for this GLM reference-schema probe."), M,
-        )}),
-        {"glm47": [{"name": "capture_payload", "parameters": parameters}]},
+        OnlyFamilies({family: (
+            r_tool_arguments(family, "capture_payload", arguments, 0, raw_arguments),
+            D("UNSUPPORTED", "No peer capture is recorded for this reference-schema probe."), M,
+        ) for family in FAMILIES}),
+        {family: [{"name": "capture_payload", "parameters": parameters}] for family in FAMILIES},
     ))
+_DS41_JSON_BODY_ARGS = {
+    "value": ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"\n',
+    "nested": {"values": [True, 42, -1250]},
+}
+_DS41_JSON_BODY = json.dumps(_DS41_JSON_BODY_ARGS, ensure_ascii=False)
+EDGE.append((
+    "deepseek_v41_json_invocation_body",
+    "PR #250: DeepSeek V4.1 accepts a JSON object as the invocation body and preserves marker-looking text inside its string values.",
+    ["I7"],
+    [
+        {"kind": "tool_call", "name": "inspect", "arguments": _DS41_JSON_BODY_ARGS},
+        {"kind": "tool_call", "name": "done", "arguments": {}},
+    ],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({"deepseek_v41": (
+        '<｜DSML｜ calls>\n'
+        '<｜DSML｜ invoke name="inspect">\n'
+        + _DS41_JSON_BODY
+        + '\n</｜DSML｜ invoke>\n'
+        '<｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>\n'
+        '</｜DSML｜ calls>', M, M,
+    )}),
+    {"deepseek_v41": [
+        {"name": "inspect", "parameters": {
+            "type": "object",
+            "properties": {
+                "value": {"type": "string"},
+                "nested": {"type": "object"},
+            },
+            "required": ["value", "nested"],
+        }},
+        {"name": "done", "parameters": {"type": "object"}},
+    ]},
+))
+
+_GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
+    "type": "object",
+    "$defs": {
+        "Text": {"type": "string"},
+        "TextAlias": {"$ref": "#/$defs/Text"},
+        "Count": {"type": "integer"},
+    },
+    "properties": {
+        "payload": {"$ref": "#/$defs/TextAlias", "allOf": [{"type": "string"}]},
+        "count": {"$ref": "#/$defs/Count", "minimum": 1},
+    },
+    "required": ["payload", "count"],
+}}]
+EDGE.append((
+    "glm47_reference_type_intersection",
+    "PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
+    ["I7"],
+    [{"kind": "tool_call", "name": "capture_payload", "arguments": {
+        "payload": '{"x":1}', "count": 42,
+    }}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({"glm47": (
+        '<tool_call>capture_payload'
+        '<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value>'
+        '<arg_key>count</arg_key><arg_value>42</arg_value></tool_call>', M,
+        M,
+    )}),
+    {"glm47": _GLM_REFERENCE_TOOLS},
+))
 
 
 
