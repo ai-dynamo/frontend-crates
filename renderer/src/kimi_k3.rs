@@ -130,7 +130,6 @@ impl OAIPromptFormatter for KimiK3Formatter {
     }
 }
 
-/// Rendered K3 segments plus the length of the trailing generation stub.
 struct ChatSegments {
     segments: Vec<RenderedSegment>,
     /// Trailing segments that open the assistant channel for generation.
