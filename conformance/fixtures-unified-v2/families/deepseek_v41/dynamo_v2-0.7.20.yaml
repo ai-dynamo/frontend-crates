@@ -2,15 +2,12 @@ provenance:
   status: captured
   origin:
     crate_version: 0.7.20
-    git_commit: 17020c2662a490f4366d1710db1971776d4e63b5
-    source_sha256: a4916010a489a2cb7c1b12f0176a682298ed0169724c89630355dc2d28e66317
+    git_commit: 56098f7784da6ec180bee29b02e3165fb1b8fcac
+    source_sha256: 542d0e33e9ea94c09d1223274bfd6fd01b97497b14a9484c33107ed3393226e2
 document:
   mode: unified
 changes:
   malformed_json_then_two_valid_calls:
-    stimulus:
-      ref: current
-      semantic_sha256: a7f43a11f9fdd37253809b088ccc30a3c4eece02700148d2ec3e70402a1bf7e9
     observation:
       value:
         assembled:
@@ -33,6 +30,9 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: a7f43a11f9fdd37253809b088ccc30a3c4eece02700148d2ec3e70402a1bf7e9
     case_key: UNIFIED.5-4
 metadata_changes: {}
 document_overrides:
@@ -42,6 +42,6 @@ document_overrides:
         dynamo_v2: 0.7.20
       capture_origin:
         crate_version: 0.7.20
-        source_sha256: a4916010a489a2cb7c1b12f0176a682298ed0169724c89630355dc2d28e66317
-        git_commit: 17020c2662a490f4366d1710db1971776d4e63b5
+        source_sha256: 542d0e33e9ea94c09d1223274bfd6fd01b97497b14a9484c33107ed3393226e2
+        git_commit: 56098f7784da6ec180bee29b02e3165fb1b8fcac
       inherited_from: null
