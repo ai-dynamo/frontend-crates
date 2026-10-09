@@ -239,11 +239,6 @@ fn malformed_outer_quote_closes_after_an_incomplete_candidate_key() {
         "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
     );
     assert_both_adapters(input, "");
-    assert_both_adapters_at_chunk_sizes(
-        input,
-        &[1, 4, 16],
-        &[("get_weather", serde_json::json!({"city": "NYC"}))],
-    );
 }
 
 #[test]

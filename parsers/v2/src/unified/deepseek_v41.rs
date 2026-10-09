@@ -715,6 +715,29 @@ mod tests {
     }
 
     #[test]
+    fn truncated_json_parameter_drops_bad_call_and_recovers_the_next_call() {
+        let input = concat!(
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
+        );
+        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+            let mut parser = deepseek_v41_unified(&[]);
+            let mut output = UnifiedParserOutput::default();
+            parser.parse_into(&input[..split], &mut output).unwrap();
+            parser.parse_into(&input[split..], &mut output).unwrap();
+            output.append(&mut parser.finish().unwrap());
+            assert_eq!(
+                output.assembled(),
+                vec![UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "Café"}),
+                }],
+                "split {split}"
+            );
+        }
+    }
+
+    #[test]
     fn guided_output_uses_shared_decoder() {
         let mut parser = deepseek_v41_unified(&[]);
         parser
