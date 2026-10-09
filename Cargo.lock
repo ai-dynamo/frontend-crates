@@ -1158,7 +1158,9 @@ dependencies = [
  "blake3",
  "gif",
  "image",
+ "matroska-demuxer",
  "rayon",
+ "re_mp4",
  "serde",
  "serde_json",
  "turbojpeg",
@@ -2575,6 +2577,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
+name = "matroska-demuxer"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cbf36668475a45a46bf8710e927e7458b7c387e7c46ddb5457ae0c71cf5e817"
+
+[[package]]
 name = "maybe-rayon"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2867,6 +2875,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -3590,6 +3599,20 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "re_mp4"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63d71dca1bc07c053ed67ccfd0b52df652192a6541fbdf85cc3d46142e20d709"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "num-rational",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
