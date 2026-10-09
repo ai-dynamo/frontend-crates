@@ -275,26 +275,38 @@ fn malformed_outer_quote_keeps_a_later_candidate_after_an_incomplete_value() {
 }
 
 #[test]
-fn malformed_outer_quote_keeps_later_empty_argument_call() {
-    for fake_value in ["x:", "x:[", "x:{y:"] {
-        let input = format!(
-            "<|tool_call>call:broken{{note:<|\"|>outer<|tool_call>call:fake{{{fake_value}<|\"|>}}<|tool_call>call:echo{{}}<tool_call|>"
+fn malformed_outer_quote_keeps_a_complete_call_with_malformed_arguments() {
+    let input = concat!(
+        "<|tool_call>call:broken{note:<|\"|>outer",
+        "<|tool_call>call:echo{value:bogus}<tool_call|>",
+    );
+    for chunks in chunkings(input) {
+        let mut parser = create_tool_parser_for_family("gemma4", &weather_echo_tools())
+            .expect("Gemma tool parser");
+        let output = drive_tool(parser.as_mut(), &chunks);
+        assert_eq!(output.normal_text, "", "chunks={chunks:?}");
+        assert_eq!(output.calls.len(), 1, "chunks={chunks:?}");
+        let call = &output.calls[0];
+        assert_eq!(call.tool_index, 0, "chunks={chunks:?}");
+        assert!(call.complete, "chunks={chunks:?}");
+        assert_eq!(call.name.as_deref(), Some("echo"), "chunks={chunks:?}");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&call.arguments).expect("arguments"),
+            serde_json::json!({}),
+            "chunks={chunks:?}"
         );
-        let tools = [Tool {
-            name: "echo".into(),
-            description: None,
-            parameters: serde_json::json!({ "type": "object", "properties": {} }),
-            strict: None,
-        }];
-        for chunks in chunkings(&input) {
-            assert_adapters(
-                "gemma4",
-                &tools,
-                &chunks,
-                "",
-                &[("echo", serde_json::json!({}))],
-            );
-        }
+    }
+
+    let incomplete = concat!(
+        "<|tool_call>call:broken{note:<|\"|>outer",
+        "<|tool_call>call:echo{value:bogus<tool_call|>",
+    );
+    for chunks in chunkings(incomplete) {
+        let mut parser = create_tool_parser_for_family("gemma4", &weather_echo_tools())
+            .expect("Gemma tool parser");
+        let output = drive_tool(parser.as_mut(), &chunks);
+        assert_eq!(output.normal_text, "", "chunks={chunks:?}");
+        assert!(output.calls.is_empty(), "chunks={chunks:?}");
     }
 }
 

@@ -180,14 +180,10 @@ pub fn parse_one_tool_call_gemma4(
     parse_gemma_call_parts(name, args_raw, tools).map(Some)
 }
 
-/// Whether a recovered candidate has a complete, strictly valid argument body.
-/// The streaming recovery scan uses this to distinguish a real wrapped call
-/// from a wrapper-like suffix inside a malformed candidate's quoted value.
-pub(crate) fn is_valid_tool_call_gemma4(invoke: &str) -> bool {
-    let Some((_, args_raw, _)) = parse_recoverable_call_at(invoke, true, true) else {
-        return false;
-    };
-    parse_args_object(args_raw).is_ok()
+/// Whether a candidate has complete Gemma call boundaries, independent of whether
+/// its argument body parses. The emitter owns malformed-argument fallback behavior.
+pub(crate) fn has_recoverable_tool_call_boundaries_gemma4(invoke: &str) -> bool {
+    parse_recoverable_call_at(invoke, true, true).is_some()
 }
 
 // ---------------------------------------------------------------------------

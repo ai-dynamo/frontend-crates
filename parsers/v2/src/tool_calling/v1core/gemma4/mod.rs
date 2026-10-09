@@ -5,7 +5,7 @@
 
 mod parser;
 
-pub(crate) use parser::is_valid_tool_call_gemma4;
+pub(crate) use parser::has_recoverable_tool_call_boundaries_gemma4;
 pub use parser::{
     has_bare_call_body_start_gemma4, is_call_prefix_boundary, parse_one_tool_call_gemma4,
 };

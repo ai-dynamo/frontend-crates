@@ -39,8 +39,8 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    has_bare_call_body_start_gemma4, is_call_prefix_boundary, is_valid_tool_call_gemma4,
-    parse_one_tool_call_gemma4,
+    has_bare_call_body_start_gemma4, has_recoverable_tool_call_boundaries_gemma4,
+    is_call_prefix_boundary, parse_one_tool_call_gemma4,
 };
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
@@ -324,7 +324,7 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                         if self.resync_candidate_ambiguous {
                             let end = cursor + TOOL_CALL_END.len();
                             count_boundary_bytes(end - start);
-                            if is_valid_tool_call_gemma4(&input[start..end]) {
+                            if has_recoverable_tool_call_boundaries_gemma4(&input[start..end]) {
                                 if self.resync_outer_close_candidate_start == Some(start) {
                                     // The candidate whose value delimiter was
                                     // ambiguous forms a complete call under the
