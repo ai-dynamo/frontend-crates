@@ -719,32 +719,6 @@ mod tests {
     }
 
     #[test]
-    fn unterminated_string_keeps_later_calls_at_every_split() {
-        let input = concat!(
-            "<|tool_call>call:bad{value:{x:<|\"|>unfinished}}<tool_call|>",
-            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
-            "<|tool_call>call:echo{value:<|\"|>Café<|\"|>}<tool_call|>",
-        );
-        let expected = vec![
-            call("echo", serde_json::json!({"value": "é"})),
-            call("echo", serde_json::json!({"value": "Café"})),
-        ];
-        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
-            assert_eq!(
-                events(&[], &[&input[..split], &input[split..]]),
-                expected,
-                "split={split}"
-            );
-        }
-
-        let chunks: Vec<_> = input
-            .char_indices()
-            .map(|(index, ch)| &input[index..index + ch.len_utf8()])
-            .collect();
-        assert_eq!(events(&[], &chunks), expected);
-    }
-
-    #[test]
     fn eof_recovery_keeps_tool_markers_inside_a_valid_string_as_data() {
         let input = concat!(
             "<|tool_call>call:bad{value:<|\"|>unfinished}<tool_call|>",

@@ -39,7 +39,8 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    has_bare_call_body_start_gemma4, is_call_prefix_boundary, parse_one_tool_call_gemma4,
+    has_bare_call_body_start_gemma4, is_call_prefix_boundary, is_valid_tool_call_gemma4,
+    parse_one_tool_call_gemma4,
 };
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
@@ -167,6 +168,9 @@ struct Gemma4InvokeBoundary {
     resync_candidate_ambiguous: bool,
     resync_candidate_context: Vec<Gemma4ResyncContext>,
     resync_recovery_start: Option<usize>,
+    resync_outer_close_at: Option<usize>,
+    resync_outer_close_candidate_start: Option<usize>,
+    resync_force_outer_close_at: Option<usize>,
 }
 
 #[derive(Clone, Copy)]
@@ -235,21 +239,37 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                         {
                             *context = after_string;
                         }
-                    } else if self.resync_candidate_ambiguous
-                        && !self
-                            .resync_candidate_context
-                            .last()
-                            .copied()
-                            .is_some_and(Gemma4ResyncContext::expects_string_value)
+                    } else if self.resync_force_outer_close_at == Some(cursor)
+                        || (self.resync_candidate_ambiguous
+                            && (!self
+                                .resync_candidate_context
+                                .last()
+                                .copied()
+                                .is_some_and(Gemma4ResyncContext::expects_string_value)))
                     {
                         if self.resync_in_string {
-                            // This candidate began inside the malformed outer
-                            // string, and its grammar position cannot start a
-                            // string value. This delimiter closes the outer string.
+                            // This interpretation assigns the delimiter to the
+                            // malformed outer string. Value-position candidates
+                            // get a separate bounded pass with this ownership.
                             self.resync_in_string = false;
                             self.resync_recovery_start = None;
                         }
                     } else {
+                        if self.resync_force_outer_close_at.is_none()
+                            && self.resync_candidate_ambiguous
+                            && self.resync_in_string
+                            && self
+                                .resync_candidate_context
+                                .last()
+                                .copied()
+                                .is_some_and(Gemma4ResyncContext::expects_string_value)
+                        {
+                            self.resync_outer_close_at.get_or_insert(cursor);
+                            if let Some((candidate_start, _)) = self.resync_candidate {
+                                self.resync_outer_close_candidate_start
+                                    .get_or_insert(candidate_start);
+                            }
+                        }
                         self.resync_candidate_in_string = true;
                     }
                 } else {
@@ -302,13 +322,28 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                 if depth == 0 {
                     if rest.starts_with(TOOL_CALL_END) {
                         if self.resync_candidate_ambiguous {
-                            self.resync_recovery_start.get_or_insert(start);
+                            let end = cursor + TOOL_CALL_END.len();
+                            count_boundary_bytes(end - start);
+                            if is_valid_tool_call_gemma4(&input[start..end]) {
+                                if self.resync_outer_close_candidate_start == Some(start) {
+                                    // The candidate whose value delimiter was
+                                    // ambiguous forms a complete call under the
+                                    // candidate-string interpretation. Keep its
+                                    // marker-like value data opaque.
+                                    self.resync_outer_close_at = None;
+                                    self.resync_outer_close_candidate_start = None;
+                                }
+                                self.resync_recovery_start.get_or_insert(start);
+                            }
                             self.clear_recovery_candidate();
                             self.resync_cursor += TOOL_CALL_END.len();
                             count_boundary_bytes(TOOL_CALL_END.len());
                             continue;
                         }
-                        return Some(start);
+                        return Some(
+                            self.earlier_alternate(input, Some(start), flush, _tool_index)
+                                .unwrap_or(start),
+                        );
                     }
                     if TOOL_CALL_END.starts_with(rest) && !flush {
                         return None;
@@ -331,17 +366,14 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
             count_boundary_bytes(consumed);
         }
         if flush {
-            if self.resync_in_string
-                && let Some(start) = self.resync_recovery_start
-            {
-                return Some(start);
-            }
-            if let Some((start, depth)) = self.resync_candidate
-                && depth == 0
-                && (!self.resync_candidate_ambiguous || self.resync_in_string)
-            {
-                return Some(start);
-            }
+            let recovery_start = self.resync_recovery_start.filter(|_| self.resync_in_string);
+            let candidate_start = self
+                .resync_candidate
+                .filter(|(_, depth)| *depth == 0)
+                .filter(|_| !self.resync_candidate_ambiguous || self.resync_in_string)
+                .map(|(start, _)| start);
+            let primary_start = recovery_start.into_iter().chain(candidate_start).min();
+            return self.earlier_alternate(input, primary_start, true, _tool_index);
         }
         None
     }
@@ -354,6 +386,39 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
 }
 
 impl Gemma4InvokeBoundary {
+    fn earlier_alternate(
+        &self,
+        input: &str,
+        primary_start: Option<usize>,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize> {
+        // A value delimiter in a candidate inside an already-open malformed
+        // string has two viable owners. Keep the candidate-string interpretation
+        // first so a complete quoted candidate retains its marker data. If that
+        // pass only finds a later candidate, run one bounded alternate pass with
+        // the delimiter closing the malformed outer string and keep the earlier
+        // recoverable candidate.
+        let Some(close_at) = self.resync_outer_close_at else {
+            return primary_start;
+        };
+        if self.resync_force_outer_close_at.is_some()
+            || primary_start.is_some_and(|start| close_at >= start)
+        {
+            return primary_start;
+        }
+
+        let mut alternate = Self {
+            resync_force_outer_close_at: Some(close_at),
+            ..Self::default()
+        };
+        match (primary_start, alternate.resync(input, flush, tool_index)) {
+            (Some(primary), Some(alternate)) => Some(primary.min(alternate)),
+            (Some(primary), None) => Some(primary),
+            (None, alternate) => alternate,
+        }
+    }
+
     fn clear_recovery_candidate(&mut self) {
         self.resync_candidate = None;
         self.resync_candidate_ambiguous = false;
@@ -366,6 +431,9 @@ impl Gemma4InvokeBoundary {
         self.resync_cursor = 0;
         self.resync_in_string = false;
         self.resync_recovery_start = None;
+        self.resync_outer_close_at = None;
+        self.resync_outer_close_candidate_start = None;
+        self.resync_force_outer_close_at = None;
     }
 
     fn advance_candidate_context(&mut self, ch: char) {
@@ -580,6 +648,19 @@ mod boundary_tests {
             boundary.resync_in_string,
             boundary.resync_candidate_in_string
         );
+    }
+
+    #[test]
+    fn value_delimiter_alternate_close_recovers_a_later_candidate() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>outer",
+            "<|tool_call>call:fake{x:<|\"|>}",
+            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
+        );
+        let expected = input.find("<|tool_call>call:echo").unwrap();
+        let mut boundary = Gemma4InvokeBoundary::default();
+        let recovered = boundary.resync(input, true, 0);
+        assert_eq!(recovered, Some(expected));
     }
 
     #[test]

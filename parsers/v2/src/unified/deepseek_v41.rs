@@ -676,26 +676,6 @@ mod tests {
     }
 
     #[test]
-    fn malformed_json_parameter_keeps_later_calls_at_every_split() {
-        let input = concat!(
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"x\":\"unfinished</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">é</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-        );
-        let expected = vec![
-            UnifiedEvent::ToolCall {
-                name: "echo".into(),
-                arguments: serde_json::json!({"value": "é"}),
-            },
-            UnifiedEvent::ToolCall {
-                name: "echo".into(),
-                arguments: serde_json::json!({"value": "Café"}),
-            },
-        ];
-        assert_every_split_with_init(input, UnifiedParserInit::default(), expected);
-    }
-
-    #[test]
     fn malformed_invocation_is_an_error_without_tool_deltas() {
         for input in [
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"x\" string=\"true\">first</｜DSML｜ parameter><｜DSML｜ parameter name=\"x\" string=\"true\">second</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",

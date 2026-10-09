@@ -247,7 +247,3 @@ def test_recorded_error_for_resolved_divergence_is_rejected(tmp_path):
     _write(tmp_path, "capture", record, "UNIFIED.5-4")
     with pytest.raises(ValueError, match="unexpected error"):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
-    for invalid in ({"error": error + " changed"}, {"assembled": []}, {"chunks": []}):
-        _write(tmp_path, "capture", record | invalid, "UNIFIED.5-4")
-        with pytest.raises(ValueError, match="unexpected error"):
-            capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])

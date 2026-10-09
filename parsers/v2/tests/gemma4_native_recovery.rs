@@ -26,6 +26,19 @@ fn weather_tools() -> Vec<Tool> {
     }]
 }
 
+fn weather_echo_tools() -> Vec<Tool> {
+    vec![Tool {
+        name: "echo".into(),
+        description: None,
+        parameters: serde_json::json!({
+            "type": "object",
+            "properties": { "value": { "type": "string" } },
+            "required": ["value"]
+        }),
+        strict: None,
+    }]
+}
+
 fn chunkings(input: &str) -> Vec<Vec<&str>> {
     let mut chunks = vec![vec![input]];
     chunks.extend(
@@ -234,6 +247,115 @@ fn malformed_outer_quote_closes_after_an_incomplete_candidate_key() {
 }
 
 #[test]
+fn malformed_outer_quote_keeps_a_later_candidate_after_an_incomplete_value() {
+    for fake_value in ["x:", "x:[", "x:{y:"] {
+        for (echo_value, value_schema, expected_value) in [
+            (
+                "<|\"|>é<|\"|>",
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("é"),
+            ),
+            (
+                "42",
+                serde_json::json!({"type": "integer"}),
+                serde_json::json!(42),
+            ),
+            (
+                "true",
+                serde_json::json!({"type": "boolean"}),
+                serde_json::json!(true),
+            ),
+            (
+                "null",
+                serde_json::json!({"type": "null"}),
+                serde_json::Value::Null,
+            ),
+            (
+                "[42]",
+                serde_json::json!({
+                    "type": "array",
+                    "items": {"type": "integer"}
+                }),
+                serde_json::json!([42]),
+            ),
+        ] {
+            let input = format!(
+                "<|tool_call>call:broken{{note:<|\"|>outer<|tool_call>call:fake{{{fake_value}<|\"|>}}<|tool_call>call:echo{{value:{echo_value}}}<tool_call|>"
+            );
+            let tools = [Tool {
+                name: "echo".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "value": value_schema },
+                    "required": ["value"]
+                }),
+                strict: None,
+            }];
+            for chunks in chunkings(&input) {
+                assert_adapters(
+                    "gemma4",
+                    &tools,
+                    &chunks,
+                    "",
+                    &[("echo", serde_json::json!({"value": expected_value}))],
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn malformed_outer_quote_keeps_later_empty_argument_call() {
+    for fake_value in ["x:", "x:[", "x:{y:"] {
+        let input = format!(
+            "<|tool_call>call:broken{{note:<|\"|>outer<|tool_call>call:fake{{{fake_value}<|\"|>}}<|tool_call>call:echo{{}}<tool_call|>"
+        );
+        let tools = [Tool {
+            name: "echo".into(),
+            description: None,
+            parameters: serde_json::json!({ "type": "object", "properties": {} }),
+            strict: None,
+        }];
+        for chunks in chunkings(&input) {
+            assert_adapters(
+                "gemma4",
+                &tools,
+                &chunks,
+                "",
+                &[("echo", serde_json::json!({}))],
+            );
+        }
+    }
+}
+
+#[test]
+fn repeated_ambiguous_outer_quotes_keep_each_later_call() {
+    for repeats in [2, 3, 8] {
+        let values: Vec<_> = (0..repeats).map(|index| format!("value{index}")).collect();
+        let input = values
+            .iter()
+            .map(|value| {
+                format!(
+                    "<|tool_call>call:broken{{note:<|\"|>x<|tool_call>call:fake{{x:<|\"|>}}<|tool_call>call:echo{{value:<|\"|>{value}<|\"|>}}<tool_call|>"
+                )
+            })
+            .collect::<String>();
+        let expected: Vec<_> = values
+            .iter()
+            .map(|value| ("echo", serde_json::json!({"value": value})))
+            .collect();
+        if repeats <= 3 {
+            for chunks in chunkings(&input) {
+                assert_adapters("gemma4", &weather_echo_tools(), &chunks, "", &expected);
+            }
+        } else {
+            assert_both_adapters_at_chunk_sizes(&input, &[1, 7, 64], &expected);
+        }
+    }
+}
+
+#[test]
 fn empty_nested_object_keeps_array_string_value_context() {
     let input = concat!(
         "<|tool_call>call:broken{note:<|\"|>outer",
@@ -362,6 +484,106 @@ fn repeated_closers_in_an_unterminated_string_resynchronize_in_linear_time() {
         }
 
         for (adapter, scans) in [("tool-only", tool_only_scans), ("unified", unified_scans)] {
+            let [at_n, at_2n] = scans.as_slice() else {
+                unreachable!("the N/2N measurement always has two inputs");
+            };
+            assert!(
+                *at_2n <= *at_n * 3,
+                "{adapter} rescanned superlinearly: N={at_n}, 2N={at_2n}, chunk_size={chunk_size}"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "test-utils")]
+#[test]
+fn repeated_ambiguous_value_openers_resynchronize_in_linear_time() {
+    for chunk_size in [1, 7, 64] {
+        for adapter in ["tool-only", "unified"] {
+            let mut scans = Vec::new();
+            for repeats in [128, 256] {
+                let input = format!(
+                    "<|tool_call>call:broken{{note:<|\"|>outer{}",
+                    "<|tool_call>call:fake{x:<|\"|>}".repeat(repeats)
+                );
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(chunk_size)
+                    .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
+                    .collect();
+
+                reset_boundary_examined_bytes();
+                if adapter == "tool-only" {
+                    let mut parser =
+                        create_tool_parser_for_family("gemma4", &weather_tools()).expect("parser");
+                    let _ = drive_tool(parser.as_mut(), &chunks);
+                } else {
+                    let mut parser = dynamo_parsers_v2::create_unified_parser_for_family(
+                        "gemma4",
+                        &weather_tools(),
+                    )
+                    .expect("parser");
+                    parser
+                        .initialize_request(UnifiedParserInit::default())
+                        .expect("initialize");
+                    let _ = drive_unified(parser.as_mut(), &chunks);
+                }
+                scans.push(boundary_examined_bytes());
+            }
+
+            let [at_n, at_2n] = scans.as_slice() else {
+                unreachable!("the N/2N measurement always has two inputs");
+            };
+            assert!(
+                *at_2n <= *at_n * 3,
+                "{adapter} rescanned superlinearly: N={at_n}, 2N={at_2n}, chunk_size={chunk_size}"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "test-utils")]
+#[test]
+fn repeated_ambiguous_calls_resynchronize_in_linear_time() {
+    let segment = |value: &str| {
+        format!(
+            "<|tool_call>call:broken{{note:<|\"|>x<|tool_call>call:fake{{x:<|\"|>}}<|tool_call>call:echo{{value:<|\"|>{value}<|\"|>}}<tool_call|>"
+        )
+    };
+    for chunk_size in [1, 7, 64] {
+        for adapter in ["tool-only", "unified"] {
+            let mut scans = Vec::new();
+            for repeats in [32, 64] {
+                let input = (0..repeats)
+                    .map(|index| segment(&format!("value{index}")))
+                    .collect::<String>();
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(chunk_size)
+                    .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
+                    .collect();
+
+                reset_boundary_examined_bytes();
+                if adapter == "tool-only" {
+                    let mut parser = create_tool_parser_for_family("gemma4", &weather_echo_tools())
+                        .expect("parser");
+                    let output = drive_tool(parser.as_mut(), &chunks);
+                    assert_eq!(output.calls.len(), repeats);
+                } else {
+                    let mut parser = dynamo_parsers_v2::create_unified_parser_for_family(
+                        "gemma4",
+                        &weather_echo_tools(),
+                    )
+                    .expect("parser");
+                    parser
+                        .initialize_request(UnifiedParserInit::default())
+                        .expect("initialize");
+                    let output = drive_unified(parser.as_mut(), &chunks);
+                    assert_eq!(output.len(), repeats);
+                }
+                scans.push(boundary_examined_bytes());
+            }
+
             let [at_n, at_2n] = scans.as_slice() else {
                 unreachable!("the N/2N measurement always has two inputs");
             };
