@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_protocols::types::decisions::{ChoiceValue, openai, sglang, systemone};
+use dynamo_protocols::types::decisions::{ChoiceValue, openai, systemone};
 use serde_json::json;
 
 #[test]
@@ -33,12 +33,7 @@ fn decision_openai_wire_rejects_native_fields_and_nullable_names() {
 }
 
 #[test]
-fn decision_native_and_jev_keep_distinct_question_shapes() {
-    let native: sglang::Request = serde_json::from_value(json!({"model":"m","input":"evidence","questions":[{"id":"q","type":"yes_no","question":"safe?"}]})).unwrap();
-    assert_eq!(
-        serde_json::to_value(native).unwrap()["questions"][0]["type"],
-        "yes_no"
-    );
+fn decision_jev_preserves_question_order_and_case_sensitive_values() {
     let jev: systemone::Request = serde_json::from_str(r#"{"model":"m","state":{"evidence":[1,2]},"questions":{"z":{"type":"noul"},"a":{"type":"choice","criteria":{"A":null,"a":null}}}}"#).unwrap();
     assert_eq!(
         jev.questions.keys().map(String::as_str).collect::<Vec<_>>(),
@@ -78,6 +73,5 @@ fn decision_response_serialization_preserves_refusal_and_typed_choice() {
 fn decision_public_schemas_use_distinct_component_names() {
     use utoipa::ToSchema;
     assert_eq!(openai::Request::name(), "DecisionOpenAiRequest");
-    assert_eq!(sglang::Request::name(), "DecisionSglangRequest");
     assert_eq!(systemone::Request::name(), "DecisionSystemOneRequest");
 }

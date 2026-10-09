@@ -3,24 +3,19 @@
 
 use crate::text::is_blank;
 use crate::*;
-use protocols::{openai, sglang, systemone};
+use protocols::{openai, systemone};
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
-use unicode_casefold::UnicodeCaseFold;
 
 /// HTTP body limits remain transport-owned; these bound semantic fanout.
 #[derive(Clone, Copy, Debug)]
 pub struct ParseOptions {
-    pub extensions_enabled: bool,
     pub max_questions: usize,
 }
 impl Default for ParseOptions {
     fn default() -> Self {
-        Self {
-            extensions_enabled: true,
-            max_questions: 128,
-        }
+        Self { max_questions: 128 }
     }
 }
 
@@ -33,26 +28,30 @@ pub fn parse_request_with_options(
     route: Route,
     options: ParseOptions,
 ) -> Result<CanonicalRequest, DecisionError> {
-    let fallback = if route == Route::SystemOne {
+    let dialect = if route == Route::SystemOne {
         Dialect::Jev
     } else {
         Dialect::OpenAi
     };
-    let mut body = crate::strict_json::parse(bytes).map_err(|_| {
+    let body = crate::strict_json::parse(bytes).map_err(|_| {
         DecisionError::new(
-            fallback,
+            dialect,
             400,
             "invalid_json",
             "body must be valid JSON with unique object keys",
         )
     })?;
     let object = body
-        .as_object_mut()
-        .ok_or_else(|| DecisionError::validation(fallback, "body must be a JSON object"))?;
-    let dialect = select_dialect(object, route, options.extensions_enabled)?;
+        .as_object()
+        .ok_or_else(|| DecisionError::validation(dialect, "body must be a JSON object"))?;
+    if object.contains_key("nvext") {
+        return Err(DecisionError::validation(
+            dialect,
+            "nvext is not supported by decision APIs",
+        ));
+    }
     let request = match dialect {
         Dialect::OpenAi => from_openai(decode(body, dialect)?)?,
-        Dialect::SglangNative => from_native(decode(body, dialect)?)?,
         Dialect::Jev => from_jev(decode(body, dialect)?)?,
     };
     if request.model.trim().is_empty() {
@@ -78,53 +77,6 @@ fn decode<T: DeserializeOwned>(body: Value, dialect: Dialect) -> Result<T, Decis
             "request does not match the selected decision schema",
         )
     })
-}
-
-fn select_dialect(
-    body: &mut Map<String, Value>,
-    route: Route,
-    enabled: bool,
-) -> Result<Dialect, DecisionError> {
-    let fallback = if route == Route::SystemOne {
-        Dialect::Jev
-    } else {
-        Dialect::OpenAi
-    };
-    let Some(extension) = body.remove("nvext") else {
-        return Ok(fallback);
-    };
-    if route == Route::SystemOne {
-        return Err(DecisionError::new(
-            fallback,
-            400,
-            "invalid_format",
-            "System One does not accept a format selector",
-        ));
-    }
-    let extension = extension
-        .as_object()
-        .filter(|e| e.keys().all(|k| k == "format"))
-        .ok_or_else(|| {
-            DecisionError::new(
-                fallback,
-                400,
-                "invalid_format",
-                "nvext must contain only the decision format selector",
-            )
-        })?;
-    match extension.get("format") {
-        None => Ok(Dialect::OpenAi),
-        Some(Value::String(format)) if format == "oai" => Ok(Dialect::OpenAi),
-        Some(Value::String(format)) if format == "sglang_native" && enabled => {
-            Ok(Dialect::SglangNative)
-        }
-        _ => Err(DecisionError::new(
-            fallback,
-            400,
-            "invalid_format",
-            "unsupported decision format selector",
-        )),
-    }
 }
 
 fn base(
@@ -287,96 +239,9 @@ fn validate_openai_input(input: &openai::Input) -> Result<(), DecisionError> {
     Ok(())
 }
 
-fn from_native(request: sglang::Request) -> Result<CanonicalRequest, DecisionError> {
-    let dialect = Dialect::SglangNative;
-    text_value(&request.input, true, dialect)?;
-    if !request.images.is_empty() {
-        return Err(DecisionError::unsupported(
-            dialect,
-            "this decision profile supports text input only",
-        ));
-    }
-    if request.return_prompt_token_ids {
-        return Err(DecisionError::unsupported(
-            dialect,
-            "prompt token diagnostics are not supported by this decision profile",
-        ));
-    }
-    let mut ids = HashSet::new();
-    let questions = request
-        .questions
-        .into_iter()
-        .enumerate()
-        .map(|(ordinal, q)| {
-            let (id, instructions, kind, candidates) = match q {
-                sglang::Question::Choice {
-                    id,
-                    question,
-                    options,
-                } => {
-                    cardinality(options.len(), 2, 26, dialect)?;
-                    validate_names(options.iter().map(|o| o.name.as_str()), dialect)?;
-                    let candidates = options
-                        .into_iter()
-                        .map(|o| {
-                            optional_text(o.description.as_ref(), dialect)?;
-                            Ok(candidate(ChoiceValue::String(o.name), o.description))
-                        })
-                        .collect::<Result<Vec<_>, DecisionError>>()?;
-                    (id, question, QuestionKind::Choice, candidates)
-                }
-                sglang::Question::Score {
-                    id,
-                    question,
-                    levels,
-                } => {
-                    cardinality(levels.len(), 2, 10, dialect)?;
-                    let candidates = score_candidates(levels, dialect)?;
-                    (id, question, QuestionKind::Score, candidates)
-                }
-                sglang::Question::YesNo {
-                    id,
-                    question,
-                    yes,
-                    no,
-                } => {
-                    optional_text(yes.as_ref(), dialect)?;
-                    optional_text(no.as_ref(), dialect)?;
-                    (
-                        id,
-                        question,
-                        QuestionKind::Predicate,
-                        predicate_candidates(yes, no),
-                    )
-                }
-            };
-            if id.trim().is_empty() || !ids.insert(id.clone()) {
-                return Err(DecisionError::validation(
-                    dialect,
-                    "question IDs must be nonblank and unique",
-                ));
-            }
-            text_value(&instructions, true, dialect)?;
-            Ok(CanonicalQuestion {
-                ordinal,
-                id: Some(id),
-                kind,
-                instructions: Some(instructions),
-                candidates,
-            })
-        })
-        .collect::<Result<Vec<_>, DecisionError>>()?;
-    Ok(CanonicalRequest {
-        temperature: request.temperature,
-        prompt_format_version: request.prompt_format_version.unwrap_or(1),
-        chat_template_kwargs: request.chat_template_kwargs,
-        ..base(dialect, request.model, request.input, questions)
-    })
-}
-
 fn from_jev(request: systemone::Request) -> Result<CanonicalRequest, DecisionError> {
     let dialect = Dialect::Jev;
-    text_value(&request.state, false, dialect)?;
+    text_value(&request.state, dialect)?;
     if !request.images.is_empty() {
         return Err(DecisionError::unsupported(
             dialect,
@@ -462,7 +327,7 @@ fn score_candidates(levels: Vec<Value>, dialect: Dialect) -> Result<Vec<Candidat
         .into_iter()
         .enumerate()
         .map(|(index, level)| {
-            text_value(&level, dialect == Dialect::SglangNative, dialect)?;
+            text_value(&level, dialect)?;
             Ok(candidate(
                 ChoiceValue::String(index.to_string()),
                 Some(level),
@@ -471,42 +336,18 @@ fn score_candidates(levels: Vec<Value>, dialect: Dialect) -> Result<Vec<Candidat
         .collect()
 }
 
-fn text_value(value: &Value, required: bool, dialect: Dialect) -> Result<(), DecisionError> {
-    if !(value.is_string() || value.is_object() || value.is_array())
-        || (required && is_blank(value))
-    {
+fn text_value(value: &Value, dialect: Dialect) -> Result<(), DecisionError> {
+    if !(value.is_string() || value.is_object() || value.is_array()) {
         return Err(DecisionError::validation(
             dialect,
-            "text evidence must be a string, object, or array and required descriptions must not be blank",
+            "text evidence must be a string, object, or array",
         ));
     }
     Ok(())
 }
 fn optional_text(value: Option<&Value>, dialect: Dialect) -> Result<(), DecisionError> {
     if let Some(value) = value.filter(|v| !v.is_null()) {
-        text_value(value, false, dialect)?;
-    }
-    Ok(())
-}
-
-fn validate_names<'a>(
-    names: impl Iterator<Item = &'a str>,
-    dialect: Dialect,
-) -> Result<(), DecisionError> {
-    let mut seen = HashSet::new();
-    for name in names {
-        let normalized: String = name.trim().case_fold().collect();
-        if normalized.is_empty()
-            || name
-                .chars()
-                .any(|c| c.is_control() || matches!(c, '\u{2028}' | '\u{2029}'))
-            || !seen.insert(normalized)
-        {
-            return Err(DecisionError::validation(
-                dialect,
-                "option names must be nonblank, distinct after normalization, and free of control characters",
-            ));
-        }
+        text_value(value, dialect)?;
     }
     Ok(())
 }

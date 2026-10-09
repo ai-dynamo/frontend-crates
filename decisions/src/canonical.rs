@@ -14,7 +14,6 @@ pub enum Route {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Dialect {
     OpenAi,
-    SglangNative,
     Jev,
 }
 
@@ -87,7 +86,6 @@ pub struct Capabilities {
     pub supports_predicate: bool,
     pub supports_choice: bool,
     pub supports_score: bool,
-    pub vocabulary_label_mass: bool,
     pub measured_cache_reads: bool,
     pub prompt_format_version: u32,
 }
@@ -97,7 +95,6 @@ impl CanonicalRequest {
     pub fn validate_capabilities(&self, capabilities: &Capabilities) -> Result<(), DecisionError> {
         let unsupported = self.questions.len() > capabilities.max_questions
             || self.prompt_format_version != capabilities.prompt_format_version
-            || (self.dialect == Dialect::SglangNative && !capabilities.vocabulary_label_mass)
             || (self.dialect == Dialect::OpenAi && !capabilities.measured_cache_reads)
             || self.questions.iter().any(|question| {
                 question.candidates.len() > capabilities.max_candidates
