@@ -169,13 +169,9 @@ mod tests {
             let mut parser = kimi_k2_unified(&tools());
             let mut emitted = parser.push(&input[..split]).unwrap();
             emitted.extend(parser.push(&input[split..]).unwrap());
-            let calls: Vec<_> = emitted
-                .iter()
-                .filter_map(|event| match event {
-                    UnifiedParserEvent::ToolCall(call) => Some(call),
-                    _ => None,
-                })
-                .collect();
+            let merged =
+                crate::tool_calling::traits::ToolParseResult::from_deltas(emitted).coalesce_calls();
+            let calls = &merged.calls;
             assert_eq!(
                 calls.len(),
                 1,
@@ -610,7 +606,7 @@ mod tests {
                         let calls: Vec<_> = events
                             .iter()
                             .filter_map(|event| match event {
-                                UnifiedParserEvent::ToolCall(call) => Some(call),
+                                UnifiedParserEvent::ToolCall(call) if call.complete => Some(call),
                                 _ => None,
                             })
                             .collect();

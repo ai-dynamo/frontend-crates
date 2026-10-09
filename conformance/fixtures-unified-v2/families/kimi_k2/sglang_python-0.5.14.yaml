@@ -1004,5 +1004,1414 @@ changes:
         - expected:
           - kind: text
             text: done
+  kimi_native_incompatible_string_recovery:
+    case_key: UNIFIED.kimi-17
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+    stimulus:
+      inline:
+        chunks:
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: f
+        - delta_text: u
+        - delta_text: n
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: s
+        - delta_text: .
+        - delta_text: w
+        - delta_text: r
+        - delta_text: i
+        - delta_text: t
+        - delta_text: e
+        - delta_text: _
+        - delta_text: f
+        - delta_text: i
+        - delta_text: l
+        - delta_text: e
+        - delta_text: ':'
+        - delta_text: '0'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: a
+        - delta_text: r
+        - delta_text: g
+        - delta_text: u
+        - delta_text: m
+        - delta_text: e
+        - delta_text: n
+        - delta_text: t
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: '{'
+        - delta_text: '"'
+        - delta_text: x
+        - delta_text: '"'
+        - delta_text: ':'
+        - delta_text: '"'
+        - delta_text: a
+        - delta_text: b
+        - delta_text: c
+        - delta_text: ' '
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: ‹finish›
+        finish_reason: stop
+        init:
+          named_tool: null
+          starting_state: None
+          tool_output_mode: Native
+        input: <|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"x":"abc <|tool_call_end|><|tool_calls_section_end|>
+        tools:
+        - name: get_weather
+          parameters:
+            properties:
+              city:
+                type: string
+            type: object
+        - name: f
+          parameters:
+            properties:
+              x:
+                type: string
+            type: object
+        - name: g
+          parameters:
+            properties:
+              y:
+                type: string
+            type: object
+        - name: run
+          parameters:
+            properties:
+              cmd:
+                type: string
+            type: object
+        - name: log
+          parameters:
+            properties:
+              note:
+                type: string
+            type: object
+        - name: sum_values
+          parameters:
+            properties:
+              values:
+                items:
+                  type: number
+                type: array
+            type: object
+        - name: functions.
+          parameters:
+            properties: {}
+            type: object
+      semantic_sha256: 66841d9291db17e516179a6cd45b47411b1884132b4334f22e9ff8301cdfb75d
+  kimi_native_k2_count_content_chunk1024:
+    case_key: UNIFIED.kimi-10
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+    stimulus:
+      inline:
+        chunks:
+        - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        - delta_text: '"}'
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ‹finish›
+        finish_reason: stop
+        init:
+          named_tool: null
+          starting_state: None
+          tool_output_mode: Native
+        input: <|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}<|tool_call_end|><|tool_calls_section_end|>
+        tools:
+        - name: get_weather
+          parameters:
+            properties:
+              city:
+                type: string
+            type: object
+        - name: f
+          parameters:
+            properties:
+              x:
+                type: string
+            type: object
+        - name: g
+          parameters:
+            properties:
+              y:
+                type: string
+            type: object
+        - name: run
+          parameters:
+            properties:
+              cmd:
+                type: string
+            type: object
+        - name: log
+          parameters:
+            properties:
+              note:
+                type: string
+            type: object
+        - name: sum_values
+          parameters:
+            properties:
+              values:
+                items:
+                  type: number
+                type: array
+            type: object
+        - name: functions.
+          parameters:
+            properties: {}
+            type: object
+      semantic_sha256: 625b5283e2d95b965e7d459e47cd25273e1d12d14f7b1dcaf6fef7d10896553c
+  kimi_native_k2_count_content_chunk7:
+    case_key: UNIFIED.kimi-9
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+    stimulus:
+      inline:
+        chunks:
+        - delta_text: <|tool_
+        - delta_text: calls_s
+        - delta_text: ection_
+        - delta_text: begin|>
+        - delta_text: <|tool_
+        - delta_text: call_be
+        - delta_text: gin|>fu
+        - delta_text: nctions
+        - delta_text: .write_
+        - delta_text: file:0<
+        - delta_text: '|tool_c'
+        - delta_text: all_arg
+        - delta_text: ument_b
+        - delta_text: egin|>{
+        - delta_text: '"count"'
+        - delta_text: :7,"con
+        - delta_text: tent":"
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qqqqqqq
+        - delta_text: qq
+        - delta_text: '"}'
+        - delta_text: <|tool_
+        - delta_text: call_en
+        - delta_text: d|>
+        - delta_text: <|tool_
+        - delta_text: calls_s
+        - delta_text: ection_
+        - delta_text: end|>
+        - delta_text: ‹finish›
+        finish_reason: stop
+        init:
+          named_tool: null
+          starting_state: None
+          tool_output_mode: Native
+        input: <|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}<|tool_call_end|><|tool_calls_section_end|>
+        tools:
+        - name: get_weather
+          parameters:
+            properties:
+              city:
+                type: string
+            type: object
+        - name: f
+          parameters:
+            properties:
+              x:
+                type: string
+            type: object
+        - name: g
+          parameters:
+            properties:
+              y:
+                type: string
+            type: object
+        - name: run
+          parameters:
+            properties:
+              cmd:
+                type: string
+            type: object
+        - name: log
+          parameters:
+            properties:
+              note:
+                type: string
+            type: object
+        - name: sum_values
+          parameters:
+            properties:
+              values:
+                items:
+                  type: number
+                type: array
+            type: object
+        - name: functions.
+          parameters:
+            properties: {}
+            type: object
+      semantic_sha256: 84660cb006d0b49396553bc942ccd4c00bddbba00d74a1fa317395039edd9454
+  kimi_native_trailing_syntax_whitespace:
+    case_key: UNIFIED.kimi-15
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+    stimulus:
+      inline:
+        chunks:
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: f
+        - delta_text: u
+        - delta_text: n
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: s
+        - delta_text: .
+        - delta_text: w
+        - delta_text: r
+        - delta_text: i
+        - delta_text: t
+        - delta_text: e
+        - delta_text: _
+        - delta_text: f
+        - delta_text: i
+        - delta_text: l
+        - delta_text: e
+        - delta_text: ':'
+        - delta_text: '0'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: a
+        - delta_text: r
+        - delta_text: g
+        - delta_text: u
+        - delta_text: m
+        - delta_text: e
+        - delta_text: n
+        - delta_text: t
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: '{'
+        - delta_text: '"'
+        - delta_text: c
+        - delta_text: o
+        - delta_text: u
+        - delta_text: n
+        - delta_text: t
+        - delta_text: '"'
+        - delta_text: ':'
+        - delta_text: '7'
+        - delta_text: ','
+        - delta_text: '"'
+        - delta_text: c
+        - delta_text: o
+        - delta_text: n
+        - delta_text: t
+        - delta_text: e
+        - delta_text: n
+        - delta_text: t
+        - delta_text: '"'
+        - delta_text: ':'
+        - delta_text: ' '
+        - delta_text: "\t"
+        - delta_text: '
+
+            '
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: ‹finish›
+        finish_reason: stop
+        init:
+          named_tool: null
+          starting_state: None
+          tool_output_mode: Native
+        input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{\"count\":7,\"content\": \t\n<|tool_call_end|><|tool_calls_section_end|>"
+        tools:
+        - name: get_weather
+          parameters:
+            properties:
+              city:
+                type: string
+            type: object
+        - name: f
+          parameters:
+            properties:
+              x:
+                type: string
+            type: object
+        - name: g
+          parameters:
+            properties:
+              y:
+                type: string
+            type: object
+        - name: run
+          parameters:
+            properties:
+              cmd:
+                type: string
+            type: object
+        - name: log
+          parameters:
+            properties:
+              note:
+                type: string
+            type: object
+        - name: sum_values
+          parameters:
+            properties:
+              values:
+                items:
+                  type: number
+                type: array
+            type: object
+        - name: functions.
+          parameters:
+            properties: {}
+            type: object
+      semantic_sha256: 68d60e34fa929530c82c47989172f7006ab60f8871b627b67b401a2d55eb8a55
+  kimi_native_valid_object_trailing_garbage:
+    case_key: UNIFIED.kimi-16
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: tools'
+    stimulus:
+      inline:
+        chunks:
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: f
+        - delta_text: u
+        - delta_text: n
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: s
+        - delta_text: .
+        - delta_text: w
+        - delta_text: r
+        - delta_text: i
+        - delta_text: t
+        - delta_text: e
+        - delta_text: _
+        - delta_text: f
+        - delta_text: i
+        - delta_text: l
+        - delta_text: e
+        - delta_text: ':'
+        - delta_text: '0'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: a
+        - delta_text: r
+        - delta_text: g
+        - delta_text: u
+        - delta_text: m
+        - delta_text: e
+        - delta_text: n
+        - delta_text: t
+        - delta_text: _
+        - delta_text: b
+        - delta_text: e
+        - delta_text: g
+        - delta_text: i
+        - delta_text: n
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: '{'
+        - delta_text: '"'
+        - delta_text: c
+        - delta_text: o
+        - delta_text: u
+        - delta_text: n
+        - delta_text: t
+        - delta_text: '"'
+        - delta_text: ':'
+        - delta_text: '7'
+        - delta_text: ','
+        - delta_text: '"'
+        - delta_text: c
+        - delta_text: o
+        - delta_text: n
+        - delta_text: t
+        - delta_text: e
+        - delta_text: n
+        - delta_text: t
+        - delta_text: '"'
+        - delta_text: ':'
+        - delta_text: '"'
+        - delta_text: q
+        - delta_text: '"'
+        - delta_text: '}'
+        - delta_text: ' '
+        - delta_text: t
+        - delta_text: r
+        - delta_text: a
+        - delta_text: i
+        - delta_text: l
+        - delta_text: i
+        - delta_text: n
+        - delta_text: g
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: <
+        - delta_text: '|'
+        - delta_text: t
+        - delta_text: o
+        - delta_text: o
+        - delta_text: l
+        - delta_text: _
+        - delta_text: c
+        - delta_text: a
+        - delta_text: l
+        - delta_text: l
+        - delta_text: s
+        - delta_text: _
+        - delta_text: s
+        - delta_text: e
+        - delta_text: c
+        - delta_text: t
+        - delta_text: i
+        - delta_text: o
+        - delta_text: n
+        - delta_text: _
+        - delta_text: e
+        - delta_text: n
+        - delta_text: d
+        - delta_text: '|'
+        - delta_text: '>'
+        - delta_text: ‹finish›
+        finish_reason: stop
+        init:
+          named_tool: null
+          starting_state: None
+          tool_output_mode: Native
+        input: <|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"q"} trailing<|tool_call_end|><|tool_calls_section_end|>
+        tools:
+        - name: get_weather
+          parameters:
+            properties:
+              city:
+                type: string
+            type: object
+        - name: f
+          parameters:
+            properties:
+              x:
+                type: string
+            type: object
+        - name: g
+          parameters:
+            properties:
+              y:
+                type: string
+            type: object
+        - name: run
+          parameters:
+            properties:
+              cmd:
+                type: string
+            type: object
+        - name: log
+          parameters:
+            properties:
+              note:
+                type: string
+            type: object
+        - name: sum_values
+          parameters:
+            properties:
+              values:
+                items:
+                  type: number
+                type: array
+            type: object
+        - name: functions.
+          parameters:
+            properties: {}
+            type: object
+      semantic_sha256: 3dc2ebec41d25e6a8a629d4f4f878b0b958ce87594edb3232db3d71ff4f004a7
 metadata_changes: {}
 document_overrides: {}

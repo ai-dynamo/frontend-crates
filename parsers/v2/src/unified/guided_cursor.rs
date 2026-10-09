@@ -251,6 +251,8 @@ impl GuidedJsonCursor {
 
         let mut cut = self.scanned;
         for (relative, ch) in payload[self.scanned..].char_indices() {
+            #[cfg(test)]
+            crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
             let at = self.scanned + relative;
             cut = at + ch.len_utf8();
             self.step(payload, at, cut, ch, out);

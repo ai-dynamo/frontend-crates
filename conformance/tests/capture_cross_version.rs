@@ -298,8 +298,14 @@ fn capture_failures_are_not_successful_empty_outputs() {
         assert!(record.get("assembled").is_none());
         assert!(record.get("chunks").is_none());
     }
-    let unavailable = split_path_capture_with_parsers("gemma4", "not_a_parser", "text", &tools())
-        .map(|(rows, assembled)| (rows.into_iter().map(|_| Vec::new()).collect(), assembled));
+    let unavailable = split_path_capture_with_parsers(
+        "gemma4",
+        "not_a_parser",
+        "text",
+        &chunk_input("text"),
+        &tools(),
+    )
+    .map(|(rows, assembled)| (rows.into_iter().map(|_| Vec::new()).collect(), assembled));
     assert!(
         capture_record(unavailable, &init)["unavailable"]
             .as_str()
@@ -477,7 +483,7 @@ fn capture_marks_legacy_terminal_metadata_unavailable() {
 fn split_path_chunks_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
-    input: &str,
+    chunks: &[String],
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<Vec<Vec<Value>>, CaptureFailure> {
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
@@ -486,9 +492,9 @@ fn split_path_chunks_with_parsers(
     })?;
 
     let mut rows = Vec::new();
-    for chunk in chunk_input(input) {
+    for chunk in chunks {
         let mut deltas: Vec<Value> = Vec::new();
-        let rr = rp.parse_reasoning_streaming_incremental(&chunk, &[]);
+        let rr = rp.parse_reasoning_streaming_incremental(chunk, &[]);
         if !rr.reasoning_text.is_empty() {
             deltas.push(json!({"kind": "reasoning", "text": rr.reasoning_text}));
         }
@@ -588,9 +594,10 @@ fn split_path_capture_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
     input: &str,
+    chunks: &[String],
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<(Vec<Vec<Value>>, Vec<serde_yaml::Value>), CaptureFailure> {
-    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, input, tool_schemas)?;
+    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, chunks, tool_schemas)?;
 
     // The split serving path assembles reasoning over the WHOLE input before it
     // streams the leftover through the tool parser. Its raw chunk evidence comes
@@ -676,13 +683,8 @@ fn capture_case_with_chunks(
             "split capture cannot apply the requested initialization".into(),
         ));
     }
-    assert_eq!(
-        chunks,
-        chunk_input(input),
-        "legacy split capture cannot replay this schedule"
-    );
     let (rows, assembled) =
-        split_path_capture_with_parsers(&reasoning, &tool, input, tool_schemas)?;
+        split_path_capture_with_parsers(&reasoning, &tool, input, chunks, tool_schemas)?;
     let rows = rows
         .into_iter()
         .map(|row| {
@@ -698,7 +700,8 @@ fn capture_case_with_chunks(
 fn split_capture_assembles_reasoning_over_the_whole_input() {
     let input = "<|channel>thought\nLook it up.<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|><|channel>thought\nNow answer.<channel|>It's 18C.";
     let (_, assembled) =
-        split_path_capture_with_parsers("gemma4", "gemma4", input, &tools()).expect("split path");
+        split_path_capture_with_parsers("gemma4", "gemma4", input, &chunk_input(input), &tools())
+            .expect("split path");
     let want = vec![
         serde_yaml::to_value(json!({"kind": "reasoning", "text": "Look it up.Now answer."}))
             .expect("reasoning"),
@@ -709,6 +712,29 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
         serde_yaml::to_value(json!({"kind": "text", "text": "It's 18C."})).expect("text"),
     ];
     assert_eq!(assembled, want);
+}
+
+#[test]
+fn split_capture_replays_the_authored_chunk_schedule() {
+    let chunks = vec![
+        "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\":\"Paris".to_string(),
+        "\"}<|tool_call_end|><|tool_calls_section_end|>".to_string(),
+    ];
+    let input = chunks.concat();
+    let (rows, assembled) =
+        split_path_capture_with_parsers("kimi_k25", "kimi_k2", &input, &chunks, &tools()).unwrap();
+    assert_eq!(rows.len(), chunks.len());
+    assert_eq!(rows[0][0]["arguments"], r#"{"city":"Paris"#);
+    assert_eq!(rows[1][0]["arguments"], r#""}"#);
+    assert_eq!(
+        assembled,
+        vec![
+            serde_yaml::to_value(json!({
+                "kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"},
+            }))
+            .unwrap()
+        ]
+    );
 }
 
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the

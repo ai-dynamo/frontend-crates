@@ -358,6 +358,30 @@ def test_every_rendered_config_key_exists_in_the_emitted_init() -> None:
         "every case would show that setting as unset"
     )
 
+def _scenario_behaviour_key(case: dict) -> str:
+    # common::unified_capture::input_chunks tokenizes markers when no schedule is authored.
+    chunks = case.get("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
+    return json.dumps(
+        {
+            "input": case["input"],
+            "input_chunks": chunks,
+            "init": case["init"],
+            "golden": case["golden"],
+            "tools": case.get("tools"),
+        },
+        sort_keys=True,
+    )
+
+
+def test_delivery_schedule_distinguishes_streaming_scenarios() -> None:
+    case = {"input": "a<marker>b", "init": {}, "golden": []}
+    whole = {**case, "input_chunks": [case["input"]]}
+    split = {**case, "input_chunks": ["a", "<marker>", "b"]}
+    assert _scenario_behaviour_key(case) == _scenario_behaviour_key(split)
+    assert _scenario_behaviour_key(case) != _scenario_behaviour_key(whole)
+    assert _scenario_behaviour_key(split) == _scenario_behaviour_key(dict(split))
+
+
 def test_no_two_scenarios_have_identical_behaviour() -> None:
     """Two names for one behaviour is worse than a gap.
 
@@ -373,17 +397,7 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
     for fam in FAMILIES:
         seen = defaultdict(list)
         for name, case in build_cases(fam).items():
-            seen[
-                json.dumps(
-                    {
-                        "input": case["input"],
-                        "init": case["init"],
-                        "golden": case["golden"],
-                        "tools": case.get("tools"),
-                    },
-                    sort_keys=True,
-                )
-            ].append(name)
+            seen[_scenario_behaviour_key(case)].append(name)
         dupes = {k: v for k, v in seen.items() if len(v) > 1}
         assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
 
@@ -785,20 +799,20 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v41": 114,
             "gemma4": 115,
             "glm47": 117,
-            "kimi_k2": 113,
-            "kimi_k3": 121,
+            "kimi_k2": 118,
+            "kimi_k3": 127,
             "muse_glimmer": 117,
             "qwen3": 114,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 925 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 936 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 134 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 145 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1274,9 +1288,14 @@ def _native_input_calls(family, raw):
         elif family == "gemma4":
             arguments, _ = _parse_gemma_value("{" + body)
         elif family == "kimi_k2":
-            arguments, _ = json.JSONDecoder().raw_decode(body)
+            try:
+                arguments, _ = json.JSONDecoder().raw_decode(body)
+            except json.JSONDecodeError:
+                arguments = {}
         else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
+            pattern = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                       r'<\|close\|>\s*argument\s*<\|sep\|>'
+                       r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))')
             for key, kind, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
@@ -1366,10 +1385,50 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
+    if scenario == "kimi_native_incompatible_string_recovery":
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    else:
+        if "count_content_chunk" in scenario:
+            arguments = {"count": 7, "content": "q" * 4096}
+        elif scenario == "kimi_native_trailing_syntax_whitespace":
+            arguments = {}
+        elif scenario in {"kimi_native_valid_object_trailing_garbage", "kimi_native_incremental_interfield_whitespace"}:
+            arguments = {"count": 7, "content": "q"}
+        else:
+            assert scenario == "kimi_native_rejected_next_header_progress"
+            arguments = {"count": 7, "content": 'head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>' + "q" * 3072}
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}]
+    assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
+
+
+@pytest.mark.parametrize("family,scenario", [
+    (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
+    for family in G.scenario_families(name)
+])
+@pytest.mark.parametrize("mutation", ["empty", "name", "arguments"])
+def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_input_carries_events(family, scenario, case)
+    if case["golden"]:
+        if mutation == "empty":
+            case["golden"] = []
+        elif mutation == "name":
+            case["golden"][0]["name"] = "invented"
+        else:
+            case["golden"][0]["arguments"] = {"count": 8, "content": "wrong"}
+    else:
+        case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    with pytest.raises(AssertionError):
+        _assert_input_carries_events(family, scenario, case)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
+    if scenario.startswith("kimi_native_"):
+        _assert_kimi_native_golden(scenario, case)
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:

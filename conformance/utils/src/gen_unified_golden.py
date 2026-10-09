@@ -1913,6 +1913,87 @@ EDGE.append((
 ))
 
 
+KIMI_PROGRESS_FORMS = {
+    "k2": ("kimi_k2", '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"', '"}', '<|tool_call_end|>', '<|tool_calls_section_end|>'),
+    "k3_typed": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>argument key="count" type="number"<|sep|>7<|close|>argument<|sep|><|open|>argument key="content" type="string"<|sep|>', '<|close|>argument<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
+    "k3_json": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>json type="object"<|sep|>{"count":7,"content":"', '"}<|close|>json<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
+}
+WRITE_FILE_TOOLS = [{"name": "write_file", "parameters": {
+    "type": "object", "properties": {"count": {"type": "integer"}, "content": {"type": "string"}},
+    "required": ["count", "content"],
+}}]
+for form, (family, prefix, value_close, call_close, section_close) in KIMI_PROGRESS_FORMS.items():
+    for chunk_size in (7, 1024):
+        stages = [prefix + "q" * 3072, "q" * 1024, value_close, call_close, section_close]
+        chunks = [stage[offset:offset + chunk_size] for stage in stages
+                  for offset in range(0, len(stage), chunk_size)]
+        EDGE.append((
+            f"kimi_native_{form}_count_content_chunk{chunk_size}",
+            f"Native Kimi {form} count-before-content call with {chunk_size}-byte delivery. Pause after 3072 q characters, after 1024 more, and after value, call, and section closure. Release stable identity and numeric count before closure; completion requires the native call boundary. Other families cannot express this Kimi native envelope and ID grammar.",
+            ["I3", "I5", "I7"],
+            [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q" * 4096}}],
+            {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": chunks},
+            OnlyFamilies({family: ("".join(stages), D("UNSUPPORTED", "Native paused delivery is measured by Dynamo captures."), M)}),
+            WRITE_FILE_TOOLS,
+        ))
+
+
+for scenario, description, payload, arguments in (
+    ("kimi_native_trailing_syntax_whitespace", "Malformed K2 JSON ends after an argument colon and syntax whitespace. One-character native delivery must match buffered malformed recovery and must not retract released bytes. The existing Unified assembler warns and projects malformed completed arguments to an empty object.", '{"count":7,"content": \t\n', {}),
+    ("kimi_native_valid_object_trailing_garbage", "Valid K2 JSON is followed by garbage before the native call closer. One-character native delivery must retain only the valid object and must not append the garbage.", '{"count":7,"content":"q"} trailing', {"count": 7, "content": "q"}),
+):
+    native = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>' + payload + '<|tool_call_end|><|tool_calls_section_end|>'
+    EDGE.append((
+        scenario, description, ["I3", "I5", "I7"],
+        [{"kind": "tool_call", "name": "write_file", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "input_chunks": list(native)},
+        OnlyFamilies({"kimi_k2": (native, D("UNSUPPORTED", "Native K2 malformed recovery is measured by Dynamo captures."), M)}),
+        WRITE_FILE_TOOLS,
+    ))
+
+
+KIMI_UNTERMINATED_NATIVE = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"x":"abc <|tool_call_end|><|tool_calls_section_end|>'
+EDGE.append((
+    "kimi_native_incompatible_string_recovery",
+    "An unterminated K2 JSON string ends with whitespace before native closers. Hold unresolved closers and trailing whitespace during one-character delivery so EOF recovery preserves the buffered malformed fallback without retracting arguments or leaking markers. The Unified assembler projects the recovered malformed arguments to an empty object.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": list(KIMI_UNTERMINATED_NATIVE)},
+    OnlyFamilies({"kimi_k2": (KIMI_UNTERMINATED_NATIVE, D("UNSUPPORTED", "Native K2 recovery is measured by Dynamo captures."), M)}),
+    [{"name": "write_file", "parameters": {"type": "object", "properties": {"x": {"type": "string"}}}}],
+))
+
+
+KIMI_TYPED_SPACED = KIMI_PROGRESS_FORMS["k3_typed"][1].replace(
+    '<|close|>argument<|sep|><|open|>argument',
+    '<|close|>argument<|sep|>' + " " * 4096 + '<|open|>argument',
+) + "q" + "".join(KIMI_PROGRESS_FORMS["k3_typed"][2:])
+EDGE.append((
+    "kimi_native_incremental_interfield_whitespace",
+    "A valid native typed K3 call has 4096 spaces between count and content fields. Seven-character delivery must retain unresolved lookahead and scan each whitespace byte once while preserving numeric count and the completed call.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q"}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": [KIMI_TYPED_SPACED[offset:offset + 7] for offset in range(0, len(KIMI_TYPED_SPACED), 7)]},
+    OnlyFamilies({"kimi_k3": (KIMI_TYPED_SPACED, D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
+    WRITE_FILE_TOOLS,
+))
+
+
+KIMI_REJECTED_HEADER_CONTENT = "head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>" + "q" * 3072
+KIMI_REJECTED_HEADER_STAGES = [KIMI_PROGRESS_FORMS["k3_typed"][1] + KIMI_REJECTED_HEADER_CONTENT, *KIMI_PROGRESS_FORMS["k3_typed"][2:]]
+EDGE.append((
+    "kimi_native_rejected_next_header_progress",
+    "A native typed K3 string includes a literal argument closer followed by a complete invalid next header and 3072 q characters. Seven-character delivery must reject that header as syntax and resume literal string progress before the real value closer.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": KIMI_REJECTED_HEADER_CONTENT}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": [stage[offset:offset + 7] for stage in KIMI_REJECTED_HEADER_STAGES for offset in range(0, len(stage), 7)]},
+    OnlyFamilies({"kimi_k3": ("".join(KIMI_REJECTED_HEADER_STAGES), D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
+    WRITE_FILE_TOOLS,
+))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
@@ -2478,7 +2559,9 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
-        if stream_config.get("single_chunk"):
+        if "input_chunks" in stream_config:
+            case["input_chunks"] = stream_config["input_chunks"]
+        elif stream_config.get("single_chunk"):
             case["input_chunks"] = [inp]
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools

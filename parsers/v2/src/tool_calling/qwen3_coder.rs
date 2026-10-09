@@ -163,6 +163,9 @@ struct ActiveStringParameter {
 }
 
 impl InvokeEmitter for Qwen3Emitter {
+    fn abandon_invoke(&mut self) {
+        self.partial = None;
+    }
     fn parse_partial_invoke(
         &mut self,
         invoke: &str,
