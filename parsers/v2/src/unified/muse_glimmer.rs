@@ -392,6 +392,7 @@ mod tests {
                 at: 0,
                 outside_reasoning: true,
                 payload_is_empty: true,
+                preceded_by_response_text: false,
                 followed_by_competing_marker: false,
             }
         }
@@ -403,15 +404,15 @@ mod tests {
         );
         let mut reused = state();
         assert_eq!(
-            reused.guided_prefix_append(&partial, context(&partial)),
+            reused.guided_prefix_append(&partial, 0, context(&partial)),
             Some(GuidedPrefix::Pending)
         );
         reused.reset(UnifiedParserStartingState::None);
 
         let mut fresh = state();
         assert_eq!(
-            reused.guided_prefix_append(&fresh_candidate, context(&fresh_candidate)),
-            fresh.guided_prefix_append(&fresh_candidate, context(&fresh_candidate))
+            reused.guided_prefix_append(&fresh_candidate, 0, context(&fresh_candidate)),
+            fresh.guided_prefix_append(&fresh_candidate, 0, context(&fresh_candidate))
         );
     }
 

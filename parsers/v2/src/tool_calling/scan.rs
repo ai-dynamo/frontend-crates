@@ -416,11 +416,21 @@ pub(crate) trait InvokeBoundary: Send {
         tool_index: usize,
     ) -> Option<usize>;
     fn opens(&self, text: &str, at: usize) -> bool;
+    fn accepts_buffer_start(&self, _previous: Option<char>) -> bool {
+        true
+    }
+    fn discard_prefix(&mut self, _bytes: usize) {}
+    fn discard_unified_prefix(&mut self, _bytes: usize) {}
     /// A recovery opener can accept malformed prose; quoting shields only grammar-owned headers.
     fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
         self.opens(text, at)
     }
     fn holdback(&self, text: &str) -> usize;
+    /// The Unified consumer owns a separate input buffer from the wrapped scanner.
+    /// Keep consumer-specific incremental scans apart when a boundary is shared.
+    fn holdback_for_unified_input(&self, text: &str) -> usize {
+        self.holdback(text)
+    }
     fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
     fn reset(&mut self) {}
 }
@@ -542,6 +552,12 @@ pub(crate) trait InvokeEmitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
+
+    /// Whether an incomplete structured value may be held until a later invoke
+    /// either recovers the stream or EOF confirms that the malformed call is final.
+    fn defer_parse_error(&self, _invoke: &str, _error: &anyhow::Error) -> bool {
+        false
+    }
 
     /// Emit the wire-level updates for one complete invoke. Families normally
     /// have one completed update; DSML preserves its historical name-first
@@ -712,6 +728,13 @@ impl ProseControlState {
         } else {
             self.consume(text);
         }
+    }
+
+    /// A stripped control token cannot open a prose quote with its own `"`.
+    pub(crate) fn consume_control(&mut self, consumed: &str, invoke_start: &str) {
+        self.consume_recovery(consumed, invoke_start);
+        self.state = ProseQuoteState::default();
+        self.pending = None;
     }
 
     pub(crate) fn clear(&mut self) {
@@ -978,6 +1001,7 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// Effective request-scoped start, separate from the family declaration.
     reasoning_forced_start: bool,
     buffer: String,
+    buffer_previous: Option<char>,
     prose: ProseControlState,
     /// Raw block bytes consumed before any call delta commits them.
     uncommitted_block: String,
@@ -990,8 +1014,15 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
+    pending_parse_error: Option<DeferredParseError>,
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
     invoke_boundary_len: usize,
+}
+
+struct DeferredParseError {
+    error: anyhow::Error,
+    tool_index: usize,
+    bytes: usize,
 }
 
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
@@ -1006,6 +1037,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             reasoning_enabled: false,
             reasoning_forced_start: false,
             buffer: String::new(),
+            buffer_previous: None,
             prose: ProseControlState::default(),
             uncommitted_block: String::new(),
             in_block: false,
@@ -1014,6 +1046,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
+            pending_parse_error: None,
             invoke_boundary,
             invoke_boundary_len: 0,
         }
@@ -1153,13 +1186,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &mut self,
         out: &mut S,
     ) -> anyhow::Result<()> {
-        self.drain(true, out)
+        self.drain(true, out)?;
+        if let Some(deferred) = self.pending_parse_error.take() {
+            return Err(deferred.error);
+        }
+        Ok(())
     }
 
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
+        self.buffer_previous = None;
         self.in_block = false;
         self.prose.clear();
         self.in_reasoning = self.reasoning_enabled && self.reasoning_forced_start;
@@ -1169,14 +1207,58 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
+        self.pending_parse_error = None;
         self.emitter.reset();
         self.reset_invoke_boundary();
         pending
     }
 
+    fn consume_buffer_prefix(&mut self, bytes: usize) {
+        if bytes == 0 {
+            return;
+        }
+        self.buffer_previous = self.buffer[..bytes].chars().next_back();
+        self.buffer.drain(..bytes);
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.discard_prefix(bytes);
+        }
+    }
+
     /// Whether one invoke closer also closes the surrounding block.
     fn invoke_closes_block(&self) -> bool {
         self.spec.block_ends.contains(&self.spec.invoke_end)
+    }
+
+    fn parse_complete_invoke(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<Vec<ToolCallDelta>>> {
+        match self.emitter.parse_invoke_deltas(invoke, tool_index) {
+            Ok(Some(deltas)) if !deltas.is_empty() => {
+                if let Some(deferred) = self.pending_parse_error.take() {
+                    tracing::warn!(
+                        why = %format!("{}_incomplete_invoke_recovered", self.spec.family),
+                        tool_index = deferred.tool_index,
+                        dropped_bytes = deferred.bytes,
+                        "Dropped an incomplete invoke after a later call parsed successfully"
+                    );
+                }
+                Ok(Some(deltas))
+            }
+            Err(error) if self.emitter.defer_parse_error(invoke, &error) => {
+                let deferred = self
+                    .pending_parse_error
+                    .get_or_insert_with(|| DeferredParseError {
+                        error,
+                        tool_index,
+                        bytes: 0,
+                    });
+                deferred.bytes += invoke.len();
+                Ok(None)
+            }
+            result => result,
+        }
     }
 
     fn reset_invoke_boundary(&mut self) {
@@ -1213,7 +1295,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let mut cursor = 0;
         while let Some(relative) = text[cursor..].find(invoke_start.as_str()) {
             let at = cursor + relative;
-            if boundary.opens(text, at) {
+            if (at > 0 || boundary.accepts_buffer_start(self.buffer_previous))
+                && boundary.opens(text, at)
+            {
                 return Some(at);
             }
             cursor = at + invoke_start.len();
@@ -1310,7 +1394,15 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let invoke = self
             .invoke_boundary
             .as_ref()
-            .map(|boundary| boundary.holdback(&self.buffer))
+            .map(|boundary| {
+                let keep = boundary.holdback(&self.buffer);
+                if keep == self.buffer.len() && !boundary.accepts_buffer_start(self.buffer_previous)
+                {
+                    0
+                } else {
+                    keep
+                }
+            })
             .unwrap_or_default();
         let bare = self
             .invoke_boundary
@@ -1408,7 +1500,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             self.prose
                 .consume_recovery(&self.buffer[..at], &self.spec.invoke_start);
             self.prose.clear();
-            self.buffer.drain(..at + consume);
+            self.consume_buffer_prefix(at + consume);
             self.in_reasoning = in_reasoning;
             self.resume_reasoning = resume;
             if matches!(what, InReasoning::Stray(_)) {
@@ -1428,7 +1520,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             push_run(out, Kind::Reasoning, &self.buffer[..emit_len]);
             self.prose
                 .consume_recovery(&self.buffer[..emit_len], &self.spec.invoke_start);
-            self.buffer.drain(..emit_len);
+            self.consume_buffer_prefix(emit_len);
         }
         if flush {
             // 4.e: the stream ended mid-thought. The open reasoning is promoted
@@ -1472,7 +1564,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     ProseControl::Ordinary => (0, false, false),
                 };
                 if length > 0 {
-                    let prose: String = self.buffer.drain(..length).collect();
+                    let prose = self.buffer[..length].to_owned();
+                    self.consume_buffer_prefix(length);
                     self.prose.consume(&prose);
                     if self.in_reasoning || !self.suppress_normal_text {
                         push_run(
@@ -1521,7 +1614,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         // keeping natural text (inter-block / trailing). Any later
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
-                        self.buffer.drain(..end_pos + end_len);
+                        self.consume_buffer_prefix(end_pos + end_len);
                         self.reset_invoke_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
@@ -1537,7 +1630,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"
                         );
-                        self.buffer.clear();
+                        self.consume_buffer_prefix(self.buffer.len());
                         self.uncommitted_block.clear();
                         self.in_block = false;
                     }
@@ -1545,7 +1638,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 };
                 if start > 0 {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
-                    self.buffer.drain(..start);
+                    self.consume_buffer_prefix(start);
                     self.reset_invoke_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
@@ -1563,7 +1656,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             skipped_bytes = next_block,
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
-                        self.buffer.drain(..next_block);
+                        self.consume_buffer_prefix(next_block);
                         self.reset_invoke_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
@@ -1601,7 +1694,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
-                            self.buffer.drain(..be_pos + be_len);
+                            self.consume_buffer_prefix(be_pos + be_len);
                             self.reset_invoke_boundary();
                             self.uncommitted_block.clear();
                             self.in_block = false;
@@ -1613,7 +1706,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             why = %format!("{}_incomplete_invoke", self.spec.family),
                             "stream dropped incomplete invoke at EOF"
                         );
-                        self.buffer.clear();
+                        self.consume_buffer_prefix(self.buffer.len());
                         self.uncommitted_block.clear();
                         self.in_block = false;
                     }
@@ -1649,7 +1742,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         why = %format!("{}_incomplete_invoke", self.spec.family),
                         "stream dropped invoke missing its close before the block end"
                     );
-                    self.buffer.drain(..be_pos + be_len);
+                    self.consume_buffer_prefix(be_pos + be_len);
                     self.uncommitted_block.clear();
                     self.in_block = false;
                     self.suppress_normal_text = false;
@@ -1660,8 +1753,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // meant a failing emitter destroyed the invoke bytes: they were gone from
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
-                let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
-                self.buffer.drain(..end);
+                let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                self.consume_buffer_prefix(end);
                 self.reset_invoke_boundary();
                 if let Some(deltas) = emitted {
                     let emitted_call = !deltas.is_empty();
@@ -1710,7 +1803,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.prose
                         .consume_recovery(&self.buffer[..pos], &self.spec.invoke_start);
                     self.prose.clear();
-                    self.buffer.drain(..pos + len);
+                    self.consume_buffer_prefix(pos + len);
                     self.suppress_normal_text = false;
                     continue;
                 }
@@ -1738,7 +1831,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     }
                     self.prose
                         .consume_recovery(&self.buffer[..emit_len], &self.spec.invoke_start);
-                    self.buffer.drain(..emit_len);
+                    self.consume_buffer_prefix(emit_len);
                 }
                 break;
             };
@@ -1749,20 +1842,20 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 }
                 self.prose
                     .consume_recovery(&self.buffer[..start], &self.spec.invoke_start);
-                self.buffer.drain(..start);
+                self.consume_buffer_prefix(start);
             }
 
             self.prose.clear();
             match marker {
                 Marker::Block(blen) => {
                     self.uncommitted_block.push_str(&self.buffer[..blen]);
-                    self.buffer.drain(..blen);
+                    self.consume_buffer_prefix(blen);
                     self.reset_invoke_boundary();
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
                 Marker::ReasoningStart(rlen) => {
-                    self.buffer.drain(..rlen);
+                    self.consume_buffer_prefix(rlen);
                     self.in_reasoning = true;
                     // An explicit reasoning opener is an unambiguous return to
                     // real content, so it ends any markup-suppression context
@@ -1796,14 +1889,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
                                 "stream dropped incomplete bare invoke at EOF"
                             );
-                            self.buffer.clear();
+                            self.consume_buffer_prefix(self.buffer.len());
                         }
                         break;
                     };
                     let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
-                    let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
-                    self.buffer.drain(..end);
+                    let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                    self.consume_buffer_prefix(end);
                     self.reset_invoke_boundary();
                     if let Some(deltas) = emitted {
                         tracing::warn!(

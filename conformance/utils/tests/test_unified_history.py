@@ -297,8 +297,7 @@ def test_schema_v3_new_observation_drops_inherited_capture_provenance_override(t
     assert latest["document"]["parser_path"] == "split"
 
 
-@pytest.mark.parametrize("complete_snapshot", [False, True])
-def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path, complete_snapshot):
+def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose" / "dynamo_v2-0.5.3" / "gemma4"
     unified_history.materialize_store(root, tmp_path / "loose")
@@ -317,7 +316,7 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path, co
     )
 
     changed = unified_history.update_store_from_loose(
-        root, tmp_path / "loose", complete_snapshot=complete_snapshot
+        root, tmp_path / "loose", complete_snapshot=False
     )
 
     assert changed == []

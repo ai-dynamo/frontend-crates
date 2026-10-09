@@ -346,19 +346,7 @@ impl InvokeEmitter for DeepSeekV41 {
             let value = if string {
                 Value::String(raw.to_string())
             } else {
-                match serde_json::from_str(raw) {
-                    Ok(value) => value,
-                    Err(error) if error.is_eof() => {
-                        tracing::warn!(
-                            why = "deepseek_v41_truncated_json_parameter",
-                            tool_index,
-                            recovered_bytes = invoke.len(),
-                            "Dropping incomplete DeepSeek V4.1 invocation"
-                        );
-                        return Ok(None);
-                    }
-                    Err(error) => return Err(error.into()),
-                }
+                serde_json::from_str(raw)?
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),
@@ -372,6 +360,12 @@ impl InvokeEmitter for DeepSeekV41 {
             arguments: serde_json::to_string(&arguments)?,
             complete: true,
         }))
+    }
+
+    fn defer_parse_error(&self, _invoke: &str, error: &anyhow::Error) -> bool {
+        error
+            .downcast_ref::<serde_json::Error>()
+            .is_some_and(serde_json::Error::is_eof)
     }
 }
 
@@ -700,6 +694,8 @@ mod tests {
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{} trailing junk</｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">1</｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
         ] {
             for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
                 let mut parser = deepseek_v41_unified(&[]);

@@ -5,13 +5,14 @@
 
 use dynamo_parsers_v2::tool_calling::create_tool_parser_for_family;
 use dynamo_parsers_v2::{
-    Tool, ToolParseResult, ToolParser, UnifiedEvent, UnifiedParser, UnifiedParserExt,
-    UnifiedParserInit, assemble,
+    InvalidGuidedPayloadPolicy, Tool, ToolParseResult, ToolParser, UnifiedEvent, UnifiedParser,
+    UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode,
+    assemble,
 };
 
 #[cfg(feature = "test-utils")]
 use dynamo_parsers_v2::tool_calling::gemma4::{
-    boundary_examined_bytes, reset_boundary_examined_bytes,
+    boundary_examined_bytes, incomplete_header_examined_bytes, reset_boundary_examined_bytes,
 };
 
 fn weather_tools() -> Vec<Tool> {
@@ -128,6 +129,35 @@ fn assert_adapters(
     assert_eq!(events, expected, "family={family}, chunks={chunks:?}");
 }
 
+#[test]
+fn drained_identifier_cannot_turn_prose_into_a_bare_call() {
+    // Preserve authored conformance inputs; this probes the raw predecessor
+    // lost by scanner drains, including character-by-character delivery.
+    for preceding in ["a", "0", "_", "-", "."] {
+        for name in ["a", "abcdefghijklmnop", "foo.bar", "foo-bar", "foo_bar"] {
+            for value in ["é", "literal call:abc"] {
+                let prose = format!("{preceding}call:{name}{{value:<|\"|>{value}<|\"|>}}");
+                let input = format!("{prose}<tool_call|>");
+                for chunks in chunkings(&input) {
+                    assert_adapters("gemma4", &weather_echo_tools(), &chunks, &prose, &[]);
+                }
+            }
+        }
+    }
+    for preceding in ["", " ", "!", "é"] {
+        let input = format!("{preceding}call:a{{value:<|\"|>é<|\"|>}}<tool_call|>");
+        for chunks in chunkings(&input) {
+            assert_adapters(
+                "gemma4",
+                &weather_echo_tools(),
+                &chunks,
+                preceding,
+                &[("a", serde_json::json!({"value": "é"}))],
+            );
+        }
+    }
+}
+
 fn assert_both_adapters(input: &str, expected_text: &str) {
     for chunks in chunkings(input) {
         assert_adapters(
@@ -188,6 +218,62 @@ fn unified_5_4_uses_unchanged_corpus_schemas_through_available_public_adapters()
                 ],
             );
         }
+    }
+}
+
+#[test]
+fn cached_bare_header_does_not_transfer_to_an_earlier_multibyte_candidate() {
+    assert_adapters(
+        "gemma4",
+        &weather_echo_tools(),
+        &[
+            "<|tool_call>call:fooébar! hello call:echo",
+            "{value:<|\"|>Café<|\"|>}<tool_call|>",
+        ],
+        "",
+        &[("echo", serde_json::json!({"value": "Café"}))],
+    );
+}
+
+#[test]
+fn guided_holdback_keeps_multibyte_response_prefix_at_every_split() {
+    let input = "é call:f{[{\"name\":\"f\",\"arguments\":{\"x\":\"ok\"}}]";
+    let tools = vec![Tool {
+        name: "f".into(),
+        description: None,
+        parameters: serde_json::json!({
+            "type": "object",
+            "properties": { "x": { "type": "string" } },
+            "required": ["x"]
+        }),
+        strict: None,
+    }];
+    for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+        let mut parser =
+            dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools).expect("parser");
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..Default::default()
+            })
+            .expect("guided response request");
+        let mut events = parser.push(&input[..split]).expect("first push");
+        events.extend(parser.push(&input[split..]).expect("second push"));
+        events.extend(parser.finish().expect("finish").events);
+        let assembled = assemble(&events);
+        assert_eq!(
+            assembled,
+            vec![
+                UnifiedEvent::Text { text: "é ".into() },
+                UnifiedEvent::ToolCall {
+                    name: "f".into(),
+                    arguments: serde_json::json!({"x": "ok"}),
+                },
+            ],
+            "split={split}"
+        );
     }
 }
 
@@ -515,6 +601,108 @@ fn repeated_ambiguous_value_openers_resynchronize_in_linear_time() {
                 "{adapter} rescanned superlinearly: N={at_n}, 2N={at_2n}, chunk_size={chunk_size}"
             );
         }
+    }
+}
+
+#[cfg(feature = "test-utils")]
+#[test]
+fn repeated_incomplete_candidate_headers_resynchronize_in_linear_time() {
+    let initial = "<|tool_call>call:broken{value:<|\"|>unfinished<|tool_call>call:";
+    for adapter in ["tool-only", "unified"] {
+        let mut scans = Vec::new();
+        for repeats in [1024, 2048] {
+            reset_boundary_examined_bytes();
+            if adapter == "tool-only" {
+                let mut parser =
+                    create_tool_parser_for_family("gemma4", &[]).expect("Gemma tool parser");
+                let mut output = parser.push(initial).expect("initial push");
+                for _ in 0..repeats {
+                    output.append(parser.push("x").expect("header push"));
+                }
+                output.append(parser.finish().expect("finish"));
+                assert_eq!(output, ToolParseResult::default());
+            } else {
+                let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &[])
+                    .expect("Gemma Unified parser");
+                parser
+                    .initialize_request(UnifiedParserInit::default())
+                    .expect("native request");
+                let mut events = parser.push(initial).expect("initial push");
+                for _ in 0..repeats {
+                    events.extend(parser.push("x").expect("header push"));
+                }
+                events.extend(parser.finish().expect("finish").events);
+                assert!(assemble(&events).is_empty());
+            }
+            assert!(
+                (repeats..=repeats * 10 + 32).contains(&incomplete_header_examined_bytes()),
+                "{adapter} must examine header bytes a bounded number of times"
+            );
+            scans.push(boundary_examined_bytes());
+        }
+
+        let [at_n, at_2n] = scans.as_slice() else {
+            unreachable!("the N/2N measurement always has two inputs");
+        };
+        assert!(
+            *at_2n <= *at_n * 3,
+            "{adapter} rescanned incomplete candidate headers superlinearly: N={at_n}, 2N={at_2n}"
+        );
+    }
+}
+
+#[cfg(feature = "test-utils")]
+#[test]
+fn repeated_incomplete_bare_headers_resynchronize_in_linear_time() {
+    for adapter in ["tool-only", "unified"] {
+        let mut measurements = Vec::new();
+        for repeats in [1024, 2048] {
+            reset_boundary_examined_bytes();
+            let mut output = ToolParseResult::default();
+            let mut events = Vec::new();
+            if adapter == "tool-only" {
+                let mut parser = create_tool_parser_for_family("gemma4", &[]).expect("parser");
+                output.append(parser.push("call:").expect("header push"));
+                for _ in 0..repeats {
+                    output.append(parser.push("x").expect("name push"));
+                }
+                output.append(parser.finish().expect("finish"));
+            } else {
+                let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &[])
+                    .expect("parser");
+                parser
+                    .initialize_request(UnifiedParserInit::default())
+                    .expect("initialize");
+                events.extend(parser.push("call:").expect("header push"));
+                for _ in 0..repeats {
+                    events.extend(parser.push("x").expect("name push"));
+                }
+                events.extend(parser.finish().expect("finish").events);
+            }
+            assert!(
+                (repeats..=repeats * 3).contains(&incomplete_header_examined_bytes()),
+                "{adapter} must examine each newly delivered bare-name byte a bounded number of times"
+            );
+            if adapter == "tool-only" {
+                assert!(output.calls.is_empty());
+                assert_eq!(output.normal_text, format!("call:{}", "x".repeat(repeats)));
+            } else {
+                assert_eq!(
+                    assemble(&events),
+                    vec![UnifiedEvent::Text {
+                        text: format!("call:{}", "x".repeat(repeats))
+                    }]
+                );
+            }
+            measurements.push(incomplete_header_examined_bytes());
+        }
+        let [at_n, at_2n] = measurements.as_slice() else {
+            unreachable!("the N/2N measurement always has two inputs");
+        };
+        assert!(
+            *at_2n <= *at_n * 3,
+            "{adapter} bare headers were superlinear: N={at_n}, 2N={at_2n}"
+        );
     }
 }
 

@@ -33,15 +33,19 @@
 //! exact JSON string in the model-emitted order (the order vLLM's Rust parser also
 //! preserves), so order has to be pinned to source order.
 
+use std::cell::RefCell;
+
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
     WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    has_bare_call_body_start_gemma4, has_recoverable_tool_call_boundaries_gemma4,
-    is_call_prefix_boundary, parse_one_tool_call_gemma4,
+    has_recoverable_tool_call_boundaries_gemma4, is_call_prefix_boundary,
+    parse_one_tool_call_gemma4,
 };
+
+pub(crate) use crate::tool_calling::v1core::gemma4::is_call_name_char;
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -53,12 +57,14 @@ const STRING_DELIM: &str = "<|\"|>";
 #[cfg(any(test, feature = "test-utils"))]
 std::thread_local! {
     static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static INCOMPLETE_HEADER_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 #[cfg(any(test, feature = "test-utils"))]
 #[doc(hidden)]
 pub fn reset_boundary_examined_bytes() {
     BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(|examined| examined.set(0));
 }
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -67,9 +73,22 @@ pub fn boundary_examined_bytes() -> usize {
     BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get)
 }
 
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn incomplete_header_examined_bytes() -> usize {
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(std::cell::Cell::get)
+}
+
 fn count_boundary_bytes(bytes: usize) {
     #[cfg(any(test, feature = "test-utils"))]
     BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(any(test, feature = "test-utils")))]
+    let _ = bytes;
+}
+
+fn count_incomplete_header_bytes(bytes: usize) {
+    #[cfg(any(test, feature = "test-utils"))]
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
     #[cfg(not(any(test, feature = "test-utils")))]
     let _ = bytes;
 }
@@ -103,7 +122,7 @@ impl Gemma4InvokeProgress {
                 if self.depth == 0 {
                     if ch == '{' && self.name_started {
                         self.depth = 1;
-                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                    } else if is_call_name_char(ch) {
                         self.name_started = true;
                     } else {
                         self.invalid = true;
@@ -157,11 +176,30 @@ impl Gemma4InvokeProgress {
     }
 }
 
+#[derive(Clone, Copy)]
+struct BareCallHeader {
+    start: usize,
+    name_len: usize,
+}
+
+impl BareCallHeader {
+    fn discard_prefix(header: &mut Option<Self>, bytes: usize) {
+        *header = header.and_then(|mut candidate| {
+            candidate.start = candidate.start.checked_sub(bytes)?;
+            Some(candidate)
+        });
+    }
+}
+
 #[derive(Default)]
 struct Gemma4InvokeBoundary {
     progress: Gemma4InvokeProgress,
     candidate: String,
+    opener_header: RefCell<Option<BareCallHeader>>,
+    holdback_header: RefCell<Option<BareCallHeader>>,
+    unified_holdback_header: RefCell<Option<BareCallHeader>>,
     resync_cursor: usize,
+    resync_pending_header_start: Option<usize>,
     resync_in_string: bool,
     resync_candidate_in_string: bool,
     resync_candidate: Option<(usize, usize)>,
@@ -206,15 +244,39 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
         _tool_index: usize,
     ) -> Option<usize> {
         self.candidate.push_str(append);
-        self.progress.end(&self.candidate, flush)
+        let end = self.progress.end(&self.candidate, flush);
+        if end.is_some() {
+            self.opener_header.replace(None);
+            self.holdback_header.replace(None);
+            self.unified_holdback_header.replace(None);
+        }
+        end
     }
 
     fn opens(&self, text: &str, at: usize) -> bool {
-        opens_bare_call(text, at)
+        opens_bare_call(text, at, &self.opener_header)
+    }
+
+    fn accepts_buffer_start(&self, previous: Option<char>) -> bool {
+        previous.is_none_or(|ch| !is_call_name_char(ch))
+    }
+
+    fn discard_prefix(&mut self, bytes: usize) {
+        BareCallHeader::discard_prefix(self.opener_header.get_mut(), bytes);
+        BareCallHeader::discard_prefix(self.holdback_header.get_mut(), bytes);
+    }
+
+    fn discard_unified_prefix(&mut self, bytes: usize) {
+        BareCallHeader::discard_prefix(self.opener_header.get_mut(), bytes);
+        BareCallHeader::discard_prefix(self.unified_holdback_header.get_mut(), bytes);
     }
 
     fn holdback(&self, text: &str) -> usize {
-        partial_bare_opener_suffix_len(text)
+        partial_bare_opener_suffix_len(text, &self.holdback_header)
+    }
+
+    fn holdback_for_unified_input(&self, text: &str) -> usize {
+        partial_bare_opener_suffix_len(text, &self.unified_holdback_header)
     }
 
     fn resync(&mut self, input: &str, flush: bool, _tool_index: usize) -> Option<usize> {
@@ -224,6 +286,30 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
         while self.resync_cursor < input.len() {
             let cursor = self.resync_cursor;
             let rest = &input[cursor..];
+            if let Some(header_start) = self.resync_pending_header_start {
+                let name_start = header_start + TOOL_CALL_START.len() + CALL_PREFIX.len();
+                let ch = rest.chars().next()?;
+                if ch == '{' && cursor > name_start {
+                    if self.resync_candidate.is_none() || !self.resync_candidate_in_string {
+                        self.resync_candidate = Some((header_start, 1));
+                        self.resync_candidate_ambiguous = self.resync_in_string;
+                        self.resync_candidate_in_string = false;
+                        self.resync_candidate_context = vec![Gemma4ResyncContext::ObjectKey];
+                    }
+                    self.resync_pending_header_start = None;
+                    self.resync_cursor += ch.len_utf8();
+                    count_boundary_bytes(ch.len_utf8());
+                    count_incomplete_header_bytes(ch.len_utf8());
+                    continue;
+                }
+                if is_call_name_char(ch) {
+                    self.resync_cursor += ch.len_utf8();
+                    count_boundary_bytes(ch.len_utf8());
+                    count_incomplete_header_bytes(ch.len_utf8());
+                    continue;
+                }
+                self.resync_pending_header_start = None;
+            }
             if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() && !flush {
                 return None;
             }
@@ -289,33 +375,12 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                 if CALL_PREFIX.starts_with(after_marker) && !flush {
                     return None;
                 }
-                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
-                    && after_prefix.find('{').is_none()
-                    && after_prefix
-                        .chars()
-                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-                    && !flush
-                {
-                    return None;
-                }
-                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
-                    && let Some(name_len) = after_prefix
-                        .char_indices()
-                        .find_map(|(at, ch)| (ch == '{' && at > 0).then_some(at))
-                    && after_prefix[..name_len]
-                        .chars()
-                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-                {
-                    let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len() + name_len + 1;
-                    if self.resync_candidate.is_none() || !self.resync_candidate_in_string {
-                        self.resync_candidate = Some((cursor, 1));
-                        self.resync_candidate_ambiguous = self.resync_in_string;
-                        self.resync_candidate_in_string = false;
-                        self.resync_candidate_context = vec![Gemma4ResyncContext::ObjectKey];
-                        self.resync_cursor += consumed;
-                        count_boundary_bytes(consumed);
-                        continue;
-                    }
+                if after_marker.strip_prefix(CALL_PREFIX).is_some() {
+                    let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len();
+                    self.resync_pending_header_start = Some(cursor);
+                    self.resync_cursor += consumed;
+                    count_boundary_bytes(consumed);
+                    continue;
                 }
             }
             if let Some((start, depth)) = self.resync_candidate {
@@ -381,6 +446,9 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
     fn reset(&mut self) {
         self.progress.reset();
         self.candidate.clear();
+        self.opener_header.replace(None);
+        self.holdback_header.replace(None);
+        self.unified_holdback_header.replace(None);
         self.reset_resynchronizer();
     }
 }
@@ -429,6 +497,7 @@ impl Gemma4InvokeBoundary {
     fn reset_resynchronizer(&mut self) {
         self.clear_recovery_candidate();
         self.resync_cursor = 0;
+        self.resync_pending_header_start = None;
         self.resync_in_string = false;
         self.resync_recovery_start = None;
         self.resync_outer_close_at = None;
@@ -444,7 +513,7 @@ impl Gemma4InvokeBoundary {
         };
         match *context {
             Context::ObjectKey => {
-                if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                if is_call_name_char(ch) {
                     *context = Context::ObjectKeyName;
                 } else if ch == '}' {
                     self.resync_candidate_context.pop();
@@ -547,8 +616,42 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
 ///
 /// Without the second test, "I will call: you tomorrow" would be buffered as an
 /// invoke that never closes and then dropped at EOF — losing ordinary prose.
-fn opens_bare_call(text: &str, at: usize) -> bool {
-    is_call_prefix_boundary(text, at) && has_bare_call_body_start_gemma4(&text[at..])
+fn opens_bare_call(text: &str, at: usize, cached_header: &RefCell<Option<BareCallHeader>>) -> bool {
+    is_call_prefix_boundary(text, at) && scan_bare_header(text, at, cached_header) == Some(true)
+}
+
+/// `None` retains an incomplete name; `{` commits only a nonempty ASCII name.
+fn scan_bare_header(
+    text: &str,
+    at: usize,
+    cached_header: &RefCell<Option<BareCallHeader>>,
+) -> Option<bool> {
+    if !text.get(at..)?.starts_with(CALL_PREFIX) {
+        cached_header.replace(None);
+        return Some(false);
+    }
+    let mut header = cached_header
+        .borrow()
+        .filter(|header| {
+            header.start == at
+                && text
+                    .get(at + CALL_PREFIX.len() + header.name_len..)
+                    .is_some()
+        })
+        .unwrap_or(BareCallHeader {
+            start: at,
+            name_len: 0,
+        });
+    for ch in text[at + CALL_PREFIX.len() + header.name_len..].chars() {
+        count_incomplete_header_bytes(ch.len_utf8());
+        if ch == '{' || !is_call_name_char(ch) {
+            cached_header.replace(None);
+            return Some(ch == '{' && header.name_len > 0);
+        }
+        header.name_len += ch.len_utf8();
+    }
+    cached_header.replace(Some(header));
+    None
 }
 
 pub(crate) fn is_gemma_call_prefix_boundary(text: &str, at: usize) -> bool {
@@ -592,6 +695,45 @@ impl ToolParser for Gemma4ToolStreamParser {
 #[cfg(test)]
 mod boundary_tests {
     use super::*;
+
+    #[test]
+    fn reset_discards_ambiguous_scan_state_and_restarts_tool_indices() {
+        let ambiguous = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unfinished",
+            "<|tool_call>call:a{value:<|\"|>OLD<|\"|>}<tool_call|>",
+        );
+        for finish_first in [false, true] {
+            let mut scanner = gemma4_scanner(&[]);
+            assert_eq!(scanner.push(ambiguous).unwrap(), ToolParseResult::default());
+            if finish_first {
+                let recovered = scanner.finish().unwrap().coalesce_calls();
+                assert_eq!(recovered.calls[0].tool_index, 0);
+                assert_eq!(recovered.calls[0].arguments, "{\"value\":\"OLD\"}");
+            }
+            scanner.reset();
+            let output = scanner
+                .push("call:a{value:<|\"|>é<|\"|>}<tool_call|>")
+                .unwrap();
+            assert_eq!(output.normal_text, "");
+            assert_eq!(
+                output.calls,
+                vec![ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("a".into()),
+                    arguments: "{\"value\":\"é\"}".into(),
+                    complete: true,
+                }]
+            );
+            assert_eq!(scanner.finish().unwrap(), ToolParseResult::default());
+        }
+        let mut scanner = gemma4_scanner(&[]);
+        assert_eq!(scanner.push("a").unwrap().normal_text, "a");
+        scanner.reset();
+        assert_eq!(
+            scanner.push("call:a{}<tool_call|>").unwrap().calls[0].tool_index,
+            0
+        );
+    }
 
     #[test]
     fn gemma_exposes_its_request_local_boundary() {
@@ -735,19 +877,40 @@ impl InvokeEmitter for Gemma4InvokeEmitter {
 /// arrives, the scanner's candidate-local opener probe recognizes it directly.
 /// Held-back bytes are flushed on the next chunk (or at EOF), so the
 /// concatenated output is unchanged — only its chunk boundaries shift.
-fn partial_bare_opener_suffix_len(text: &str) -> usize {
+fn partial_bare_opener_suffix_len(
+    text: &str,
+    cached_header: &RefCell<Option<BareCallHeader>>,
+) -> usize {
+    let cached = *cached_header.borrow();
+    if let Some(header) = cached
+        && text
+            .get(header.start..)
+            .is_some_and(|tail| tail.starts_with(CALL_PREFIX))
+        && is_call_prefix_boundary(text, header.start)
+        && scan_bare_header(text, header.start, cached_header).is_none()
+    {
+        return text.len() - header.start;
+    }
+    cached_header.replace(None);
     for len in (1..=CALL_PREFIX.len()).rev() {
         if text.ends_with(&CALL_PREFIX[..len]) && is_call_prefix_boundary(text, text.len() - len) {
+            if len == CALL_PREFIX.len() {
+                cached_header.replace(Some(BareCallHeader {
+                    start: text.len() - len,
+                    name_len: 0,
+                }));
+            }
             return len;
         }
     }
-    if let Some(idx) = text.rfind(CALL_PREFIX)
-        && is_call_prefix_boundary(text, idx)
-        && text[idx + CALL_PREFIX.len()..]
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    {
-        return text.len() - idx;
+    for (idx, _) in text.char_indices().rev() {
+        if text[idx..].starts_with(CALL_PREFIX) && is_call_prefix_boundary(text, idx) {
+            return if scan_bare_header(text, idx, cached_header).is_none() {
+                text.len() - idx
+            } else {
+                0
+            };
+        }
     }
     0
 }
@@ -835,7 +998,7 @@ fn source_key_order(block: &str) -> Vec<String> {
 }
 
 fn is_key_byte(b: u8) -> bool {
-    b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.'
+    is_call_name_char(char::from(b))
 }
 
 /// Byte width of a UTF-8 code point from its leading byte.

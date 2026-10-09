@@ -106,10 +106,7 @@ fn parse_recoverable_call_at(
     let after_prefix = after_start.strip_prefix(CALL_PREFIX)?;
     let name_len = after_prefix.find('{').filter(|idx| *idx > 0)?;
     let name = &after_prefix[..name_len];
-    if !name
-        .chars()
-        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    {
+    if !name.chars().all(is_call_name_char) {
         return None;
     }
 
@@ -130,41 +127,16 @@ fn parse_recoverable_call_at(
     None
 }
 
+pub(crate) fn is_call_name_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
+}
+
 pub fn is_call_prefix_boundary(input: &str, idx: usize) -> bool {
     idx == 0
         || input[..idx]
             .chars()
             .next_back()
-            .is_none_or(|ch| !(ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')))
-}
-
-/// Whether the candidate at byte zero has Gemma's `call:NAME{` prefix.
-///
-/// This probe is deliberately candidate-local: the first non-identifier byte
-/// decides the result. Searching for any later `{` lets ordinary `call:` prose
-/// borrow the body of a later real call and makes a suffix-wide scan quadratic.
-pub fn has_bare_call_body_start_gemma4(input: &str) -> bool {
-    bare_call_body_start_probe(input).0
-}
-
-fn bare_call_body_start_probe(input: &str) -> (bool, usize) {
-    let Some(after_prefix) = input.strip_prefix(CALL_PREFIX) else {
-        return (false, 0);
-    };
-    let mut saw_name = false;
-    let mut inspected = 0;
-    for ch in after_prefix.chars() {
-        inspected += 1;
-        if ch == '{' {
-            return (saw_name, inspected);
-        }
-        if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
-            saw_name = true;
-            continue;
-        }
-        return (false, inspected);
-    }
-    (false, inspected)
+            .is_none_or(|ch| !is_call_name_char(ch))
 }
 
 /// Type one call whose boundaries have already been resolved by the caller.
@@ -293,7 +265,7 @@ fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
     let start = cur.pos;
     while cur.pos < bytes.len() {
         let b = bytes[cur.pos];
-        if b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.' {
+        if is_call_name_char(char::from(b)) {
             cur.pos += 1;
         } else {
             break;
@@ -478,11 +450,5 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
-    }
-
-    #[test]
-    fn bare_call_probe_stops_at_the_first_non_identifier() {
-        let input = format!("call: {}{{", "ordinary prose ".repeat(4096));
-        assert_eq!(bare_call_body_start_probe(&input), (false, 1));
     }
 }
