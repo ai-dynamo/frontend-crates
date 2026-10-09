@@ -6,8 +6,9 @@
 //! [`VideoFrames`] is what a video decoder hands over: RGB frames plus the
 //! timing a model needs. [`encode_jpeg_frames`] turns them into JPEG images for
 //! a router whose backend accepts images but not video: each frame becomes an
-//! image part, and [`JpegFrame::timestamp_label`] gives the text to place beside
-//! it, since an image-only model has no native sense of time.
+//! image part carrying its [`JpegFrame::timestamp_secs`]. How that time is shown
+//! to the model (an image-only model has no native sense of time) is the
+//! consumer's choice; it differs between model adapters.
 //!
 //! The router owns transport. It base64-encodes `bytes` into a
 //! `data:image/jpeg;base64,...` URL (or uploads them) and builds its own request
@@ -29,7 +30,10 @@ pub struct VideoTiming {
 
 /// Decoded, sampled frames of one video: `rgb` holds `frame_count` frames of
 /// `height * width * 3` bytes, in presentation order.
-#[derive(Clone, Debug)]
+///
+/// Not `Clone`: it owns every decoded frame, so a copy would duplicate them
+/// all. Share it with `Arc<VideoFrames>` instead.
+#[derive(Debug)]
 pub struct VideoFrames {
     width: usize,
     height: usize,
@@ -135,19 +139,12 @@ impl VideoFrames {
 }
 
 /// One frame encoded as a JPEG, with its place in the video.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct JpegFrame {
     pub bytes: Vec<u8>,
+    /// Presentation time in seconds from the start of the video.
     pub timestamp_secs: f64,
-}
-
-impl JpegFrame {
-    /// Text to put beside the image so a model without temporal encoding knows
-    /// when the frame occurs, e.g. `"t=3.50s"`.
-    pub fn timestamp_label(&self) -> String {
-        format!("t={:.2}s", self.timestamp_secs)
-    }
 }
 
 /// JPEG quality used when a caller has no preference.
@@ -271,8 +268,6 @@ mod tests {
         let jpegs = encode_jpeg_frames(&gradient(3, 16, 16), 80).unwrap();
         let t: Vec<f64> = jpegs.iter().map(|j| j.timestamp_secs).collect();
         assert_eq!(t, vec![0.0, 0.5, 1.0]);
-        assert_eq!(jpegs[1].timestamp_label(), "t=0.50s");
-        assert_eq!(jpegs[2].timestamp_label(), "t=1.00s");
     }
 
     #[test]
