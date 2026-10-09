@@ -91,6 +91,9 @@ jobs:
       - name: Run doctests
         run: cargo test --workspace --doc --locked
 
+      - name: Run protocol schema tests
+        run: cargo test -p dynamo-protocols --features protocol-schema --locked
+
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
