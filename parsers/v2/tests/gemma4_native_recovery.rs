@@ -5,7 +5,8 @@
 
 use dynamo_parsers_v2::tool_calling::create_tool_parser_for_family;
 use dynamo_parsers_v2::{
-    Tool, ToolParseResult, UnifiedEvent, UnifiedParserExt, UnifiedParserInit, assemble,
+    Tool, ToolParseResult, ToolParser, UnifiedEvent, UnifiedParser, UnifiedParserExt,
+    UnifiedParserInit, assemble,
 };
 
 #[cfg(feature = "test-utils")]
@@ -28,141 +29,152 @@ fn weather_tools() -> Vec<Tool> {
 fn chunkings(input: &str) -> Vec<Vec<&str>> {
     let mut chunks = vec![vec![input]];
     chunks.extend(
-        (1..input.len())
+        (0..=input.len())
             .filter(|&at| input.is_char_boundary(at))
             .map(|at| vec![&input[..at], &input[at..]]),
+    );
+    chunks.push(
+        input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect(),
     );
     chunks
 }
 
-fn assert_tool_only_at_every_split(input: &str, expected_text: &str) {
-    let tools = weather_tools();
-    for chunks in chunkings(input) {
-        let mut parser = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
-        let mut output = ToolParseResult::default();
-        for chunk in &chunks {
-            output.append(parser.push(chunk).expect("push"));
-        }
-        output.append(parser.finish().expect("finish"));
-        let output = output.coalesce_calls();
-        assert_eq!(output.normal_text, expected_text, "chunks={chunks:?}");
-        assert_eq!(output.calls.len(), 1, "chunks={chunks:?}");
-        assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(output.calls[0].arguments, r#"{"city":"NYC"}"#);
+fn drive_tool(parser: &mut dyn ToolParser, chunks: &[&str]) -> ToolParseResult {
+    let mut output = ToolParseResult::default();
+    for chunk in chunks {
+        output.append(parser.push(chunk).expect("tool push"));
     }
+    output.append(parser.finish().expect("tool finish"));
+    output.coalesce_calls()
 }
 
-fn assert_unified_at_every_split(input: &str, expected_text: &str) {
-    let tools = weather_tools();
-    let expected = if expected_text.is_empty() {
-        vec![UnifiedEvent::ToolCall {
-            name: "get_weather".into(),
-            arguments: serde_json::json!({"city": "NYC"}),
-        }]
-    } else {
-        vec![
-            UnifiedEvent::Text {
-                text: expected_text.into(),
-            },
-            UnifiedEvent::ToolCall {
-                name: "get_weather".into(),
-                arguments: serde_json::json!({"city": "NYC"}),
-            },
-        ]
-    };
-
-    for chunks in chunkings(input) {
-        let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
-            .expect("Gemma unified parser");
-        parser
-            .initialize_request(UnifiedParserInit::default())
-            .expect("native request");
-        let mut events = Vec::new();
-        for chunk in &chunks {
-            events.extend(parser.push(chunk).expect("push"));
-        }
-        events.extend(parser.finish().expect("finish").events);
-        assert_eq!(assemble(&events), expected, "chunks={chunks:?}");
+fn drive_unified(parser: &mut dyn UnifiedParser, chunks: &[&str]) -> Vec<UnifiedEvent> {
+    let mut events = Vec::new();
+    for chunk in chunks {
+        events.extend(parser.push(chunk).expect("unified push"));
     }
+    events.extend(parser.finish().expect("unified finish").events);
+    assemble(&events)
+}
+
+fn assert_adapters(
+    family: &str,
+    tools: &[Tool],
+    chunks: &[&str],
+    expected_text: &str,
+    expected_calls: &[(&str, serde_json::Value)],
+) {
+    if family == "deepseek_v41" {
+        assert!(create_tool_parser_for_family(family, tools).is_err());
+    } else {
+        let mut tool = create_tool_parser_for_family(family, tools).expect("tool parser");
+        let output = drive_tool(tool.as_mut(), chunks);
+        assert_eq!(
+            output.normal_text, expected_text,
+            "family={family}, chunks={chunks:?}"
+        );
+        let calls: Vec<_> = output
+            .calls
+            .iter()
+            .enumerate()
+            .map(|(index, call)| {
+                assert_eq!(call.tool_index, index);
+                assert!(call.complete);
+                (
+                    call.name.as_deref().expect("tool name"),
+                    serde_json::from_str::<serde_json::Value>(&call.arguments).expect("arguments"),
+                )
+            })
+            .collect();
+        assert_eq!(calls, expected_calls, "family={family}, chunks={chunks:?}");
+    }
+
+    let mut unified =
+        dynamo_parsers_v2::create_unified_parser_for_family(family, tools).expect("unified parser");
+    unified
+        .initialize_request(UnifiedParserInit::default())
+        .expect("native request");
+    let events = drive_unified(unified.as_mut(), chunks);
+    let mut expected = Vec::new();
+    if !expected_text.is_empty() {
+        expected.push(UnifiedEvent::Text {
+            text: expected_text.into(),
+        });
+    }
+    expected.extend(
+        expected_calls
+            .iter()
+            .map(|(name, arguments)| UnifiedEvent::ToolCall {
+                name: (*name).into(),
+                arguments: arguments.clone(),
+            }),
+    );
+    assert_eq!(events, expected, "family={family}, chunks={chunks:?}");
 }
 
 fn assert_both_adapters(input: &str, expected_text: &str) {
-    assert_tool_only_at_every_split(input, expected_text);
-    assert_unified_at_every_split(input, expected_text);
-}
-
-fn assert_no_calls_at_every_split(input: &str) {
-    let tools = weather_tools();
     for chunks in chunkings(input) {
-        let mut parser = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
-        let mut output = ToolParseResult::default();
-        for chunk in &chunks {
-            output.append(parser.push(chunk).expect("push"));
-        }
-        output.append(parser.finish().expect("finish"));
-        assert!(
-            output.coalesce_calls().calls.is_empty(),
-            "tool-only emitted a false call for chunks={chunks:?}"
-        );
-
-        let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
-            .expect("Gemma unified parser");
-        parser
-            .initialize_request(UnifiedParserInit::default())
-            .expect("native request");
-        let mut events = Vec::new();
-        for chunk in &chunks {
-            events.extend(parser.push(chunk).expect("push"));
-        }
-        events.extend(parser.finish().expect("finish").events);
-        assert!(
-            assemble(&events)
-                .iter()
-                .all(|event| !matches!(event, UnifiedEvent::ToolCall { .. })),
-            "unified emitted a false call for chunks={chunks:?}"
+        assert_adapters(
+            "gemma4",
+            &weather_tools(),
+            &chunks,
+            expected_text,
+            &[("get_weather", serde_json::json!({"city": "NYC"}))],
         );
     }
 }
 
-fn assert_both_adapters_at_chunk_sizes(input: &str, chunk_sizes: &[usize], expected_calls: usize) {
-    let tools = weather_tools();
+fn assert_no_calls_at_every_split(input: &str) {
+    for chunks in chunkings(input) {
+        assert_adapters("gemma4", &weather_tools(), &chunks, "", &[]);
+    }
+}
+
+fn assert_both_adapters_at_chunk_sizes(
+    input: &str,
+    chunk_sizes: &[usize],
+    expected_calls: &[(&str, serde_json::Value)],
+) {
     for &chunk_size in chunk_sizes {
         let chunks: Vec<_> = input
             .as_bytes()
             .chunks(chunk_size)
             .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
             .collect();
+        assert_adapters("gemma4", &weather_tools(), &chunks, "", expected_calls);
+    }
+}
 
-        let mut tool_only = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
-        let mut tool_output = ToolParseResult::default();
-        for chunk in &chunks {
-            tool_output.append(tool_only.push(chunk).expect("tool-only push"));
+#[test]
+fn unified_5_4_uses_unchanged_corpus_schemas_through_available_public_adapters() {
+    for family in ["gemma4", "deepseek_v41"] {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+        ));
+        let document: serde_yaml::Value =
+            serde_yaml::from_str(&std::fs::read_to_string(path).expect("authored corpus"))
+                .expect("corpus YAML");
+        let case = &document["cases"]["malformed_json_then_two_valid_calls"];
+        assert_eq!(case["display_id"].as_str(), Some("UNIFIED.5-4"));
+        let request = &case["request"];
+        let tools: Vec<Tool> =
+            serde_yaml::from_value(request["tools"].clone()).expect("authored schemas");
+        let input = request["input"].as_str().expect("authored input");
+        for chunks in chunkings(input) {
+            assert_adapters(
+                family,
+                &tools,
+                &chunks,
+                "",
+                &[
+                    ("echo", serde_json::json!({"value": "é"})),
+                    ("echo", serde_json::json!({"value": "Café"})),
+                ],
+            );
         }
-        tool_output.append(tool_only.finish().expect("tool-only finish"));
-        assert_eq!(
-            tool_output.coalesce_calls().calls.len(),
-            expected_calls,
-            "tool-only chunk_size={chunk_size}"
-        );
-
-        let mut unified = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
-            .expect("Gemma unified parser");
-        unified
-            .initialize_request(UnifiedParserInit::default())
-            .expect("native request");
-        let mut events = Vec::new();
-        for chunk in &chunks {
-            events.extend(unified.push(chunk).expect("unified push"));
-        }
-        events.extend(unified.finish().expect("unified finish").events);
-        let call_count = assemble(&events)
-            .into_iter()
-            .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-            .count();
-        assert_eq!(
-            call_count, expected_calls,
-            "unified chunk_size={chunk_size}"
-        );
     }
 }
 
@@ -171,7 +183,11 @@ fn later_balanced_call_without_wrapper_close_recovers_at_eof_at_each_chunk_size(
     let malformed = "<|tool_call>call:broken{note:<|\"|>unterminated";
     let later_balanced = "<|\"|>}<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}";
     let input = format!("{malformed}{later_balanced}");
-    assert_both_adapters_at_chunk_sizes(&input, &[1, 4, 16], 1);
+    assert_both_adapters_at_chunk_sizes(
+        &input,
+        &[1, 4, 16],
+        &[("get_weather", serde_json::json!({"city": "NYC"}))],
+    );
 }
 
 #[test]
@@ -210,7 +226,11 @@ fn malformed_outer_quote_closes_after_an_incomplete_candidate_key() {
         "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
     );
     assert_both_adapters(input, "");
-    assert_both_adapters_at_chunk_sizes(input, &[1, 4, 16], 1);
+    assert_both_adapters_at_chunk_sizes(
+        input,
+        &[1, 4, 16],
+        &[("get_weather", serde_json::json!({"city": "NYC"}))],
+    );
 }
 
 #[test]
@@ -219,43 +239,17 @@ fn empty_nested_object_keeps_array_string_value_context() {
         "<|tool_call>call:broken{note:<|\"|>outer",
         "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>,vals:[{},<|\"|>x<|\"|>]}",
     );
-    let mut chunkings = chunkings(input);
-    chunkings.extend([1, 4, 16].into_iter().map(|size| {
-        input
-            .as_bytes()
-            .chunks(size)
-            .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
-            .collect()
-    }));
-    let tools = weather_tools();
-    for chunks in chunkings {
-        let mut tool_only = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
-        let mut tool_output = ToolParseResult::default();
-        for chunk in &chunks {
-            tool_output.append(tool_only.push(chunk).expect("tool-only push"));
-        }
-        tool_output.append(tool_only.finish().expect("tool-only finish"));
-        assert_eq!(
-            tool_output.coalesce_calls().calls.len(),
-            1,
-            "chunks={chunks:?}"
+    for chunks in chunkings(input) {
+        assert_adapters(
+            "gemma4",
+            &weather_tools(),
+            &chunks,
+            "",
+            &[(
+                "get_weather",
+                serde_json::json!({"city": "NYC", "vals": [{}, "x"]}),
+            )],
         );
-
-        let mut unified = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
-            .expect("Gemma unified parser");
-        unified
-            .initialize_request(UnifiedParserInit::default())
-            .expect("native request");
-        let mut events = Vec::new();
-        for chunk in &chunks {
-            events.extend(unified.push(chunk).expect("unified push"));
-        }
-        events.extend(unified.finish().expect("unified finish").events);
-        let call_count = assemble(&events)
-            .into_iter()
-            .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-            .count();
-        assert_eq!(call_count, 1, "chunks={chunks:?}");
     }
 }
 
@@ -306,8 +300,12 @@ fn long_incremental_invokes_preserve_both_adapter_contracts() {
     let value = "x".repeat(32 * 1024);
     let valid = format!("<|tool_call>call:get_weather{{city:<|\"|>{value}<|\"|>}}<tool_call|>");
     let incomplete = format!("<|tool_call>call:get_weather{{city:<|\"|>{value}");
-    assert_both_adapters_at_chunk_sizes(&valid, &[4, 16], 1);
-    assert_both_adapters_at_chunk_sizes(&incomplete, &[4, 16], 0);
+    assert_both_adapters_at_chunk_sizes(
+        &valid,
+        &[4, 16],
+        &[("get_weather", serde_json::json!({"city": value}))],
+    );
+    assert_both_adapters_at_chunk_sizes(&incomplete, &[4, 16], &[]);
 }
 
 #[test]
@@ -315,7 +313,11 @@ fn repeated_unmatched_wrappers_recover_the_later_complete_call() {
     let malformed = "<|tool_call>call:broken{note:<|\"|>unterminated<|\"|>".repeat(256);
     let input =
         format!("{malformed}<|tool_call>call:get_weather{{city:<|\"|>NYC<|\"|>}}<tool_call|>");
-    assert_both_adapters_at_chunk_sizes(&input, &[4, 16], 1);
+    assert_both_adapters_at_chunk_sizes(
+        &input,
+        &[4, 16],
+        &[("get_weather", serde_json::json!({"city": "NYC"}))],
+    );
 }
 
 /// This cannot be represented by the shared corpus: its assertion is a bound on
@@ -340,35 +342,22 @@ fn repeated_closers_in_an_unterminated_string_resynchronize_in_linear_time() {
                 .collect();
 
             reset_boundary_examined_bytes();
-            let mut tool_only = create_tool_parser_for_family("gemma4", &weather_tools())
-                .expect("Gemma tool-only parser");
-            let mut output = ToolParseResult::default();
-            for chunk in &chunks {
-                output.append(tool_only.push(chunk).expect("tool-only push"));
-            }
-            output.append(tool_only.finish().expect("tool-only finish"));
-            assert!(
-                output.coalesce_calls().calls.is_empty(),
-                "unterminated string cannot recover a call at chunk_size={chunk_size}"
+            let mut tool_only =
+                create_tool_parser_for_family("gemma4", &weather_tools()).expect("tool parser");
+            assert_eq!(
+                drive_tool(tool_only.as_mut(), &chunks),
+                ToolParseResult::default()
             );
             tool_only_scans.push(boundary_examined_bytes());
 
             reset_boundary_examined_bytes();
             let mut unified =
                 dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &weather_tools())
-                    .expect("Gemma unified parser");
+                    .expect("unified parser");
             unified
                 .initialize_request(UnifiedParserInit::default())
                 .expect("native request");
-            let mut events = Vec::new();
-            for chunk in &chunks {
-                events.extend(unified.push(chunk).expect("unified push"));
-            }
-            events.extend(unified.finish().expect("unified finish").events);
-            assert!(
-                assemble(&events).is_empty(),
-                "unterminated string cannot recover unified events at chunk_size={chunk_size}"
-            );
+            assert_eq!(drive_unified(unified.as_mut(), &chunks), vec![]);
             unified_scans.push(boundary_examined_bytes());
         }
 
@@ -381,5 +370,53 @@ fn repeated_closers_in_an_unterminated_string_resynchronize_in_linear_time() {
                 "{adapter} rescanned superlinearly: N={at_n}, 2N={at_2n}, chunk_size={chunk_size}"
             );
         }
+    }
+}
+
+#[test]
+fn ambiguous_recovery_reset_cannot_contaminate_the_next_request() {
+    let ambiguous = concat!(
+        "<|tool_call>call:broken{note:<|\"|>unfinished",
+        "<|tool_call>call:get_weather{city:<|\"|>OLD<|\"|>}<tool_call|>",
+    );
+    for finish_first in [false, true] {
+        let mut parser =
+            dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &weather_tools())
+                .expect("parser");
+        parser
+            .initialize_request(UnifiedParserInit::default())
+            .expect("initialize");
+        assert!(parser.push(ambiguous).expect("push").is_empty());
+        if finish_first {
+            assert_eq!(
+                assemble(&parser.finish().expect("finish").events),
+                vec![UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city": "OLD"}),
+                }]
+            );
+        }
+        parser.reset();
+        parser
+            .initialize_request(UnifiedParserInit::default())
+            .expect("reuse");
+        assert_eq!(
+            drive_unified(
+                parser.as_mut(),
+                &[
+                    "fresh",
+                    "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>"
+                ]
+            ),
+            vec![
+                UnifiedEvent::Text {
+                    text: "fresh".into()
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city": "NYC"})
+                },
+            ]
+        );
     }
 }

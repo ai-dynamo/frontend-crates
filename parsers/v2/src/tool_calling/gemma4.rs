@@ -215,13 +215,7 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
 
     fn resync(&mut self, input: &str, flush: bool, _tool_index: usize) -> Option<usize> {
         if self.resync_cursor > input.len() {
-            self.resync_cursor = 0;
-            self.resync_in_string = false;
-            self.resync_candidate_in_string = false;
-            self.resync_candidate = None;
-            self.resync_candidate_ambiguous = false;
-            self.resync_candidate_context.clear();
-            self.resync_recovery_start = None;
+            self.reset_resynchronizer();
         }
         while self.resync_cursor < input.len() {
             let cursor = self.resync_cursor;
@@ -309,10 +303,7 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                     if rest.starts_with(TOOL_CALL_END) {
                         if self.resync_candidate_ambiguous {
                             self.resync_recovery_start.get_or_insert(start);
-                            self.resync_candidate = None;
-                            self.resync_candidate_ambiguous = false;
-                            self.resync_candidate_in_string = false;
-                            self.resync_candidate_context.clear();
+                            self.clear_recovery_candidate();
                             self.resync_cursor += TOOL_CALL_END.len();
                             count_boundary_bytes(TOOL_CALL_END.len());
                             continue;
@@ -323,10 +314,7 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                         return None;
                     }
                     if !rest.chars().next()?.is_whitespace() {
-                        self.resync_candidate = None;
-                        self.resync_candidate_ambiguous = false;
-                        self.resync_candidate_in_string = false;
-                        self.resync_candidate_context.clear();
+                        self.clear_recovery_candidate();
                     }
                 } else if !self.resync_candidate_in_string {
                     let ch = rest.chars().next()?;
@@ -361,17 +349,25 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
     fn reset(&mut self) {
         self.progress.reset();
         self.candidate.clear();
-        self.resync_cursor = 0;
-        self.resync_in_string = false;
-        self.resync_candidate_in_string = false;
-        self.resync_candidate = None;
-        self.resync_candidate_ambiguous = false;
-        self.resync_candidate_context.clear();
-        self.resync_recovery_start = None;
+        self.reset_resynchronizer();
     }
 }
 
 impl Gemma4InvokeBoundary {
+    fn clear_recovery_candidate(&mut self) {
+        self.resync_candidate = None;
+        self.resync_candidate_ambiguous = false;
+        self.resync_candidate_in_string = false;
+        self.resync_candidate_context.clear();
+    }
+
+    fn reset_resynchronizer(&mut self) {
+        self.clear_recovery_candidate();
+        self.resync_cursor = 0;
+        self.resync_in_string = false;
+        self.resync_recovery_start = None;
+    }
+
     fn advance_candidate_context(&mut self, ch: char) {
         use Gemma4ResyncContext as Context;
 
@@ -787,14 +783,85 @@ mod tests {
         }]
     }
 
-    fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
-        let mut parser = Gemma4ToolStreamParser::new(tools);
+    fn drive_tool(parser: &mut dyn ToolParser, chunks: &[&str]) -> ToolParseResult {
         let mut out = ToolParseResult::default();
         for chunk in chunks {
             out.append(parser.push(chunk).expect("push"));
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
+        drive_tool(&mut Gemma4ToolStreamParser::new(tools), chunks)
+    }
+
+    fn assert_exact_tool_calls(output: ToolParseResult, text: &str, values: &[&str]) {
+        let output = output.coalesce_calls();
+        assert_eq!(output.normal_text, text);
+        let calls: Vec<_> = output
+            .calls
+            .iter()
+            .map(|call| {
+                (
+                    call.tool_index,
+                    call.name.as_deref(),
+                    serde_json::from_str::<serde_json::Value>(&call.arguments).expect("arguments"),
+                    call.complete,
+                )
+            })
+            .collect();
+        let expected: Vec<_> = values
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                (
+                    index,
+                    Some("get_weather"),
+                    serde_json::json!({"location": value}),
+                    true,
+                )
+            })
+            .collect();
+        assert_eq!(calls, expected);
+    }
+
+    #[test]
+    fn ambiguous_recovery_scanner_reset_restarts_tool_adapter_indices() {
+        // ToolParser has no public reset API; its private scanner owns reset.
+        // The adapter's tool indexes/completion are not exposed by UnifiedEvent.
+        let ambiguous = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unfinished",
+            "<|tool_call>call:get_weather{location:<|\"|>OLD<|\"|>}<tool_call|>",
+        );
+        for finish_first in [false, true] {
+            let mut parser = Gemma4ToolStreamParser::new(&weather_tools());
+            assert_exact_tool_calls(
+                ToolParser::push(&mut parser, ambiguous).expect("push"),
+                "",
+                &[],
+            );
+            if finish_first {
+                assert_exact_tool_calls(
+                    ToolParser::finish(&mut parser).expect("finish"),
+                    "",
+                    &["OLD"],
+                );
+            }
+            parser.scanner.reset();
+            assert_exact_tool_calls(
+                drive_tool(
+                    &mut parser,
+                    &[
+                        "fresh",
+                        "<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}<tool_call|>",
+                        "<|tool_call>call:get_weather{location:<|\"|>Paris<|\"|>}<tool_call|>",
+                    ],
+                ),
+                "fresh",
+                &["NYC", "Paris"],
+            );
+        }
     }
 
     #[test]

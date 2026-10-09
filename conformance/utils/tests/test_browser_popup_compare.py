@@ -579,11 +579,10 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
             """)
             assert len(cells) == 8
             for cell in cells:
-                red = cell["family"] in {"gemma4", "deepseek_v41"} or (
-                    version == "dynamo@0.7.13" and cell["family"] == "kimi_k3")
+                red = version == "dynamo@0.7.13" and cell["family"] in {
+                    "gemma4", "deepseek_v41", "kimi_k3"}
                 assert ("cmp-leak" if red else "cmp-eq") in cell["classes"], cell
-                if red:
-                    assert cell["marker"] == "✗", cell
+                assert cell["marker"] == ("✗" if red else "="), cell
     finally:
         _select(driver, "dynamo", [])
         _open_stream_tab(driver)
