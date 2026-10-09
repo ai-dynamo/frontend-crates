@@ -4,6 +4,7 @@
 use anyhow::Context;
 use serde_json::{Map, Value};
 
+use crate::tool_calling::dsml::BLOCK_SEPARATOR;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
     WrappedBlockScanner, WrappedBlockSpec,
@@ -35,12 +36,14 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         preserve_special_tokens: true,
         ..Default::default()
     };
-    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41).with_reasoning(ReasoningSpec {
-        start: "<think>",
-        end: "</think>",
-        preserve_special_tokens: true,
-        ..Default::default()
-    });
+    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41)
+        .with_tool_separator(BLOCK_SEPARATOR, &[INVOKE_START])
+        .with_reasoning(ReasoningSpec {
+            start: "<think>",
+            end: "</think>",
+            preserve_special_tokens: true,
+            ..Default::default()
+        });
     Box::new(GuidedRouted::new(ScannerUnified::new(scanner)))
 }
 
@@ -450,9 +453,6 @@ mod tests {
             vec![
                 UnifiedEvent::Reasoning {
                     text: "Check the tools.\n".into(),
-                },
-                UnifiedEvent::Text {
-                    text: "\n\n".into(),
                 },
                 UnifiedEvent::ToolCall {
                     name: "weather".into(),

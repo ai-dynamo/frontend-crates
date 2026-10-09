@@ -19,6 +19,7 @@ use crate::unified::{
 };
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
+pub(crate) const BLOCK_SEPARATOR: &str = "\n\n";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
 pub(crate) const INVOKE_START_PREFIX: &str = "<｜DSML｜invoke name=\"";
 pub(crate) const INVOKE_END: &str = "</｜DSML｜invoke>";
@@ -67,7 +68,13 @@ pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<Ds
             deepseek_v41::PARAMETER_END.into(),
         ]);
     }
+    let invoke_prefixes: &[&str] = if both_dialects {
+        &[INVOKE_START_PREFIX, deepseek_v41::INVOKE_START]
+    } else {
+        &[INVOKE_START_PREFIX]
+    };
     WrappedBlockScanner::new(spec, DsmlEmitter)
+        .with_tool_separator(BLOCK_SEPARATOR, invoke_prefixes)
 }
 
 pub(crate) struct DsmlEmitter;

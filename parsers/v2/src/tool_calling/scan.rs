@@ -961,6 +961,11 @@ pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &st
     }
 }
 
+struct ToolSeparator {
+    separator: &'static str,
+    prefixed_openers: Vec<String>,
+}
+
 /// The shared buffer-and-scan drain loop for wrapped-invoke grammars.
 ///
 /// Streaming contract (identical to the loops it replaces): natural text
@@ -979,6 +984,7 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     reasoning_forced_start: bool,
     buffer: String,
     prose: ProseControlState,
+    tool_separator: Option<ToolSeparator>,
     /// Raw block bytes consumed before any call delta commits them.
     uncommitted_block: String,
     in_block: bool,
@@ -1007,6 +1013,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             reasoning_forced_start: false,
             buffer: String::new(),
             prose: ProseControlState::default(),
+            tool_separator: None,
             uncommitted_block: String::new(),
             in_block: false,
             in_reasoning: false,
@@ -1017,6 +1024,28 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             invoke_boundary,
             invoke_boundary_len: 0,
         }
+    }
+
+    /// Consume one template separator before native tool openers, retaining it
+    /// across chunk boundaries until the opener is distinguished from text.
+    pub(crate) fn with_tool_separator(
+        mut self,
+        separator: &'static str,
+        bare_invoke_prefixes: &[&str],
+    ) -> Self {
+        let prefixed_openers = self
+            .spec
+            .block_starts
+            .iter()
+            .map(String::as_str)
+            .chain(bare_invoke_prefixes.iter().copied())
+            .map(|opener| format!("{separator}{opener}"))
+            .collect();
+        self.tool_separator = Some(ToolSeparator {
+            separator,
+            prefixed_openers,
+        });
+        self
     }
 
     /// Also own the reasoning channel, making this scanner unified.
@@ -1317,12 +1346,42 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .as_ref()
             .map(|boundary| boundary.bare_invoke_holdback(&self.buffer))
             .unwrap_or_default();
+        let separator = self
+            .tool_separator
+            .as_ref()
+            .filter(|_| !self.in_reasoning && !self.suppress_normal_text)
+            .map(|framing| {
+                marker_prefix_suffix_len(
+                    &self.buffer,
+                    framing.prefixed_openers.iter().map(String::as_str),
+                )
+            })
+            .unwrap_or_default();
         regular
             .max(self.prose.punctuation_holdback(&self.buffer))
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
             .max(bare)
+            .max(separator)
+    }
+
+    fn tool_separator_len_at(&self, at: usize) -> usize {
+        let Some(framing) = self
+            .tool_separator
+            .as_ref()
+            .filter(|_| !self.in_reasoning && !self.suppress_normal_text)
+        else {
+            return 0;
+        };
+        let tail = &self.buffer[at..];
+        let is_tool_opener = self.spec.block_starts.iter().any(|m| tail.starts_with(m))
+            || self.find_invoke_start(tail) == Some(0);
+        if is_tool_opener && self.buffer[..at].ends_with(framing.separator) {
+            framing.separator.len()
+        } else {
+            0
+        }
     }
 
     /// Retain a complete reasoning opener while its optional role label is only
@@ -1467,8 +1526,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 );
                 let (length, waiting, unmatched) = match control {
                     ProseControl::Literal(length) => (length, false, false),
-                    ProseControl::Pending(at) => (at, true, false),
-                    ProseControl::Unmatched(at) => (at, false, true),
+                    ProseControl::Pending(at) => (at - self.tool_separator_len_at(at), true, false),
+                    ProseControl::Unmatched(at) => {
+                        (at - self.tool_separator_len_at(at), false, true)
+                    }
                     ProseControl::Ordinary => (0, false, false),
                 };
                 if length > 0 {
@@ -1744,9 +1805,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             };
 
             if start > 0 {
+                let emit_len = start - self.tool_separator_len_at(start);
                 if !self.suppress_normal_text {
-                    push_run(out, Kind::Text, &self.buffer[..start]);
+                    push_run(out, Kind::Text, &self.buffer[..emit_len]);
                 }
+                self.uncommitted_block
+                    .push_str(&self.buffer[emit_len..start]);
                 self.prose
                     .consume_recovery(&self.buffer[..start], &self.spec.invoke_start);
                 self.buffer.drain(..start);
@@ -1797,6 +1861,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped incomplete bare invoke at EOF"
                             );
                             self.buffer.clear();
+                            self.uncommitted_block.clear();
                         }
                         break;
                     };
@@ -1804,6 +1869,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
                     self.buffer.drain(..end);
+                    self.uncommitted_block.clear();
                     self.reset_invoke_boundary();
                     if let Some(deltas) = emitted {
                         tracing::warn!(
