@@ -24,6 +24,7 @@ import yaml
 
 import markers
 from null_cases import NULL_VARIANTS
+from schema_cases import CONFORMANCE_CASES, schema_case_label
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -59,6 +60,8 @@ UNIFIED_TAX = {
     "local_schema_id_preserves_type": (7, "16"),
     "deepseek_v41_json_invocation_body": ("deepseek", "1"),
     "glm47_reference_type_intersection": ("glm5", "2"),
+    **{f"schema_{case['name']}": (7, schema_case_label(case, unified=True).split("-", 1)[1])
+       for case in CONFORMANCE_CASES},
     # Group 8 — Content / narration position (streamv1.8)
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
