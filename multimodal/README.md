@@ -275,7 +275,29 @@ Three layers, all pinned to bitwise-equality:
    (a systematic skew reads as fluent text; only the benchmark catches it
    end-to-end).
 
-## 5. Roadmap
+## 5. DSV4.1 geometry planning
+
+`models::deepseek_v41::plan_image_grid(width, height, &spec)` returns resized
+dimensions, ViT/LLM grids, and the full `llm_height * (llm_width + 1) + 2`
+placeholder span, including row separators and boundary positions. Supply
+the same resolved `DeepseekV41GeometrySpec` on the frontend and encoder.
+
+The pixel-free planner mirrors [pinned SGLang](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py).
+Invalid inputs/settings and unrepresentable `u32` output dimensions return
+errors. Full pixel processing, registry activation, and frontend/worker
+integration remain separate work.
+
+Regenerate/check the Python-derived fixtures with:
+
+```sh
+python3 multimodal/tests/fixtures/deepseek_v41/generate.py
+python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
+```
+
+The stdlib-only generator executes the pinned source's pure geometry
+functions. Fixture settings are mathematical test inputs, not model defaults.
+
+## 6. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
 for `models::qwen_vl`. What remains:
