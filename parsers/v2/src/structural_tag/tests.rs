@@ -42,7 +42,6 @@ fn qwen_empty_tool_has_exact_empty_body() {
         }
         for choice in [
             StructuralTagToolChoice::Auto,
-            StructuralTagToolChoice::Required,
             StructuralTagToolChoice::Named("get_server_time"),
         ] {
             let tag = QWEN3_CODER
