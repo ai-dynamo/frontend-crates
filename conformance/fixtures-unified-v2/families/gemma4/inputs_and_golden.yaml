@@ -13239,3 +13239,136 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_only_trailing_newlines:
+    lifecycle: active
+    scenario: text_only_trailing_newlines
+    description: Plain content keeps trailing newlines when no tool opener follows
+    policy:
+    - I7
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: 'Plain content.
+
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Plain content.
+
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Plain content.
+
+
+          '
+  arg_separator_and_native_opener_literal:
+    lifecycle: active
+    scenario: arg_separator_and_native_opener_literal
+    description: String argument preserves two LFs and its family's opener literally
+    policy:
+    - I7
+    display_id: UNIFIED.7-26
+    historical_ids: []
+    request:
+      input: '<|tool_call>call:schema_probe{value:<|"|>before
+
+
+        <|tool_call>
+
+
+        after<|"|>}<tool_call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <|tool_call>
+      - delta_text: 'call:schema_probe{value:'
+      - delta_text: <|"|>
+      - delta_text: 'before
+
+
+          '
+      - delta_text: <|tool_call>
+      - delta_text: '
+
+
+          after'
+      - delta_text: <|"|>
+      - delta_text: '}'
+      - delta_text: <tool_call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'before
+
+
+            <|tool_call>
+
+
+            after'

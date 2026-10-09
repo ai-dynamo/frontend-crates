@@ -18252,3 +18252,164 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_only_trailing_newlines:
+    lifecycle: active
+    scenario: text_only_trailing_newlines
+    description: Plain content keeps trailing newlines when no tool opener follows
+    policy:
+    - I7
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>Plain content.
+
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: 'Plain content.
+
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Plain content.
+
+
+          '
+  arg_separator_and_native_opener_literal:
+    lifecycle: active
+    scenario: arg_separator_and_native_opener_literal
+    description: String argument preserves two LFs and its family's opener literally
+    policy:
+    - I7
+    display_id: UNIFIED.7-26
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
+
+        <atem:invoke name="schema_probe">
+
+        <atem:parameter name="value">before
+
+
+        <|start|>
+
+
+        after</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=schema_probe
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="schema_probe">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 'before
+
+
+          '
+      - delta_text: <|start|>
+      - delta_text: '
+
+
+          after'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'before
+
+
+            <|start|>
+
+
+            after'

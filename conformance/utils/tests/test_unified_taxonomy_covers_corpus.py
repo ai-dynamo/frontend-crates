@@ -380,6 +380,7 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
                         "init": case["init"],
                         "golden": case["golden"],
                         "tools": case.get("tools"),
+                        "input_chunks": case.get("input_chunks"),
                     },
                     sort_keys=True,
                 )
@@ -781,24 +782,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 114,
-            "deepseek_v41": 114,
-            "gemma4": 115,
-            "glm47": 117,
-            "kimi_k2": 113,
-            "kimi_k3": 121,
-            "muse_glimmer": 117,
-            "qwen3": 114,
+            "deepseek_v4": 125,
+            "deepseek_v41": 125,
+            "gemma4": 117,
+            "glm47": 119,
+            "kimi_k2": 115,
+            "kimi_k3": 123,
+            "muse_glimmer": 119,
+            "qwen3": 116,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 925 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 959 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 134 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 145 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1069,6 +1070,8 @@ def _family_value(scenario, family):
         return f"The literal `{header}` header is part of the explanation."
     if scenario == "deepseek_v41_mixed_control_text_in_string":
         return G._MIXED_CONTROL_STRINGS[family]
+    if scenario == "arg_separator_and_native_opener_literal":
+        return G._ARG_FRAMING_VALUES[family]
     if scenario == "arg_marker_in_string":
         close = {
             "deepseek_v4": "</｜DSML｜invoke>",

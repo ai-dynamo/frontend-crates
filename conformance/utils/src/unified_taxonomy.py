@@ -27,6 +27,14 @@ from null_cases import NULL_VARIANTS
 from schema_cases import CONFORMANCE_CASES, schema_case_label
 
 UNIFIED_TAX = {
+    "text_only_trailing_newlines": (3, "2"),
+    "arg_separator_and_native_opener_literal": (7, "26"),
+    **{name: ("dsml", str(i)) for i, name in enumerate([
+        "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",
+        "dsml_empty_content_separator", "dsml_bare_invoke_two_lf",
+        "dsml_bare_invoke_four_lf", "dsml_whitespace_content_separator",
+        "dsml_separator_split_lf", "dsml_separator_token_chunk",
+    ], 1)},
     # Group 1 — Single call
     "tool_only": (1, "1"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
@@ -172,6 +180,7 @@ UNIFIED_TAX = {
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
 UNIFIED_GROUP_LABEL = {
+    "dsml": "DSML framing",
     1: "TC Single call", 2: "TC Multiple calls", 3: "TC No call",
     4: "TC Malformed envelope", 5: "TC Truncation / recovery", 6: "TC Empty body",
     7: "TC Argument fidelity", 8: "TC Content position",

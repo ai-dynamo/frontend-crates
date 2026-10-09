@@ -49,6 +49,12 @@
 # reads the declared type and coerces correctly.
 
 deepseek_v4:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: &svb-no-tool-trailing-lf >-
+      No tool opener is present: v2 preserves the two trailing LF bytes in
+      "Plain content.\n\n"; v1 batch applies its existing outer whitespace
+      trim and returns "Plain content.". This preserves each generation's
+      existing no-tool text contract.
   TOOLCALLING.batch.2.b:
     stream_vs_batch: &svb-surrounding-text >-
       v2 (stream) preserves the model's prose AROUND tool calls verbatim —
@@ -62,8 +68,6 @@ deepseek_v4:
       Bare-call recovery: v2 recovers the un-wrapped invoke and keeps the
       separator/prefix text; the strict v1 batch path drops the call or trims
       the text. Intended.
-  TOOLCALLING.batch.5.g:
-    stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.c:
@@ -99,6 +103,8 @@ deepseek_v4:
     stream_vs_batch: *svb-literal-whitespace
 
 gemma4:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: *svb-no-tool-trailing-lf
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.5.g:
@@ -115,6 +121,8 @@ gemma4:
     stream_vs_batch: *svb-whitespace-only
 
 glm47:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: *svb-no-tool-trailing-lf
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.4.d:
@@ -149,6 +157,11 @@ glm47:
       string.
 
 harmony:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: >-
+      Bare prose has no Harmony framing: v2 preserves "Plain content.\n\n"
+      verbatim, while v1 batch returns "" because it requires a framed
+      assistant channel. This is the existing raw-text recovery difference.
   TOOLCALLING.batch.3:
     stream_vs_batch: >-
       Bare-prose answer with no Harmony framing: v2 passes the user's whole
@@ -162,6 +175,8 @@ harmony:
     stream_vs_batch: *svb-surrounding-text
 
 kimi_k2:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: *svb-no-tool-trailing-lf
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.5.g:
@@ -196,6 +211,8 @@ kimi_k3:
     stream_vs_batch: *svb-kimi-channels
 
 minimax_m2:
+  TOOLCALLING.batch.3.a:
+    stream_vs_batch: *svb-no-tool-trailing-lf
   TOOLCALLING.batch.2.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.2.c:

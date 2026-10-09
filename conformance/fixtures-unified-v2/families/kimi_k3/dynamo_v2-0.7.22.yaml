@@ -1,0 +1,101 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+    source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+document:
+  mode: unified
+changes:
+  arg_separator_and_native_opener_literal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'before
+
+
+              <|open|>
+
+
+              after'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"before\n\n<|open|>\n\nafter"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: aaccbf9bad777dc65a1f68e1b6b7fd5c2846dc4b74df05902b7cf439337a0968
+    case_key: UNIFIED.7-26
+  text_only_trailing_newlines:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Plain content.
+
+
+            '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Plain content.
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: c0e447c036e0eeac558f44ffb207ee9bc93671f51ae12a7610890192f5db7d4d
+    case_key: UNIFIED.3-2
+metadata_changes: {}
+document_overrides:
+  arg_separator_and_native_opener_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  text_only_trailing_newlines:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null

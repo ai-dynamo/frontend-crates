@@ -148,7 +148,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 228 of the 248 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 239 of the 259 taxonomy cases for this family.
 - Generated cases include `30-13`, the single-family `deepseek-1` case, Guided Decoding cases `31-1` through `35-4` except `muse-1` and `35-5`, the marker-discriminating Response row `50-4`, and `40-1` through `40-6` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
 - The 20 omitted cases are `kimi-1` through `kimi-8`, `gemma-1` through `gemma-2`, `glm5-1` and `glm5-2`, `7-4.mixed_labels`, `7-4.ref`, `7-5.ref`, `35-5`, and `muse-1` through `muse-4`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-5` tests DeepSeek V4's rejected-header quote ownership. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
@@ -438,3 +438,27 @@ Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`,
 All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
+
+## DSML framing and shared preservation controls (PR #314)
+
+The `dsml` group applies to native DeepSeek V4 and V4.1. V4.1 uses its spaced
+`<｜DSML｜ calls>` grammar. Each recognized calls block or recovered bare invoke
+consumes exactly one immediately preceding `\n\n`, preserving all other content.
+The oracle is authored independently of live captures.
+
+- **`dsml-1`** Prose plus two LFs plus outer block yields prose.
+- **`dsml-2`** Prose plus four LFs plus outer block preserves two LFs.
+- **`dsml-3`** Adjacent block leaves prose unchanged.
+- **`dsml-4`** Empty content plus two LFs plus block emits no content.
+- **`dsml-5`** Bare invocation after prose and two LFs yields prose.
+- **`dsml-6`** Bare invocation after prose and four LFs preserves two LFs.
+- **`dsml-7`** Whitespace-only four-LF prefix preserves two LFs.
+- **`dsml-8`** Separator LFs arrive separately before a partial opener.
+- **`dsml-9`** Token-shaped `.\n\n` chunk arrives before a partial opener.
+- **`3-2`** All native Unified families preserve trailing LFs when no tool opener follows. Legacy tool-only captures continue to show their established implementation trimming policies.
+- **`7-26`** All native families preserve LFs and their own opener in a string argument.
+
+`dsml-8` and `dsml-9` carry explicit `input_chunks` through generation, storage,
+capture, and replay. Historical v2 0.7.19 measurements demonstrate the framing
+bug; inserting this new checkpoint preserves resolved 0.7.20 observations and
+its unmeasured new-case cells. Current measurements use unpublished 0.7.22.

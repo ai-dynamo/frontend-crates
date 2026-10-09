@@ -2356,6 +2356,53 @@ for _schema_probe in CONFORMANCE_CASES:
     ))
 
 
+
+# DSML renderers insert exactly one two-LF separator before an outer calls block.
+# Bare invocation recovery uses the same exact-pair framing rule.
+_DSML_FRAMING = [
+    ("dsml_separator_two_lf", "Exactly one two-LF template separator after prose", "I will check the weather.", "\n\n", False),
+    ("dsml_separator_four_lf", "Four LFs preserve the two belonging to prose", "I will check the weather.\n\n", "\n\n", False),
+    ("dsml_no_separator", "Adjacent calls block does not remove content", "I will check the weather.", "", False),
+    ("dsml_empty_content_separator", "Empty content followed by the two-LF template separator", "", "\n\n", False),
+    ("dsml_bare_invoke_two_lf", "Bare invocation consumes exactly one two-LF separator", "I will check the weather.", "\n\n", True),
+    ("dsml_bare_invoke_four_lf", "Bare invocation preserves the two LFs belonging to prose", "I will check the weather.\n\n", "\n\n", True),
+    ("dsml_whitespace_content_separator", "Whitespace-only content preserves its two LFs", "\n\n", "\n\n", False),
+]
+_DSML_FAMILIES = ("deepseek_v4", "deepseek_v41")
+_DSML_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+_DSML_CALL_GOLDEN = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "NYC"}}]
+for _scenario, _description, _content, _separator, _bare in _DSML_FRAMING:
+    _inputs = {}
+    for _family in _DSML_FAMILIES:
+        _wire = r_tool(_family, "get_weather", "location", "NYC", 0)
+        if _bare:
+            _wire = _wire[_wire.index(">") + 1:_wire.rindex("</｜DSML｜")]
+        _inputs[_family] = (_content + _separator + _wire, D("UNSUPPORTED", "DSML framing scope"), M)
+    EDGE.append((_scenario, _description, ["I7"],
+                 ([{"kind": "text", "text": _content}] if _content else []) + _DSML_CALL_GOLDEN,
+                 _DSML_INIT, OnlyFamilies(_inputs)))
+for _scenario, _description, _prefix_chunks in [
+    ("dsml_separator_split_lf", "Separator LFs and the calls opener arrive in separate chunks", ["I will check the weather.", "\n", "\n"]),
+    ("dsml_separator_token_chunk", "Punctuation and separator share a token-shaped chunk before a partial opener", ["I will check the weather", ".\n\n"]),
+]:
+    _inputs, _chunks = {}, {}
+    for _family in _DSML_FAMILIES:
+        _wire = r_tool(_family, "get_weather", "location", "NYC", 0)
+        _opener_end = _wire.index(">") + 1
+        _chunks[_family] = _prefix_chunks + [_wire[:_opener_end - 3], _wire[_opener_end - 3:]]
+        _inputs[_family] = ("".join(_chunks[_family]), D("UNSUPPORTED", "DSML framing scope"), M)
+    EDGE.append((_scenario, _description, ["I7"],
+                 [{"kind": "text", "text": "I will check the weather."}] + _DSML_CALL_GOLDEN,
+                 _DSML_INIT, {"input_chunks": _chunks}, OnlyFamilies(_inputs)))
+EDGE.append(("text_only_trailing_newlines", "Plain content keeps trailing newlines when no tool opener follows", ["I7"],
+             [{"kind": "text", "text": "Plain content.\n\n"}], _DSML_INIT,
+             OnlyFamilies({f: (r_text(f, "Plain content.\n\n"), M, M) for f in FAMILIES})))
+_ARG_FRAMING_VALUES = {f: "before\n\n" + r_tool(f, "get_weather", "location", "NYC", 0).split(">", 1)[0] + ">\n\nafter" for f in FAMILIES}
+EDGE.append(("arg_separator_and_native_opener_literal", "String argument preserves two LFs and its family's opener literally", ["I7"],
+             [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": None}}], _DSML_INIT,
+             {}, OnlyFamilies({f: (r_tool(f, "schema_probe", "value", _ARG_FRAMING_VALUES[f], 0), M, M, _ARG_FRAMING_VALUES[f]) for f in FAMILIES}),
+             [{"name": "schema_probe", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}}]))
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -2478,7 +2525,13 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
-        if stream_config.get("single_chunk"):
+        if "input_chunks" in stream_config:
+            chunks = stream_config["input_chunks"]
+            chunks = chunks[fam] if isinstance(chunks, dict) else chunks
+            if not all(isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != inp:
+                raise ValueError(f"{cid}: explicit input_chunks must concatenate to input")
+            case["input_chunks"] = list(chunks)
+        elif stream_config.get("single_chunk"):
             case["input_chunks"] = [inp]
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
@@ -2507,7 +2560,7 @@ def scenario_families(scenario):
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
 
-# --- YAML emitter: `input` as a block literal, everything else as inline JSON
+# --- YAML emitter: literal input, quoted when trailing newlines need preserving
 # (valid YAML, and json.dumps escapes the marker-heavy strings safely). --------
 
 def emit_yaml(fam):
@@ -2539,9 +2592,13 @@ def emit_yaml(fam):
         # was measuring a different input than the one authored. `2` is the content
         # indentation relative to this mapping node, and the trailing `-` keeps the
         # existing strip-final-newline behaviour.
-        lines.append("    input: |2-")
-        for ln in c["input"].split("\n"):
-            lines.append(f"      {ln}")
+        if c["input"].endswith("\n"):
+            # Strip chomping would silently change a trailing-newline stimulus.
+            lines.append(f"    input: {json.dumps(c['input'], ensure_ascii=False)}")
+        else:
+            lines.append("    input: |2-")
+            for ln in c["input"].split("\n"):
+                lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")
         if "input_chunks" in c:

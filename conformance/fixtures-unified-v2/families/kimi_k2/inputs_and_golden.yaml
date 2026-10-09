@@ -13071,3 +13071,124 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_only_trailing_newlines:
+    lifecycle: active
+    scenario: text_only_trailing_newlines
+    description: Plain content keeps trailing newlines when no tool opener follows
+    policy:
+    - I7
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: 'Plain content.
+
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Plain content.
+
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Plain content.
+
+
+          '
+  arg_separator_and_native_opener_literal:
+    lifecycle: active
+    scenario: arg_separator_and_native_opener_literal
+    description: String argument preserves two LFs and its family's opener literally
+    policy:
+    - I7
+    display_id: UNIFIED.7-26
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.schema_probe:0<|tool_call_argument_begin|>{"value": "before\n\n<|tool_calls_section_begin|>\n\nafter"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.schema_probe:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"value": "before\n\n'
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: \n\nafter"}
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'before
+
+
+            <|tool_calls_section_begin|>
+
+
+            after'

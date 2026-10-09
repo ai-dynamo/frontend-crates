@@ -1,0 +1,103 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+    source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+document:
+  mode: unified
+changes:
+  arg_separator_and_native_opener_literal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'before
+
+
+              <tool_call>
+
+
+              after'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"before\n'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: \n<tool_call>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: \n\nafter
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: f82af9a079e3f91925e7f248c02f4b7114462409fe464fcd165960aabf76b029
+    case_key: UNIFIED.7-26
+  text_only_trailing_newlines:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Plain content.
+
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Plain content.
+
+
+              '
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 71d791dc5264377ade0ef3a4744fa0998a05be668ca95e692a4bc71c5b90dd4a
+    case_key: UNIFIED.3-2
+metadata_changes: {}
+document_overrides:
+  arg_separator_and_native_opener_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  text_only_trailing_newlines:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null

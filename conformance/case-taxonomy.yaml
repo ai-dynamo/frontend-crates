@@ -56,6 +56,7 @@ suites:
         required: true
         cases:
           "": {desc: No tool call (plain text passthrough), required: true}
+          a: {desc: Plain content with trailing newlines and no tool opener, required: false}
       "4":
         title: Malformed call bodies
         required: true
@@ -88,6 +89,7 @@ suites:
         title: Argument type and shape edges
         required: true
         cases:
+          x: {desc: String argument preserves two LFs and its native opener literally, required: false}
           a: {desc: Standard scalar types (string + int + bool), required: true}
           b: {desc: Unicode + escaped characters in a string value, required: true}
           c: {desc: Schema mismatch — string value where schema declares integer, required: true}
@@ -245,6 +247,13 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          e: {desc: Exactly one two-LF separator after prose, required: false}
+          f: {desc: Four LFs preserve the two belonging to prose, required: false}
+          g: {desc: Adjacent tool block leaves content unchanged, required: false}
+          h: {desc: Empty content with two-LF separator, required: false}
+          i: {desc: Bare invocation consumes exactly one two-LF separator, required: false}
+          j: {desc: Bare invocation preserves the two LFs belonging to prose, required: false}
+          k: {desc: Whitespace-only content preserves its two LFs, required: false}
       "9":
         title: Empty / blank input
         required: true
@@ -312,6 +321,7 @@ suites:
         required: true
         cases:
           "": {desc: No tool call (plain text passthrough), required: true}
+          a: {desc: Plain content with trailing newlines and no tool opener, required: false}
       "4":
         title: Malformed call bodies
         required: true
@@ -345,6 +355,7 @@ suites:
         title: Argument type and shape edges
         required: true
         cases:
+          x: {desc: String argument preserves two LFs and its native opener literally, required: false}
           a: {desc: Standard scalar types (string + int + bool), required: true}
           b: {desc: Unicode + escaped characters in a string value, required: true}
           c: {desc: Schema mismatch — string value where schema declares integer, required: false}
@@ -501,6 +512,13 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          e: {desc: Exactly one two-LF separator after prose, required: false}
+          f: {desc: Four LFs preserve the two belonging to prose, required: false}
+          g: {desc: Adjacent tool block leaves content unchanged, required: false}
+          h: {desc: Empty content with two-LF separator, required: false}
+          i: {desc: Bare invocation consumes exactly one two-LF separator, required: false}
+          j: {desc: Bare invocation preserves the two LFs belonging to prose, required: false}
+          k: {desc: Whitespace-only content preserves its two LFs, required: false}
       "9":
         title: Empty / blank input
         required: true
@@ -543,6 +561,8 @@ suites:
         required: true
         cases:
           "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
+          b: {desc: Separator LFs and opener split across chunks, required: false}
+          c: {desc: Punctuation and separator share a chunk before a partial opener, required: false}
       "51":
         title: Tool-only reasoning projection
         required: false

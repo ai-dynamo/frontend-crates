@@ -16239,3 +16239,154 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_only_trailing_newlines:
+    lifecycle: active
+    scenario: text_only_trailing_newlines
+    description: Plain content keeps trailing newlines when no tool opener follows
+    policy:
+    - I7
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: '<|open|>response<|sep|>Plain content.
+
+
+        <|close|>response<|sep|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: 'Plain content.
+
+
+          '
+      - delta_text: <|close|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Plain content.
+
+
+          '
+  arg_separator_and_native_opener_literal:
+    lifecycle: active
+    scenario: arg_separator_and_native_opener_literal
+    description: String argument preserves two LFs and its family's opener literally
+    policy:
+    - I7
+    display_id: UNIFIED.7-26
+    historical_ids: []
+    request:
+      input: '<|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>before
+
+
+        <|open|>
+
+
+        after<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="schema_probe" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="value" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'before
+
+
+          '
+      - delta_text: <|open|>
+      - delta_text: '
+
+
+          after'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'before
+
+
+            <|open|>
+
+
+            after'

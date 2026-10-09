@@ -793,3 +793,20 @@ Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`,
 All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
+
+## DSML separator framing (PR #314)
+
+DeepSeek V3.2 and V4 fixtures use their native DSML envelopes. Each recognized
+outer block or recovered bare invocation consumes exactly one immediately
+preceding `\n\n`; excess newlines are visible content. Existing case IDs and
+historical captures retain their original inputs and measured outputs.
+
+- **`TOOLCALLING.batch.8.e`** Prose followed by two LFs and an outer block yields prose.
+- **`TOOLCALLING.batch.8.f`** Prose followed by four LFs and an outer block preserves two LFs.
+- **`TOOLCALLING.batch.8.g`** An adjacent block does not remove content.
+- **`TOOLCALLING.batch.8.h`** Empty content followed by two LFs and a block emits no content.
+- **`TOOLCALLING.batch.8.i`** Prose followed by two LFs and a bare invoke yields prose.
+- **`TOOLCALLING.batch.8.j`** Prose followed by four LFs and a bare invoke preserves two LFs.
+- **`TOOLCALLING.batch.8.k`** Four LFs followed by a block preserve two LFs of whitespace-only content.
+- **`TOOLCALLING.batch.3.a`** No-call trailing-LF control; existing implementation trimming policies remain observable.
+- **`TOOLCALLING.batch.7.x`** Two LFs and a native opener inside a string argument remain data.

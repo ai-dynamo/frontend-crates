@@ -1,0 +1,441 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+    source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+document:
+  mode: unified
+changes:
+  arg_separator_and_native_opener_literal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'before
+
+
+              <｜DSML｜ calls>
+
+
+              after'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"before\n\n<｜DSML｜ calls>\n\nafter"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 1fe158f95084a35b027b0918323ff339e7b2226611b581bfaa41d581b9ab9abd
+    case_key: UNIFIED.7-26
+  dsml_bare_invoke_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check the weather.
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: e326a4e0915b53cb6e112b37be3a1fc869af09ea47ab01a252dba99a16aacbe2
+    case_key: UNIFIED.dsml-6
+  dsml_bare_invoke_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 09831d2b2b05a13f4f5889926d261daf44f204d46a8f9433b50cae7744c4df42
+    case_key: UNIFIED.dsml-5
+  dsml_empty_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: facb4fb4de40bc3f6fc273e01a005995608c7a215c5941adfb3952859870cc10
+    case_key: UNIFIED.dsml-4
+  dsml_no_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 8a4c1d0c9165a03ef4605eec593fb1dec7b712a190c562a8a46a26deb4dfa08c
+    case_key: UNIFIED.dsml-3
+  dsml_separator_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check the weather.
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: d164f9d9a24ec59def304996d248ad21079cec2642ca6b5269884d87bbbabe43
+    case_key: UNIFIED.dsml-2
+  dsml_separator_split_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 9b5dd009ab7016716ef9481783320a313b6540ef98c928eb949745615492d285
+    case_key: UNIFIED.dsml-8
+  dsml_separator_token_chunk:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather
+        - expected:
+          - kind: text
+            text: .
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 6943e36eb79f48211c9ed9e5efd34d2dfbb82c6acd32abe7ee46d4990cc3c05c
+    case_key: UNIFIED.dsml-9
+  dsml_separator_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: 8a9d2e450552a85189afca8a172e25367624393b5322938cfeaab31140907a8b
+    case_key: UNIFIED.dsml-1
+  dsml_whitespace_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            complete: true
+        - expected: []
+        - expected: []
+    stimulus:
+      ref: current
+      semantic_sha256: d86836476acb16df1795ec42298d8bcb07cbc6fa6a666a3dfe5c63e4670718ad
+    case_key: UNIFIED.dsml-7
+  text_only_trailing_newlines:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Plain content.
+
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: Plain content.
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+    stimulus:
+      ref: current
+      semantic_sha256: 71d791dc5264377ade0ef3a4744fa0998a05be668ca95e692a4bc71c5b90dd4a
+    case_key: UNIFIED.3-2
+metadata_changes: {}
+document_overrides:
+  arg_separator_and_native_opener_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_bare_invoke_four_lf:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_bare_invoke_two_lf:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_empty_content_separator:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_no_separator:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_separator_four_lf:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_separator_split_lf:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_separator_token_chunk:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_separator_two_lf:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  dsml_whitespace_content_separator:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null
+  text_only_trailing_newlines:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 918e79acc964ba1d85c3d319eb9eb4460aa086cc1ff70c493e988087417131e7
+        git_commit: e87fe7cbb7639376636475f8cca2bb455f2ff718
+      inherited_from: null

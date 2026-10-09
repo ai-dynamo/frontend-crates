@@ -260,7 +260,7 @@ def _build_family_to_rust_ref() -> dict[str, tuple[str, int]]:
 
 BATCH_SUB_CASE_GROUPS = [
     ("Single-call", ("1.a", "1.b", "1.c", "1.d")),
-    ("Core", ("1", "3", "9", "9.a", "9.b")),
+    ("Core", ("1", "3", "3.a", "9", "9.a", "9.b")),
     ("Multi-call", ("2.a", "2.b", "2.c", "2.d", "2.e", "10")),
     (
         "Malformed / recovery",
@@ -316,10 +316,10 @@ BATCH_SUB_CASE_GROUPS = [
             "7.l",
             "7.m",
             "7.n",
-            "7.o", "7.p", "7.q", "7.r", "7.s", "7.t", "7.u", "7.v", "7.w",
+            "7.o", "7.p", "7.q", "7.r", "7.s", "7.t", "7.u", "7.v", "7.w", "7.x",
         ),
     ),
-    ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
+    ("Text interleaving", ("8.a", "8.b", "8.c", "8.d", "8.e", "8.f", "8.g", "8.h", "8.i", "8.j", "8.k")),
     ("Unknown tools", ("13", "13.a", "13.c")),
     (
         "String contents",
@@ -343,7 +343,7 @@ SPLIT_PARENT_SUBCASES = {
 # tab. Only sub-cases that actually exist in fixtures become columns; the rest
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
-    ("Partial-token", ("50",)),
+    ("Partial-token", ("50", "50.b", "50.c")),
     ("Reasoning projection", ("51.a", "51.b")),
 ]
 

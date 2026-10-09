@@ -13090,3 +13090,877 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_only_trailing_newlines:
+    lifecycle: active
+    scenario: text_only_trailing_newlines
+    description: Plain content keeps trailing newlines when no tool opener follows
+    policy:
+    - I7
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: 'Plain content.
+
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Plain content.
+
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Plain content.
+
+
+          '
+  arg_separator_and_native_opener_literal:
+    lifecycle: active
+    scenario: arg_separator_and_native_opener_literal
+    description: String argument preserves two LFs and its family's opener literally
+    policy:
+    - I7
+    display_id: UNIFIED.7-26
+    historical_ids: []
+    request:
+      input: '<｜DSML｜tool_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">before
+
+
+        <｜DSML｜tool_calls>
+
+
+        after</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+      chunks:
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="schema_probe">
+      - delta_text: <｜DSML｜parameter name="value" string="true">
+      - delta_text: 'before
+
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: '
+
+
+          after'
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'before
+
+
+            <｜DSML｜tool_calls>
+
+
+            after'
+  dsml_separator_two_lf:
+    lifecycle: active
+    scenario: dsml_separator_two_lf
+    description: Exactly one two-LF template separator after prose
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-1
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I will check the weather.
+
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I will check the weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_separator_four_lf:
+    lifecycle: active
+    scenario: dsml_separator_four_lf
+    description: Four LFs preserve the two belonging to prose
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-2
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I will check the weather.
+
+
+
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'I will check the weather.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_no_separator:
+    lifecycle: active
+    scenario: dsml_no_separator
+    description: Adjacent calls block does not remove content
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-3
+    historical_ids: []
+    request:
+      input: I will check the weather.<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: I will check the weather.
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I will check the weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_empty_content_separator:
+    lifecycle: active
+    scenario: dsml_empty_content_separator
+    description: Empty content followed by the two-LF template separator
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-4
+    historical_ids: []
+    request:
+      input: '
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_bare_invoke_two_lf:
+    lifecycle: active
+    scenario: dsml_bare_invoke_two_lf
+    description: Bare invocation consumes exactly one two-LF separator
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-5
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+        <｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I will check the weather.
+
+
+          '
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I will check the weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_bare_invoke_four_lf:
+    lifecycle: active
+    scenario: dsml_bare_invoke_four_lf
+    description: Bare invocation preserves the two LFs belonging to prose
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-6
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+
+
+        <｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I will check the weather.
+
+
+
+
+          '
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'I will check the weather.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_whitespace_content_separator:
+    lifecycle: active
+    scenario: dsml_whitespace_content_separator
+    description: Whitespace-only content preserves its two LFs
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-7
+    historical_ids: []
+    request:
+      input: '
+
+
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+
+
+
+          '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="location" string="true">
+      - delta_text: NYC
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_separator_split_lf:
+    lifecycle: active
+    scenario: dsml_separator_split_lf
+    description: Separator LFs and the calls opener arrive in separate chunks
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-8
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: I will check the weather.
+      - delta_text: '
+
+          '
+      - delta_text: '
+
+          '
+      - delta_text: <｜DSML｜tool_cal
+      - delta_text: ls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I will check the weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+  dsml_separator_token_chunk:
+    lifecycle: active
+    scenario: dsml_separator_token_chunk
+    description: Punctuation and separator share a token-shaped chunk before a partial opener
+    policy:
+    - I7
+    display_id: UNIFIED.dsml-9
+    historical_ids: []
+    request:
+      input: 'I will check the weather.
+
+
+        <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: I will check the weather
+      - delta_text: '.
+
+
+          '
+      - delta_text: <｜DSML｜tool_cal
+      - delta_text: ls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I will check the weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
