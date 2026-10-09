@@ -4077,7 +4077,7 @@ impl GuidedState {
                     // not the beginning of the JSON payload. Requiring a
                     // whitespace-only prefix here meant a turn that said anything
                     // before it began thinking (`content_then_reason`, the shape
-                    // `UNIFIED.11-6`/`11-7` pin natively) fell through to the payload
+                    // `UNIFIED.11-content_then_reason_then_tool`/`11-7` pin natively) fell through to the payload
                     // buffer, latched VisibleOnly, and then surfaced the markers AND
                     // the model's private thinking to the user as the answer, with the
                     // call never emitted.
@@ -5118,7 +5118,7 @@ fn warn_if_named_payload_looks_like_an_envelope(
 /// streaming contract uses ([`parse_required_guided_elements`]). Two copies of this
 /// judgement would let the two recovery modes disagree about the same bytes.
 fn convert_guided_call(call: GuidedToolCall) -> Option<GuidedCall> {
-    // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6-1`
+    // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6-empty_args`
     // already fixes that semantic on the native path — same tool, no parameter
     // block, golden `arguments: {}` — so voiding it here made guided disagree with
     // native on an identical shape and made a parameterless tool uncallable. What

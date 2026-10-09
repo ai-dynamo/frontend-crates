@@ -1086,6 +1086,24 @@ def _case_document(metadata: dict, family: str, case_key: str, record: dict) -> 
     return {**metadata, "family": family, "cases": {case_key: record}}
 
 
+def migrate_descriptive_ids(store_root: Path) -> list[Path]:
+    """Change active display metadata, retaining capture bytes and published aliases."""
+    def migrate(store: Store) -> None:
+        for family in store.families.values():
+            for case in family.cases.values():
+                if case["lifecycle"] != "active":
+                    continue
+                old_id = case["display_id"]
+                new_id = fixture_disposition.canonical_unified_case_key(
+                    family.name, old_id, case["scenario"],
+                )
+                if old_id != new_id:
+                    case["historical_ids"] = sorted(set(case["historical_ids"]) | {old_id})
+                    case["display_id"] = new_id
+
+    return _mutate_store(store_root, migrate)
+
+
 def _materialized_case_path(
     destination: Path,
     directory: str,
@@ -1976,6 +1994,7 @@ def main(argv: list[str] | None = None) -> None:
     action.add_argument("--validate", action="store_true")
     action.add_argument("--update-from-loose", action="store_true")
     action.add_argument("--sync-current-corpus", action="store_true")
+    action.add_argument("--migrate-descriptive-ids", action="store_true")
     parser.add_argument("--store", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--history-only", action="store_true")
@@ -1985,7 +2004,9 @@ def main(argv: list[str] | None = None) -> None:
         help="retire active cases omitted from a complete loose corpus",
     )
     args = parser.parse_args(argv)
-    if args.materialize:
+    if args.migrate_descriptive_ids:
+        print(json.dumps([str(path) for path in migrate_descriptive_ids(args.store)], indent=2))
+    elif args.materialize:
         if args.output is None:
             parser.error("--materialize requires --output")
         materialize_store(args.store, args.output, include_current_inputs=not args.history_only)

@@ -715,7 +715,7 @@
 
   function columnGrammarModel(tab, col) {
     var rows = [];
-    var caseId = null;   // numbered id (e.g. "UNIFIED.7-2") — the cells' own id, not the slug
+    var caseId = null;   // canonical ID from the cell, independent of its scenario slug
     var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
     (tab.rows || []).forEach(function (row) {
       if (!row || row.section) { return; }              // section banners are not families
@@ -1141,7 +1141,7 @@
       + '<label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>'
       + '<button type="button" class="theme-toggle" data-theme-toggle'
       + ' title="Switch between light and dark">' + THEME_GLYPH[currentTheme()] + '</button>'
-      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>'
+      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle checked> Transpose</label>'
       + '<button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>'
       + '</span></div>';
     var tmp = document.createElement('div');

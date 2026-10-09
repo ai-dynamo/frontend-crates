@@ -66,6 +66,26 @@ def _write_family(root: Path) -> None:
     )
 
 
+def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):
+    _write_family(tmp_path)
+    family_path = tmp_path / "families/gemma4/inputs_and_golden.yaml"
+    before = unified_history.load_yaml(family_path)
+    before["cases"]["text_only"]["display_id"] = "UNIFIED.3-1"
+    family_path.write_text(unified_history.dump_yaml(before))
+    capture = _write_capture(tmp_path, "0.6.0", {"text_only": {
+        **_change(), "case_key": "UNIFIED.3-1",
+    }})
+    capture_bytes = capture.read_bytes()
+    assert unified_history.migrate_descriptive_ids(tmp_path) == [family_path]
+    after = unified_history.load_yaml(family_path)
+    expected = copy.deepcopy(before)
+    expected["cases"]["text_only"]["display_id"] = "UNIFIED.3-text_only"
+    expected["cases"]["text_only"]["historical_ids"] = ["UNIFIED.3-1"]
+    assert after == expected
+    assert capture.read_bytes() == capture_bytes
+    assert unified_history.migrate_descriptive_ids(tmp_path) == []
+
+
 def _write_capture(
     root: Path,
     version: str,

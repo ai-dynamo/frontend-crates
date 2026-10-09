@@ -56,7 +56,7 @@ def _chrome(rendered_page, force_hover):
         pytest.skip(f"could not start Chrome webdriver: {exc}")
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    d.get(f"file://{rendered_page}")
+    d.get(f"file://{rendered_page}?transpose=0")
     d.implicitly_wait(2)
     return d
 
@@ -643,6 +643,29 @@ def _set_transpose(driver, on):
     time.sleep(0.2)
 
 
+@pytest.mark.parametrize("override,expected", [("", True), ("1", True), ("true", True),
+                                               ("0", False), ("false", False)])
+def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_page, override, expected):
+    url = f"file://{rendered_page}?tab=tab-unified"
+    try:
+        driver.get(url + ("&transpose=" + override if override else ""))
+        toggle = driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]')
+        assert toggle.is_selected() == expected
+        assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == expected
+        toggle.click()
+        selected = not expected
+        assert toggle.is_selected() == selected
+        assert driver.execute_script("return new URL(location.href).searchParams.get('transpose')") == (None if selected else "0")
+        driver.refresh()
+        assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
+        for tab in ("tab-toolcalling-batch", "tab-unified"):
+            _click_tab(driver, tab)
+            assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
+            assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == selected
+    finally:
+        driver.get(f"file://{rendered_page}?transpose=0")
+
+
 def test_transpose_builds_mirror_and_colors(driver):
     """Toggling Transpose builds a mirror in the active panel: models become rotated
     columns (th.tcol-model), cases become rows (th.trow-case), and the cloned cells
@@ -1083,7 +1106,7 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
 def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
-    driver.get(f"file://{rendered_page}?view=details")
+    driver.get(f"file://{rendered_page}?view=details&transpose=0")
     if transposed:
         toggled = driver.execute_script(
             """

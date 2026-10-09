@@ -82,6 +82,8 @@ Per-case tagging currently covers the UNIFIED surface only. The reasoning and to
 
 ## Render Outputs
 
+Transpose is checked by default on every report tab. `transpose=1` or `transpose=true` selects Transpose; `transpose=0` or `transpose=false` selects the original orientation. Unchecking writes `transpose=0`; checking removes that override. The URL preserves the selected orientation across refreshes, tab changes, filters, and comparison controls.
+
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
 | v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use the v1 parser; legacy stream and batch-on-stream tabs use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; legacy tabs use the legacy non-Unified v1 corpus convention; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
@@ -219,7 +221,7 @@ A parser change that alters output fails CI until the fixtures are re-captured a
 
 ### 5. Add a new test case (e.g. a new `TOOLCALLING.streamv1.5.h`)
 
-A "case" is one scenario, either shared across applicable families or a Single Family Test. Use "Single Family Test" for a case currently exercised on one family, even when its behavior could be shared. This label describes test coverage, not parser capability. Move a case into shared coverage when another family is tested. Match the suite's existing labels: legacy Tool Calling groups use dot-letter suffixes such as `7.g` and `51.a`; Unified uses numeric suffixes such as `7-1` and family-organized labels such as `glm5-2`. A recorded case ID keeps its original meaning; display aliases may organize it without rewriting captures. Adding one is FOUR edits, in order:
+A "case" is one scenario, either shared across applicable families or a Single Family Test. Use "Single Family Test" for a case currently exercised on one family, even when its behavior could be shared. This label describes test coverage, not parser capability. Move a case into shared coverage when another family is tested. Match the suite's existing labels: legacy Tool Calling groups use dot-letter suffixes such as `7.g` and `51.a`; Unified uses descriptive suffixes such as `7-arg_unicode` and `glm5-reference_type_intersection`, owned by `utils/src/unified_taxonomy.py`. Numeric and dotted Unified forms are historical aliases; internal scenario names, subgroup headings, and ordering stay separate from display IDs. A recorded case ID keeps its original meaning; display aliases may organize it without rewriting captures. Adding one is FOUR edits, in order:
 
 1. **Input.** Add the case to `toolcalling/fixtures-stream-v1/inputs/<family>/TOOLCALLING.streamv1.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
 2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.

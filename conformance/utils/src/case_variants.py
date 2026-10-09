@@ -7,12 +7,15 @@ import hashlib
 import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
+import unified_taxonomy
 
 
 def aggregate_cells(cells, parent, description):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
-    result["case_id"] = (result.get("case_id") or "").split(parent, 1)[0] + parent
+    case_id = result.get("case_id") or ""
+    result["case_id"] = ("UNIFIED." if case_id.startswith("UNIFIED.")
+                         else case_id.split(parent, 1)[0]) + parent
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
@@ -74,30 +77,42 @@ def group_null_variants(tab: dict) -> None:
     if tab["id"] not in {"tab-unified", "tab-toolcalling-streamv1", "tab-toolcalling-batch"}:
         return
     columns = tab["columns"]
+    unified = tab["id"] == "tab-unified"
+
+    def metadata_label(column):
+        return unified_taxonomy.legacy_case_label(column["sub"]) if unified else column["label"]
+
+    def display_label(label):
+        return unified_taxonomy.historical_case_label(label) if unified else label
+
+    def null_parent(label):
+        scenario = unified_taxonomy.scenario_for_label(label) if unified else None
+        return null_group(unified_taxonomy.legacy_case_label(scenario) if scenario else label)
+
     display_labels: dict[str, str] = {}
     for parent, description in NULL_DESCRIPTIONS.items():
-        members = [column for column in columns if null_group(column["label"]) == parent]
+        members = [column for column in columns if null_group(metadata_label(column)) == parent]
         if not members:
             continue
-        root = next((column for column in members if column["label"] == parent), members[0])
+        root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_labels[root["label"]] = parent
+        display_labels[root["label"]] = display_label(parent)
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
-        mixed = [column for column in columns if column["label"].startswith("7-4.mixed_")]
+        mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")]
         referenced = members + (mixed if parent == "7-5" else [])
         root["desc"] = description
         for row in tab["rows"]:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             children = [row["cells"][column["sub"]] for column in referenced
-                        if (column["label"] not in MIXED_CASE_FAMILIES
-                            or row["family"] in MIXED_CASE_FAMILIES[column["label"]])
+                        if (metadata_label(column) not in MIXED_CASE_FAMILIES
+                            or row["family"] in MIXED_CASE_FAMILIES[metadata_label(column)])
                         and column["sub"] in row["cells"]
                         and row["cells"][column["sub"]].get("kind") in {"cell", "missing"}
                         and row["cells"][column["sub"]].get("status") != "na"]
             if len(children) > 1:
-                row["cells"][root["sub"]] = aggregate_cells(children, parent, description)
+                row["cells"][root["sub"]] = aggregate_cells(children, display_label(parent), description)
         for column in members:
             if column is not root:
                 column["variant_parent"] = parent
@@ -124,6 +139,6 @@ def group_null_variants(tab: dict) -> None:
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
     for group in tab.get("glossary", []):
         group["rows"] = [(display_labels.get(label, label),
-                          NULL_DESCRIPTIONS.get(display_labels.get(label, label), desc))
+                          NULL_DESCRIPTIONS.get(null_parent(label), desc))
                          for label, desc in group["rows"]
-                         if null_group(label) is None or label in display_labels]
+                         if null_parent(label) is None or label in display_labels]

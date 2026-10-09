@@ -52,16 +52,12 @@ def canonical_toolcalling_case_key(case_id: str) -> str:
 def historical_unified_case_key(family: str, key: str) -> str:
     """Read historical archive IDs through the scenario-owned taxonomy aliases."""
     label = key.removeprefix("UNIFIED.")
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
-    return f"UNIFIED.{historical_case_label(label)}"
+    return f"UNIFIED.{historical_case_label(label, family=family)}"
 
 
 def canonical_unified_case_key(family: str, key: str, scenario: str | None = None) -> str:
     """Return the shared key for new and historical Unified fixture records."""
-    if scenario in unified_taxonomy.UNIFIED_TAX:
-        return unified_taxonomy.numbered_id(scenario)
-    return historical_unified_case_key(family, key)
+    return f"UNIFIED.{historical_case_label(key.removeprefix('UNIFIED.'), family=family, scenario=scenario)}"
 
 
 def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[dict, dict]:
@@ -85,6 +81,8 @@ def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[d
                     f"{previous}, {key}"
                 )
             scenario_keys[(family, scenario)] = key
+        if ident in canonical and canonical[ident] != record:
+            raise ValueError(f"conflicting Unified records for {ident}")
         canonical[ident] = record
         historical = historical_unified_case_key(family, key)
         aliases[(family, key)] = ident

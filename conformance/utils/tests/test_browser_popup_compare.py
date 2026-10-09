@@ -72,7 +72,7 @@ def driver(rendered_page):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
-    d.get(f"file://{rendered_page}")
+    d.get(f"file://{rendered_page}?transpose=0")
     d.implicitly_wait(2)
     yield d
     d.quit()

@@ -49,9 +49,10 @@ def schema_group(name: str) -> str:
     return "ambiguous"
 
 
-def schema_case_label(case: dict[str, Any], unified: bool = False) -> str:
-    letter, number, _description = SCHEMA_GROUPS[schema_group(case["name"])]
-    return f"7-{number}.{case['name']}" if unified else f"7.{letter}.{case['name']}"
+def schema_case_label(case: dict[str, Any]) -> str:
+    """Legacy tool-calling label; Unified IDs are owned by unified_taxonomy."""
+    letter, _number, _description = SCHEMA_GROUPS[schema_group(case["name"])]
+    return f"7.{letter}.{case['name']}"
 
 
 def schema_tools(case: dict[str, Any]) -> list[dict[str, Any]]:

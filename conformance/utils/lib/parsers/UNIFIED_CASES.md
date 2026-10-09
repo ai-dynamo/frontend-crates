@@ -14,7 +14,7 @@ Always evaluate single-family tests against every registered family when adding,
 
 Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. This migration does not change the older stream or batch-on-stream storage. Changing an existing Unified input requires rerunning and updating every prior affected version.
 
-The shared-family coverage for `7-9`, `7-11`, `7-12`, and `7-13` is first measured in peer families at Dynamo v2 `0.7.18`. Earlier peer-family release cells remain unmeasured; they were not backfilled when coverage expanded. GLM was captured on the released Dynamo v2 `0.7.8` source under PR #271, and its existing history is preserved.
+The shared-family coverage for `7-glm_ref_object`, `7-glm_ref_encoded_targets`, `7-glm_ref_json_looking_strings`, and `7-glm_ref_scalar_types` is first measured in peer families at Dynamo v2 `0.7.18`. Earlier peer-family release cells remain unmeasured; they were not backfilled when coverage expanded. GLM was captured on the released Dynamo v2 `0.7.8` source under PR #271, and its existing history is preserved.
 
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 
@@ -66,92 +66,92 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 The Dynamo column is a per-family mixture. The current corpus families — `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
 
-## Quick reference — numbered taxonomy (`UNIFIED.<num>-<num>` / `UNIFIED.<letters/num>-<num>`)
+## Quick reference — descriptive taxonomy (`UNIFIED.<group>-<description>`)
 
-New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<letters>-<num>` for model-specific groups such as `kimi-1`. Existing legacy IDs remain historical fixture identifiers and are translated on read; do not create new ones. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv1.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`gemma`, `glm5`, `kimi`, `muse`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
+Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFIED.7-arg_unicode` or `UNIFIED.kimi-typed_argument_values`. Derive descriptions from scenario names, omit redundant family prefixes in family-specific groups, and use schema probe names directly, such as `UNIFIED.7-declared_array`. Numeric, dotted, and schema-subgroup forms remain historical aliases; do not create new ones. `unified_taxonomy.py` owns canonical IDs, descriptions, ordering, display placement, and aliases. Internal scenario names stay unchanged. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv1.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30–39 are Guided Decoding**, divided by payload validity, surrounding markup, reasoning boundaries, and visible-answer markers. **Groups 40+ are prefilled request states.** Model-specific groups (`gemma`, `glm5`, `kimi`, `muse`) sort after every numeric group. The live per-family and total case counts come from `test_unified_case_counts_match_the_generator`; do not maintain a numeric total in prose.
 
 ### Group 1 — TC Single call
-- **`1-1`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
+- **`1-tool_only`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
 
 ### Group 2 — TC Multiple calls (TOOLCALLING.streamv1.2)
-- **`2-1`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
-- **`2-2`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
+- **`2-two_calls`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
+- **`2-two_calls_same_name`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
-- **`3-1`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
+- **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
 ### Group 4 — TC Malformed envelope
-- **`4-1`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
-- **`4-2`** (`tool_markup_only_emits_nothing`) A calls envelope contains no invocation. Both markers are control syntax and the parser emits no event.
+- **`4-tool_block_never_closed_then_text`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
+- **`4-tool_markup_only_emits_nothing`** (`tool_markup_only_emits_nothing`) A calls envelope contains no invocation. Both markers are control syntax and the parser emits no event.
 
 ### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv1.5)
-- **`5-1`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
-- **`5-2`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
-- **`5-3`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
-- **`5-4`** (`malformed_json_then_two_valid_calls`) Across all eight families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
+- **`5-truncated_tool_eof`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
+- **`5-tool_no_close`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
+- **`5-orphan_close_after_prose`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
+- **`5-malformed_json_then_two_valid_calls`** (`malformed_json_then_two_valid_calls`) Across all eight families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
 
 ### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
-- **`6-1`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
+- **`6-empty_args`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
 
 ### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
-- **`7-1`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
-- **`7-2`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
-- **`7-3`** (`deepseek_v41_mixed_control_text_in_string`) All eight families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-2` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
-- **`7-4`** (`arg_json_null`) The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
-- **`7-5`** (`arg_string_null`) The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
-- **`7-4.ref`** (`arg_json_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a nullable string definition on the tool parameters root. Split-chunk XML input with bare `null` must produce JSON null.
-- **`7-5.ref`** (`arg_string_null_ref`) GLM and Qwen regression: an unresolved local `$ref` points to a string-only definition on the tool parameters root. Split-chunk XML input with bare `null` must preserve string `"null"`.
-- **`7-9`** (`glm_ref_object`) Shared-family compatibility control for PR #271: a local object reference converts JSON object text into an object. The ref remains unresolved in the request.
-- **`7-11`** (`glm_ref_encoded_targets`) Shared-family regression for PR #271: URI percent decoding and JSON Pointer unescaping resolve definition names containing a space, UTF-8 with literal `+`, and `/` plus `~`. Bare `42` becomes an integer for each target.
-- **`7-12`** (`glm_ref_json_looking_strings`) Shared-family regression for PR #271: referenced string fields preserve object-looking, array-looking, and quoted JSON text exactly, including literal quote characters. An inline string field with matching object-looking bytes is a control.
-- **`7-13`** (`glm_ref_scalar_types`) Shared-family regression for PR #271: integer, number, and boolean refs produce typed scalars. A sibling integer constraint narrows a string-or-integer ref; bare `42` must become an integer. All four probes keep request refs unresolved.
-- **`7-14`** (`unused_reference_graph_parameter_types`) An unused compact reference graph precedes directly typed integer, boolean, and string fields. It must not change their types or discard the complete call.
-- **`7-15`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
-- **`7-16`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
+- **`7-arg_unicode`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
+- **`7-arg_marker_in_string`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
+- **`7-deepseek_v41_mixed_control_text_in_string`** (`deepseek_v41_mixed_control_text_in_string`) All eight families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-arg_marker_in_string` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
+- **`7-arg_json_null`** (`arg_json_null`) The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
+- **`7-arg_string_null`** (`arg_string_null`) The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
+- **`7-arg_json_null_ref`** (`arg_json_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a nullable string definition on the tool parameters root. Split-chunk XML input with bare `null` must produce JSON null.
+- **`7-arg_string_null_ref`** (`arg_string_null_ref`) GLM and Qwen regression: an unresolved local `$ref` points to a string-only definition on the tool parameters root. Split-chunk XML input with bare `null` must preserve string `"null"`.
+- **`7-glm_ref_object`** (`glm_ref_object`) Shared-family compatibility control for PR #271: a local object reference converts JSON object text into an object. The ref remains unresolved in the request.
+- **`7-glm_ref_encoded_targets`** (`glm_ref_encoded_targets`) Shared-family regression for PR #271: URI percent decoding and JSON Pointer unescaping resolve definition names containing a space, UTF-8 with literal `+`, and `/` plus `~`. Bare `42` becomes an integer for each target.
+- **`7-glm_ref_json_looking_strings`** (`glm_ref_json_looking_strings`) Shared-family regression for PR #271: referenced string fields preserve object-looking, array-looking, and quoted JSON text exactly, including literal quote characters. An inline string field with matching object-looking bytes is a control.
+- **`7-glm_ref_scalar_types`** (`glm_ref_scalar_types`) Shared-family regression for PR #271: integer, number, and boolean refs produce typed scalars. A sibling integer constraint narrows a string-or-integer ref; bare `42` must become an integer. All four probes keep request refs unresolved.
+- **`7-unused_reference_graph_parameter_types`** (`unused_reference_graph_parameter_types`) An unused compact reference graph precedes directly typed integer, boolean, and string fields. It must not change their types or discard the complete call.
+- **`7-nullable_reference_alias_literals`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
+- **`7-local_schema_id_preserves_type`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
-- **`8-1`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
-- **`8-2`** (`trailing_text_after_tool`) Arbitrary prose AFTER the tool section (P1). vLLM suppresses it. Class LOSS.
-- **`8-3`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv1.8.c.
-- **`8-4`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv1.8.d.
-- **`8-5`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
-- **`8-6`** (`native_quoted_control_in_response`) A native control marker inside double-quoted visible response text stays literal prose.
-- **`8-7`** (`native_single_quoted_word_control`) A control marker inside a single-quoted word example stays literal prose.
-- **`8-8`** (`native_quoted_control_then_call`) Quoted control text stays visible, and the following real call still dispatches.
-- **`8-9`** (`native_unmatched_quote_then_call`) An unmatched quote before a real control marker cannot hide the following call.
-- **`8-10`** (`native_quoted_incomplete_header`) An incomplete native tool header inside quoted response text stays literal.
-- **`8-11`** (`native_single_quote_contraction_response`) A control marker inside a contraction-bearing single-quoted sentence stays literal prose.
+- **`8-text_before_tool`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
+- **`8-trailing_text_after_tool`** (`trailing_text_after_tool`) Arbitrary prose AFTER the tool section (P1). vLLM suppresses it. Class LOSS.
+- **`8-text_sandwich`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv1.8.c.
+- **`8-text_between_calls`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv1.8.d.
+- **`8-narrated_calls`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
+- **`8-native_quoted_control_in_response`** (`native_quoted_control_in_response`) A native control marker inside double-quoted visible response text stays literal prose.
+- **`8-native_single_quoted_word_control`** (`native_single_quoted_word_control`) A control marker inside a single-quoted word example stays literal prose.
+- **`8-native_quoted_control_then_call`** (`native_quoted_control_then_call`) Quoted control text stays visible, and the following real call still dispatches.
+- **`8-native_unmatched_quote_then_call`** (`native_unmatched_quote_then_call`) An unmatched quote before a real control marker cannot hide the following call.
+- **`8-native_quoted_incomplete_header`** (`native_quoted_incomplete_header`) An incomplete native tool header inside quoted response text stays literal.
+- **`8-native_single_quote_contraction_response`** (`native_single_quote_contraction_response`) A control marker inside a contraction-bearing single-quoted sentence stays literal prose.
 
 ### Group 10 — Reasoning span (`REASONING.*`)
-- **`10-1`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
-- **`10-2`** (`reason_then_content`) Reasoning then visible content, no call. This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).
-- **`10-3`** (`two_reason_spans`) Two reasoning spans separated by content. Batch reasoning merges them → Class MERGE. This is also covered in: REASONING.batch.6.a.
-- **`10-4`** (`reason_unterminated`) Stream ends inside reasoning; open reasoning promoted at finish.
-- **`10-5`** (`two_adjacent_reason_spans`) Two reasoning spans with nothing between them, then the answer. The single `reasoning_text` field every batch parser exposes can only concatenate them, so adjacent spans JOIN with a newline. The counterpart — two spans separated by a call must NOT join — is pinned by `11-2` / `11-3`: a parser that always joins invents a newline the model never emitted.
+- **`10-reason_only`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
+- **`10-reason_then_content`** (`reason_then_content`) Reasoning then visible content, no call. This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).
+- **`10-two_reason_spans`** (`two_reason_spans`) Two reasoning spans separated by content. Batch reasoning merges them → Class MERGE. This is also covered in: REASONING.batch.6.a.
+- **`10-reason_unterminated`** (`reason_unterminated`) Stream ends inside reasoning; open reasoning promoted at finish.
+- **`10-two_adjacent_reason_spans`** (`two_adjacent_reason_spans`) Two reasoning spans with nothing between them, then the answer. The single `reasoning_text` field every batch parser exposes can only concatenate them, so adjacent spans JOIN with a newline. The counterpart — two spans separated by a call must NOT join — is pinned by `11-reason_after_tool` / `11-reason_interleaved`: a parser that always joins invents a newline the model never emitted.
 
 ### Group 11 — Reasoning ↔ tool interleaving (UNIQUE to unified; the unification gap)
-- **`11-1`** (`reason_then_tool`) Reasoning fully precedes one call. Baseline ordering.
-- **`11-2`** (`reason_after_tool`) Reasoning AFTER a call, then text (Example A). Class ORDER.
-- **`11-3`** (`reason_interleaved`) reason → tool → reason → tool. Class MERGE.
-- **`11-4`** (`reason_tool_text_reason_tool`) reason → tool → text → reason → tool. Class MERGE.
-- **`11-5`** (`interstitial_text`) reasoning → visible text → call; the middle text survives in order.
-- **`11-6`** (`content_then_reason_then_tool`) Content BEFORE reasoning, then a call. Class ORDER (Dynamo hoists reasoning).
-- **`11-7`** (`content_then_reason`) content → reasoning → content. Class ORDER.
-- **`11-8`** (`reason_tool_reason_tool_reason`) Each call wrapped by its own thought, trailing thought too. Class MERGE.
-- **`11-9`** (`reason_between_calls`) call → reasoning → call; reasoning survives BETWEEN two calls. Class MERGE.
-- **`11-10`** (`text_reason_tool_text_reason_tool`) Deep well-formed interleave — text → reason → tool → text → reason → tool; user text, reasoning, and calls all mix in one stream, every segment in order. Class MERGE (batch hoists both thoughts).
+- **`11-reason_then_tool`** (`reason_then_tool`) Reasoning fully precedes one call. Baseline ordering.
+- **`11-reason_after_tool`** (`reason_after_tool`) Reasoning AFTER a call, then text (Example A). Class ORDER.
+- **`11-reason_interleaved`** (`reason_interleaved`) reason → tool → reason → tool. Class MERGE.
+- **`11-reason_tool_text_reason_tool`** (`reason_tool_text_reason_tool`) reason → tool → text → reason → tool. Class MERGE.
+- **`11-interstitial_text`** (`interstitial_text`) reasoning → visible text → call; the middle text survives in order.
+- **`11-content_then_reason_then_tool`** (`content_then_reason_then_tool`) Content BEFORE reasoning, then a call. Class ORDER (Dynamo hoists reasoning).
+- **`11-content_then_reason`** (`content_then_reason`) content → reasoning → content. Class ORDER.
+- **`11-reason_tool_reason_tool_reason`** (`reason_tool_reason_tool_reason`) Each call wrapped by its own thought, trailing thought too. Class MERGE.
+- **`11-reason_between_calls`** (`reason_between_calls`) call → reasoning → call; reasoning survives BETWEEN two calls. Class MERGE.
+- **`11-text_reason_tool_text_reason_tool`** (`text_reason_tool_text_reason_tool`) Deep well-formed interleave — text → reason → tool → text → reason → tool; user text, reasoning, and calls all mix in one stream, every segment in order. Class MERGE (batch hoists both thoughts).
 
 ### Group 12 — Adversarial nesting (a marker of one channel inside another; P7)
-- **`12-1`** (`reason_markup_in_arg`) "Tool call contains reasoning" — a reasoning-channel marker sits inside a quoted tool-arg VALUE. NOT a leak: an arg value is data bound for the function, not a rendered channel, so by I7 the parser preserves it byte-exact (the gemma4 native UnifiedParser confirms the golden exactly). A reasoning-first extractor lifts it out and corrupts the arg. Class ARG_MISMATCH / MERGE.
-- **`12-2`** (`tool_in_reason`) "Reasoning contains tool call" — a well-formed tool-call envelope nested inside a reasoning span. OPPOSITE of 12-1: a reasoning span is opaque text (not a quoted data region), so a real tool-call marker inside it IS structural. Golden breaks out (reason → call → reason). Engines leak the tool markup into `reasoning_content` and drop the call. Class LEAK.
-- **`12-3`** (`reason_markup_in_arg_with_text`) 12-1 WITH visible narration before and after — all three channels at once (text / tool-call-with-markup-arg / text). Golden keeps text as text, the call clean, the markup byte-exact in the arg. Class ARG_MISMATCH / MERGE.
-- **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
+- **`12-reason_markup_in_arg`** (`reason_markup_in_arg`) "Tool call contains reasoning" — a reasoning-channel marker sits inside a quoted tool-arg VALUE. NOT a leak: an arg value is data bound for the function, not a rendered channel, so by I7 the parser preserves it byte-exact (the gemma4 native UnifiedParser confirms the golden exactly). A reasoning-first extractor lifts it out and corrupts the arg. Class ARG_MISMATCH / MERGE.
+- **`12-tool_in_reason`** (`tool_in_reason`) "Reasoning contains tool call" — a well-formed tool-call envelope nested inside a reasoning span. OPPOSITE of 12-1: a reasoning span is opaque text (not a quoted data region), so a real tool-call marker inside it IS structural. Golden breaks out (reason → call → reason). Engines leak the tool markup into `reasoning_content` and drop the call. Class LEAK.
+- **`12-reason_markup_in_arg_with_text`** (`reason_markup_in_arg_with_text`) 12-1 WITH visible narration before and after — all three channels at once (text / tool-call-with-markup-arg / text). Golden keeps text as text, the call clean, the markup byte-exact in the arg. Class ARG_MISMATCH / MERGE.
+- **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
 - DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 228 of the 248 taxonomy cases for this family.
-- Generated cases include `30-13`, the single-family `deepseek-1` case, Guided Decoding cases `31-1` through `35-4` except `muse-1` and `35-5`, the marker-discriminating Response row `50-4`, and `40-1` through `40-6` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
-- The 20 omitted cases are `kimi-1` through `kimi-8`, `gemma-1` through `gemma-2`, `glm5-1` and `glm5-2`, `7-4.mixed_labels`, `7-4.ref`, `7-5.ref`, `35-5`, and `muse-1` through `muse-4`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-5` tests DeepSeek V4's rejected-header quote ownership. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
-- `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
+- Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, Guided Decoding cases `31-guided_json_invalid_call` through `35-guided_response_quoted_control_braces_required` except `muse-guided_json_quoted_bare_tool_header_in_answer` and `35-guided_response_rejected_header_quote_ownership`, the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and `40-prefilled_reasoning_with_tool` through `40-native_single_quote_contraction_reasoning` plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`. The native prefilled cases `40-prefilled_reasoning_with_tool`, `40-prefilled_reasoning_then_text_then_tool`, and `40-prefilled_reasoning_then_text` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
+- The 20 omitted cases are `kimi-typed_argument_values` through `kimi-guided_native_wrapper`, `gemma-guided_json_visible_call_prose_before_reasoning` through `gemma-guided_json_malformed_call_prefix_before_reasoning`, `glm5-parameterless_call_shape_inside_argument` and `glm5-reference_type_intersection`, `7-arg_null_mixed_labels`, `7-arg_json_null_ref`, `7-arg_string_null_ref`, `35-guided_response_rejected_header_quote_ownership`, and `muse-guided_json_quoted_bare_tool_header_in_answer` through `muse-quoted_reserved_start_argument`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-guided_response_rejected_header_quote_ownership` tests DeepSeek V4's rejected-header quote ownership. The `muse-guided_json_quoted_bare_tool_header_in_answer` duplicate does not imply that quoted or malformed model output cannot occur.
+- `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-prefilled_response_reasoning_markers_literal` proves that Response treats reasoning markers as visible text.
 
 <!-- TODO: Restore the 14 cases deferred from PR #232 in the deferred-conformance-cases follow-up: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
 
@@ -176,106 +176,106 @@ An `End-to-end:` tag names the end-to-end test case and its artifact index. Each
 
 | Case | e2e case | Artifact JSON file |
 |---|---|---|
-| `10-2` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_capped.json` |
-| `10-2` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_unlimited.json` |
-| `10-2` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_capped.json` |
-| `10-2` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_unlimited.json` |
-| `10-2` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_capped.json` |
-| `10-2` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_unlimited.json` |
-| `10-2` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_capped.json` |
-| `10-2` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_unlimited.json` |
-| `10-2` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_capped.json` |
-| `10-2` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_unlimited.json` |
-| `10-2` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_capped.json` |
-| `10-2` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_unlimited.json` |
-| `10-2` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_capped.json` |
-| `10-2` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_unlimited.json` |
-| `10-2` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_capped.json` |
-| `10-2` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_unlimited.json` |
-| `10-2` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_capped.json` |
-| `10-2` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_unlimited.json` |
-| `10-2` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_capped.json` |
-| `10-2` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_unlimited.json` |
-| `10-2` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_capped.json` |
-| `10-2` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_unlimited.json` |
-| `10-2` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_capped.json` |
-| `10-2` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_unlimited.json` |
-| `10-2` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_capped.json` |
-| `10-2` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_unlimited.json` |
-| `10-2` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_capped.json` |
-| `10-2` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_unlimited.json` |
-| `10-2` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_capped.json` |
-| `10-2` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_unlimited.json` |
-| `10-2` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_capped.json` |
-| `10-2` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_unlimited.json` |
-| `10-2` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_capped.json` |
-| `10-2` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_unlimited.json` |
-| `10-2` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_capped.json` |
-| `10-2` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_unlimited.json` |
-| `10-2` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_capped.json` |
-| `10-2` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_unlimited.json` |
-| `10-2` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_capped.json` |
-| `10-2` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_unlimited.json` |
-| `10-2` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_capped.json` |
-| `10-2` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_unlimited.json` |
-| `10-2` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_capped.json` |
-| `10-2` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_unlimited.json` |
-| `10-2` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_capped.json` |
-| `10-2` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_unlimited.json` |
-| `10-2` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_capped.json` |
-| `10-2` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_unlimited.json` |
-| `10-2` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_capped.json` |
-| `10-2` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_unlimited.json` |
-| `10-2` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_capped.json` |
-| `10-2` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_unlimited.json` |
-| `10-2` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_capped.json` |
-| `10-2` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_unlimited.json` |
-| `10-2` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_capped.json` |
-| `10-2` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_unlimited.json` |
-| `10-2` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_capped.json` |
-| `10-2` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_unlimited.json` |
-| `10-2` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_capped.json` |
-| `10-2` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_unlimited.json` |
-| `10-2` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_capped.json` |
-| `10-2` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_unlimited.json` |
-| `10-2` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_capped.json` |
-| `10-2` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_unlimited.json` |
-| `10-2` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_capped.json` |
-| `10-2` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_unlimited.json` |
-| `10-2` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_capped.json` |
-| `10-2` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_unlimited.json` |
-| `10-2` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_capped.json` |
-| `10-2` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_unlimited.json` |
-| `10-2` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_capped.json` |
-| `10-2` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_unlimited.json` |
-| `10-2` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_capped.json` |
-| `10-2` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_unlimited.json` |
-| `10-2` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_capped.json` |
-| `10-2` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_unlimited.json` |
-| `10-2` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_capped.json` |
-| `10-2` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_unlimited.json` |
-| `10-2` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_capped.json` |
-| `10-2` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_unlimited.json` |
-| `10-2` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_capped.json` |
-| `10-2` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_unlimited.json` |
-| `10-2` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_capped.json` |
-| `10-2` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_unlimited.json` |
-| `10-2` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
-| `10-2` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
-| `30-1` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_capped.json` |
-| `30-1` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_unlimited.json` |
-| `30-1` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_capped.json` |
-| `30-1` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_unlimited.json` |
-| `30-1` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_capped.json` |
-| `30-1` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_unlimited.json` |
-| `30-2` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
-| `30-2` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
-| `30-2` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_capped.json` |
-| `30-2` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_unlimited.json` |
-| `30-4` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json` |
-| `30-4` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_unlimited.json` |
-| `30-5` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_capped.json` |
-| `30-5` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_capped.json` |
+| `10-reason_then_content` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_capped.json` |
+| `10-reason_then_content` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_capped.json` |
+| `10-reason_then_content` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_capped.json` |
+| `10-reason_then_content` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_capped.json` |
+| `10-reason_then_content` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_capped.json` |
+| `10-reason_then_content` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_capped.json` |
+| `10-reason_then_content` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_capped.json` |
+| `10-reason_then_content` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_capped.json` |
+| `10-reason_then_content` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_capped.json` |
+| `10-reason_then_content` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_capped.json` |
+| `10-reason_then_content` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_capped.json` |
+| `10-reason_then_content` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_capped.json` |
+| `10-reason_then_content` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_capped.json` |
+| `10-reason_then_content` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_capped.json` |
+| `10-reason_then_content` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_capped.json` |
+| `10-reason_then_content` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_capped.json` |
+| `10-reason_then_content` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_capped.json` |
+| `10-reason_then_content` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_capped.json` |
+| `10-reason_then_content` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_capped.json` |
+| `10-reason_then_content` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_capped.json` |
+| `10-reason_then_content` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_unlimited.json` |
+| `10-reason_then_content` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_capped.json` |
+| `10-reason_then_content` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_unlimited.json` |
+| `10-reason_then_content` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
+| `10-reason_then_content` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
+| `30-guided_json_named_tool` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_capped.json` |
+| `30-guided_json_named_tool` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_unlimited.json` |
+| `30-guided_json_named_tool` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_capped.json` |
+| `30-guided_json_named_tool` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_unlimited.json` |
+| `30-guided_json_named_tool` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_capped.json` |
+| `30-guided_json_named_tool` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_unlimited.json` |
+| `30-guided_json_required_tool` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
+| `30-guided_json_required_tool` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
+| `30-guided_json_required_tool` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_capped.json` |
+| `30-guided_json_required_tool` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_unlimited.json` |
+| `30-guided_json_escaped_string_args` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json` |
+| `30-guided_json_escaped_string_args` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_unlimited.json` |
+| `30-guided_json_array_argument` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_capped.json` |
+| `30-guided_json_array_argument` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_unlimited.json` |
 
 ## Request-scoped modes
 
@@ -284,92 +284,92 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 `starting_state` says which channel the rendered prompt already opened, so the model never emits that opener: `None` (it opens its own), `Reasoning` (the stream begins INSIDE a thought), `Response` (visible content is already open, so there is no reasoning channel at all and reasoning markers are ordinary text). `tool_output_mode` says whether the backend constrained decoding: `Native` (model markup) or `GuidedJson` (bare JSON — a NAMED choice sends that tool's arguments alone, a REQUIRED choice sends one call object or an array of them).
 
 ### Group 30 — Guided Decoding: baseline and argument fidelity
-- **`30-1`** (`guided_json_named_tool`) `tool_choice` names a tool; the payload is that tool's arguments and the name comes from the request. This is also covered in: e2e case-0047-tool_add_named__non-stream-budget_capped.json, e2e case-0048-tool_add_named__stream-budget_capped.json, e2e case-0054-tool_translate_named__stream-budget_capped.json (each with its `-budget_unlimited` pair).
-- **`30-2`** (`guided_json_required_tool`) Required choice; the payload is an array of call objects. This is also covered in: e2e case-0129-lifecycle_single_result__stream-budget_capped.json, e2e case-0145-lifecycle_chained_calculation__stream-budget_capped.json (FIRST step of each; both with their `-budget_unlimited` pair).
-- **`30-3`** (`guided_json_two_calls`) Two DIFFERENT tools in one array. Multi-call is the array's ordinary shape, not an edge case.
-- **`30-4`** (`guided_json_escaped_string_args`) An argument value carrying non-ASCII, escaped quotes and Windows backslashes. Native mode covers the same value in `7.*`, but there the value is raw text between markers and no escaping is involved — the escaping is only the parser's problem on this path. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).
-- **`30-5`** (`guided_json_array_argument`) An argument VALUE that is an array, not a scalar. Distinct from `30-2`/`30-3`, where the array is the list OF CALLS one level up. A list arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).
-- **`30-6`** (`guided_json_after_reasoning`) A normal thought, THEN the constrained payload. Every other guided case starts at the payload, so nothing pinned the ordinary shape where the model reasons first and the backend constrains only the call. This is the baseline group 31's surroundings cases contrast with.
-- **`30-7`** (`guided_json_marker_inside_argument`) A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`); re-reading it as a channel token corrupts the call the tool receives while still looking like a successful dispatch. The golden argument is the family's own marker, not a placeholder — a stand-in would pass whatever the parser did.
+- **`30-guided_json_named_tool`** (`guided_json_named_tool`) `tool_choice` names a tool; the payload is that tool's arguments and the name comes from the request. This is also covered in: e2e case-0047-tool_add_named__non-stream-budget_capped.json, e2e case-0048-tool_add_named__stream-budget_capped.json, e2e case-0054-tool_translate_named__stream-budget_capped.json (each with its `-budget_unlimited` pair).
+- **`30-guided_json_required_tool`** (`guided_json_required_tool`) Required choice; the payload is an array of call objects. This is also covered in: e2e case-0129-lifecycle_single_result__stream-budget_capped.json, e2e case-0145-lifecycle_chained_calculation__stream-budget_capped.json (FIRST step of each; both with their `-budget_unlimited` pair).
+- **`30-guided_json_two_calls`** (`guided_json_two_calls`) Two DIFFERENT tools in one array. Multi-call is the array's ordinary shape, not an edge case.
+- **`30-guided_json_escaped_string_args`** (`guided_json_escaped_string_args`) An argument value carrying non-ASCII, escaped quotes and Windows backslashes. Native mode covers the same value in `7.*`, but there the value is raw text between markers and no escaping is involved — the escaping is only the parser's problem on this path. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).
+- **`30-guided_json_array_argument`** (`guided_json_array_argument`) An argument VALUE that is an array, not a scalar. Distinct from `30-guided_json_required_tool`/`30-guided_json_two_calls`, where the array is the list OF CALLS one level up. A list arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).
+- **`30-guided_json_after_reasoning`** (`guided_json_after_reasoning`) A normal thought, THEN the constrained payload. Every other guided case starts at the payload, so nothing pinned the ordinary shape where the model reasons first and the backend constrains only the call. This is the baseline group 31's surroundings cases contrast with.
+- **`30-guided_json_marker_inside_argument`** (`guided_json_marker_inside_argument`) A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`); re-reading it as a channel token corrupts the call the tool receives while still looking like a successful dispatch. The golden argument is the family's own marker, not a placeholder — a stand-in would pass whatever the parser did.
 
-- **`30-11`** (`guided_json_gt_in_argument_trailing_close`), **`30-12`** (`guided_json_gt_in_argument_wrapped`), and **`30-13`** (`guided_json_gt_in_argument_bare_opener`) keep a literal `>` inside a guided argument while crossing each tool-markup surrounding. They pin that a header scan cannot borrow the argument character as its terminator.
+- **`30-guided_json_gt_in_argument_trailing_close`** (`guided_json_gt_in_argument_trailing_close`), **`30-guided_json_gt_in_argument_wrapped`** (`guided_json_gt_in_argument_wrapped`), and **`30-guided_json_gt_in_argument_bare_opener`** (`guided_json_gt_in_argument_bare_opener`) keep a literal `>` inside a guided argument while crossing each tool-markup surrounding. They pin that a header scan cannot borrow the argument character as its terminator.
 
 ### Group 31 — Guided Decoding: invalid JSON or call structure
-- **`31-1`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text under the guided malformed-payload policy; no call dispatched.
-- **`31-2`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
-- **`31-3`** (`guided_json_partial_calls`) The array parses but one element is not a call.
-- **`31-4`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
+- **`31-guided_json_invalid_call`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text under the guided malformed-payload policy; no call dispatched.
+- **`31-guided_json_malformed_json`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
+- **`31-guided_json_partial_calls`** (`guided_json_partial_calls`) The array parses but one element is not a call.
+- **`31-guided_json_list_with_broken_element`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
 
 ### Group 32 — Guided Decoding: tool markup around the payload
-- **`32-1`** (`guided_json_tool_open_before_payload`) A native tool OPENER precedes the payload. Guided decoding delivers the call as JSON, so leading markup is stray: strip it, or it enters the payload buffer, breaks the parse and costs the call.
-- **`32-2`** (`guided_json_tool_close_after_payload`) A native tool CLOSER follows the payload. Markers can BRACKET a payload, not only precede it — once the opening brace latches visible-only, every later byte is appended verbatim.
-- **`32-3`** (`guided_json_wrapped_in_tool_markup`) Opener AND closer, the shape a template emits when guided decoding is applied INSIDE a tool block. Handling one end only still loses the call.
-- **`32-4`** (`guided_json_orphan_tool_close_before_payload`) An orphan tool CLOSER. Paired with `32-1`: while the closer was stripped and the opener beside it was not, which marker leaked depended on which one the model happened to emit.
-- **`32-5`** (`guided_json_native_markup_only`) Guided mode receives one complete native tool call instead of bare JSON. The turn is control markup and emits no events; every stream split must match the whole-input result instead of leaking the parameter body as visible text.
+- **`32-guided_json_tool_open_before_payload`** (`guided_json_tool_open_before_payload`) A native tool OPENER precedes the payload. Guided decoding delivers the call as JSON, so leading markup is stray: strip it, or it enters the payload buffer, breaks the parse and costs the call.
+- **`32-guided_json_tool_close_after_payload`** (`guided_json_tool_close_after_payload`) A native tool CLOSER follows the payload. Markers can BRACKET a payload, not only precede it — once the opening brace latches visible-only, every later byte is appended verbatim.
+- **`32-guided_json_wrapped_in_tool_markup`** (`guided_json_wrapped_in_tool_markup`) Opener AND closer, the shape a template emits when guided decoding is applied INSIDE a tool block. Handling one end only still loses the call.
+- **`32-guided_json_orphan_tool_close_before_payload`** (`guided_json_orphan_tool_close_before_payload`) An orphan tool CLOSER. Paired with `32-guided_json_tool_open_before_payload`: while the closer was stripped and the opener beside it was not, which marker leaked depended on which one the model happened to emit.
+- **`32-guided_json_native_markup_only`** (`guided_json_native_markup_only`) Guided mode receives one complete native tool call instead of bare JSON. The turn is control markup and emits no events; every stream split must match the whole-input result instead of leaking the parameter body as visible text.
 
 ### Group 33 — Guided Decoding: invalid payload plus tool markup
 
-- **`33-1`** through **`33-3`** cross a JSON syntax error with a trailing closer, a full wrapper, and a bare opener. **`33-4`** through **`33-6`** make the payload a schema-invalid non-call under the same three surroundings. **`33-7`** through **`33-9`** do the same for a nameless array element. Each remains text: invalid payload structure must not dispatch a partial call.
+- **`33-guided_json_syntax_error_trailing_close`** through **`33-guided_json_syntax_error_bare_opener`** cross a JSON syntax error with a trailing closer, a full wrapper, and a bare opener. **`33-guided_json_schema_error_not_a_call_trailing_close`** through **`33-guided_json_schema_error_not_a_call_bare_opener`** make the payload a schema-invalid non-call under the same three surroundings. **`33-guided_json_schema_error_nameless_element_trailing_close`** through **`33-guided_json_schema_error_nameless_element_bare_opener`** do the same for a nameless array element. Each remains text: invalid payload structure must not dispatch a partial call.
 
 ### Group 34 — Guided Decoding: reasoning boundaries
-- **`34-1`** (`guided_json_narrated_invoke_in_reasoning`) The model NARRATES a tool opener while thinking, then the real call arrives as JSON. The reasoning channel is unconstrained under guided decoding, so that markup is prose; treating it as structure ends the turn and discards the payload.
-- **`34-2`** (`guided_json_prose_before_reasoning`) Visible prose, then a thought, then the payload. Every other guided case opens its thought at byte 0; with prose first the run can latch the payload buffer and surface the model's private thinking to the user as the answer.
-- **`34-3`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
-- **`34-6`** (`guided_json_unterminated_reasoning_then_wrapped_payload`) A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. `32-3` pins a wrapper around the payload OUTSIDE reasoning and `41.*` pins an unterminated thought on its own; neither asks what happens when the two meet, and that crossing is where both native families emitted the payload as REASONING and dispatched nothing. The client sees a plausible answer and never learns a call was lost. Contrast with `34-1`, where the same markup has PROSE behind it and is narration — what separates them is whether the guided payload follows, not which marker appeared.
-- **`34-7`** (`guided_json_bare_tool_header_recovers_inside_a_thought`) starts in Reasoning and routes through a native tool boundary into guided JSON. Both cases are generated for every supported family, with its own marker grammar; neither absence nor an `UNSUPPORTED` cell can hide a missing family input.
-- **`34-8`** (`guided_quoted_reasoning_closer_named`) A quoted reasoning closer does not end prefilled reasoning before the named-tool payload.
-- **`34-9`** (`guided_quoted_reasoning_closer_required`) A quoted reasoning closer does not end prefilled reasoning before the required-tool payload.
+- **`34-guided_json_narrated_invoke_in_reasoning`** (`guided_json_narrated_invoke_in_reasoning`) The model NARRATES a tool opener while thinking, then the real call arrives as JSON. The reasoning channel is unconstrained under guided decoding, so that markup is prose; treating it as structure ends the turn and discards the payload.
+- **`34-guided_json_prose_before_reasoning`** (`guided_json_prose_before_reasoning`) Visible prose, then a thought, then the payload. Every other guided case opens its thought at byte 0; with prose first the run can latch the payload buffer and surface the model's private thinking to the user as the answer.
+- **`34-guided_json_orphan_reason_close_before_payload`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
+- **`34-guided_json_unterminated_reasoning_then_wrapped_payload`** (`guided_json_unterminated_reasoning_then_wrapped_payload`) A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. `32-guided_json_wrapped_in_tool_markup` pins a wrapper around the payload OUTSIDE reasoning and `41.*` pins an unterminated thought on its own; neither asks what happens when the two meet, and that crossing is where both native families emitted the payload as REASONING and dispatched nothing. The client sees a plausible answer and never learns a call was lost. Contrast with `34-guided_json_narrated_invoke_in_reasoning`, where the same markup has PROSE behind it and is narration — what separates them is whether the guided payload follows, not which marker appeared.
+- **`34-guided_json_bare_tool_header_recovers_inside_a_thought`** (`guided_json_bare_tool_header_recovers_inside_a_thought`) starts in Reasoning and routes through a native tool boundary into guided JSON. Both cases are generated for every supported family, with its own marker grammar; neither absence nor an `UNSUPPORTED` cell can hide a missing family input.
+- **`34-guided_quoted_reasoning_closer_named`** (`guided_quoted_reasoning_closer_named`) A quoted reasoning closer does not end prefilled reasoning before the named-tool payload.
+- **`34-guided_quoted_reasoning_closer_required`** (`guided_quoted_reasoning_closer_required`) A quoted reasoning closer does not end prefilled reasoning before the required-tool payload.
 
 ### Group 35 — Guided Decoding: markers in visible answers
-- **`35-1`** (`guided_json_quoted_bare_header_in_answer`) A response that already has a visible channel open contains its family's reasoning marker before the guided payload. The marker must not reopen a private channel, and the following JSON must still dispatch.
-- **`35-2`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text.
-- **`35-3`** (`guided_response_quoted_control_braces_named`) A quoted native opener with braces stays visible before a named-tool payload; the quoted brace cannot claim payload ownership.
-- **`35-4`** (`guided_response_quoted_control_braces_required`) The same quoted-control boundary holds for a required-tool payload.
+- **`35-guided_json_quoted_bare_header_in_answer`** (`guided_json_quoted_bare_header_in_answer`) A response that already has a visible channel open contains its family's reasoning marker before the guided payload. The marker must not reopen a private channel, and the following JSON must still dispatch.
+- **`35-guided_json_quoted_bare_header_after_payload`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text.
+- **`35-guided_response_quoted_control_braces_named`** (`guided_response_quoted_control_braces_named`) A quoted native opener with braces stays visible before a named-tool payload; the quoted brace cannot claim payload ownership.
+- **`35-guided_response_quoted_control_braces_required`** (`guided_response_quoted_control_braces_required`) The same quoted-control boundary holds for a required-tool payload.
 
-`31-3` and `31-4` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-1` through `31-4` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
+`31-guided_json_partial_calls` and `31-guided_json_list_with_broken_element` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-guided_json_invalid_call` through `31-guided_json_list_with_broken_element` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
 
-`31-1` through `31-4` are malformed PAYLOADS. `32-1` through `32-4` are well-formed payloads in malformed SURROUNDINGS: they recover the markers, the payload then parses, and the call dispatches — so neither the all-or-nothing rule nor that warning applies to them.
+`31-guided_json_invalid_call` through `31-guided_json_list_with_broken_element` are malformed PAYLOADS. `32-guided_json_tool_open_before_payload` through `32-guided_json_orphan_tool_close_before_payload` are well-formed payloads in malformed SURROUNDINGS: they recover the markers, the payload then parses, and the call dispatches — so neither the all-or-nothing rule nor that warning applies to them.
 
 **Peer-engine value here is intentionally limited.** The base vLLM captures do not exercise the serialized guided request configuration. Historical Dynamo captures use the tagged parser and apply `init` when its API supports it; older APIs and split-only paths record unsupported initialization as unavailable instead of capturing the default mode under a guided label. Backfill overlays add results or explicit limitations for current cases without rewriting the original release shard.
 
 ### Group 40 — Prefilled reasoning, happy
-- **`40-1`** (`prefilled_reasoning_with_tool`) Stream begins inside a thought, closes it, calls a tool.
-- **`40-2`** (`prefilled_reasoning_with_guided_json`) Same, with the call as guided JSON.
-- **`40-3`** (`prefilled_reasoning_then_text_then_tool`) reasoning → visible prose → call. All three channels in one prefilled stream.
-- **`40-4`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
-- **`40-5`** (`native_quoted_control_in_reasoning`) A quoted native control marker inside a prefilled reasoning span remains literal reasoning text.
-- **`40-6`** (`native_single_quote_contraction_reasoning`) A control marker inside a contraction-bearing quote remains literal in prefilled reasoning.
+- **`40-prefilled_reasoning_with_tool`** (`prefilled_reasoning_with_tool`) Stream begins inside a thought, closes it, calls a tool.
+- **`40-prefilled_reasoning_with_guided_json`** (`prefilled_reasoning_with_guided_json`) Same, with the call as guided JSON.
+- **`40-prefilled_reasoning_then_text_then_tool`** (`prefilled_reasoning_then_text_then_tool`) reasoning → visible prose → call. All three channels in one prefilled stream.
+- **`40-prefilled_reasoning_then_text`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
+- **`40-native_quoted_control_in_reasoning`** (`native_quoted_control_in_reasoning`) A quoted native control marker inside a prefilled reasoning span remains literal reasoning text.
+- **`40-native_single_quote_contraction_reasoning`** (`native_single_quote_contraction_reasoning`) A control marker inside a contraction-bearing quote remains literal in prefilled reasoning.
 
 ### Group 41 — Prefilled reasoning, malformed
-- **`41-1`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
-- **`41-2`** (`prefilled_reasoning_truncated`) Budget runs out mid-call. Keep the completed reasoning, drop the partial call (P2).
+- **`41-prefilled_reasoning_redundant_opener`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
+- **`41-prefilled_reasoning_truncated`** (`prefilled_reasoning_truncated`) Budget runs out mid-call. Keep the completed reasoning, drop the partial call (P2).
 
 ### Group 50 — Prefilled response
-- **`50-4`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
+- **`50-prefilled_response_reasoning_markers_literal`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
 
 The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. Group 50 retains reasoning-marker stimuli that distinguish Response from default initialization; the ordinary native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
 
 ### DeepSeek V4-specific
 
-- **`35-5`** (`guided_response_rejected_header_quote_ownership`) DeepSeek V4 rejects an incomplete invoke header in Response; its attribute quote cannot protect the following parameter markup as prose.
+- **`35-guided_response_rejected_header_quote_ownership`** (`guided_response_rejected_header_quote_ownership`) DeepSeek V4 rejects an incomplete invoke header in Response; its attribute quote cannot protect the following parameter markup as prose.
 
-This case retains its published `UNIFIED.35-5` ID. DeepSeek V4 independently recognizes parameter markers after rejecting an incomplete invoke header. DeepSeek V4.1 and Muse do not register parameter elements as independent guided control markers; GLM and Qwen do not use quoted invoke-name attributes, and Gemma and Kimi use different call envelopes. The exact rejected-header quote and subsequent parameter-stripping contract is therefore DeepSeek V4-specific. The report groups it under DeepSeek V4-specific tests.
+This case uses `UNIFIED.35-guided_response_rejected_header_quote_ownership` and retains its published `UNIFIED.35-5` ID as a historical alias. DeepSeek V4 independently recognizes parameter markers after rejecting an incomplete invoke header. DeepSeek V4.1 and Muse do not register parameter elements as independent guided control markers; GLM and Qwen do not use quoted invoke-name attributes, and Gemma and Kimi use different call envelopes. The exact rejected-header quote and subsequent parameter-stripping contract is therefore DeepSeek V4-specific. The report groups it under DeepSeek V4-specific tests.
 
 ### Gemma-specific
 
-- **`gemma-1`** and **`gemma-2`** cover Gemma 4 guided call-prefix boundaries.
+- **`gemma-guided_json_visible_call_prose_before_reasoning`** and **`gemma-guided_json_malformed_call_prefix_before_reasoning`** cover Gemma 4 guided call-prefix boundaries.
 
 ### GLM 5-specific
 
-- **`glm5-1`** (`glm47_parameterless_call_shape_inside_argument`) places an offered parameterless-call shape inside an open GLM argument value. The embedded close/open markers remain argument data and must not dispatch a second call.
+- **`glm5-parameterless_call_shape_inside_argument`** (`glm47_parameterless_call_shape_inside_argument`) places an offered parameterless-call shape inside an open GLM argument value. The embedded close/open markers remain argument data and must not dispatch a second call.
 
 ### Kimi-specific
 
-- **`kimi-1`** through **`kimi-8`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
+- **`kimi-typed_argument_values`** through **`kimi-guided_native_wrapper`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
 
 ### Muse-specific
 
-- **`muse-1`** is the Muse tool-recipient header inside visible answer text. Its old `31-26` capture key remains a historical alias; this column is intentionally absent for non-Muse families because it would duplicate `35-1`.
+- **`muse-guided_json_quoted_bare_tool_header_in_answer`** is the Muse tool-recipient header inside visible answer text. Its old `31-26` capture key remains a historical alias; this column is intentionally absent for non-Muse families because it would duplicate `35-guided_json_quoted_bare_header_in_answer`.
 
 ## Authoring a case: what to check BEFORE adding one
 
@@ -377,13 +377,13 @@ Numeric groups describe shared behaviors: inspect every registered family and au
 
 Every rule here exists because a case was added that could not fail for the reason it claimed. Fake coverage is worse than no coverage — it renders green.
 
-1. **Is it distinguishable from an existing case?** Compare `init` AND input against the corpus. If some existing case has the same configuration and the same input shape, the new case tests nothing. Three groups were deleted for exactly this: a whole axis whose 51/52/53 cases had the same config and inputs as `1-1`, differing only in a label the parser cannot read.
+1. **Is it distinguishable from an existing case?** Compare `init` AND input against the corpus. If some existing case has the same configuration and the same input shape, the new case tests nothing. Three groups were deleted for exactly this: a whole axis whose 51/52/53 cases had the same config and inputs as `1-tool_only`, differing only in a label the parser cannot read.
 2. **Can it fail for the stated reason?** Write down what would have to break for the case to go red, then confirm the parser can even SEE that input. `finish_reason` cannot: `finish()` takes no argument, in Dynamo and in vLLM alike, so a case that varies only the finish reason varies nothing. If the axis is invisible to the parser, express it as an input shape instead — `length` becomes a TRUNCATED input, which is observable.
 3. **Does the field already exist under another name?** A per-case `input_mode` was added that was a 1:1 alias of `init.starting_state` across every row, and could not diverge, because "where the stream starts" IS what the starting state encodes. Grep the case dict before adding a key.
 4. **Measure the behavior, do not predict it.** Author the case, run the harness, read what the parser actually emitted, and THEN write the golden and the description around it. The all-or-nothing array semantics were found this way; predicting them would have produced a wrong golden that looked authoritative.
 5. **A near-duplicate that survives must name its distinguishing stimulus.** If a case keeps a different request state or mode, say which input bytes make that configuration change the parser's decision, and name the default-state sibling it contrasts with. A serialized `init` value that the input cannot exercise is not a retained contract.
 6. **The input must be a shape the declared `init` can actually produce.** Six guided-decoding scenarios rendered NATIVE model markup for gemma4 and kimi_k2 while declaring `tool_output_mode=GuidedJson` — a mode that constrains the model to bare JSON, so that markup is the one input it can never emit. They rendered green for a year because neither family had a unified parser to run them; the moment gemma4 got one, all six failed. Guided payloads are grammar-independent and are now written ONCE for every family (`every_family` in `gen_unified_golden.py`); only the reasoning envelope around them is per family.
-7. **A per-family golden needs a per-family fill, not one family's bytes.** `50-4` asserts that the model's own reasoning markers reach the user as literal TEXT, and its golden hardcoded qwen3's `<think>literal</think>` for all three families. Use the `None`-placeholder fill (as `12-1` does for an argument value) so the scenario stays shared and only the grammar-specific bytes differ.
+7. **A per-family golden needs a per-family fill, not one family's bytes.** `50-prefilled_response_reasoning_markers_literal` asserts that the model's own reasoning markers reach the user as literal TEXT, and its golden hardcoded qwen3's `<think>literal</think>` for all three families. Use the `None`-placeholder fill (as `12-reason_markup_in_arg` does for an argument value) so the scenario stays shared and only the grammar-specific bytes differ.
 
 ## Verifying a change to the table
 
@@ -424,6 +424,8 @@ The check is the count: if a review round produced N defects the corpus missed a
 ## Shared schema conformance probes
 
 Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.
+
+Historical schema-subgroup aliases below retain their original meaning. Active IDs use the probe name directly, for example `UNIFIED.7-declared_array` and `UNIFIED.7-const_array_allof`; subgroup headings and ordering remain separate metadata.
 
 - **`UNIFIED.7-17.*`** Declared JSON argument types.
 - **`UNIFIED.7-18.*`** String constants retain their literal spelling.

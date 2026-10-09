@@ -2646,7 +2646,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         )
         if scenario == "guided_json_quoted_bare_tool_header_in_answer":
             note = (
-                "This is a duplication of UNIFIED.35-1 for this family: the existing "
+                f"This is a duplication of {unified_taxonomy.numbered_id('guided_json_quoted_bare_header_in_answer')} for this family: the existing "
                 "variant changes only the literal text inside its reasoning markers. "
                 "Muse's to=get_weather header exercises a separate recipient boundary."
             )
@@ -2903,7 +2903,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
 
     # "Case descriptions" section under the table, grouped by taxonomy — same shape as
     # every other tab's glossary ([{label, rows:[(short_id, description), ...]}]). The
-    # view prepends case_prefix ("UNIFIED."), so short_id is the numbered id (e.g. "1-1").
+    # view prepends case_prefix ("UNIFIED."), so short_id is the descriptive taxonomy label.
     unified_glossary = []
     for grp in column_groups:
         group_key = grp["key"]

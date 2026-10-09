@@ -219,14 +219,14 @@ def test_v2_tab_labels_show_parser_generation(model_v2):
     assert labels["tab-unified"].startswith("Unified v2")
 
 
-def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
-    """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
+def test_unified_descriptive_case_ids_use_dash_everywhere(model_v2):
+    """Fixture IDs, headers, columns, and glossary rows share descriptive labels."""
     tab = _tab(model_v2, "tab-unified")
     numeric = {
-        "guided_json_quoted_bare_header_in_answer": "35-1",
-        "guided_json_quoted_bare_tool_header_in_answer": "muse-1",
-        "guided_json_quoted_bare_header_after_payload": "35-2",
-        "guided_json_bare_tool_header_recovers_inside_a_thought": "34-7",
+        "guided_json_quoted_bare_header_in_answer": "35-guided_json_quoted_bare_header_in_answer",
+        "guided_json_quoted_bare_tool_header_in_answer": "muse-guided_json_quoted_bare_tool_header_in_answer",
+        "guided_json_quoted_bare_header_after_payload": "35-guided_json_quoted_bare_header_after_payload",
+        "guided_json_bare_tool_header_recovers_inside_a_thought": "34-guided_json_bare_tool_header_recovers_inside_a_thought",
     }
     columns = {column["sub"]: column["label"] for column in tab["columns"]}
     glossary_ids = {
@@ -252,7 +252,7 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
             for field in ("description", "na_note"):
-                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
+                assert cell["tooltip"][field].startswith("This is a duplication of " + table.unified_taxonomy.numbered_id("guided_json_quoted_bare_header_in_answer"))
         if row["family"] == "deepseek_v41":
             for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
                 cell = row["cells"][scenario]
@@ -472,7 +472,7 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
             assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
 
 
-@pytest.mark.parametrize("parent", ["7-4", "7-5"])
+@pytest.mark.parametrize("parent", ["7-arg_json_null", "7-arg_string_null"])
 def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "glm47")
@@ -1063,7 +1063,7 @@ def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
             state, _ = cell_state(cell, {"key": "dynamo", "label": "Dynamo"})
             assert state == ("green" if block["events"] == golden["events"] else "red")
             assert "schema" in cell["tooltip"]["description"]
-            assert cell["case_id"] == ("UNIFIED.7-5" if scenario == "arg_string_null" else "UNIFIED.7-4")
+            assert cell["case_id"] == ("UNIFIED.7-arg_string_null" if scenario == "arg_string_null" else "UNIFIED.7-arg_json_null")
 
 
 def _assert_unmeasured_versions(cmp: dict, candidate_keys: list[str]) -> None:
@@ -1139,7 +1139,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     unified = _tab(model_v2, "tab-unified")
     row = next(row for row in unified["rows"] if row.get("family") == "glm47")
     cell = leaf_cells(row)[scenario]
-    assert cell["case_id"] == f"UNIFIED.{sub}"
+    assert cell["case_id"] == table.unified_taxonomy.numbered_id(scenario)
     blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
     events = [{"kind": "tool_call", **call} for call in calls]
     assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
@@ -1150,7 +1150,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     assert rows.keys() == families
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
-        assert shared["case_id"] == f"UNIFIED.{sub}"
+        assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
         assert shared["status"] != "na"
         candidates = {candidate["key"]: candidate["block"]
                       for candidate in shared["tooltip"]["candidates"]}
@@ -1257,8 +1257,8 @@ def test_stream_regression_matrix_uses_consistent_display_ids(model_v2):
 
 
 @pytest.mark.parametrize("scenario,label,family", [
-    ("deepseek_v41_json_invocation_body", "deepseek-1", "deepseek_v41"),
-    ("glm47_reference_type_intersection", "glm5-2", "glm47"),
+    ("deepseek_v41_json_invocation_body", "deepseek-json_invocation_body", "deepseek_v41"),
+    ("glm47_reference_type_intersection", "glm5-reference_type_intersection", "glm47"),
 ])
 def test_targeted_unified_regressions_use_family_specific_columns(model_v2, scenario, label, family):
     assert table.gen_unified_golden.scenario_families(scenario) == {family}
@@ -1337,7 +1337,7 @@ vm.runInContext(source.replace('// --- Entry point',
   'window.audit = {columnGrammarModel, buildGrammarHtml};\n// --- Entry point'), context);
 const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
 const results = {};
-for (const sub of ['7-4', '7-5']) {
+for (const sub of ['7-arg_json_null', '7-arg_string_null']) {
   const column = tab.columns.find(col => col.label === sub);
   const model = context.window.audit.columnGrammarModel(tab, column);
   results[sub] = context.window.audit.buildGrammarHtml(model);
@@ -1350,8 +1350,8 @@ process.stdout.write(JSON.stringify(results));
     )
     rendered = json.loads(result.stdout)
     for sub, explanation in (
-        ("7-4", "request tool schema permits JSON null"),
-        ("7-5", "request tool schema requires a string"),
+        ("7-arg_json_null", "request tool schema permits JSON null"),
+        ("7-arg_string_null", "request tool schema requires a string"),
     ):
         column = next(col for col in tab["columns"] if col["label"] == sub)
         assert explanation in column["desc"]
@@ -1359,13 +1359,13 @@ process.stdout.write(JSON.stringify(results));
         header = rendered[sub].split("<table", 1)[0]
         assert 'class="ttip-head-desc"' in header
         assert "request tool schema" in header
-    assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
-    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
+    assert 'JSON <tt>null</tt>' in rendered["7-arg_json_null"].split("<table", 1)[0]
+    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-arg_string_null"].split("<table", 1)[0]
 
 
 def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-arg_json_null", "7-arg_string_null"))} == {"7-arg_json_null", "7-arg_string_null"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
     families = set(table.gen_unified_golden.FAMILIES)
     for row in tab["rows"]:
@@ -1374,10 +1374,10 @@ def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2)
         mixed = row["family"] == "glm47"
         refs = row["family"] == "glm47"
         groups = []
-        for label, count in (("7-4", 5), ("7-5", 7)):
+        for label, count in (("7-arg_json_null", 5), ("7-arg_string_null", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = row["family"] == "qwen3" and label == "7-5"
+            qwen_ref = row["family"] == "qwen3" and label == "7-arg_string_null"
             assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
@@ -1388,12 +1388,12 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     scenario = "guided_response_rejected_header_quote_ownership"
     tab = _tab(model_v2, "tab-unified")
     column = next(c for c in tab["columns"] if c["sub"] == scenario)
-    assert column["label"] == "35-5"
+    assert column["label"] == "35-guided_response_rejected_header_quote_ownership"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
     assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
     assert group["span"] == 1
-    assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-5"
+    assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
     for row in tab["rows"]:
         cell = row["cells"][scenario]
@@ -1401,7 +1401,7 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
         if row["family"] != "deepseek_v4":
             assert cell["status"] == "na"
     glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
-    assert [r[0] for r in glossary["rows"]] == ["35-5"]
+    assert [r[0] for r in glossary["rows"]] == ["35-guided_response_rejected_header_quote_ownership"]
 
 
 def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures(model_v2):
