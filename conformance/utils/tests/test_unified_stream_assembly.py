@@ -3,6 +3,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_table_module():
     path = Path(__file__).parents[1] / "src" / "generate_conformance_table.py"
@@ -95,3 +97,27 @@ def test_recorded_fallback_requires_matching_call_sequence():
         assert module._assemble_stream(rows, recorded_assembly=mismatch) == raw
     batch_order = [native[1], native[0], native[2]]
     assert module._assemble_stream(rows, recorded_assembly=batch_order) == native
+
+
+@pytest.mark.parametrize("preserve_arguments", [False, True])
+@pytest.mark.parametrize("misaligned", [False, True])
+def test_exact_arguments_keep_aligned_malformed_fallback(preserve_arguments, misaligned):
+    module = _load_table_module()
+    exact = '{"value":9007199254740992.5}'
+    malformed = '{"broken":'
+    rows = [[
+        {"kind": "tool_call", "name": "number", "arguments": exact, "complete": True},
+        {"kind": "tool_call", "name": "bad", "arguments": malformed, "complete": True},
+    ]]
+    recorded = [
+        {"kind": "tool_call", "name": "number", "arguments": {"value": 9007199254740992.0}},
+        {"kind": "tool_call", "name": "bad", "arguments": {}},
+    ]
+    if misaligned:
+        recorded.reverse()
+    assert module._assemble_stream(
+        rows, recorded_assembly=recorded, preserve_arguments=preserve_arguments,
+    ) == [
+        {"kind": "tool_call", "name": "number", "arguments": exact if preserve_arguments else {"value": 9007199254740992.0}},
+        {"kind": "tool_call", "name": "bad", "arguments": malformed if misaligned else {}},
+    ]

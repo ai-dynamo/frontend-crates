@@ -1672,11 +1672,14 @@ def test_stream_capture_receipt_hashes_the_recorder_input_snapshot(tmp_path, mon
     monkeypatch.setattr(refresh_dynamo_captures, "dynamo_v2_label", lambda _root, version: version)
     monkeypatch.setattr(refresh_dynamo_captures, "capture_source_fingerprint",
                         lambda _root, version: "c" * 64 if version == _TEST_STREAM_CAPTURE_VERSION else "d" * 64)
-    source_hashes = iter(["c" * 64, "d" * 64])
+    producers = iter([
+        {"crate_version": _TEST_STREAM_CAPTURE_VERSION, "source_sha256": "c" * 64, "git_commit": "a" * 40},
+        {"crate_version": "98.0.0", "source_sha256": "d" * 64, "git_commit": "b" * 40},
+    ])
     monkeypatch.setattr(
         refresh_dynamo_captures,
         "dynamo_v2_provenance",
-        lambda _root, version: {"source_sha256": next(source_hashes)},
+        lambda _root, version: next(producers),
     )
     receipt_path = tmp_path / "receipt.json"
 
@@ -1686,6 +1689,10 @@ def test_stream_capture_receipt_hashes_the_recorder_input_snapshot(tmp_path, mon
     receipt = json.loads(receipt_path.read_text())
     entry = receipt["captures"][_TEST_STREAM_CAPTURE_ROOT]["cases"]["glm47/TOOLCALLING.streamv1.7.yaml"][case_id]
     assert recorder_inputs == [source_payload, source.read_bytes()]
+    for version, source_hash, commit in ((_TEST_STREAM_CAPTURE_VERSION, "c" * 64, "a" * 40),
+                                         ("98.0.0", "d" * 64, "b" * 40)):
+        captured = yaml.safe_load((tree / f"dynamo_v2-{version}/glm47/TOOLCALLING.streamv1.7.yaml").read_text())
+        assert captured["capture_origin"] == {"crate_version": version, "source_sha256": source_hash, "git_commit": commit}
     assert receipt["format"] == "dynamo-stream-capture-receipt-v2"
     assert receipt["captures"][_TEST_STREAM_CAPTURE_ROOT]["producer_source_sha256"] == "c" * 64
     assert receipt["captures"]["dynamo_v2-98.0.0"]["producer_source_sha256"] == "d" * 64

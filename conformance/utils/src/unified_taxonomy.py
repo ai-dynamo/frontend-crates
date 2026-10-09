@@ -25,6 +25,7 @@ import yaml
 import markers
 from null_cases import NULL_VARIANTS
 from schema_cases import CONFORMANCE_CASES, schema_case_label
+from numeric_cases import NUMERIC_VARIANTS
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -47,7 +48,7 @@ UNIFIED_TAX = {
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
-    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -212,6 +213,16 @@ _DISPLAY_GROUP = {"guided_response_rejected_header_quote_ownership": "deepseek_v
 def display_tax(scenario):
     group, sub = tax(scenario)
     return _DISPLAY_GROUP.get(scenario, group), sub
+
+
+def validate_family_sections(scenario_families):
+    """Reject singleton applicability in generic sections before aggregation."""
+    misplaced = {scenario: sorted(families) for scenario, families in scenario_families.items()
+                 if len(families) == 1 and (
+                     isinstance(display_tax(scenario)[0], int)
+                     or not UNIFIED_GROUP_LABEL[display_tax(scenario)[0]].startswith("Single Family Test:"))}
+    if misplaced:
+        raise ValueError(f"Single-family cases must NEVER appear in generic sections: {misplaced}")
 
 
 def display_sort_key(scenario):

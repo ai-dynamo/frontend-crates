@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import yaml
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import build_stream_fixtures
@@ -32,7 +33,8 @@ def test_refresh_batch_on_stream_collects_new_file_for_existing_family(tmp_path,
     assert captured["cases"]["TOOLCALLING.batch.7.q.integer"]["dynamo_v2"] == result
 
 
-def test_refresh_stream_preserves_canonical_dynamo_unavailable(tmp_path, monkeypatch):
+@pytest.mark.parametrize("with_receipt", [False, True])
+def test_refresh_stream_preserves_canonical_dynamo_unavailable(tmp_path, monkeypatch, with_receipt):
     tree = tmp_path / "fixtures-stream-v1"
     source = tree / "inputs" / "deepseek_v4" / "TOOLCALLING.streamv1.11.yaml"
     source.parent.mkdir(parents=True)
@@ -49,10 +51,35 @@ def test_refresh_stream_preserves_canonical_dynamo_unavailable(tmp_path, monkeyp
     monkeypatch.setattr(refresh, "V2_FAMILIES", ["deepseek_v4"])
     monkeypatch.setattr(refresh, "run_bin", lambda *_args: json.dumps({}))
 
-    refresh.refresh_stream("0.5.1")
+    producer = {"crate_version": "0.5.1", "source_sha256": "a" * 64, "git_commit": "b" * 40,
+                "label": "0.5.1", "kind": "unpublished"}
+    monkeypatch.setattr(refresh, "dynamo_v2_label", lambda *_args: "0.5.1")
+    monkeypatch.setattr(refresh, "dynamo_v2_provenance", lambda *_args: producer)
+    monkeypatch.setattr(refresh, "capture_source_fingerprint", lambda *_args: producer["source_sha256"])
+    receipt = tmp_path / "receipt.json" if with_receipt else None
+    refresh.refresh_stream("0.5.1", receipt)
 
     output = tree / "dynamo_v2-0.5.1" / "deepseek_v4" / source.name
     assert "unavailable: DSML has one tool-name owner." in output.read_text()
+    doc = yaml.safe_load(output.read_text())
+    assert doc["capture_origin"] == {"crate_version": "0.5.1", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    if with_receipt:
+        assert json.loads(receipt.read_text())["captures"]["dynamo_v2-0.5.1"]["producer_source_sha256"] == doc["capture_origin"]["source_sha256"]
+
+
+@pytest.mark.parametrize("with_receipt", [False, True])
+def test_refresh_stream_rejects_wrong_source_before_mutating(tmp_path, monkeypatch, with_receipt):
+    producer = {"source_sha256": "a" * 64}
+    monkeypatch.setattr(refresh, "dynamo_v2_label", lambda *_args: "0.5.1")
+    monkeypatch.setattr(refresh, "dynamo_v2_provenance", lambda *_args: producer)
+    monkeypatch.setattr(refresh, "capture_source_fingerprint", lambda *_args: "b" * 64)
+    def unexpected_tree(_name):
+        pytest.fail("source validation must precede output tree mutation")
+    monkeypatch.setattr(refresh, "ensure_tree", unexpected_tree)
+    receipt = tmp_path / "receipt.json" if with_receipt else None
+    with pytest.raises(ValueError, match="source does not match release"):
+        refresh.refresh_stream("0.5.1", receipt)
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_build_sources_preserves_reasoned_unavailable_cases(tmp_path):

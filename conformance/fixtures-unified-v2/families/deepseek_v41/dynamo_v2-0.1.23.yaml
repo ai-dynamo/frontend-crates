@@ -1117,6 +1117,159 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
+  arg_numeric_15_exponent:
+    stimulus:
+      ref: current
+      semantic_sha256: 691c1b3b832be95e88d90f8481a398210bf68499a885a3c503a2efc298178cbd
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.exponent
+  arg_numeric_15_negative:
+    stimulus:
+      ref: current
+      semantic_sha256: d72668577fa47b7c9ec768dea95c3db5df15accfef707997c2d8e13cfa578764
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.negative
+  arg_numeric_15_ordinary:
+    stimulus:
+      ref: current
+      semantic_sha256: 0bc133a3d4d03615f89cce2b6f8a9f635657945b9d9c19967ad96f1d37dd4d16
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.ordinary
+  arg_numeric_15_quarter:
+    stimulus:
+      ref: current
+      semantic_sha256: 05cbddb6c7e858349c07b80b2cb0d3aa762d1417f3e8c92ff3390d6c4a63b244
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.quarter
+  arg_numeric_15_round_down:
+    stimulus:
+      ref: current
+      semantic_sha256: d39274deaf7b8a79052c51f2431047c8f1b95f7362a1303841e578434128a752
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.round_down
+  arg_numeric_15_round_up:
+    stimulus:
+      ref: current
+      semantic_sha256: 04f0838817e980ea245c8d96f2635055c7f95f6a2fa56a276f4fe02436464d76
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.round_up
+  arg_numeric_15_small:
+    stimulus:
+      ref: current
+      semantic_sha256: 5e365ccc21f1a01f3057a1845693c0bb36f78aba602c4f454c2d53e59738bdad
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+    case_key: UNIFIED.7-15.small
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-4.mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: a2a30a9cc55643c454be6458492299edb8fd13200d49e03f03ce1467fa061b07
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-14.const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 75575afa79a8f60ec0f9cc3b22e0e96ec27c335d0c821d5bb4e70d2a5e987f1e
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-14.const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 95e8ad213ad62207c64ccb5941b9761384c9ff6f3506914ee883668ca343e1a2
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-14.enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 03876821210349f507f0091cf132c31ff1264525e3253d529e004dd945aba145
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-14.enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: dd926d2569e21035c34ebe53dee947e66694830955bf97e4c4a43d1178727d72
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-14.large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: c907d220413ef6d26acd383c348513d0afc82b7759cbf711465040c345a08f3e
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-14.large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 9a5748baa347fc2e84c1c883ad3011691a47c42829b79f15621428dd5dbf3cba
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-14.negative
+    stimulus:
+      ref: current
+      semantic_sha256: 1b262fa666e7588bf146e99da356191feb86cec89bf27fcf373179524bcb16b7
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-14.negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 2c9105d246d31935492072d4555a47834b57fbc4f8f7c206f0108a9f6b18e4ba
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-14.zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: 5b8eb3847c392063805ddef5bb8471808e35dd9b81404fadc042bea2f3254e84
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
 metadata_changes:
   arg_marker_in_string:
     init:
@@ -1608,4 +1761,179 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+  arg_numeric_15_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_ordinary:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_quarter:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_down:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_round_up:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_15_small:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_const_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_enum_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_decimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_large_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_negative_exponent:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_numeric_14_zero_underflow:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_const_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_const_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_enum_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_enum_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_large_decimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_large_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_negative_exponent:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_numeric_14_zero_underflow:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null

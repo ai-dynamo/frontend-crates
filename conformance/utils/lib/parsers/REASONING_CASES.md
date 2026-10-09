@@ -1,5 +1,9 @@
 # Reasoning Parser Corner Cases
 
+A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, preserve published IDs, and evaluate every registered family before deciding applicability. Missing captures remain missing evidence.
+
+Harmony channel/recipient probes `batch.3.c` through `batch.3.f` appear under `Single Family Test: GPT-OSS`; other registered reasoning grammars do not encode Harmony roles. Inkling generation-primer and nontext-placeholder probes `batch.7` and `batch.7.a` appear under `Single Family Test: Inkling`. Tool-start termination (`batch.3.b`) and incomplete-prefix preservation (`stream.3.d`) remain generic because other families can express those behaviors, even where their captures are missing.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 

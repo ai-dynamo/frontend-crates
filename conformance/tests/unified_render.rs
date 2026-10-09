@@ -347,6 +347,17 @@ fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
 
 /// Classify a Dynamo divergence from the golden.
 fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
+    let projected: Vec<Ev> = golden
+        .iter()
+        .map(|event| match event {
+            Ev::ToolCall { name, arguments } => Ev::ToolCall {
+                name: name.clone(),
+                arguments: common::decoded_golden_arguments(arguments),
+            },
+            event => event.clone(),
+        })
+        .collect();
+    let golden = projected.as_slice();
     if golden == got {
         return "MATCH";
     }
@@ -485,6 +496,7 @@ fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
     let known = divergences::load();
     let mut observed_dynamo = std::collections::BTreeSet::new();
+    let mut observed_projection = std::collections::BTreeSet::new();
     let mut parity_failures = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
@@ -571,13 +583,23 @@ fn render_unified_conformance_html() {
             } else {
                 classify(&file.family, &case.golden, &got)
             };
+            let actual = error
+                .as_ref()
+                .map(|e| format!("ERROR: {e}"))
+                .unwrap_or_else(|| got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  "));
+            // These entries pin the public Value projection separately from raw
+            // argument bytes, which are checked by the numeric parser tests.
+            match divergences::expected(&known, &file.family, id, Check::Projection) {
+                Some(Expected::Projection(expected)) if actual == expected.actual => {
+                    observed_projection.insert((file.family.clone(), id.clone()));
+                }
+                Some(Expected::Projection(expected)) => parity_failures.push(format!(
+                    "{id}: known projection divergence changed\n expected: {}\n      got: {}",
+                    expected.actual, actual
+                )),
+                _ => {}
+            }
             if dclass != "MATCH" {
-                let actual = error
-                    .as_ref()
-                    .map(|e| format!("ERROR: {e}"))
-                    .unwrap_or_else(|| {
-                        got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
-                    });
                 match divergences::expected(&known, &file.family, id, Check::Golden) {
                     Some(Expected::Golden(expected)) if actual == expected.actual => {
                         observed_dynamo.insert((file.family.clone(), id.clone()));
@@ -772,6 +794,11 @@ fn render_unified_conformance_html() {
         &known,
         Check::Golden,
         &observed_dynamo,
+    ));
+    parity_failures.extend(divergences::reconcile(
+        &known,
+        Check::Projection,
+        &observed_projection,
     ));
     assert_eq!(
         dynamo_red,

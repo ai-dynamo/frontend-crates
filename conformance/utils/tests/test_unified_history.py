@@ -326,8 +326,6 @@ def test_schema_v3_records_source_origin_for_unchanged_output(tmp_path):
         "source_sha256": "c" * 64,
         "git_commit": "d" * 40,
     }
-
-
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
 def test_schema_v3_rejects_patch_and_source_qualified_filenames(tmp_path, version):
     _write_family(tmp_path)

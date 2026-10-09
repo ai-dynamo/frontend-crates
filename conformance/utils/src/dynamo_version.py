@@ -179,6 +179,11 @@ def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
     }
 
 
+def compact_capture_origin(provenance: dict) -> dict:
+    """Retain the producer identity beside captured results, without display fields."""
+    return {key: provenance[key] for key in ("crate_version", "source_sha256", "git_commit")}
+
+
 def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
     version = crate_version(repo_root / "parsers/v2/Cargo.toml")
     supplied = override if override is not None else os.environ.get(ENV_OVERRIDE)
@@ -290,10 +295,7 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
                 "set a new unpublished crate version before recording Unified output"
             )
     supplied = os.environ.get(ENV_OVERRIDE)
-    origin = {
-        key: recorded[key]
-        for key in ("crate_version", "source_sha256", "git_commit")
-    }
+    origin = compact_capture_origin(recorded)
     if supplied is not None and dynamo_v2_label(repo_root, supplied) != origin["crate_version"]:
         raise ValueError("capture feed version differs from the requested capture version")
     return origin

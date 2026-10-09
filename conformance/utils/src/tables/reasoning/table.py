@@ -53,12 +53,10 @@ CASE_GROUPS = [
         (
             "batch.3.a",
             "batch.3.b",
-            "batch.3.c",
-            "batch.3.d",
-            "batch.3.e",
-            "batch.3.f",
         ),
     ),
+    ("Single Family Test: GPT-OSS", ("batch.3.c", "batch.3.d", "batch.3.e", "batch.3.f")),
+    ("Single Family Test: Inkling", ("batch.7", "batch.7.a")),
     ("Malformed / recovery", ("batch.4", "batch.5")),
     ("Multi-span", ("batch.6.a", "batch.6.b")),
     (

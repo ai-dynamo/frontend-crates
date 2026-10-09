@@ -26,9 +26,11 @@ import sys
 from pathlib import Path
 
 import yaml
+import yaml_fast
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dynamo_version import validate_capture_provenance  # noqa: E402
+from dynamo_version import compact_capture_origin, validate_capture_provenance  # noqa: E402
+from gen_unified_golden import build_cases
 from capture_stimulus import capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
 
@@ -103,6 +105,7 @@ def main():
 
     # A version dir is written once; accumulate cases into per-(dir, family) docs.
     docs = {}  # (dirname, family) -> {family, mode, [model_label|captured_with], cases:{}}
+    golden_cases = {}
 
     def slot(dirname, family, captured_with=None, model_label=None):
         k = (dirname, family)
@@ -113,10 +116,7 @@ def main():
             if captured_with is not None:
                 d["captured_with"] = captured_with
                 if "dynamo_v2" in captured_with:
-                    d["capture_origin"] = {
-                        key: provenance[key]
-                        for key in ("crate_version", "source_sha256", "git_commit")
-                    }
+                    d["capture_origin"] = compact_capture_origin(provenance)
             d["cases"] = {}
             docs[k] = d
         return docs[k]["cases"]
@@ -124,6 +124,8 @@ def main():
     for c in feed["cases"]:
         cid = c["id"]
         key, fam, scenario = _case_key(cid)
+        if fam not in golden_cases:
+            golden_cases[fam] = build_cases(fam)
         chunks = c.get("chunks") or []
 
         slot("inputs", fam, model_label=fam)[key] = {
@@ -141,7 +143,7 @@ def main():
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
         slot("golden", fam, captured_with={"golden": "v1"})[key] = {
-            "assembled": c.get("golden") or [],
+            "assembled": golden_cases[fam][cid]["golden"],
         }
 
         # dynamo_v2-<ver>/<family>/<key>.yaml — LIVE dynamo (assembled + per-chunk)

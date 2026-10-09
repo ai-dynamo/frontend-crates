@@ -24,6 +24,17 @@ import yaml
 
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_VARIANTS,
+    SCHEMA_DIRECTED_FAMILIES,
+    NumericLiteral,
+    applicable,
+    arguments_json,
+    numeric_description,
+    numeric_expected,
+    numeric_schema,
+)
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
@@ -96,6 +107,8 @@ def _atem_value(val):
     the quoted spelling like every other value that parses. Keeping it bare authored a
     golden no correct parser can emit.
     """
+    if isinstance(val, NumericLiteral):
+        return str(val)
     try:
         json.loads(val)
     except ValueError:
@@ -151,6 +164,8 @@ def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
 
 
 def _gemma_value(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
     if isinstance(value, str):
         return f'<|"|>{value}<|"|>'
     if isinstance(value, dict):
@@ -164,24 +179,47 @@ def r_tool(fam, name, key, val, idx):
     return r_tool_arguments(fam, name, {key: val}, idx)
 
 
+def _json_with_numeric_literals(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
+    if isinstance(value, dict):
+        return "{" + ",".join(
+            json.dumps(key, ensure_ascii=False) + ":" + _json_with_numeric_literals(item)
+            for key, item in value.items()
+        ) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(_json_with_numeric_literals(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _contains_numeric_literal(value):
+    if isinstance(value, NumericLiteral):
+        return True
+    if isinstance(value, dict):
+        return any(_contains_numeric_literal(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_numeric_literal(item) for item in value)
+    return False
+
+
 def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     # Raw spellings preserve published stimuli independently of the typed oracle.
     raw = raw_arguments if raw_arguments is not None else {
-        key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        key: str(value) if isinstance(value, NumericLiteral)
+        else value if isinstance(value, str) else _json_with_numeric_literals(value)
         for key, value in arguments.items()
     }
     if fam in ("deepseek_v4", "deepseek_v41"):
         gap = " " if fam == "deepseek_v41" else ""
         envelope = "calls" if gap else "tool_calls"
         params = "".join(
-            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
+            f'<｜DSML｜{gap}parameter name="{key}" string="{str(isinstance(value, str) and not isinstance(value, NumericLiteral)).lower()}">{raw[key]}</｜DSML｜{gap}parameter>'
             for key, value in arguments.items()
         )
         return (f'<｜DSML｜{gap}{envelope}><｜DSML｜{gap}invoke name="{name}">'
                 f'{params}</｜DSML｜{gap}invoke></｜DSML｜{gap}{envelope}>')
     if fam == "gemma4":
-        native_values = {key: raw[key] if isinstance(value, str) else json.loads(raw[key])
-                         for key, value in arguments.items()}
+        native_values = {key: value for key, value in arguments.items()}
         return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
     if fam == "qwen3":
         params = "\n".join(
@@ -196,7 +234,7 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         return f"<tool_call>{name}{params}</tool_call>"
     if fam == "muse_glimmer":
         params = "".join(
-            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) else raw[key]}</atem:parameter>\n'
+            f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) and not isinstance(value, NumericLiteral) else raw[key]}</atem:parameter>\n'
             for key, value in arguments.items()
         )
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
@@ -205,14 +243,15 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     if fam == "kimi_k3":
         types = {str: "string", type(None): "null", bool: "boolean", int: "integer",
                  float: "number", dict: "object", list: "array"}
-        params = "".join(k3_argument(key, types[type(value)], raw[key])
-                         for key, value in arguments.items())
+        params = "".join(k3_argument(
+            key, "number" if isinstance(value, NumericLiteral) else types[type(value)], raw[key]
+        ) for key, value in arguments.items())
         return k3_tools(k3_call(name, idx + 1, params))
     assert fam == "kimi_k2", fam
-    args = json.dumps(arguments, ensure_ascii=False)
+    args = (_json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
+            else json.dumps(arguments, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
-
 
 def qwen3_input_as_glm47(input_text):
     """Translate a Qwen-shaped edge fixture into GLM XML."""
@@ -1997,8 +2036,8 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
-# GLM's XML values have no native type marker. Keep these references unresolved
-# in the request so the parser must consult definitions on the parameters root.
+# Only schema-directed grammars can distinguish a reference from the equivalent
+# inline type. Typed JSON passthrough would duplicate the ordinary null probes.
 EDGE += [
     (
         scenario,
@@ -2009,19 +2048,20 @@ EDGE += [
         {"finish_reason": "stop"},
         OnlyFamilies({
             family: (
-                _NULL_TEXT_INPUTS[family],
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+            for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
+        }}] for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
-         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+         '`city` uses a local $ref to the tool parameters root; resolving its nullable definition must turn bare null text into JSON null.'),
         ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
          'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
@@ -2029,19 +2069,20 @@ EDGE += [
 
 EDGE.append((
     "arg_null_mixed_labels",
-    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
     ["I7"],
     [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop"},
     OnlyFamilies({family: (
-        "<tool_call>set_labels"
+        ("<tool_call>set_labels"
         "<arg_key>label</arg_key><arg_value>null</arg_value>"
         "<arg_key>note</arg_key><arg_value>null</arg_value>"
-        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
-    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>") if family == "glm47"
+        else r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
+    ) for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
@@ -2216,6 +2257,21 @@ EDGE.append((
 ))
 
 
+EDGE += [
+    (scenario, numeric_description(label) + f" Input {raw}; expected {expected}.",
+     ["I7"], [{"kind": "tool_call", "name": "get_weather", "arguments": arguments_json(expected)}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     OnlyFamilies({family: (r_tool(family, "get_weather", "value", NumericLiteral(raw), 0),
+                             VLLM_UNCAPTURABLE.get(family, M), M,
+                             [{"kind": "tool_call", "name": "get_weather",
+                               "arguments": arguments_json(numeric_expected(family, label, raw, expected))}])
+                   for family in FAMILIES if applicable(family, label)}),
+     {family: [{"name": "get_weather", "parameters": {
+         "type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}]
+      for family in FAMILIES if applicable(family, label)})
+    for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
+]
 
 
 _NATIVE_QUOTED_CONTROL = {

@@ -83,6 +83,7 @@ _build_stage_base() {
   \cp -f "$TOOLS/null_cases.py" "$STAGE/tests/parity/null_cases.py"
   \cp -f "$TOOLS/schema_cases.py" "$STAGE/tests/parity/schema_cases.py"
   \cp -f "$TOOLS/glm47_schema_cases.json" "$STAGE/tests/parity/glm47_schema_cases.json"
+  \cp -f "$TOOLS/numeric_cases.py" "$STAGE/tests/parity/numeric_cases.py"
   \cp -f "$TOOLS/case_variants.py" "$STAGE/tests/parity/case_variants.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
