@@ -22,23 +22,50 @@ use crate::{MmError, Result};
 /// loader options (`do_sample_frames`, `size`, `max_pixels`, ...), so a router
 /// can deserialize the whole map. A misspelled key is therefore not an error.
 ///
-/// `fps` wins over `num_frames`; `max_frames` caps either. With none set, every
-/// frame is requested, still capped by `max_frames`.
+/// Either `fps` (optionally capped by `max_frames`) or `num_frames`, as in
+/// Dynamo's video decoder: `num_frames` with `fps` or `max_frames` is
+/// rejected. vLLM instead accepts `fps` with `num_frames` and samples the
+/// fewer of the two. With none set, every frame is requested.
 ///
 /// Each field defaults to unset (`None`), which is what vLLM spells `-1`: all
 /// frames, at the source frame rate. A literal `-1` in the request is accepted
 /// and read as unset, so vLLM-shaped payloads deserialize unchanged.
+/// Deserialization runs [`VideoOptions::validate`], so options that fail it
+/// never deserialize.
 #[derive(Clone, Debug, Default, PartialEq, serde::Deserialize)]
+#[serde(try_from = "RawVideoOptions")]
 pub struct VideoOptions {
     /// Sample this many frames per second of video.
-    #[serde(default, deserialize_with = "unset_if_minus_one_f64")]
     pub fps: Option<f64>,
-    /// Upper bound on the number of sampled frames.
-    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
+    /// Upper bound on the number of frames sampled by `fps`.
     pub max_frames: Option<u64>,
     /// Sample exactly this many frames, evenly spaced.
-    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
     pub num_frames: Option<u64>,
+}
+
+/// The wire form of [`VideoOptions`], before validation.
+#[derive(serde::Deserialize)]
+struct RawVideoOptions {
+    #[serde(default, deserialize_with = "unset_if_minus_one_f64")]
+    fps: Option<f64>,
+    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
+    max_frames: Option<u64>,
+    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
+    num_frames: Option<u64>,
+}
+
+impl TryFrom<RawVideoOptions> for VideoOptions {
+    type Error = MmError;
+
+    fn try_from(raw: RawVideoOptions) -> Result<Self> {
+        let options = Self {
+            fps: raw.fps,
+            max_frames: raw.max_frames,
+            num_frames: raw.num_frames,
+        };
+        options.validate()?;
+        Ok(options)
+    }
 }
 
 /// vLLM's `-1` (and JSON `null`) as unset; any other negative count is an error.
@@ -89,8 +116,19 @@ pub struct VideoBounds {
 }
 
 impl VideoOptions {
-    /// Reject non-positive or non-finite values before they reach a decoder.
+    /// Reject `num_frames` combined with `fps` or `max_frames`, and
+    /// non-positive or non-finite values, before they reach a decoder.
     pub fn validate(&self) -> Result<()> {
+        if self.fps.is_some() && self.num_frames.is_some() {
+            return Err(MmError::invalid_input(
+                "fps and num_frames cannot be specified at the same time",
+            ));
+        }
+        if self.max_frames.is_some() && self.num_frames.is_some() {
+            return Err(MmError::invalid_input(
+                "max_frames and num_frames cannot be specified at the same time",
+            ));
+        }
         if let Some(fps) = self.fps
             && !(fps.is_finite() && fps > 0.0)
         {
@@ -121,9 +159,9 @@ impl VideoPixelBudget {
 /// How many frames to sample from a video of `duration_secs` seconds holding
 /// `total_frames` frames.
 ///
-/// Rules, in order: `fps` gives `trunc(duration * fps)`; otherwise
-/// `num_frames`; otherwise every frame. The result is capped by `max_frames`
-/// and is at least 1. Asking for more frames than the video holds is an error
+/// `fps` gives `trunc(duration * fps)`, `num_frames` gives itself, and with
+/// neither every frame is requested. The result is capped by `max_frames` and
+/// is at least 1. Asking for more frames than the video holds is an error
 /// rather than a silent clamp, so a caller notices a mismatched `fps`.
 pub fn resolve_num_frames(
     options: &VideoOptions,
@@ -183,9 +221,24 @@ mod tests {
     }
 
     #[test]
-    fn fps_wins_over_num_frames() {
-        let o = opts(Some(1.0), None, Some(50));
-        assert_eq!(resolve_num_frames(&o, 10.0, 300).unwrap(), 10);
+    fn num_frames_with_fps_or_max_frames_is_rejected() {
+        // As Dynamo's video decoder does, whether built in code or deserialized.
+        for (o, json) in [
+            (
+                opts(Some(1.0), None, Some(50)),
+                r#"{"fps": 1, "num_frames": 50}"#,
+            ),
+            (
+                opts(None, Some(5), Some(8)),
+                r#"{"max_frames": 5, "num_frames": 8}"#,
+            ),
+        ] {
+            assert!(resolve_num_frames(&o, 10.0, 300).is_err(), "{o:?}");
+            assert!(
+                serde_json::from_str::<VideoOptions>(json).is_err(),
+                "{json}"
+            );
+        }
     }
 
     #[test]
@@ -201,13 +254,9 @@ mod tests {
     }
 
     #[test]
-    fn max_frames_caps_every_mode() {
+    fn max_frames_caps_fps_and_all_frames() {
         assert_eq!(
             resolve_num_frames(&opts(Some(2.0), Some(5), None), 10.0, 300).unwrap(),
-            5
-        );
-        assert_eq!(
-            resolve_num_frames(&opts(None, Some(5), Some(8)), 10.0, 300).unwrap(),
             5
         );
         assert_eq!(
@@ -286,9 +335,10 @@ mod tests {
         for bad in [r#"{"num_frames": -2}"#, r#"{"max_frames": -5}"#] {
             assert!(serde_json::from_str::<VideoOptions>(bad).is_err(), "{bad}");
         }
-        // A negative fps other than -1 deserializes but fails validation.
-        let o: VideoOptions = serde_json::from_str(r#"{"fps": -2}"#).unwrap();
-        assert!(o.validate().is_err());
+        // Invalid values fail deserialization through `validate`.
+        for bad in [r#"{"fps": -2}"#, r#"{"fps": 0}"#, r#"{"num_frames": 0}"#] {
+            assert!(serde_json::from_str::<VideoOptions>(bad).is_err(), "{bad}");
+        }
     }
 
     #[test]
