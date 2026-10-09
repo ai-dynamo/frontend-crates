@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::Tool;
 
@@ -11,6 +11,225 @@ use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
     StructuralTagToolChoice,
 };
+
+fn empty_qwen_tool() -> Tool {
+    Tool {
+        name: "get_server_time".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object", "properties": {}, "required": [], "additionalProperties": false
+        }),
+        // Dynamo normalizes an omitted strict field to true before calling v2.
+        strict: Some(true),
+    }
+}
+
+fn qwen_call_tag(tag: &Value) -> &Value {
+    let format = &tag["format"];
+    if format["type"] == "tag" {
+        format
+    } else {
+        &format["tags"][0]
+    }
+}
+
+#[test]
+fn qwen_empty_tool_has_exact_empty_body() {
+    for omit_required in [false, true] {
+        let mut tool = empty_qwen_tool();
+        if omit_required {
+            tool.parameters.as_object_mut().unwrap().remove("required");
+        }
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("get_server_time"),
+        ] {
+            for any_order in [false, true] {
+                let tag = QWEN3_CODER
+                    .build_with_options(
+                        &StructuralTagContext {
+                            tool_choice: choice,
+                            tools: std::slice::from_ref(&tool),
+                            parallel_tool_calls: Some(false),
+                            schema_mode: StructuralTagSchemaMode::Auto,
+                            structured_output_schema: None,
+                            starts_in_reasoning: false,
+                        },
+                        &StructuralTagOptions {
+                            tool_arguments_any_order: any_order,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(
+                    qwen_call_tag(&tag)["content"],
+                    json!({"type": "const_string", "value": ""}),
+                    "{choice:?}, omit_required={omit_required}, any_order={any_order}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_other_constraints() {
+    let mut tool = empty_qwen_tool();
+    for schema in [
+        json!({"type": "object", "properties": {"utc": {"type": "boolean"}}, "additionalProperties": false}),
+        json!({"type": "object", "properties": {}}),
+        json!({"type": "object", "properties": {}, "additionalProperties": true}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "minProperties": 1}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "$id": "https://example.com/tool"}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "required": ["missing"]}),
+    ] {
+        tool.parameters = schema.clone();
+        let tag = QWEN3_CODER
+            .build_with_options(
+                &StructuralTagContext {
+                    tool_choice: StructuralTagToolChoice::Named("get_server_time"),
+                    tools: std::slice::from_ref(&tool),
+                    parallel_tool_calls: None,
+                    schema_mode: StructuralTagSchemaMode::Auto,
+                    structured_output_schema: None,
+                    starts_in_reasoning: false,
+                },
+                &StructuralTagOptions {
+                    tool_arguments_any_order: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            json!({"type": "json_schema", "json_schema": schema, "style": "qwen_xml", "any_order": true})
+        );
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_strict_policy_and_other_formats() {
+    let mut tool = empty_qwen_tool();
+    for strict in [None, Some(false)] {
+        tool.strict = strict;
+        for schema_mode in [
+            StructuralTagSchemaMode::Auto,
+            StructuralTagSchemaMode::Strict,
+        ] {
+            let tag = build(
+                &QWEN3_CODER,
+                StructuralTagToolChoice::Named("get_server_time"),
+                std::slice::from_ref(&tool),
+                None,
+                schema_mode,
+                false,
+            );
+            let expected = if schema_mode == StructuralTagSchemaMode::Strict {
+                json!({"type": "const_string", "value": ""})
+            } else {
+                json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
+            };
+            assert_eq!(qwen_call_tag(&tag)["content"], expected);
+        }
+    }
+    tool.strict = Some(true);
+    let tag = build(
+        &GLM47,
+        StructuralTagToolChoice::Named("get_server_time"),
+        std::slice::from_ref(&tool),
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        tag["format"]["content"],
+        json!({"type": "json_schema", "json_schema": tool.parameters, "style": "glm_xml"})
+    );
+}
+
+// Run with XGRAMMAR_PYTHON=<python> cargo test -p dynamo-parsers-v2 --lib
+// structural_tag::tests::qwen_empty_tool_compiles -- --ignored --nocapture
+#[test]
+#[ignore = "requires CPU XGrammar installed for XGRAMMAR_PYTHON"]
+fn qwen_empty_tool_compiles_without_argument_whitespace_loop() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let tools = [empty_qwen_tool()];
+    let cases: Vec<_> = [
+        StructuralTagToolChoice::Auto,
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Named("get_server_time"),
+    ]
+    .into_iter()
+    .map(|choice| {
+        let tag = build(
+            &QWEN3_CODER,
+            choice,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        json!({"choice": format!("{choice:?}"), "call": qwen_call_tag(&tag), "tag": tag})
+    })
+    .collect();
+    // Byte tokens isolate grammar compilation and matching from model generation.
+    let script = r#"
+import importlib.metadata
+import json
+import sys
+import xgrammar as xg
+
+info = xg.TokenizerInfo([bytes([i]) for i in range(256)] + [b""], stop_token_ids=[256])
+compiler = xg.GrammarCompiler(info, max_threads=1)
+results = []
+for case in json.load(sys.stdin):
+    result = {"choice": case["choice"]}
+    try:
+        compiled = compiler.compile_structural_tag(json.dumps(case["tag"]))
+        call = case["call"]
+        matcher = xg.GrammarMatcher(compiled)
+        assert matcher.accept_string(call["begin"] + call["end"]), "empty call rejected"
+        assert matcher.accept_token(256), "empty call cannot stop"
+        assert matcher.is_terminated(), "empty call did not terminate"
+        # The live failure consumed its token budget on tabs inside the empty body.
+        for body in ["\t", " " * 32, "\n" * 32, "<parameter=unexpected>x</parameter>"]:
+            matcher = xg.GrammarMatcher(compiled)
+            assert matcher.accept_string(call["begin"]), "opening envelope rejected"
+            assert not matcher.accept_string(body), f"empty tool admits {body!r}"
+        result["passed"] = True
+    except Exception as exc:
+        result.update(passed=False, error=str(exc))
+    results.append(result)
+print(json.dumps({"xgrammar": importlib.metadata.version("xgrammar"), "checks": results}, indent=2))
+assert all(result["passed"] for result in results), "empty Qwen XML grammar regression"
+"#;
+    let python = std::env::var("XGRAMMAR_PYTHON").unwrap_or_else(|_| "python3".to_string());
+    let mut child = Command::new(python)
+        .env("TVM_FFI_DISABLE_TORCH_C_DLPACK", "1")
+        .args(["-c", script])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start Python with CPU XGrammar installed");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&serde_json::to_vec(&cases).unwrap())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    assert!(
+        output.status.success(),
+        "CPU XGrammar regression failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
 
 fn build_with_structured_output(
     builder: &super::StructuralTagBuilder,
