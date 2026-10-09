@@ -1,0 +1,1922 @@
+[
+  {
+    "name": "declared_string",
+    "schema": {
+      "type": "string"
+    },
+    "value": "plain",
+    "raw": "plain",
+    "invalid_raw": []
+  },
+  {
+    "name": "declared_integer",
+    "schema": {
+      "type": "integer"
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "declared_number",
+    "schema": {
+      "type": "number"
+    },
+    "value": 3.5,
+    "raw": "3.5",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "declared_boolean",
+    "schema": {
+      "type": "boolean"
+    },
+    "value": true,
+    "raw": "true",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "declared_object",
+    "schema": {
+      "type": "object"
+    },
+    "value": {
+      "x": 1
+    },
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "declared_array",
+    "schema": {
+      "type": "array"
+    },
+    "value": [
+      1,
+      2
+    ],
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "declared_null",
+    "schema": {
+      "type": "null"
+    },
+    "value": null,
+    "raw": "null",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "const_plain_bare",
+    "schema": {
+      "const": "auto"
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_plain_typed",
+    "schema": {
+      "type": "string",
+      "const": "auto"
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_plain_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_plain_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "auto"
+      }
+    }
+  },
+  {
+    "name": "const_quoted_bare",
+    "schema": {
+      "const": "\"hello\""
+    },
+    "value": "\"hello\"",
+    "raw": "\"hello\"",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_quoted_typed",
+    "schema": {
+      "type": "string",
+      "const": "\"hello\""
+    },
+    "value": "\"hello\"",
+    "raw": "\"hello\"",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_quoted_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "\"hello\""
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "\"hello\"",
+    "raw": "\"hello\"",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_quoted_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "\"hello\"",
+    "raw": "\"hello\"",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "\"hello\""
+      }
+    }
+  },
+  {
+    "name": "const_object_bare",
+    "schema": {
+      "const": "{\"x\":1}"
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_object_typed",
+    "schema": {
+      "type": "string",
+      "const": "{\"x\":1}"
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_object_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "{\"x\":1}"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_object_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "{\"x\":1}"
+      }
+    }
+  },
+  {
+    "name": "const_array_bare",
+    "schema": {
+      "const": "[1,2]"
+    },
+    "value": "[1,2]",
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_array_typed",
+    "schema": {
+      "type": "string",
+      "const": "[1,2]"
+    },
+    "value": "[1,2]",
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_array_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "[1,2]"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "[1,2]",
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_array_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "[1,2]",
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "[1,2]"
+      }
+    }
+  },
+  {
+    "name": "const_number_bare",
+    "schema": {
+      "const": "42"
+    },
+    "value": "42",
+    "raw": "42",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_number_typed",
+    "schema": {
+      "type": "string",
+      "const": "42"
+    },
+    "value": "42",
+    "raw": "42",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_number_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "42"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "42",
+    "raw": "42",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_number_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "42",
+    "raw": "42",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "42"
+      }
+    }
+  },
+  {
+    "name": "const_boolean_bare",
+    "schema": {
+      "const": "true"
+    },
+    "value": "true",
+    "raw": "true",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_boolean_typed",
+    "schema": {
+      "type": "string",
+      "const": "true"
+    },
+    "value": "true",
+    "raw": "true",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_boolean_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "true"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "true",
+    "raw": "true",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_boolean_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "true",
+    "raw": "true",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "true"
+      }
+    }
+  },
+  {
+    "name": "const_null_bare",
+    "schema": {
+      "const": "null"
+    },
+    "value": "null",
+    "raw": "null",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_null_typed",
+    "schema": {
+      "type": "string",
+      "const": "null"
+    },
+    "value": "null",
+    "raw": "null",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_null_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "null"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "null",
+    "raw": "null",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_null_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "null",
+    "raw": "null",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "null"
+      }
+    }
+  },
+  {
+    "name": "const_space_bare",
+    "schema": {
+      "const": "  spaced  "
+    },
+    "value": "  spaced  ",
+    "raw": "  spaced  ",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_space_typed",
+    "schema": {
+      "type": "string",
+      "const": "  spaced  "
+    },
+    "value": "  spaced  ",
+    "raw": "  spaced  ",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_space_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "  spaced  "
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "  spaced  ",
+    "raw": "  spaced  ",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_space_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "  spaced  ",
+    "raw": "  spaced  ",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "  spaced  "
+      }
+    }
+  },
+  {
+    "name": "const_unicode_bare",
+    "schema": {
+      "const": "café"
+    },
+    "value": "café",
+    "raw": "café",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_unicode_typed",
+    "schema": {
+      "type": "string",
+      "const": "café"
+    },
+    "value": "café",
+    "raw": "café",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_unicode_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "café"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "café",
+    "raw": "café",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_unicode_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "café",
+    "raw": "café",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "café"
+      }
+    }
+  },
+  {
+    "name": "const_entity_bare",
+    "schema": {
+      "const": "&lt;"
+    },
+    "value": "&lt;",
+    "raw": "&lt;",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_entity_typed",
+    "schema": {
+      "type": "string",
+      "const": "&lt;"
+    },
+    "value": "&lt;",
+    "raw": "&lt;",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_entity_allof",
+    "schema": {
+      "allOf": [
+        {
+          "const": "&lt;"
+        },
+        {
+          "minLength": 0
+        }
+      ]
+    },
+    "value": "&lt;",
+    "raw": "&lt;",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "const_entity_ref",
+    "schema": {
+      "$ref": "#/$defs/Literal"
+    },
+    "value": "&lt;",
+    "raw": "&lt;",
+    "invalid_raw": [
+      "other"
+    ],
+    "defs": {
+      "Literal": {
+        "const": "&lt;"
+      }
+    }
+  },
+  {
+    "name": "union_anyOf_integer_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_integer_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_number_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_number_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "value": 3.5,
+    "raw": "3.5",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_boolean_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_boolean_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "value": true,
+    "raw": "true",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_object_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_object_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "value": {
+      "x": 1
+    },
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_array_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_array_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "value": [
+      1,
+      2
+    ],
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_null_string",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_null_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "value": null,
+    "raw": "null",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_integer_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_integer_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_number_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_number_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": 3.5,
+    "raw": "3.5",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_boolean_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_boolean_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": true,
+    "raw": "true",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_object_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_object_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": {
+      "x": 1
+    },
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_array_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "array"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_array_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "array"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": [
+      1,
+      2
+    ],
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_anyOf_null_reverse_string",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_anyOf_null_reverse_typed",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": null,
+    "raw": "null",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_integer_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_integer_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_number_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_number_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "value": 3.5,
+    "raw": "3.5",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_boolean_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_boolean_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "value": true,
+    "raw": "true",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_object_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_object_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "value": {
+      "x": 1
+    },
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_array_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_array_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "value": [
+      1,
+      2
+    ],
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_null_string",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_null_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "const": "auto"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "value": null,
+    "raw": "null",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_integer_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_integer_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_number_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_number_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": 3.5,
+    "raw": "3.5",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_boolean_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_boolean_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": true,
+    "raw": "true",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_object_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_object_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": {
+      "x": 1
+    },
+    "raw": "{\"x\":1}",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_array_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "array"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_array_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "array"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": [
+      1,
+      2
+    ],
+    "raw": "[1,2]",
+    "invalid_raw": [
+      "wrong"
+    ],
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "union_oneOf_null_reverse_string",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": "auto",
+    "raw": "auto",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "union_oneOf_null_reverse_typed",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "const": "auto"
+        }
+      ]
+    },
+    "value": null,
+    "raw": "null",
+    "invalid_raw": [
+      "wrong"
+    ]
+  },
+  {
+    "name": "ref_union_anyOf_string",
+    "schema": {
+      "$ref": "#/$defs/Alias"
+    },
+    "value": "auto",
+    "raw": "auto",
+    "defs": {
+      "Alias": {
+        "$ref": "#/$defs/Choice"
+      },
+      "Choice": {
+        "anyOf": [
+          {
+            "const": "auto"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "ref_union_anyOf_integer",
+    "schema": {
+      "$ref": "#/$defs/Alias"
+    },
+    "value": -7,
+    "raw": "-7",
+    "defs": {
+      "Alias": {
+        "$ref": "#/$defs/Choice"
+      },
+      "Choice": {
+        "anyOf": [
+          {
+            "const": "auto"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "intersection_anyOf",
+    "schema": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "anyOf": [
+            {
+              "const": "auto"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42"
+  },
+  {
+    "name": "ref_union_oneOf_string",
+    "schema": {
+      "$ref": "#/$defs/Alias"
+    },
+    "value": "auto",
+    "raw": "auto",
+    "defs": {
+      "Alias": {
+        "$ref": "#/$defs/Choice"
+      },
+      "Choice": {
+        "oneOf": [
+          {
+            "const": "auto"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "ref_union_oneOf_integer",
+    "schema": {
+      "$ref": "#/$defs/Alias"
+    },
+    "value": -7,
+    "raw": "-7",
+    "defs": {
+      "Alias": {
+        "$ref": "#/$defs/Choice"
+      },
+      "Choice": {
+        "oneOf": [
+          {
+            "const": "auto"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "intersection_oneOf",
+    "schema": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "oneOf": [
+            {
+              "const": "auto"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      ]
+    },
+    "value": 42,
+    "raw": "42"
+  },
+  {
+    "name": "ref_sibling_integer",
+    "schema": {
+      "$ref": "#/$defs/Choice",
+      "type": "integer"
+    },
+    "value": 42,
+    "raw": "42",
+    "defs": {
+      "Choice": {
+        "anyOf": [
+          {
+            "const": "auto"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "escaped_ref_const",
+    "schema": {
+      "$ref": "#/$defs/A~1B~0C"
+    },
+    "value": "\"hello\"",
+    "raw": "\"hello\"",
+    "defs": {
+      "A/B~C": {
+        "const": "\"hello\""
+      }
+    }
+  },
+  {
+    "name": "percent_ref_const",
+    "schema": {
+      "$ref": "#/$defs/Caf%C3%A9"
+    },
+    "value": "42",
+    "raw": "42",
+    "defs": {
+      "Café": {
+        "const": "42"
+      }
+    }
+  },
+  {
+    "name": "enum_string",
+    "schema": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "42"
+      ]
+    },
+    "value": "42",
+    "raw": "42",
+    "invalid_raw": [
+      "other"
+    ]
+  },
+  {
+    "name": "enum_integer",
+    "schema": {
+      "type": "integer",
+      "enum": [
+        7,
+        42
+      ]
+    },
+    "value": 42,
+    "raw": "42",
+    "invalid_raw": [
+      "8",
+      "true"
+    ]
+  },
+  {
+    "name": "typed_enum_union",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "auto"
+          ]
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": "42",
+    "raw": "42",
+    "grammar": false,
+    "conformance": false,
+    "note": "Existing unrestricted string hint wins; parser-only compatibility control, string 42 is schema-invalid."
+  },
+  {
+    "name": "type_array_string_integer",
+    "schema": {
+      "type": [
+        "string",
+        "integer"
+      ]
+    },
+    "value": "42",
+    "raw": "42"
+  },
+  {
+    "name": "type_array_integer_null",
+    "schema": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "value": 42,
+    "raw": "42"
+  },
+  {
+    "name": "type_array_integer_null_null",
+    "schema": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "value": null,
+    "raw": "null"
+  },
+  {
+    "name": "nullable_string",
+    "schema": {
+      "type": "string",
+      "nullable": true
+    },
+    "value": null,
+    "raw": "null",
+    "grammar": false,
+    "note": "Repository nullable extension; checked by corpus oracle, not standard JSON Schema."
+  },
+  {
+    "name": "null_string_literal",
+    "schema": {
+      "const": "null"
+    },
+    "value": "null",
+    "raw": "null"
+  },
+  {
+    "name": "null_union_ambiguous",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "null"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "value": null,
+    "raw": "null"
+  },
+  {
+    "name": "integer_const_ambiguous",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "42"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "value": "42",
+    "raw": "42"
+  },
+  {
+    "name": "object_const_union",
+    "schema": {
+      "anyOf": [
+        {
+          "const": "{\"x\":1}"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "xgrammar_min": "0.2.7"
+  },
+  {
+    "name": "unresolved_ref_with_type",
+    "schema": {
+      "$ref": "#/$defs/Missing",
+      "type": "string"
+    },
+    "value": "{\"x\":1}",
+    "raw": "{\"x\":1}",
+    "grammar": false,
+    "conformance": false
+  },
+  {
+    "name": "cyclic_ref_with_type",
+    "schema": {
+      "$ref": "#/$defs/Loop",
+      "type": "string"
+    },
+    "value": "42",
+    "raw": "42",
+    "defs": {
+      "Loop": {
+        "$ref": "#/$defs/Loop"
+      }
+    },
+    "grammar": false,
+    "conformance": false
+  },
+  {
+    "name": "id_direct_integer",
+    "schema": {
+      "$id": "https://example.test/schema",
+      "type": "integer"
+    },
+    "value": 42,
+    "raw": "42",
+    "grammar": false
+  }
+]

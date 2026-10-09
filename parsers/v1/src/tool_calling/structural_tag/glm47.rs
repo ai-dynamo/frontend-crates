@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 
 use super::builder::{ToolCallFormatBuildContext, resolve_tool_schema, resolve_tools_to_include};
 use crate::tool_calling::ToolChoice;
+use crate::tool_calling::xml::resolve_local_schema_ref;
 
 const TOOL_CALL_BEGIN: &str = "<tool_call>";
 const TOOL_CALL_END: &str = "</tool_call>";
@@ -55,7 +56,7 @@ fn glm_schema(mut schema: Value) -> Value {
                 let Some(target) = src
                     .get("$ref")
                     .and_then(Value::as_str)
-                    .and_then(|r| root.pointer(r.strip_prefix('#')?))
+                    .and_then(|r| resolve_local_schema_ref(r, &root))
                 else {
                     break;
                 };
@@ -141,6 +142,24 @@ mod tests {
             glm_schema(schema)["properties"]["level"],
             json!({"type": "string", "enum": ["low", "high"], "description": "d"})
         );
+    }
+
+    #[test]
+    fn inlines_percent_encoded_and_escaped_local_refs() {
+        for reference in [
+            "#/$defs/Caf%C3%A9",
+            "#/$defs/A~1B~0C",
+            "#/%24defs/A%7E1B%7E0C",
+        ] {
+            let schema = json!({"type": "object",
+                "$defs": {"Café": {"const": "\"hello\""}, "A/B~C": {"const": "\"hello\""}},
+                "properties": {"value": {"$ref": reference, "description": "literal"}}});
+            assert_eq!(
+                glm_schema(schema)["properties"]["value"],
+                json!({"const": "\"hello\"", "description": "literal"}),
+                "{reference}"
+            );
+        }
     }
 
     #[test]
