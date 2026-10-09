@@ -936,8 +936,7 @@
     if (cell.known_divergence) {
       var kd = document.createElement('span');
       kd.className = 'kdiv';
-      kd.setAttribute('title', 'Known v1-vs-v2 divergence: calls agree, normal_text differs'
-        + ' by design — see the popup\'s explanation');
+      kd.setAttribute('title', 'Documented v1-vs-v2 difference — see the popup\'s explanation');
       kd.textContent = '≠';
       td.appendChild(kd);
     }

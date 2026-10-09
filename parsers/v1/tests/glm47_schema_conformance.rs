@@ -18,7 +18,7 @@ fn tool(case: &matrix::Case) -> ToolDefinition {
     }
 }
 
-fn build(tools: &[ToolDefinition], mode: StructuralTagSchemaMode) -> Value {
+fn build(tools: &[ToolDefinition], mode: StructuralTagSchemaMode) -> anyhow::Result<Value> {
     ToolCallConfig::glm47()
         .structural_tag_builder
         .unwrap()
@@ -28,9 +28,17 @@ fn build(tools: &[ToolDefinition], mode: StructuralTagSchemaMode) -> Value {
             parallel_tool_calls: Some(false),
             schema_mode: mode,
             starts_in_reasoning: false,
-        })
-        .unwrap()
-        .unwrap()
+        })?
+        .ok_or_else(|| anyhow::anyhow!("GLM schema matrix must build a tool format"))
+}
+
+// Preserve these parser-positive inputs while asserting that v1 never emits a
+// grammar which silently discards their constraining $ref siblings.
+fn expects_builder_error(case: &matrix::Case) -> bool {
+    matches!(
+        case.name.as_str(),
+        "ref_sibling_integer" | "unresolved_ref_with_type" | "cyclic_ref_with_type"
+    )
 }
 
 async fn arguments(case: &matrix::Case) -> Value {
@@ -48,10 +56,22 @@ async fn authored_schema_matrix_preserves_types_and_literals() {
     let mut results = Vec::new();
     for case in matrix::cases() {
         let actual = arguments(&case).await;
+        let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
+        let (tag, builder_error) = if expects_builder_error(&case) {
+            let error = format!("{:#}", built.unwrap_err());
+            assert!(
+                error.contains("$ref sibling `type`"),
+                "{}: {error}",
+                case.name
+            );
+            (None, Some(error))
+        } else {
+            (Some(built.unwrap()), None)
+        };
         results.push(
             json!({"name":case.name, "schema":case.parameters(), "wire":case.wire(),
             "expected":case.expected(), "actual":actual,
-            "tag":build(&[tool(&case)], StructuralTagSchemaMode::Auto)}),
+            "tag":tag, "builder_error":builder_error}),
         );
         if actual != case.expected() {
             failures.push(format!(
@@ -73,7 +93,17 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
     for case in matrix::cases().into_iter().filter(|case| case.grammar) {
         let actual = arguments(&case).await;
         assert_eq!(actual, case.expected(), "{}", case.name);
-        probes.push(case.probe(build(&[tool(&case)], StructuralTagSchemaMode::Auto), actual));
+        let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
+        if expects_builder_error(&case) {
+            let error = format!("{:#}", built.unwrap_err());
+            assert!(
+                error.contains("$ref sibling `type`"),
+                "{}: {error}",
+                case.name
+            );
+        } else {
+            probes.push(case.probe(built.unwrap(), actual));
+        }
     }
     let case = matrix::cases()
         .into_iter()
@@ -87,7 +117,7 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
             let mut tool = tool(&case);
             tool.strict = strict;
             let enforce = mode == StructuralTagSchemaMode::Strict || strict != Some(false);
-            let mut probe = case.probe(build(&[tool], mode), case.expected());
+            let mut probe = case.probe(build(&[tool], mode).unwrap(), case.expected());
             probe["name"] = json!(format!("strict_{strict:?}_{mode:?}"));
             if !enforce {
                 probe["accept"] = probe["reject"].take();
@@ -114,7 +144,7 @@ fn schema_modes_preserve_declared_schema_unless_explicitly_relaxed() {
             }];
             let enforce = mode == StructuralTagSchemaMode::Strict || strict != Some(false);
             assert_eq!(
-                build(&tools, mode)["format"]["content"]["json_schema"],
+                build(&tools, mode).unwrap()["format"]["content"]["json_schema"],
                 if enforce { schema.clone() } else { json!(true) }
             );
         }

@@ -109,6 +109,127 @@ fn glm47_builder_schema_policy_and_reasoning_modes() {
     }
 }
 
+#[test]
+fn glm47_rejects_ignored_ref_siblings_unless_explicitly_relaxed() {
+    for (target, property, keyword) in [
+        (
+            json!({"type":"integer", "maximum":1000}),
+            json!({"$ref":"#/$defs/Target", "maximum":600}),
+            "maximum",
+        ),
+        (
+            json!({"type":"integer", "maximum":1000}),
+            json!({"$ref":"#/$defs/Target", "maximum":2000}),
+            "maximum",
+        ),
+        (
+            json!({"type":"integer"}),
+            json!({"$ref":"#/$defs/Target", "maximum":600}),
+            "maximum",
+        ),
+        (
+            json!({"anyOf":[{"const":"auto"},{"type":"integer"}]}),
+            json!({"$ref":"#/$defs/Target", "type":"integer"}),
+            "type",
+        ),
+    ] {
+        for strict in [None, Some(false), Some(true)] {
+            for mode in [
+                StructuralTagSchemaMode::Auto,
+                StructuralTagSchemaMode::Strict,
+            ] {
+                let tools = [ToolDefinition {
+                    name: "probe".into(),
+                    parameters: Some(json!({"type":"object", "$defs":{"Target":target},
+                        "properties":{"seconds":property}, "required":["seconds"]})),
+                    strict,
+                }];
+                for choice in [
+                    ToolChoice::Auto,
+                    ToolChoice::Required,
+                    ToolChoice::Named("probe".into()),
+                ] {
+                    let built = ToolCallConfig::glm47()
+                        .structural_tag_builder
+                        .unwrap()
+                        .build_tool_call_format(&ToolCallFormatBuildContext {
+                            tools: &tools,
+                            tool_choice: &choice,
+                            parallel_tool_calls: None,
+                            schema_mode: mode,
+                            starts_in_reasoning: false,
+                        });
+                    if mode == StructuralTagSchemaMode::Auto && strict == Some(false) {
+                        let built = built.unwrap().unwrap();
+                        let format = &built["format"];
+                        let tag = if matches!(choice, ToolChoice::Named(_)) {
+                            format
+                        } else {
+                            &format["tags"][0]
+                        };
+                        assert_eq!(tag["content"]["json_schema"], json!(true));
+                    } else {
+                        let error = format!("{:#}", built.unwrap_err());
+                        assert!(
+                            error.contains("probe")
+                                && error.contains("seconds")
+                                && error.contains(keyword),
+                            "{error}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn bounded_schema_cases() -> Vec<(ToolDefinition, String, Value, Vec<String>)> {
+    let mut cases = Vec::new();
+    for (schema, valid, invalid) in [
+        (
+            json!({"type":"object", "properties":{
+            "seconds":{"type":"integer", "maximum":600},
+            "opts":{"type":"object", "default":{"$ref":"literal"}}},
+            "required":["seconds"], "additionalProperties":false}),
+            600,
+            900,
+        ),
+        (
+            json!({"type":"object", "$defs":{"Timeout":{"type":"integer", "maximum":1000}},
+            "properties":{"seconds":{"$ref":"#/$defs/Timeout", "maximum":1000}},
+            "required":["seconds"], "additionalProperties":false}),
+            1000,
+            1500,
+        ),
+        (
+            json!({"type":"object", "$defs":{
+            "Timeout":{"type":"integer", "maximum":600},
+            "Alias":{"$ref":"#/$defs/Timeout", "description":"alias"}},
+            "properties":{"seconds":{"$ref":"#/$defs/Alias", "description":"property"}},
+            "required":["seconds"], "additionalProperties":false}),
+            600,
+            900,
+        ),
+    ] {
+        let tool = ToolDefinition {
+            name: "probe".into(),
+            parameters: Some(schema),
+            strict: Some(true),
+        };
+        let wire = format!(
+            "<tool_call>probe<arg_key>seconds</arg_key><arg_value>{valid}</arg_value></tool_call>"
+        );
+        let reject = vec![
+            "<tool_call>probe</tool_call>".into(),
+            format!(
+                "<tool_call>probe<arg_key>seconds</arg_key><arg_value>{invalid}</arg_value></tool_call>"
+            ),
+        ];
+        cases.push((tool, wire, json!({"seconds":valid}), reject));
+    }
+    cases
+}
+
 fn constant_cases() -> Vec<(ToolDefinition, String, Value)> {
     let mut cases = Vec::new();
     for literal in [
@@ -188,6 +309,23 @@ async fn glm47_xgrammar_roundtrip() {
         assert_eq!(actual, expected, "schema: {:?}", tool.parameters);
         probes.push(json!({"tag":tag, "wire":wire}));
     }
+    for (tool, wire, expected, reject) in bounded_schema_cases() {
+        let tag = build(
+            std::slice::from_ref(&tool),
+            &ToolChoice::Named("probe".into()),
+            StructuralTagSchemaMode::Auto,
+            false,
+            None,
+        );
+        let (calls, _) =
+            try_tool_call_parse_aggregate(&wire, Some("glm47"), Some(std::slice::from_ref(&tool)))
+                .await
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let actual: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(actual, expected);
+        probes.push(json!({"tag":tag, "wire":wire, "reject":reject}));
+    }
     let script = r#"
 import json, sys
 import xgrammar as xg
@@ -196,8 +334,11 @@ for probe in json.load(sys.stdin):
     compiled = compiler.compile_grammar(xg.Grammar.from_structural_tag(probe['tag']))
     matcher = xg.GrammarMatcher(compiled)
     assert matcher.accept_string(probe['wire']) and matcher.is_completed(), probe
+    for invalid in probe.get('reject', []):
+        matcher = xg.GrammarMatcher(compiled)
+        assert not (matcher.accept_string(invalid) and matcher.is_completed()), (probe, invalid)
 "#;
-    let mut child = Command::new("python3")
+    let mut child = Command::new(std::env::var("GLM_SCHEMA_PYTHON").unwrap_or("python3".into()))
         .args(["-c", script])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
