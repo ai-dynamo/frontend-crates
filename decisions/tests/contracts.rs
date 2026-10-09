@@ -46,28 +46,6 @@ fn default_openai_preserves_typed_values_and_null_names() {
 }
 
 #[test]
-fn native_selects_both_contracts_and_echoes_alias() {
-    let request = parse(
-        json!({"model":"alias","nvext":{"format":"sglang_native"},"input":"test","questions":[
-            {"type":"choice","id":"d","question":"pick","options":[{"name":"a"},{"name":"b"}]}
-        ]}),
-        Route::Decisions,
-    );
-    let distribution = reduce_vocab_logprobs(&[0.846_f64.ln(), 0.094_f64.ln()], 1.0).unwrap();
-    let response = project_response(
-        &request,
-        "canonical",
-        &[QuestionOutcome::Answer(distribution)],
-        &usage(),
-    )
-    .unwrap();
-    assert_eq!(response["model"], "alias");
-    assert_eq!(response["answers"]["d"]["choice"], "a");
-    assert!((response["answers"]["d"]["label_mass"].as_f64().unwrap() - 0.94).abs() < 1e-12);
-    assert!(response["answers"]["d"].get("confidence").is_none());
-}
-
-#[test]
 fn jev_preserves_structured_state_order_and_singletons() {
     let request = parse_request(br#"{"model":"jev-latest","state":{"x":[1,2]},"questions":{"z":{"type":"choice","criteria":{"last":null}},"a":{"type":"score","criteria":[{"rubric":"ok"}]}}}"#,Route::SystemOne).unwrap();
     assert_eq!(request.model, "jev-latest");

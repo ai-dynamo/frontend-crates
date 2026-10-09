@@ -61,7 +61,6 @@ fn canonical_capabilities_reject_missing_evidence_and_backend_limits() {
         supports_predicate: true,
         supports_choice: true,
         supports_score: true,
-        vocabulary_label_mass: true,
         measured_cache_reads: true,
         prompt_format_version: 1,
     };
@@ -90,18 +89,6 @@ fn canonical_capabilities_reject_missing_evidence_and_backend_limits() {
     ] {
         assert!(request.validate_capabilities(&invalid).is_err());
     }
-    let native = CanonicalRequest {
-        dialect: Dialect::SglangNative,
-        ..request
-    };
-    assert!(
-        native
-            .validate_capabilities(&Capabilities {
-                vocabulary_label_mass: false,
-                ..capabilities
-            })
-            .is_err()
-    );
 }
 
 #[test]
@@ -175,11 +162,6 @@ fn malformed_distributions_and_dialect_errors_fail_closed() {
     assert!(distribution.validate(2).is_err());
     assert_eq!(choice_confidence(&[1.0]).unwrap(), 1.0);
     assert_eq!(score_confidence(&[1.0]).unwrap(), 1.0);
-    let native = DecisionError::validation(Dialect::SglangNative, "bad request");
-    assert_eq!(
-        native.response_body(),
-        json!({"object":"error","message":"bad request","type":"invalid_request_error","param":null,"code":400})
-    );
     assert_eq!(
         DecisionError::validation(Dialect::OpenAi, "bad request").response_body(),
         json!({"error":{"message":"bad request","type":"invalid_request_error","param":null,"code":"invalid_request_error"}})

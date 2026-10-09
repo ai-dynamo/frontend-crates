@@ -58,9 +58,6 @@ impl DecisionError {
                 })
             }
             Dialect::Jev => json!({"detail":self.message,"code":self.code}),
-            Dialect::SglangNative => {
-                json!({"object":"error","message":self.message,"type":self.code,"param":null,"code":self.status})
-            }
             Dialect::OpenAi => {
                 json!({"error":{"message":self.message,"type":self.code,"param":null,"code":self.code}})
             }

@@ -3,7 +3,7 @@
 
 use crate::distribution::modal_index;
 use crate::*;
-use protocols::{openai, sglang, systemone};
+use protocols::{openai, systemone};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -72,33 +72,6 @@ pub fn project_response(
                         output_tokens_details: openai::OutputTokenDetails {
                             reasoning_tokens: usage.reasoning_tokens,
                         },
-                    },
-                },
-                dialect,
-            )
-        }
-        Dialect::SglangNative => {
-            let answers = request
-                .questions
-                .iter()
-                .zip(outcomes)
-                .map(|(q, o)| {
-                    let id = question_id(q, dialect)?;
-                    let d = answered(o, dialect)?;
-                    Ok((id, sglang_answer(q, d)?))
-                })
-                .collect::<Result<_, DecisionError>>()?;
-            serialize(
-                sglang::Response {
-                    object: "decisions".into(),
-                    model: request.model.clone(),
-                    prompt_format_version: request.prompt_format_version,
-                    answers,
-                    usage: sglang::Usage {
-                        prompt_tokens: usage.input_tokens,
-                        completion_tokens: usage.output_tokens,
-                        total_tokens: total,
-                        reasoning_tokens: usage.reasoning_tokens,
                     },
                 },
                 dialect,
@@ -242,54 +215,6 @@ fn expected_score(d: &Distribution) -> f64 {
         .enumerate()
         .map(|(i, p)| i as f64 * p)
         .sum()
-}
-
-fn sglang_answer(q: &CanonicalQuestion, d: &Distribution) -> Result<sglang::Answer, DecisionError> {
-    let dialect = Dialect::SglangNative;
-    let label_mass = d.label_mass.ok_or_else(|| {
-        DecisionError::execution(
-            dialect,
-            "native response requires genuine vocabulary label mass",
-        )
-    })?;
-    let (kind, choice, score, keys) = match q.kind {
-        QuestionKind::Predicate => (
-            sglang::AnswerKind::YesNo,
-            None,
-            None,
-            vec!["yes".into(), "no".into()],
-        ),
-        QuestionKind::Choice => (
-            sglang::AnswerKind::Choice,
-            Some(string_value(
-                &q.candidates[modal_index(&d.probabilities)],
-                dialect,
-            )?),
-            None,
-            q.candidates
-                .iter()
-                .map(|c| string_value(c, dialect))
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        QuestionKind::Score => (
-            sglang::AnswerKind::Score,
-            None,
-            Some(expected_score(d)),
-            (0..q.candidates.len()).map(|i| i.to_string()).collect(),
-        ),
-    };
-    Ok(sglang::Answer {
-        kind,
-        choice,
-        score,
-        label_mass,
-        probabilities: keys
-            .into_iter()
-            .zip(d.probabilities.iter().copied())
-            .collect(),
-        prompt_token_ids: None,
-        label_token_ids: None,
-    })
 }
 
 fn jev_answer(q: &CanonicalQuestion, d: &Distribution) -> Result<systemone::Answer, DecisionError> {

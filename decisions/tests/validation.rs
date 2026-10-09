@@ -7,23 +7,54 @@ use serde_json::{Value, json};
 fn parse(value: Value, route: Route) -> Result<CanonicalRequest, DecisionError> {
     parse_request(&serde_json::to_vec(&value).unwrap(), route)
 }
-fn native() -> Value {
-    json!({"nvext":{"format":"sglang_native"},"input":"x","questions":[{"type":"choice","id":"q","question":"pick","options":[{"name":"a"},{"name":"b"}]}]})
-}
 fn oai() -> Value {
     json!({"model":"m","input":"x","questions":[{"type":"choice","instructions":"pick","choices":[{"value":true},{"value":"true"}]}]})
 }
 
 #[test]
-fn native_casefold_and_blank_structured_text_match_reference() {
-    let mut value = native();
-    value["questions"][0]["options"] = json!([{"name":"Straße"},{"name":"STRASSE"}]);
-    assert!(parse(value, Route::Decisions).is_err());
-    for blank in [json!({}), json!([]), json!(" ")] {
-        let mut value = native();
-        value["input"] = blank;
-        assert!(parse(value, Route::Decisions).is_err());
+fn question_names_remain_metadata_and_question_limits_are_enforced() {
+    let mut value = oai();
+    let second = value["questions"][0].clone();
+    value["questions"][0]["name"] = json!("opaque name");
+    value["questions"].as_array_mut().unwrap().push(second);
+    let request = parse(value.clone(), Route::Decisions).unwrap();
+    assert_eq!(
+        render_question_prompt(&request.input, &request.questions[0]).unwrap(),
+        render_question_prompt(&request.input, &request.questions[1]).unwrap()
+    );
+    let error = parse_request_with_options(
+        &serde_json::to_vec(&value).unwrap(),
+        Route::Decisions,
+        ParseOptions { max_questions: 1 },
+    )
+    .unwrap_err();
+    assert_eq!(error.status, 400);
+}
+
+#[test]
+fn unsupported_images_and_jev_template_controls_fail_before_execution() {
+    let mut value = oai();
+    value["input"] = json!([{"role":"user","content":[{"type":"input_image","image_url":"data:image/png;base64,x"}]}]);
+    assert_eq!(
+        parse(value, Route::Decisions).unwrap_err().code,
+        "unsupported_capability"
+    );
+    let jev =
+        json!({"model":"m","state":"x","questions":{"p":{"type":"noul","instructions":"ok?"}}});
+    for (key, control) in [
+        ("images", json!(["image"])),
+        ("chat_template_kwargs", json!({"enable_thinking":true})),
+        ("chat_template_kwargs", json!({"arbitrary":false})),
+    ] {
+        let mut value = jev.clone();
+        value[key] = control;
+        let error = parse(value, Route::SystemOne).unwrap_err();
+        assert_eq!(error.code, "unsupported_capability");
+        assert_eq!(error.status, 422);
     }
+    let mut value = jev;
+    value["chat_template_kwargs"] = json!({"thinking":false,"enable_thinking":false});
+    assert!(parse(value, Route::SystemOne).is_ok());
 }
 
 #[test]
@@ -36,73 +67,6 @@ fn optional_openai_strings_are_not_nullable() {
     let mut value = oai();
     value["questions"][0]["choices"][0]["description"] = Value::Null;
     assert!(parse(value, Route::Decisions).is_err());
-}
-
-#[test]
-fn unsupported_modalities_controls_and_versions_fail_before_execution() {
-    for (key, value) in [
-        ("images", json!(["image"])),
-        ("return_prompt_token_ids", json!(true)),
-        ("prompt_format_version", json!(2)),
-        ("chat_template_kwargs", json!({"enable_thinking":true})),
-        ("chat_template_kwargs", json!({"arbitrary":false})),
-    ] {
-        let mut request = native();
-        request[key] = value;
-        let error = parse(request, Route::Decisions).unwrap_err();
-        assert_eq!(error.code, "unsupported_capability");
-        assert_eq!(error.status, 400);
-    }
-    let mut value = oai();
-    value["input"] = json!([{"role":"user","content":[{"type":"input_image","image_url":"data:image/png;base64,x"}]}]);
-    assert_eq!(
-        parse(value, Route::Decisions).unwrap_err().code,
-        "unsupported_capability"
-    );
-    let mut value = native();
-    value["chat_template_kwargs"] = json!({"thinking":false,"enable_thinking":false});
-    assert!(parse(value, Route::Decisions).is_ok());
-}
-
-#[test]
-fn native_schema_and_limits_are_independent() {
-    for name in [" ", "bad\nname", "a\u{2028}b", "a\u{2029}b"] {
-        let mut value = native();
-        value["questions"][0]["options"][0]["name"] = json!(name);
-        assert!(parse(value, Route::Decisions).is_err());
-    }
-    let mut value = native();
-    value["questions"][0]["options"] = json!([{"name":"a"},{"name":" A "}]);
-    assert!(parse(value, Route::Decisions).is_err());
-    let mut value = native();
-    let duplicate = value["questions"][0].clone();
-    value["questions"].as_array_mut().unwrap().push(duplicate);
-    assert!(parse(value, Route::Decisions).is_err());
-    for temperature in [0.0, -1.0] {
-        let mut value = native();
-        value["temperature"] = json!(temperature);
-        assert!(parse(value, Route::Decisions).is_err());
-    }
-    let mut value = native();
-    value["questions"][0]["options"] = json!(
-        (0..27)
-            .map(|i| json!({"name":i.to_string()}))
-            .collect::<Vec<_>>()
-    );
-    assert!(parse(value, Route::Decisions).is_err());
-}
-
-#[test]
-fn question_ids_remain_exact_and_do_not_become_instructions() {
-    let mut value = native();
-    let mut second = value["questions"][0].clone();
-    second["id"] = json!("Q");
-    value["questions"].as_array_mut().unwrap().push(second);
-    let request = parse(value, Route::Decisions).unwrap();
-    assert_eq!(
-        render_question_prompt(&request.input, &request.questions[0]).unwrap(),
-        render_question_prompt(&request.input, &request.questions[1]).unwrap()
-    );
 }
 
 #[test]
@@ -136,32 +100,6 @@ fn strict_input_rejects_wrong_roles_mixed_shapes_and_empty_questions() {
 }
 
 #[test]
-fn extension_disable_is_explicit_and_does_not_disable_oai() {
-    let opts = ParseOptions {
-        extensions_enabled: false,
-        max_questions: 1,
-    };
-    assert!(
-        parse_request_with_options(
-            &serde_json::to_vec(&native()).unwrap(),
-            Route::Decisions,
-            opts
-        )
-        .is_err()
-    );
-    let mut value = oai();
-    value["nvext"] = json!({"format":"oai"});
-    assert!(
-        parse_request_with_options(&serde_json::to_vec(&value).unwrap(), Route::Decisions, opts)
-            .is_ok()
-    );
-    for invalid in [json!([]), json!(null), json!({"format":"oai","other":true})] {
-        value["nvext"] = invalid;
-        assert!(parse(value.clone(), Route::Decisions).is_err());
-    }
-}
-
-#[test]
 fn jev_validation_is_sanitized_and_uses_422() {
     for question in [
         json!({"type":"noul"}),
@@ -191,14 +129,13 @@ fn jev_validation_is_sanitized_and_uses_422() {
 
 #[test]
 fn model_capabilities_are_validated_before_dispatch() {
-    let request = parse(native(), Route::Decisions).unwrap();
+    let request = parse(oai(), Route::Decisions).unwrap();
     let capabilities = Capabilities {
         max_questions: 1,
         max_candidates: 2,
         supports_predicate: true,
         supports_choice: true,
         supports_score: true,
-        vocabulary_label_mass: true,
         measured_cache_reads: true,
         prompt_format_version: 1,
     };
@@ -210,10 +147,6 @@ fn model_capabilities_are_validated_before_dispatch() {
         },
         Capabilities {
             max_questions: 0,
-            ..capabilities.clone()
-        },
-        Capabilities {
-            vocabulary_label_mass: false,
             ..capabilities.clone()
         },
         Capabilities {
@@ -239,7 +172,7 @@ fn model_capabilities_are_validated_before_dispatch() {
 }
 
 #[test]
-fn jev_does_not_inherit_native_name_or_level_normalization() {
+fn jev_preserves_case_sensitive_names_and_structured_levels() {
     let request = parse(
         json!({"model":"jev-latest","state":"x","questions":{
             "q":{"type":"choice","criteria":{"A":null,"a":null}},

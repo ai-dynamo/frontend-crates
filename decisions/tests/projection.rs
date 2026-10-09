@@ -57,14 +57,7 @@ fn complete_openai_response_preserves_order_labels_names_and_refusal() {
 }
 
 #[test]
-fn native_and_jev_predicate_score_fixtures_preserve_criteria() {
-    let native = parse(
-        json!({"nvext":{"format":"sglang_native"},"input":{"text":"x"},"questions":[
-            {"type":"yes_no","id":"p","question":"ok?","yes":{"means":"yes"},"no":"no"},
-            {"type":"score","id":"s","question":"rate","levels":[{"label":"Low"},{"label":"High"}]}
-        ]}),
-        Route::Decisions,
-    );
+fn jev_predicate_score_fixtures_preserve_criteria() {
     let jev = parse(
         json!({"model":"jev-latest","state":{"text":"x"},"questions":{
             "p":{"type":"noul","instructions":"ok?","criteria":{"true":{"means":"yes"},"false":"no"}},
@@ -76,17 +69,6 @@ fn native_and_jev_predicate_score_fixtures_preserve_criteria() {
         QuestionOutcome::Answer(dist()),
         QuestionOutcome::Answer(dist()),
     ];
-    let n = project_response(&native, "canonical", &outcomes, &usage()).unwrap();
-    assert_eq!(n["model"], "default");
-    assert_eq!(
-        n["answers"]["p"],
-        json!({"type":"yes_no","probabilities":{"yes":0.9,"no":0.1},"label_mass":0.94})
-    );
-    assert_eq!(
-        n["answers"]["s"],
-        json!({"type":"score","score":0.1,"probabilities":{"0":0.9,"1":0.1},"label_mass":0.94})
-    );
-    let _: protocols::sglang::Response = serde_json::from_value(n).unwrap();
     let j = project_response(&jev, "canonical", &outcomes, &usage()).unwrap();
     assert_eq!(
         j["answers"]["p"],
@@ -97,12 +79,6 @@ fn native_and_jev_predicate_score_fixtures_preserve_criteria() {
         json!({"type":"score","score":0.1,"confidence":0.8,"probabilities":{"0":0.9,"1":0.1},"legend":{"0":{"label":"Low"},"1":{"label":"High"}},"x_label_mass":0.94})
     );
     let _: protocols::systemone::Response = serde_json::from_value(j).unwrap();
-    for index in 0..2 {
-        assert_eq!(
-            render_question_prompt(&native.input, &native.questions[index]).unwrap(),
-            render_question_prompt(&jev.input, &jev.questions[index]).unwrap()
-        );
-    }
 }
 
 #[test]
@@ -167,43 +143,32 @@ fn malformed_executor_results_and_counters_fail_closed() {
 }
 
 #[test]
-fn native_mass_is_required_and_nonopenai_refusal_is_explicit() {
-    for (request, route) in [
-        (
-            json!({"nvext":{"format":"sglang_native"},"input":"x","questions":[{"type":"yes_no","id":"p","question":"ok?"}]}),
-            Route::Decisions,
-        ),
-        (
-            json!({"model":"jev-latest","state":"x","questions":{"p":{"type":"noul","instructions":"ok?"}}}),
-            Route::SystemOne,
-        ),
-    ] {
-        let request = parse(request, route);
-        let error = project_response(
-            &request,
-            "m",
-            &[QuestionOutcome::Refusal("secret".into())],
-            &usage(),
-        )
-        .unwrap_err();
-        assert_eq!(error.status, 422);
-        assert_eq!(error.code, "decision_refused");
-        assert!(!error.response_body().to_string().contains("secret"));
-        if request.dialect == Dialect::SglangNative {
-            assert!(
-                project_response(
-                    &request,
-                    "m",
-                    &[QuestionOutcome::Answer(Distribution {
-                        label_mass: None,
-                        ..dist()
-                    })],
-                    &usage()
-                )
-                .is_err()
-            );
-        }
-    }
+fn jev_refusal_is_explicit_and_missing_label_mass_is_not_invented() {
+    let request = parse(
+        json!({"model":"m","state":"x","questions":{"p":{"type":"noul","instructions":"ok?"}}}),
+        Route::SystemOne,
+    );
+    let error = project_response(
+        &request,
+        "m",
+        &[QuestionOutcome::Refusal("secret".into())],
+        &usage(),
+    )
+    .unwrap_err();
+    assert_eq!(error.status, 422);
+    assert_eq!(error.code, "decision_refused");
+    assert!(!error.response_body().to_string().contains("secret"));
+    let response = project_response(
+        &request,
+        "m",
+        &[QuestionOutcome::Answer(Distribution {
+            label_mass: None,
+            ..dist()
+        })],
+        &usage(),
+    )
+    .unwrap();
+    assert!(response["answers"]["p"].get("x_label_mass").is_none());
 }
 
 #[test]
@@ -248,12 +213,7 @@ fn distribution_temperature_ties_and_confidence_are_independent() {
 }
 
 #[test]
-fn dialect_error_bodies_do_not_conflate_native_and_openai() {
-    let native = DecisionError::validation(Dialect::SglangNative, "bad request");
-    assert_eq!(
-        native.response_body(),
-        json!({"object":"error","message":"bad request","type":"invalid_request_error","param":null,"code":400})
-    );
+fn dialect_error_bodies_preserve_openai_and_jev_contracts() {
     let openai = DecisionError::validation(Dialect::OpenAi, "bad request");
     assert_eq!(
         openai.response_body(),
