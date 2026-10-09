@@ -346,7 +346,10 @@ struct ChoiceJailState {
     accumulated_logprobs: Option<ChatChoiceLogprobs>,
     /// Buffer for partial marker matches across chunks
     partial_match_buffer: String,
+    /// Logprob records held with `partial_match_buffer` until it emits or enters jail.
     partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
+    /// Contentless records retained if EOF suppresses the reserved partial marker.
+    partial_passthrough_logprobs: Option<ChatChoiceLogprobs>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
     /// Whole token records belonging to the held suffix.
@@ -674,6 +677,7 @@ impl ChoiceJailState {
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
             partial_logprobs_buffer: None,
+            partial_passthrough_logprobs: None,
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
@@ -708,6 +712,7 @@ impl ChoiceJailState {
         self.is_jailed = true;
         self.accumulated_content = content;
         self.accumulated_logprobs = logprobs;
+        self.partial_passthrough_logprobs = None;
         self.completion_progress.reset();
     }
 
@@ -723,6 +728,41 @@ impl ChoiceJailState {
     /// Consume the accumulated logprobs, replacing them with `None`.
     fn take_accumulated_logprobs(&mut self) -> Option<ChatChoiceLogprobs> {
         self.accumulated_logprobs.take()
+    }
+
+    fn has_reserved_partial_marker(&self, policy: TerminalMarkerPolicy) -> bool {
+        policy.truncated_end_markers.iter().any(|(marker, prefix)| {
+            self.partial_match_buffer.starts_with(prefix)
+                && marker.starts_with(&self.partial_match_buffer)
+        })
+    }
+
+    fn take_contentless_logprobs(
+        &mut self,
+        extra: Option<ChatChoiceLogprobs>,
+        policy: TerminalMarkerPolicy,
+    ) -> Option<ChatChoiceLogprobs> {
+        let mut logprobs = if self.is_jailed {
+            self.take_accumulated_logprobs()
+        } else if self.has_reserved_partial_marker(policy) {
+            if self.stream_finish_reason.is_none() {
+                append_logprobs(&mut self.partial_logprobs_buffer, extra.clone());
+                append_logprobs(&mut self.partial_passthrough_logprobs, extra);
+                return None;
+            }
+            if self.stream_finish_reason == Some(FinishReason::Length) {
+                self.partial_logprobs_buffer = None;
+                self.partial_passthrough_logprobs.take()
+            } else {
+                self.partial_passthrough_logprobs = None;
+                self.partial_logprobs_buffer.take()
+            }
+        } else {
+            self.partial_passthrough_logprobs = None;
+            self.partial_logprobs_buffer.take()
+        };
+        append_logprobs(&mut logprobs, extra);
+        logprobs
     }
 
     /// Send buffered K3 reasoning before the response or tool call.
@@ -752,6 +792,7 @@ impl ChoiceJailState {
     fn end_jail(&mut self) -> String {
         self.is_jailed = false;
         self.accumulated_logprobs = None;
+        self.partial_passthrough_logprobs = None;
         self.completion_progress.reset();
         // The cursor's byte offsets describe THIS payload. Carrying them into a
         // second jailed value would suppress its arguments as already streamed.
@@ -1147,7 +1188,12 @@ impl ChoiceJailState {
         }
 
         self.end_jail();
-        self.handle_trailing_content(&trailing_owned, choice, jail_stream, emissions);
+        // The jail emission above already carries this chunk's logprob records.
+        let trailing_choice = ChatChoiceStream {
+            logprobs: None,
+            ..choice.clone()
+        };
+        self.handle_trailing_content(&trailing_owned, &trailing_choice, jail_stream, emissions);
     }
 
     /// Process incoming content and return what should be emitted (if anything)
@@ -1279,8 +1325,11 @@ impl ChoiceJailState {
                         self.partial_match_buffer.clear();
                     } else {
                         // No markers - emit everything
-                        if !content.is_empty() {
-                            let all = self.partial_logprobs_buffer.take();
+                        let all = self.partial_logprobs_buffer.take();
+                        if !content.is_empty()
+                            || all.is_some()
+                            || self.pending_reasoning_content.is_some()
+                        {
                             #[allow(deprecated)]
                             let pass_through_choice = create_choice_stream(
                                 choice.index,
@@ -1295,6 +1344,9 @@ impl ChoiceJailState {
                         self.partial_match_buffer.clear();
                     }
                 }
+            }
+            if !emissions.is_empty() {
+                self.partial_passthrough_logprobs = None;
             }
         } else {
             // Already jailed - accumulate content AND logprobs, then check for unjail
@@ -1510,26 +1562,28 @@ impl ChoiceJailState {
                 Some(ChoiceEmission::Content(final_choice))
             }
         } else if !self.partial_match_buffer.is_empty() {
+            let suppress_marker = self.stream_finish_reason == Some(FinishReason::Length)
+                && self.has_reserved_partial_marker(policy);
             let mut content = std::mem::take(&mut self.partial_match_buffer);
-            let mut held_logprobs = self.partial_logprobs_buffer.take();
-            if self.stream_finish_reason == Some(FinishReason::Length)
-                && policy.truncated_end_markers.iter().any(|(marker, prefix)| {
-                    content.starts_with(prefix) && marker.starts_with(&content)
-                })
-            {
+            let logprobs = if suppress_marker {
                 // The limit interrupted a reserved close marker, not prose.
                 // Still emit its terminal chunk with the original finish reason.
                 content.clear();
-                held_logprobs = None;
-            }
-            let choice = create_choice_stream(
+                self.partial_logprobs_buffer = None;
+                self.partial_passthrough_logprobs.take()
+            } else {
+                self.partial_passthrough_logprobs = None;
+                self.partial_logprobs_buffer.take()
+            };
+            let mut choice = create_choice_stream(
                 self.index,
                 Some(Role::Assistant),
                 &content,
                 None,
                 self.stream_finish_reason,
-                held_logprobs,
+                logprobs,
             );
+            choice.delta.reasoning_content = self.pending_reasoning_content.take();
             Some(ChoiceEmission::Content(choice))
         } else {
             None
@@ -1805,7 +1859,8 @@ impl JailedStream {
                             }
                             let has_pending_buffered_output =
                                 !choice_state.partial_match_buffer.is_empty()
-                                    || !choice_state.terminal_suffix_buffer.is_empty();
+                                    || !choice_state.terminal_suffix_buffer.is_empty()
+                                    || (choice_state.is_jailed && !choice_state.accumulated_content.is_empty());
                             let was_ever_jailed = !choice_state.accumulated_content.is_empty()
                                 || choice_state.is_jailed
                                 || has_pending_buffered_output;
@@ -1818,14 +1873,34 @@ impl JailedStream {
                                 || !was_ever_jailed;
 
                             if should_emit {
-                                let pass_through_choice = ChatChoiceStream {
+                                let logprobs = choice_state.take_contentless_logprobs(
+                                    choice.logprobs.clone(), self.terminal_marker_policy,
+                                );
+                                let mut pass_through_choice = ChatChoiceStream {
                                     index: choice.index,
                                     delta: choice.delta.clone(),
                                     // Finalization owns the terminal reason until buffered text drains.
                                     finish_reason: choice.finish_reason.filter(|_| !has_pending_buffered_output),
-                                    logprobs: choice.logprobs.clone(),
+                                    logprobs,
                                 };
+                                if separates_k3_reasoning {
+                                    if let Some(reasoning_emission) = choice_state.take_pending_reasoning_emission() {
+                                        all_emissions.push(reasoning_emission);
+                                    }
+                                } else if let Some(mut pending) = choice_state.pending_reasoning_content.take() {
+                                    if let Some(reasoning) = pass_through_choice.delta.reasoning_content.take() {
+                                        pending.push_str(&reasoning);
+                                    }
+                                    pass_through_choice.delta.reasoning_content = Some(pending);
+                                }
                                 all_emissions.push(ChoiceEmission::PassThrough(pass_through_choice));
+                            } else if choice_state.is_jailed {
+                                append_logprobs(&mut choice_state.accumulated_logprobs, choice.logprobs.clone());
+                            } else {
+                                if choice_state.has_reserved_partial_marker(self.terminal_marker_policy) {
+                                    append_logprobs(&mut choice_state.partial_passthrough_logprobs, choice.logprobs.clone());
+                                }
+                                append_logprobs(&mut choice_state.partial_logprobs_buffer, choice.logprobs.clone());
                             }
                         }
                     }
@@ -3938,6 +4013,41 @@ mod tests {
     );
 
     #[tokio::test]
+    async fn kimi_k3_contentless_reasoning_keeps_pending_channel_order() {
+        let opener = "<|open|>tools<|sep|>";
+        let mut initial = text_chunk(opener);
+        initial.data.as_mut().unwrap().choices[0]
+            .delta
+            .reasoning_content = Some("first".to_string());
+        let responses = apply_kimi_k3(vec![
+            initial,
+            reasoning_chunk("second"),
+            text_chunk(KVV_K3_CALL.strip_prefix(opener).unwrap()),
+        ])
+        .await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| &response.data.as_ref().unwrap().choices)
+            .collect();
+        let reasoning: String = choices
+            .iter()
+            .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+            .collect();
+        assert_eq!(reasoning, "firstsecond");
+        assert_eq!(collect_tool_calls(&responses).len(), 1);
+        assert!(
+            choices
+                .iter()
+                .all(|choice| choice.delta.reasoning_content.is_none()
+                    || choice.delta.tool_calls.is_none())
+        );
+        assert_eq!(
+            choices.last().unwrap().finish_reason,
+            Some(FinishReason::ToolCalls)
+        );
+    }
+
+    #[tokio::test]
     async fn kimi_k3_kvv_length_suppresses_incomplete_message_close() {
         let responses = apply_kimi_k3_kvv_at_length(&[
             "{\"",
@@ -4677,6 +4787,38 @@ mod tests {
                 .and_then(|l| l.refusal.as_ref())
                 .is_none()
         );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_partial_terminal_marker_logprobs_obey_policy() {
+        let marker = "<|close|>mes";
+        for finish in [FinishReason::Length, FinishReason::Stop] {
+            let mut chunk = text_chunk_with_logprobs(marker);
+            chunk.data.as_mut().unwrap().choices[0].finish_reason = Some(finish);
+            let responses: Vec<_> = JailedStream::builder()
+                .tool_call_parser("kimi_k3")
+                .build()
+                .apply(stream::iter([chunk]))
+                .collect()
+                .await;
+            let expected = if finish == FinishReason::Length {
+                ""
+            } else {
+                marker
+            };
+            assert_eq!(collect_text_content(&responses), expected);
+            let tokens: String = collect_logprobs(&responses)
+                .into_iter()
+                .flatten()
+                .flat_map(|lp| lp.content.into_iter().flatten())
+                .map(|token| token.token)
+                .collect();
+            assert_eq!(tokens, expected);
+            assert_eq!(
+                responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+                Some(finish)
+            );
+        }
     }
 
     #[tokio::test]

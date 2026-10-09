@@ -11,7 +11,7 @@
 use regex::Regex;
 use uuid::Uuid;
 
-use super::super::config::{DSML_BLOCK_SEPARATOR, DsmlParserConfig};
+use super::super::config::DsmlParserConfig;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 /// DeepSeek V3.2 / V4 use DSML (DeepSeek Markup Language) format for tool calls.
@@ -80,7 +80,7 @@ pub fn find_complete_tool_call_end_position_dsml(
 ///
 /// Returns `(parsed_tool_calls, normal_text_content)`. `normal_text` is the
 /// text BEFORE the first `<｜DSML｜tool_calls>` / `<｜DSML｜function_calls>`
-/// start marker, minus the one [`DSML_BLOCK_SEPARATOR`] the encoder places
+/// start marker, minus the one [`super::super::config::DSML_BLOCK_SEPARATOR`] the encoder places
 /// between content and the block. Text between blocks, after the last block, and any
 /// back-to-back-block content are all dropped — matching upstream vLLM
 /// (`vllm/tool_parsers/deepseek_v4_tool_parser.py` and the V3.2 sibling),
@@ -95,6 +95,7 @@ pub fn try_tool_call_parse_dsml(
     config: &DsmlParserConfig,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let trimmed = message.trim();
+    let leading_offset = message.len() - message.trim_start().len();
 
     // Early exit if no content
     if trimmed.is_empty() {
@@ -118,7 +119,10 @@ pub fn try_tool_call_parse_dsml(
                     );
                     return Ok((
                         tool_calls,
-                        Some(trimmed[..marker_idx].trim_end().to_string()),
+                        Some(
+                            strip_tool_separator(&message[..leading_offset + marker_idx], config)
+                                .to_string(),
+                        ),
                     ));
                 }
             }
@@ -141,15 +145,17 @@ pub fn try_tool_call_parse_dsml(
     // first block_start — mirrors vLLM's success path. On no-invokes the
     // markup-leak warning still fires for the diagnostic trail.
     let pre_block_span = &trimmed[..start_idx];
-    let pre_block_text = first_orphan_dsml_marker_index(pre_block_span, config)
+    let pre_block_text = if let Some(idx) = first_orphan_dsml_marker_index(pre_block_span, config)
         .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
-        .map(|idx| pre_block_span[..idx].trim_end().to_string())
-        .unwrap_or_else(|| {
-            pre_block_span
-                .strip_suffix(DSML_BLOCK_SEPARATOR)
-                .unwrap_or(pre_block_span)
-                .to_string()
-        });
+    {
+        if recover_orphan_invokes_in_span(pre_block_span, config)?.is_some() {
+            strip_tool_separator(&message[..leading_offset + idx], config).to_string()
+        } else {
+            pre_block_span[..idx].trim_end().to_string()
+        }
+    } else {
+        strip_tool_separator(&message[..leading_offset + start_idx], config).to_string()
+    };
 
     if tool_calls.is_empty() {
         // A block-start was detected but no valid invokes parsed. Do NOT leak
@@ -188,6 +194,13 @@ pub fn try_tool_call_parse_dsml(
     }
 
     Ok((tool_calls, Some(pre_block_text)))
+}
+
+fn strip_tool_separator<'a>(prefix: &'a str, config: &DsmlParserConfig) -> &'a str {
+    config
+        .tool_separator()
+        .and_then(|separator| prefix.strip_suffix(separator))
+        .unwrap_or(prefix)
 }
 
 fn first_orphan_dsml_marker_index(text: &str, config: &DsmlParserConfig) -> Option<usize> {
@@ -674,9 +687,6 @@ mod tests {
 
     #[test]
     fn test_parse_strips_block_separator_before_dsml_block() {
-        // The encoder renders `content + "\n\n" + block`, so the separator is
-        // consumed with the block (as the reference parser does). Leaving it in
-        // content makes the re-rendered history differ from the generated tokens.
         let input = "Let me check the forecast.\n\n<｜DSML｜tool_calls>
 <｜DSML｜invoke name=\"get_weather\">
 <｜DSML｜parameter name=\"city\" string=\"true\">SF</｜DSML｜parameter>
@@ -688,7 +698,6 @@ mod tests {
         assert_eq!(calls.len(), 1);
         assert_eq!(normal.unwrap(), "Let me check the forecast.");
 
-        // Only the one separator belongs to the block; extra newlines are content.
         let extra = input.replacen("\n\n<", "\n\n\n\n<", 1);
         let (calls, normal) = try_tool_call_parse_dsml(&extra, &config).unwrap();
         assert_eq!(calls.len(), 1);
@@ -702,6 +711,44 @@ mod tests {
         let (calls, normal) = try_tool_call_parse_dsml(input, &config).unwrap();
         assert_eq!(calls.len(), 0);
         assert_eq!(normal, Some(input.to_string()));
+    }
+
+    #[test]
+    fn test_dsml_separator_preserves_original_prefix() {
+        let prefixes = [
+            ("Text.\n\n", "Text."),
+            ("Text.\n\n\n\n", "Text.\n\n"),
+            ("\n\n", ""),
+            ("\n\n\n\n", "\n\n"),
+            (" \t\n\n\n\n", " \t\n\n"),
+            ("\n \tText.\n\n", "\n \tText."),
+            ("Text. \t", "Text. \t"),
+            ("Text.\n", "Text.\n"),
+        ];
+        for mut config in [get_test_config(), get_v4_test_config()] {
+            config.allow_eof_recovery = true;
+            let invoke = "<｜DSML｜invoke name=\"test\"></｜DSML｜invoke>";
+            for wrapped in [false, true] {
+                let block = if wrapped {
+                    format!("{}{invoke}{}", config.block_start, config.block_end)
+                } else {
+                    invoke.to_string()
+                };
+                for (prefix, expected) in prefixes {
+                    let (calls, normal) =
+                        try_tool_call_parse_dsml(&format!("{prefix}{block}"), &config).unwrap();
+                    assert_eq!(calls.len(), 1, "wrapped={wrapped} prefix={prefix:?}");
+                    assert_eq!(
+                        normal.as_deref(),
+                        Some(expected),
+                        "wrapped={wrapped} prefix={prefix:?}"
+                    );
+                }
+            }
+            let (calls, normal) = try_tool_call_parse_dsml(" \nText.\n\n ", &config).unwrap();
+            assert!(calls.is_empty());
+            assert_eq!(normal.as_deref(), Some("Text."));
+        }
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.7.d in tests/parity/toolcalling/fixtures/deepseek_v3_2/TOOLCALLING.batch.7.yaml.

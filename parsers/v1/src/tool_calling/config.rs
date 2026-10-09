@@ -227,6 +227,16 @@ impl Default for DsmlParserConfig {
     }
 }
 
+impl DsmlParserConfig {
+    pub(crate) fn tool_separator(&self) -> Option<&'static str> {
+        (matches!(
+            self.block_start.as_str(),
+            "<｜DSML｜function_calls>" | "<｜DSML｜tool_calls>"
+        ) && self.invoke_start_prefix == "<｜DSML｜invoke name=")
+            .then_some(DSML_BLOCK_SEPARATOR)
+    }
+}
+
 /// Configuration for GLM-4.7 style tool call parser
 /// Format: <tool_call>function_name<arg_key>param</arg_key><arg_value>value</arg_value></tool_call>
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -463,14 +473,16 @@ impl ParserConfig {
             ParserConfig::Pythonic => vec![],
             ParserConfig::Typescript => vec![],
             ParserConfig::Dsml(config) => {
-                vec![
-                    // The DeepSeek encoder renders `content + "\n\n" + block`, so the
-                    // separator belongs to the block. Matching it here makes the stream
-                    // jail hold it instead of emitting it as content.
-                    format!("{DSML_BLOCK_SEPARATOR}{}", config.block_start),
+                let mut tokens = vec![
                     config.block_start.clone(),
                     config.invoke_start_prefix.clone(),
-                ]
+                ];
+                if let Some(separator) = config.tool_separator() {
+                    // Hold the encoder's separator with either wrapped or recovered calls.
+                    tokens.insert(0, format!("{separator}{}", config.invoke_start_prefix));
+                    tokens.insert(0, format!("{separator}{}", config.block_start));
+                }
+                tokens
             }
             ParserConfig::Glm47(config) => vec![config.tool_call_start.clone()],
             ParserConfig::KimiK2(config) => {
