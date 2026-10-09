@@ -4240,7 +4240,24 @@ changes:
             arguments: '{"value":{"x":1}}'
             complete: true
         - expected: []
-metadata_changes: {}
+metadata_changes:
+  arg_null_mixed_labels: {}
+  arg_numeric_14_const_decimal: {}
+  arg_numeric_14_const_exponent: {}
+  arg_numeric_14_enum_decimal: {}
+  arg_numeric_14_enum_exponent: {}
+  arg_numeric_14_large_decimal: {}
+  arg_numeric_14_large_exponent: {}
+  arg_numeric_14_negative: {}
+  arg_numeric_14_negative_exponent: {}
+  arg_numeric_14_zero_underflow: {}
+  arg_numeric_15_exponent: {}
+  arg_numeric_15_negative: {}
+  arg_numeric_15_ordinary: {}
+  arg_numeric_15_quarter: {}
+  arg_numeric_15_round_down: {}
+  arg_numeric_15_round_up: {}
+  arg_numeric_15_small: {}
 document_overrides:
   schema_const_array_allof:
     capture_provenance:
@@ -5268,25 +5285,6 @@ document_overrides:
         source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
         git_commit: 8c86cb855effd682692f26df42853d6a179113db
       inherited_from: null
-metadata_changes:
-  arg_null_mixed_labels: {}
-  arg_numeric_14_const_decimal: {}
-  arg_numeric_14_const_exponent: {}
-  arg_numeric_14_enum_decimal: {}
-  arg_numeric_14_enum_exponent: {}
-  arg_numeric_14_large_decimal: {}
-  arg_numeric_14_large_exponent: {}
-  arg_numeric_14_negative: {}
-  arg_numeric_14_negative_exponent: {}
-  arg_numeric_14_zero_underflow: {}
-  arg_numeric_15_exponent: {}
-  arg_numeric_15_negative: {}
-  arg_numeric_15_ordinary: {}
-  arg_numeric_15_quarter: {}
-  arg_numeric_15_round_down: {}
-  arg_numeric_15_round_up: {}
-  arg_numeric_15_small: {}
-document_overrides:
   arg_json_null_anyof:
     capture_provenance:
       captured_with:

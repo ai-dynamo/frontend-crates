@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 def _json_equal(left: object, right: object) -> bool:
     """JSON numbers compare mathematically; booleans never compare as numbers."""
-    if type(left) in (int, float) and type(right) in (int, float):
+    if type(left) in (int, float, Decimal) and type(right) in (int, float, Decimal):
         return left == right
     if type(left) is not type(right):
         return False
