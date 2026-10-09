@@ -2513,3 +2513,60 @@ def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
         assert not raw.endswith(control_tokens("gpt_oss")[3])
     assert not G.scenario_families("gpt_oss_truncated_tool_at_eof_is_dropped")
     assert "UNIFIED.gpt_oss_truncated_tool_at_eof_is_dropped.gpt_oss" not in G.build_cases("gpt_oss")
+
+
+def _scenario_behaviour_key(case: dict) -> str:
+    # common::unified_capture::input_chunks tokenizes markers when no schedule is authored.
+    chunks = case.get("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
+    return json.dumps(
+        {
+            "input": case["input"],
+            "input_chunks": chunks,
+            "init": case["init"],
+            "golden": case["golden"],
+            "tools": case.get("tools"),
+        },
+        sort_keys=True,
+    )
+
+
+def test_delivery_schedule_distinguishes_streaming_scenarios() -> None:
+    case = {"input": "a<marker>b", "init": {}, "golden": []}
+    whole = {**case, "input_chunks": [case["input"]]}
+    split = {**case, "input_chunks": ["a", "<marker>", "b"]}
+    assert _scenario_behaviour_key(case) == _scenario_behaviour_key(split)
+    assert _scenario_behaviour_key(case) != _scenario_behaviour_key(whole)
+    assert _scenario_behaviour_key(split) == _scenario_behaviour_key(dict(split))
+
+
+def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
+    if scenario == "kimi_native_incompatible_string_recovery":
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    else:
+        if "count_content_chunk" in scenario:
+            arguments = {"count": 7, "content": "q" * 4096}
+        elif scenario == "kimi_native_trailing_syntax_whitespace":
+            arguments = {}
+        elif scenario in {"kimi_native_valid_object_trailing_garbage", "kimi_native_incremental_interfield_whitespace"}:
+            arguments = {"count": 7, "content": "q"}
+        else:
+            assert scenario == "kimi_native_rejected_next_header_progress"
+            arguments = {"count": 7, "content": 'head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>' + "q" * 3072}
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}]
+    assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
+
+
+def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_input_carries_events(family, scenario, case)
+    if case["golden"]:
+        if mutation == "empty":
+            case["golden"] = []
+        elif mutation == "name":
+            case["golden"][0]["name"] = "invented"
+        else:
+            case["golden"][0]["arguments"] = {"count": 8, "content": "wrong"}
+    else:
+        case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    with pytest.raises(AssertionError):
+        _assert_input_carries_events(family, scenario, case)
