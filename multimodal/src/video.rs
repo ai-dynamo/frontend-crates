@@ -108,7 +108,6 @@ impl VideoOptions {
 }
 
 impl VideoPixelBudget {
-    /// Reject zero budgets.
     pub fn validate(&self) -> Result<()> {
         if self.total_pixels == Some(0) || self.max_pixels_per_frame == Some(0) {
             return Err(MmError::invalid_input(

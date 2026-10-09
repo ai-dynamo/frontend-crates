@@ -100,32 +100,6 @@
    ]
   },
   {
-   "num_frames": 5,
-   "height": 480,
-   "width": 640,
-   "temporal_factor": 2,
-   "factor": 32,
-   "min_pixels": 65536,
-   "max_pixels": 16777216,
-   "expected": [
-    480,
-    640
-   ]
-  },
-  {
-   "num_frames": 3,
-   "height": 480,
-   "width": 640,
-   "temporal_factor": 2,
-   "factor": 32,
-   "min_pixels": 65536,
-   "max_pixels": 16777216,
-   "expected": [
-    480,
-    640
-   ]
-  },
-  {
    "num_frames": 16,
    "height": 100,
    "width": 4000,

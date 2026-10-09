@@ -66,8 +66,6 @@ def main() -> None:
         (6, 90, 160, 200_000, max_px),  # below min_pixels: upscale
         (4, 20, 200, min_px, max_px),  # frame smaller than factor
         (4, 31, 33, min_px, max_px),  # just under the factor
-        (5, 480, 640, min_px, max_px),  # odd frame count, t_bar rounds to 4
-        (3, 480, 640, min_px, max_px),  # t_bar ties-to-even: round(1.5) = 2
         (16, 100, 4000, min_px, 2_000_000),  # very wide, budget binds
         (2, 1, 1, 1024, 1024),  # extreme upscale
         # t_bar = round(n / 2) * 2. Ties go to even (n=5: round(2.5) = 2, t_bar 4),

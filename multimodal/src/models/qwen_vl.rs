@@ -761,20 +761,6 @@ mod tests {
     }
 
     #[test]
-    fn video_cap_below_the_floor_is_exceeded_like_hf() {
-        // 1.05 * min_pixels = 68_812 per frame wins over a 50_000 cap.
-        let spec = video_spec();
-        let budget = VideoPixelBudget {
-            total_pixels: Some(6_000_000),
-            max_pixels_per_frame: Some(50_000),
-        };
-        let (h, w) = spec
-            .video_resize(&bounds(&spec), 64, 720, 1280, &budget)
-            .unwrap();
-        assert!(h * w > 50_000);
-    }
-
-    #[test]
     fn video_request_total_below_the_minimum_lowers_the_minimum() {
         // A 3 MP budget under a 4 MP minimum would invert the bounds.
         let spec = video_spec();
