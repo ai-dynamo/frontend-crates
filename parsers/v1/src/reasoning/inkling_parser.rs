@@ -285,6 +285,10 @@ impl InklingReasoningParser {
 }
 
 impl ReasoningParser for InklingReasoningParser {
+    fn in_reasoning(&self) -> Option<bool> {
+        Some(self.state == State::InReasoning)
+    }
+
     fn detect_and_parse_reasoning(&mut self, text: &str, _token_ids: &[u32]) -> ParserResult {
         // Batch: parse from a clean slate and reset, so a later stream is unaffected.
         self.buffer.clear();
