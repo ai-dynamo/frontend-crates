@@ -1091,14 +1091,14 @@
 
   function readTransposeMode() {
     const requested = new URLSearchParams(window.location.search).get('transpose');
-    return requested !== '0' && requested !== 'false';
+    return requested === '1' || requested === 'true';
   }
 
   function updateTransposeUrl(enabled) {
     const url = new URL(window.location.href);
     url.searchParams.delete('transpose');
-    if (!enabled) {
-      url.searchParams.set('transpose', '0');
+    if (enabled) {
+      url.searchParams.set('transpose', '1');
     }
     window.history.replaceState(null, '', url.toString());
   }

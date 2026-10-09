@@ -5,8 +5,9 @@
 <title>{{ title|e }}</title>
 <script>
 (function () {
-  const requested = new URLSearchParams(window.location.search).get('transpose');
-  if (requested !== '0' && requested !== 'false') {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('transpose');
+  if (requested === '1' || requested === 'true') {
     document.documentElement.classList.add('transpose-pending');
   }
 })();

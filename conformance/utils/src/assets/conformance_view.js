@@ -861,11 +861,17 @@
     var h = '';
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
+      var label = String(c.label || '');
+      var shortLabel = label.replace(/^(\d+)-.+$/, '$1-...');
+      var prefix = tab.case_prefix || '';
+      var fullId = label.indexOf(prefix) === 0 ? label : prefix + label;
       // The rich grammar popup replaces the old native `title` tooltip (which could
       // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
-        + escapeAttr(c.group_key) + '"><a href="' + href + '">'
-        + escapeHtml(c.label) + '</a><div class="ttip"></div></th>';
+        + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
+        + '<span class="case-label-full">' + escapeHtml(label) + '</span>'
+        + '<span class="case-label-short" aria-hidden="true">' + escapeHtml(shortLabel) + '</span>'
+        + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {
@@ -1141,7 +1147,7 @@
       + '<label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>'
       + '<button type="button" class="theme-toggle" data-theme-toggle'
       + ' title="Switch between light and dark">' + THEME_GLYPH[currentTheme()] + '</button>'
-      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle checked> Transpose</label>'
+      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>'
       + '<button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>'
       + '</span></div>';
     var tmp = document.createElement('div');

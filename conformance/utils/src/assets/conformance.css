@@ -260,6 +260,10 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Detailed toggle is a subtle, boxless, grayed-out control (not a prominent button). */
 .checkbox-option.cmp-detailed { border: none; background: none; padding: 4px 2px; color: #8a8f98; }
 .checkbox-option.cmp-detailed input { accent-color: #8a8f98; }
+.case-label-full { display: none; }
+.case-label-short { display: inline; }
+body.transpose-mode .transpose-table .case-label-full { display: inline; }
+body.transpose-mode .transpose-table .case-label-short { display: none; }
 .view-overview .parity-option { display: none; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }

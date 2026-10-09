@@ -676,7 +676,7 @@ def _set_transpose(driver, on):
     time.sleep(0.2)
 
 
-@pytest.mark.parametrize("override,expected", [("", True), ("1", True), ("true", True),
+@pytest.mark.parametrize("override,expected", [("", False), ("1", True), ("true", True),
                                                ("0", False), ("false", False)])
 def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_page, override, expected):
     url = f"file://{rendered_page}?tab=tab-unified"
@@ -688,7 +688,7 @@ def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_pa
         toggle.click()
         selected = not expected
         assert toggle.is_selected() == selected
-        assert driver.execute_script("return new URL(location.href).searchParams.get('transpose')") == (None if selected else "0")
+        assert driver.execute_script("return new URL(location.href).searchParams.get('transpose')") == ("1" if selected else None)
         driver.refresh()
         assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
         for tab in ("tab-toolcalling-batch", "tab-unified"):
@@ -699,7 +699,7 @@ def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_pa
         driver.get(f"file://{rendered_page}?transpose=0")
 
 
-@pytest.mark.parametrize("override,expected", [("", "transpose"), ("1", "transpose"),
+@pytest.mark.parametrize("override,expected", [("", "horizontal"), ("1", "transpose"),
                                                ("true", "transpose"), ("0", "horizontal"),
                                                ("false", "horizontal")])
 def test_first_visible_matrix_matches_transpose_url(rendered_page, override, expected):
@@ -728,6 +728,58 @@ def test_first_visible_matrix_matches_transpose_url(rendered_page, override, exp
             assert first["transposeMode"] is False
     finally:
         d.quit()
+
+
+def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rendered_page):
+    try:
+        driver.get(f"file://{rendered_page}?tab=tab-unified")
+        header = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a")
+        full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
+        short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
+        assert full_label.startswith("1-")
+        assert short_label == "1-..."
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        label_pairs = driver.execute_script(
+            "return Array.from(document.querySelectorAll('#tab-unified th.case-sub a')).map(a=>["
+            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent]);"
+        )
+        assert label_pairs
+        for full, short in label_pairs:
+            case_number, separator, description = full.partition("-")
+            assert separator
+            assert short == (case_number + "-..." if case_number.isdigit() and description else full)
+
+        ActionChains(driver).move_to_element(header).perform()
+        driver.execute_script(
+            "const h=arguments[0].closest('th.case-sub');"
+            "h.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
+            "h.dispatchEvent(new PointerEvent('pointerenter'));",
+            header,
+        )
+        deadline = time.time() + 3
+        tip = None
+        while time.time() < deadline:
+            tips = driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible")
+            if tips:
+                tip = tips[0]
+                break
+            time.sleep(0.1)
+        assert tip is not None, "case description tooltip did not open on hover"
+        assert header.get_attribute("aria-label") in tip.text
+        assert tip.find_element(By.CSS_SELECTOR, ".ttip-head-desc").text
+
+        _set_transpose(driver, True)
+        transposed = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-transpose-table] th.trow-case a")
+        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") != "none"
+        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
+        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
+
+        _set_transpose(driver, False)
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+    finally:
+        driver.get(f"file://{rendered_page}?transpose=0")
 
 
 def test_transpose_builds_mirror_and_colors(driver):

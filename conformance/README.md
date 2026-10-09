@@ -82,7 +82,7 @@ Per-case tagging currently covers the UNIFIED surface only. The reasoning and to
 
 ## Render Outputs
 
-Transpose is checked by default on every report tab. `transpose=1` or `transpose=true` selects Transpose; `transpose=0` or `transpose=false` selects the original orientation. Unchecking writes `transpose=0`; checking removes that override. The URL preserves the selected orientation across refreshes, tab changes, filters, and comparison controls.
+Horizontal tables shorten numeric case labels such as `7-arg_unicode` to `7-...`; hovering still shows the full case ID and description. Transpose is unchecked by default. `transpose=1` or `transpose=true` selects the transposed view, which shows each full `<num>-<description>` label; `transpose=0` or `transpose=false` selects the horizontal view. Enabling Transpose writes `transpose=1`; disabling it removes that override. The selected orientation survives refreshes and tab changes.
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
