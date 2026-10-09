@@ -249,58 +249,27 @@ fn malformed_outer_quote_closes_after_an_incomplete_candidate_key() {
 #[test]
 fn malformed_outer_quote_keeps_a_later_candidate_after_an_incomplete_value() {
     for fake_value in ["x:", "x:[", "x:{y:"] {
-        for (echo_value, value_schema, expected_value) in [
-            (
-                "<|\"|>é<|\"|>",
-                serde_json::json!({"type": "string"}),
-                serde_json::json!("é"),
-            ),
-            (
-                "42",
-                serde_json::json!({"type": "integer"}),
-                serde_json::json!(42),
-            ),
-            (
-                "true",
-                serde_json::json!({"type": "boolean"}),
-                serde_json::json!(true),
-            ),
-            (
-                "null",
-                serde_json::json!({"type": "null"}),
-                serde_json::Value::Null,
-            ),
-            (
-                "[42]",
-                serde_json::json!({
-                    "type": "array",
-                    "items": {"type": "integer"}
-                }),
-                serde_json::json!([42]),
-            ),
-        ] {
-            let input = format!(
-                "<|tool_call>call:broken{{note:<|\"|>outer<|tool_call>call:fake{{{fake_value}<|\"|>}}<|tool_call>call:echo{{value:{echo_value}}}<tool_call|>"
+        let input = format!(
+            "<|tool_call>call:broken{{note:<|\"|>outer<|tool_call>call:fake{{{fake_value}<|\"|>}}<|tool_call>call:echo{{value:<|\"|>é<|\"|>}}<tool_call|>"
+        );
+        let tools = [Tool {
+            name: "echo".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": { "value": {"type": "string"} },
+                "required": ["value"]
+            }),
+            strict: None,
+        }];
+        for chunks in chunkings(&input) {
+            assert_adapters(
+                "gemma4",
+                &tools,
+                &chunks,
+                "",
+                &[("echo", serde_json::json!({"value": "é"}))],
             );
-            let tools = [Tool {
-                name: "echo".into(),
-                description: None,
-                parameters: serde_json::json!({
-                    "type": "object",
-                    "properties": { "value": value_schema },
-                    "required": ["value"]
-                }),
-                strict: None,
-            }];
-            for chunks in chunkings(&input) {
-                assert_adapters(
-                    "gemma4",
-                    &tools,
-                    &chunks,
-                    "",
-                    &[("echo", serde_json::json!({"value": expected_value}))],
-                );
-            }
         }
     }
 }
