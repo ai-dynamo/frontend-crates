@@ -25,6 +25,23 @@ fn assert_guided_at_every_split(
     mode: UnifiedToolOutputMode,
     expected: &[UnifiedEvent],
 ) {
+    assert_initialized_at_every_split(
+        input,
+        UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::None,
+            tool_output_mode: mode,
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            ..UnifiedParserInit::default()
+        },
+        expected,
+    );
+}
+
+fn assert_initialized_at_every_split(
+    input: &str,
+    init: UnifiedParserInit,
+    expected: &[UnifiedEvent],
+) {
     let tools = weather_tools();
     let mut split_points = vec![None];
     split_points.extend(
@@ -32,25 +49,238 @@ fn assert_guided_at_every_split(
             .filter(|&split| input.is_char_boundary(split))
             .map(Some),
     );
-    for split in split_points {
+    let mut chunkings: Vec<Vec<&str>> = split_points
+        .into_iter()
+        .map(|split| split.map_or_else(|| vec![input], |at| vec![&input[..at], &input[at..]]))
+        .collect();
+    chunkings.push(
+        input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect(),
+    );
+    for chunks in chunkings {
         let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
             .expect("built-in Gemma 4 parser");
         parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: UnifiedParserStartingState::None,
-                tool_output_mode: mode.clone(),
-                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
-                ..UnifiedParserInit::default()
-            })
+            .initialize_request(init.clone())
             .expect("guided request");
 
-        let chunks = split.map_or_else(|| vec![input], |at| vec![&input[..at], &input[at..]]);
         let mut deltas = Vec::new();
-        for chunk in chunks {
+        for chunk in &chunks {
             deltas.extend(parser.push(chunk).expect("push"));
         }
         deltas.extend(parser.finish().expect("finish").events);
-        assert_eq!(assemble(&deltas), expected, "split {split:?}");
+        assert_eq!(assemble(&deltas), expected, "chunks {chunks:?}");
+    }
+}
+
+// These family-specific malformed headers preserve the authored corpus and
+// exercise control-token quotation through the public initialization boundary.
+#[test]
+fn rejected_native_header_cannot_quote_a_stripped_control_token() {
+    let input = "call:é{value:<|\"|>Café<|\"|>}<tool_call|>";
+    for state in [
+        UnifiedParserStartingState::None,
+        UnifiedParserStartingState::Reasoning,
+    ] {
+        for named_tool in [None, Some("echo".to_owned())] {
+            let text = "call:é{value:Café}".to_owned();
+            let expected = if state == UnifiedParserStartingState::Reasoning {
+                UnifiedEvent::Reasoning { text }
+            } else {
+                UnifiedEvent::Text { text }
+            };
+            assert_initialized_at_every_split(
+                input,
+                UnifiedParserInit {
+                    starting_state: state,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..Default::default()
+                },
+                &[expected],
+            );
+        }
+    }
+}
+
+#[test]
+fn guided_bare_call_admission_keeps_the_raw_identifier_predecessor() {
+    for preceding in ["abc", "0", "_", "-", "."] {
+        let input = format!("{preceding}call:echo{{value:<|\"|>Café<|\"|>}}<tool_call|>");
+        for state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+            UnifiedParserStartingState::Response,
+        ] {
+            for named_tool in [None, Some("echo".to_owned())] {
+                let text = format!("{preceding}call:echo{{value:Café}}");
+                let expected = if state == UnifiedParserStartingState::Reasoning {
+                    UnifiedEvent::Reasoning { text }
+                } else {
+                    UnifiedEvent::Text { text }
+                };
+                assert_initialized_at_every_split(
+                    &input,
+                    UnifiedParserInit {
+                        starting_state: state,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                        ..Default::default()
+                    },
+                    &[expected],
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn embedded_prefix_cannot_retain_a_stale_header_across_utf8_json() {
+    let payload = "[{\"name\":\"echo\",\"arguments\":{\"value\":\"Café\"}}]";
+    for preceding in ["abc", "0", "_", "-", "."] {
+        let input = format!("{preceding}call:echo{payload}");
+        for state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+        ] {
+            for named_tool in [None, Some("echo".to_owned())] {
+                let expected = if state == UnifiedParserStartingState::Reasoning {
+                    UnifiedEvent::Reasoning {
+                        text: input.clone(),
+                    }
+                } else {
+                    UnifiedEvent::Text {
+                        text: input.clone(),
+                    }
+                };
+                assert_initialized_at_every_split(
+                    &input,
+                    UnifiedParserInit {
+                        starting_state: state,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                        ..Default::default()
+                    },
+                    &[expected],
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn response_wrapper_supplies_the_predecessor_for_its_native_header() {
+    for preceding in ["h", "hello ", "é ", "abc "] {
+        let input = format!("{preceding}<|tool_call>call:echo{{\"value\":\"Café\"}}");
+        assert_initialized_at_every_split(
+            &input,
+            UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("echo".into()),
+                },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..Default::default()
+            },
+            &[
+                UnifiedEvent::Text {
+                    text: preceding.into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "Café"}),
+                },
+            ],
+        );
+    }
+}
+
+#[test]
+fn leading_response_whitespace_does_not_become_prefix_narration() {
+    for before in [" ", "\n", "\t", " \n ", " \n <|tool_call>"] {
+        for named_tool in [None, Some("echo".to_owned())] {
+            let payload = if named_tool.is_some() {
+                "{\"value\":\"Café\"}"
+            } else {
+                "[{\"name\":\"echo\",\"arguments\":{\"value\":\"Café\"}}]"
+            };
+            // Object payloads follow `call:` directly; a name before `[` is the
+            // accepted guided envelope spelling, distinct from native `{` bodies.
+            let prefix = if named_tool.is_some() {
+                "call:"
+            } else {
+                "call:echo"
+            };
+            let input = format!("{before}{prefix}{payload}");
+            assert_initialized_at_every_split(
+                &input,
+                UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::Response,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..Default::default()
+                },
+                &[UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "Café"}),
+                }],
+            );
+        }
+    }
+}
+
+#[test]
+fn response_prefix_keeps_emitted_prose_and_accepts_an_empty_wrapper() {
+    let payload = "[{\"name\":\"echo\",\"arguments\":{\"value\":\"Café\"}}]";
+    for before in [
+        "",
+        " ",
+        "\t",
+        "\n",
+        " \n ",
+        "hello ",
+        "é ",
+        "<|tool_call>",
+        " \n <|tool_call>",
+    ] {
+        for named_tool in [None, Some("echo".to_owned())] {
+            let input = format!("{before}call:echo{payload}");
+            let narration = !before.trim().is_empty() && before.trim() != "<|tool_call>";
+            let expected = if named_tool.is_some() {
+                vec![UnifiedEvent::Text {
+                    text: format!(
+                        "{}{}{}",
+                        if narration { before } else { "" },
+                        if narration { "call:echo" } else { "" },
+                        payload
+                    ),
+                }]
+            } else {
+                let mut events = Vec::new();
+                if narration {
+                    events.push(UnifiedEvent::Text {
+                        text: format!("{before}call:echo"),
+                    });
+                }
+                events.push(UnifiedEvent::ToolCall {
+                    name: "echo".to_owned(),
+                    arguments: serde_json::json!({"value": "Café"}),
+                });
+                events
+            };
+            assert_initialized_at_every_split(
+                &input,
+                UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::Response,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..Default::default()
+                },
+                &expected,
+            );
+        }
     }
 }
 
@@ -62,6 +292,59 @@ fn guided_init(named_tool: Option<&str>, policy: InvalidGuidedPayloadPolicy) -> 
         },
         invalid_guided_payload: policy,
         ..UnifiedParserInit::default()
+    }
+}
+
+#[test]
+fn reset_restarts_guided_prefix_and_response_prose_context() {
+    for named_tool in [None, Some("echo")] {
+        let init = UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Response,
+            ..guided_init(named_tool, InvalidGuidedPayloadPolicy::RecoverAsText)
+        };
+        let payload = if named_tool.is_some() {
+            "{\"value\":\"Café\"}"
+        } else {
+            "[{\"name\":\"echo\",\"arguments\":{\"value\":\"Café\"}}]"
+        };
+        for finish_first in [false, true] {
+            for pending in [
+                "hello call:abcdefghijklmnop",
+                "call:é{value:<|\"|>unfinished",
+            ] {
+                let mut parser = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &[])
+                    .expect("parser");
+                parser.initialize_request(init.clone()).expect("initialize");
+                parser.push(pending).expect("partial push");
+                if finish_first {
+                    parser.finish().expect("previous finish");
+                }
+                parser.reset();
+                parser.initialize_request(init.clone()).expect("reuse");
+                let mut fresh = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &[])
+                    .expect("fresh parser");
+                fresh
+                    .initialize_request(init.clone())
+                    .expect("fresh initialize");
+                let mut actual = Vec::new();
+                let mut expected = Vec::new();
+                for chunk in ["call:", "echo", payload] {
+                    actual.extend(parser.push(chunk).expect("reuse push"));
+                    expected.extend(fresh.push(chunk).expect("fresh push"));
+                }
+                actual.extend(parser.finish().expect("reuse finish").events);
+                expected.extend(fresh.finish().expect("fresh finish").events);
+                // Raw events retain tool indexes that `assemble` would hide.
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    assemble(&actual),
+                    vec![UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value": "Café"}),
+                    }]
+                );
+            }
+        }
     }
 }
 

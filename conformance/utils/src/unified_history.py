@@ -1676,8 +1676,7 @@ def _update_from_loose(
                 }
             # Extraction may derive a complete semantic release directory from
             # an earlier checkpoint. That inherited view is not a new capture.
-            # Source-origin changes remain meaningful even when observations match.
-            if not changes and not metadata_changes and not document_overrides and not origins:
+            if not changes and not metadata_changes and not document_overrides:
                 continue
             capture = {
                 "runtime_version": runtime_version,
