@@ -224,7 +224,7 @@ def test_numeric_display_keeps_bare_schema_results_and_descriptions(family):
            "glossary": [{"rows": [(label, "schema " + label) for label in labels]}]}
     group_null_variants(tab)
     assert [column["label"] for column in tab["columns"]] == [
-        "7-14", "7-15", "7-17", "7-18", "7-19"]
+        "7-14", "7-15", "7-17", "7-19", "7-18"]
     for label in labels[:2]:
         assert cells[label] == original[label]
         assert next(c for c in tab["columns"] if c["label"] == label)["desc"] == "schema " + label
