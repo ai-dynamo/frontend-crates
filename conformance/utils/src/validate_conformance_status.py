@@ -268,7 +268,7 @@ def validate_unified_known_divergences(model: dict, registry: Path, families: li
             scenario = unified_taxonomy.scenario_for_label(case_id, family)
             if not case_id.startswith("UNIFIED.") or (scenario is None and not case_id.endswith(suffix)):
                 raise ValueError(f"{registry}: invalid case ID for {family}: {case_id}")
-            if "golden" in checks:
+            if "golden" in checks or "projection" in checks:
                 expected.add(scenario or case_id[len("UNIFIED."):-len(suffix)])
         # Display columns group null variants. Their leaves retain the exact
         # registry identities, so a new failure cannot hide inside a red group.
