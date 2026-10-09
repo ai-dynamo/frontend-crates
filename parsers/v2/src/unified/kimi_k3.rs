@@ -12,6 +12,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
+use crate::tool_calling::kimi_progress::KimiProgress;
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
     JsonStringState, ProseControl, ProseControlState, ProseGrammarSpan, find_first_outside_strings,
@@ -158,11 +159,201 @@ enum Mode {
     Done,
 }
 
-#[derive(Debug)]
 struct ActiveCall {
     name: String,
     id: String,
     return_mode: Mode,
+    progress: KimiProgress,
+    arguments: NativeArguments,
+}
+
+struct NativeArguments {
+    cursor: usize,
+    header: KimiK3HeaderScan,
+    active: Option<NativeArgument>,
+    json_start: Option<usize>,
+    field_count: usize,
+    blocked: bool,
+}
+
+struct NativeArgument {
+    key: String,
+    arg_type: String,
+    start: usize,
+    released: usize,
+    search: usize,
+    candidate: Option<TokenHit>,
+    started: bool,
+    quoted: JsonStringState,
+}
+
+impl NativeArguments {
+    fn advance_whitespace(text: &str, cursor: &mut usize) {
+        for ch in text[*cursor..].chars() {
+            #[cfg(test)]
+            crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
+            if !ch.is_whitespace() {
+                break;
+            }
+            *cursor += ch.len_utf8();
+        }
+    }
+
+    fn new(cursor: usize) -> Self {
+        Self {
+            cursor,
+            header: KimiK3HeaderScan::new(),
+            active: None,
+            json_start: None,
+            field_count: 0,
+            blocked: false,
+        }
+    }
+
+    fn advance(&mut self, text: &str, progress: &mut KimiProgress) -> Option<ToolCallDelta> {
+        if self.blocked {
+            return None;
+        }
+        if let Some(start) = self.json_start.as_mut() {
+            if !progress.published() {
+                Self::advance_whitespace(text, start);
+            }
+            return progress.advance_json(&text[*start..]);
+        }
+        let mut output = String::new();
+        loop {
+            if self.active.is_none() {
+                Self::advance_whitespace(text, &mut self.cursor);
+                let tail = &text[self.cursor..];
+                let (open, json) = if JSON_OPEN.prefix_len(tail).is_some() {
+                    (JSON_OPEN, true)
+                } else if ARG_OPEN.prefix_len(tail).is_some() {
+                    (ARG_OPEN, false)
+                } else {
+                    break;
+                };
+                let open_len = open.prefix_len(tail).expect("matched above");
+                let Some((at, len)) = self.header.advance(&tail[open_len..], false) else {
+                    break;
+                };
+                let Some(attrs) = parse_attrs(&tail[open_len..open_len + at]) else {
+                    self.blocked = true;
+                    break;
+                };
+                self.cursor += open_len + at + len;
+                self.header = KimiK3HeaderScan::new();
+                if json {
+                    Self::advance_whitespace(text, &mut self.cursor);
+                    self.json_start = Some(self.cursor);
+                    return progress.advance_json(&text[self.cursor..]);
+                }
+                self.active = Some(NativeArgument {
+                    key: attr_value(&attrs, "key").unwrap_or_default().to_string(),
+                    arg_type: attr_value(&attrs, "type").unwrap_or("string").to_string(),
+                    start: self.cursor,
+                    released: self.cursor,
+                    search: self.cursor,
+                    candidate: None,
+                    started: false,
+                    quoted: JsonStringState::default(),
+                });
+            }
+            let active = self.active.as_mut().expect("initialized above");
+            let mut confirmed = None;
+            loop {
+                if let Some(close) = active.candidate {
+                    Self::advance_whitespace(text, &mut active.search);
+                    let rest = &text[active.search..];
+                    // A complete close is still data until the next header or call boundary
+                    // resolves it. Partial structural suffixes have the same ownership.
+                    let unresolved = if let Some(open_len) = ARG_OPEN.prefix_len(rest) {
+                        if self.header.advance(&rest[open_len..], false).is_none() {
+                            break;
+                        }
+                        if let Some((_, len)) = parse_tag_header(rest, ARG_OPEN) {
+                            confirmed = Some((close, active.search + len));
+                            break;
+                        }
+                        false
+                    } else {
+                        rest.is_empty()
+                            || ALL_MARKERS
+                                .iter()
+                                .flat_map(|m| m.variants())
+                                .any(|marker| marker.starts_with(rest) || rest.starts_with(marker))
+                    };
+                    if unresolved {
+                        break;
+                    }
+                    active.candidate = None;
+                    self.header = KimiK3HeaderScan::new();
+                    active.search = close.end();
+                }
+                while active.search < text.len() {
+                    let tail = &text[active.search..];
+                    let ch = tail.chars().next().expect("non-empty value suffix");
+                    #[cfg(test)]
+                    crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
+                    if active.arg_type != "string" && active.quoted.advance(ch) {
+                        active.search += ch.len_utf8();
+                        continue;
+                    }
+                    if ARG_CLOSE.variants().any(|marker| marker.starts_with(tail)) {
+                        break;
+                    }
+                    if let Some((_, len)) = ARG_CLOSE.match_at(tail) {
+                        active.candidate = Some(TokenHit {
+                            at: active.search,
+                            len,
+                        });
+                        active.search += len;
+                        break;
+                    }
+                    active.search += ch.len_utf8();
+                }
+                if active.candidate.is_some() {
+                    continue;
+                }
+                break;
+            }
+            let end = confirmed.map_or_else(
+                || active.candidate.map_or(active.search, |hit| hit.at),
+                |(hit, _)| hit.at,
+            );
+            if active.arg_type == "string" {
+                if !active.started {
+                    output.push_str(if self.field_count == 0 { "{" } else { "," });
+                    output.push_str(&serde_json::to_string(&active.key).expect("string encoding"));
+                    output.push_str(":\"");
+                    active.started = true;
+                }
+                if end > active.released {
+                    let encoded = encode_argument_value("string", &text[active.released..end]);
+                    output.push_str(&encoded[1..encoded.len() - 1]);
+                    active.released = end;
+                }
+            }
+            let Some((close, _next_header_end)) = confirmed else {
+                break;
+            };
+            if active.arg_type == "string" {
+                output.push('"');
+            } else {
+                output.push_str(if self.field_count == 0 { "{" } else { "," });
+                output.push_str(&serde_json::to_string(&active.key).expect("string encoding"));
+                output.push(':');
+                output.push_str(&encode_argument_value(
+                    &active.arg_type,
+                    &text[active.start..close.at],
+                ));
+            }
+            self.field_count += 1;
+            self.cursor = close.end();
+            self.active = None;
+            self.header = KimiK3HeaderScan::new();
+        }
+        (!output.is_empty()).then(|| progress.delta(output, false))
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -186,6 +377,8 @@ impl KimiK3HeaderScan {
             self.scanned = 0;
         }
         while self.scanned < text.len() {
+            #[cfg(test)]
+            crate::tool_calling::kimi_progress::count_work(1, 1);
             let suffix = &text[self.scanned..];
             #[cfg(test)]
             {
@@ -561,7 +754,11 @@ impl KimiK3CallBoundary {
             self.body_parse_count += 1;
             self.parsed_body_bytes += body.len();
         }
-        parse_call_body(body)
+        if self.context == CallBoundaryContext::Native {
+            parse_call_body_ordered(body, true)
+        } else {
+            parse_call_body(body)
+        }
     }
 
     fn recovery_body_end(&self, text: &str, header_len: usize, limit: usize) -> Option<usize> {
@@ -689,6 +886,7 @@ impl KimiK3CallBoundary {
                 #[cfg(test)]
                 {
                     self.scanned_bytes += character.len_utf8();
+                    crate::tool_calling::kimi_progress::count_work(1, character.len_utf8());
                 }
                 continue;
             }
@@ -705,6 +903,7 @@ impl KimiK3CallBoundary {
                 #[cfg(test)]
                 {
                     self.scanned_bytes += len;
+                    crate::tool_calling::kimi_progress::count_work(1, len);
                 }
                 continue;
             }
@@ -739,6 +938,7 @@ impl KimiK3CallBoundary {
             #[cfg(test)]
             {
                 self.scanned_bytes += character.len_utf8();
+                crate::tool_calling::kimi_progress::count_work(1, character.len_utf8());
             }
         }
     }
@@ -1410,7 +1610,21 @@ impl KimiK3Native {
                 self.mode = Mode::Tools;
                 true
             }
-            CallBoundary::Pending if !flush => false,
+            CallBoundary::Pending if !flush => {
+                if let Some(call) = self.active_call.as_mut()
+                    && !call.name.is_empty()
+                    && let Some(delta) = call.arguments.advance(&self.buffer, &mut call.progress)
+                {
+                    let index = delta.tool_index;
+                    if self.call_ids.len() <= index {
+                        self.call_ids.resize(index + 1, String::new());
+                        self.call_ids[index] = call.id.clone();
+                        self.next_tool_index += 1;
+                    }
+                    output.push_call(delta);
+                }
+                false
+            }
             CallBoundary::Pending | CallBoundary::Malformed => {
                 tracing::warn!(
                     why = "kimi_k3_incomplete_call",
@@ -1439,7 +1653,7 @@ impl KimiK3Native {
     }
 
     fn finish_call(&mut self, arguments: Option<String>, output: &mut UnifiedParserOutput) {
-        let Some(call) = self.active_call.take() else {
+        let Some(mut call) = self.active_call.take() else {
             self.mode = Mode::Tools;
             return;
         };
@@ -1459,15 +1673,15 @@ impl KimiK3Native {
             return;
         };
 
-        let tool_index = self.next_tool_index;
-        self.next_tool_index += 1;
-        self.call_ids.push(call.id);
-        output.push_call(ToolCallDelta {
-            tool_index,
-            name: Some(call.name),
-            arguments,
-            complete: true,
-        });
+        let tool_index = call.progress.tool_index;
+        if !call.progress.published() {
+            self.next_tool_index += 1;
+            self.call_ids.resize(tool_index + 1, String::new());
+            self.call_ids[tool_index] = call.id;
+        }
+        if let Some(delta) = call.progress.finish_json(&arguments) {
+            output.push_call(delta);
+        }
     }
 
     fn consume_call_open(
@@ -1524,6 +1738,8 @@ impl KimiK3Native {
             .map(str::to_string);
         let id = tool_call_id(&name, index.as_deref());
         self.active_call = Some(ActiveCall {
+            progress: KimiProgress::new(self.next_tool_index, name.clone()),
+            arguments: NativeArguments::new(header_end + sep_len),
             name,
             id,
             return_mode,
@@ -2051,6 +2267,12 @@ fn parse_call_header(text: &str) -> Option<(Vec<(String, String)>, usize)> {
 }
 
 fn parse_call_body(body: &str) -> Option<String> {
+    parse_call_body_ordered(body, false)
+}
+
+fn parse_call_body_ordered(body: &str, preserve_duplicates: bool) -> Option<String> {
+    #[cfg(test)]
+    crate::tool_calling::kimi_progress::count_work(2, body.len());
     let trimmed = body.trim();
     if trimmed.is_empty() {
         return Some("{}".to_string());
@@ -2074,7 +2296,11 @@ fn parse_call_body(body: &str) -> Option<String> {
         let Value::Object(_) = serde_json::from_str::<Value>(raw).ok()? else {
             return None;
         };
-        return Some(compact_json(raw));
+        return Some(if preserve_duplicates {
+            raw.trim().to_string()
+        } else {
+            compact_json(raw)
+        });
     }
 
     let mut fields = Vec::<(String, String)>::new();
@@ -2097,7 +2323,7 @@ fn parse_call_body(body: &str) -> Option<String> {
         let field_end = value_end + close_len;
         let value = encode_argument_value(arg_type, &trimmed[value_start..value_end]);
         count_argument_field_lookup();
-        if let Some(position) = field_positions.get(&key).copied() {
+        if !preserve_duplicates && let Some(position) = field_positions.get(&key).copied() {
             fields[position].1 = value;
         } else {
             field_positions.insert(key.clone(), fields.len());
@@ -2689,17 +2915,24 @@ mod tests {
                 events.extend(parser.push(&input[split..]).unwrap());
                 events.extend(parser.finish().unwrap().events);
                 assert_eq!(
-                    events,
-                    vec![crate::UnifiedParserEvent::ToolCall(ToolCallDelta {
-                        tool_index: 0,
-                        name: Some("good".into()),
-                        arguments: r#"{"x":7}"#.into(),
-                        complete: true,
-                    })],
+                    assemble(&events),
+                    vec![UnifiedEvent::ToolCall {
+                        name: "good".into(),
+                        arguments: serde_json::json!({"x":7}),
+                    }],
                     "raw JSON {raw:?}, split at byte {split}"
                 );
-                assert_eq!(parser.tool_call_id(0), Some("good:1"));
-                assert_eq!(parser.tool_call_id(1), None);
+                let completed: Vec<_> = events
+                    .iter()
+                    .filter_map(|event| match event {
+                        crate::UnifiedParserEvent::ToolCall(delta) if delta.complete => Some(delta),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(completed.len(), 1);
+                let index = completed[0].tool_index;
+                assert_eq!(parser.tool_call_id(index), Some("good:1"));
+                assert_eq!(parser.tool_call_id(index + 1), None);
             }
         }
     }
@@ -3413,7 +3646,9 @@ mod tests {
                     ..UnifiedParserInit::default()
                 };
                 parser.initialize_request(init.clone()).unwrap();
-                assert!(parser.push(&partial).unwrap().is_empty());
+                let partial_events = parser.push(&partial).unwrap();
+                assert!(assemble(&partial_events).is_empty());
+                assert!(partial_events.iter().all(|event| !matches!(event, crate::UnifiedParserEvent::ToolCall(delta) if delta.complete)));
                 if finish {
                     if guided {
                         assert!(parser.finish().is_err());
@@ -3589,18 +3824,25 @@ mod tests {
         assert!(parser.push(&header).unwrap().is_empty());
         assert_eq!(parser.tool_call_id(0), None);
         let body = arg("value", "string", "Zürich");
-        assert!(parser.push(&body).unwrap().is_empty());
-        assert!(parser.push(CALL_CLOSE.canonical).unwrap().is_empty());
-        assert_eq!(
-            parser.push(TOOLS_CLOSE.canonical).unwrap(),
-            vec![crate::UnifiedParserEvent::ToolCall(ToolCallDelta {
-                tool_index: 0,
-                name: Some("echo".into()),
-                arguments: r#"{"value":"Zürich"}"#.into(),
-                complete: true,
-            })]
-        );
+        let mut events = parser.push(&body).unwrap();
         assert_eq!(parser.tool_call_id(0), Some("echo:0"));
+        assert!(events.iter().all(
+            |event| !matches!(event, crate::UnifiedParserEvent::ToolCall(delta) if delta.complete)
+        ));
+        assert!(parser.push(CALL_CLOSE.canonical).unwrap().is_empty());
+        let closed = parser.push(TOOLS_CLOSE.canonical).unwrap();
+        assert_eq!(closed.len(), 1);
+        assert!(
+            matches!(&closed[0], crate::UnifiedParserEvent::ToolCall(delta) if delta.complete && delta.name.is_none())
+        );
+        events.extend(closed);
+        assert_eq!(
+            assemble(&events),
+            vec![UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value":"Zürich"}),
+            }]
+        );
     }
 
     #[test]

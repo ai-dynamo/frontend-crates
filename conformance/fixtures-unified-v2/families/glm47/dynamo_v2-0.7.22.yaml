@@ -1,0 +1,11 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+    source_sha256: acb754b550272b977c2e889dd1e3de0d0d468a186f461f7d097f387f7d7f4b33
+document:
+  mode: unified
+changes: {}
+metadata_changes: {}
+document_overrides: {}

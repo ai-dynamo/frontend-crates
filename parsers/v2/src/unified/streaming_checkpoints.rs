@@ -50,6 +50,50 @@ fn echo_tools() -> [Tool; 1] {
     }]
 }
 
+fn assert_published_identities(
+    parser: &dyn UnifiedParser,
+    events: &[UnifiedParserEvent],
+    native: bool,
+) -> Vec<usize> {
+    let mut names = BTreeMap::new();
+    let mut completed = Vec::new();
+    for event in events {
+        if let UnifiedParserEvent::ToolCall(delta) = event {
+            if let Some(name) = &delta.name {
+                assert!(
+                    names.insert(delta.tool_index, name).is_none(),
+                    "duplicate identity"
+                );
+            }
+            assert!(
+                names.contains_key(&delta.tool_index),
+                "fragment before identity"
+            );
+            if native {
+                assert!(parser.tool_call_id(delta.tool_index).is_some());
+            }
+            if delta.complete {
+                assert!(
+                    !completed.contains(&delta.tool_index),
+                    "duplicate completion"
+                );
+                completed.push(delta.tool_index);
+            }
+        }
+    }
+    let last = names.keys().next_back().copied().unwrap_or(0);
+    for index in 0..=last + 1 {
+        if !names.contains_key(&index) {
+            assert_eq!(
+                parser.tool_call_id(index),
+                None,
+                "ghost identity at {index}"
+            );
+        }
+    }
+    completed
+}
+
 // The conformance table compares final assembly. These checkpoints instead reject
 // output that arrives before ownership is settled or only after a later push/EOF.
 fn assert_checkpoints(
@@ -127,39 +171,14 @@ fn assert_checkpoints(
                             ),
                         }
                     }
-                    // Do not let assembly hide incomplete, duplicate, or ghost deltas.
-                    let calls: Vec<_> = events
-                        .iter()
-                        .filter_map(|event| match event {
-                            UnifiedParserEvent::ToolCall(delta) => Some(delta),
-                            _ => None,
-                        })
-                        .collect();
-                    assert!(
-                        calls.len() <= phase.ids.len(),
-                        "premature call delta: {family} phase={index} {schedule:?}"
+                    let completed = assert_published_identities(
+                        parser.as_ref(),
+                        &events,
+                        matches!(init.tool_output_mode, UnifiedToolOutputMode::Native),
                     );
-                    for (call_index, delta) in calls.iter().enumerate() {
-                        assert!(delta.complete);
-                        assert_eq!(delta.tool_index, call_index);
-                        assert_eq!(
-                            parser.tool_call_id(call_index),
-                            phase.ids[call_index].as_deref()
-                        );
-                    }
-                    for absent in calls.len()
-                        ..=phases
-                            .iter()
-                            .map(|phase| phase.ids.len())
-                            .max()
-                            .unwrap_or(0)
-                            + eof_ids.len()
-                    {
-                        assert_eq!(
-                            parser.tool_call_id(absent),
-                            None,
-                            "ghost ID: {family} phase={index}"
-                        );
+                    assert!(completed.len() <= phase.ids.len(), "premature completion");
+                    for (index, id) in completed.iter().zip(&phase.ids) {
+                        assert_eq!(parser.tool_call_id(*index), id.as_deref());
                     }
                 }
                 assert_eq!(
@@ -167,16 +186,8 @@ fn assert_checkpoints(
                     phase.events,
                     "delayed emission: {family} phase={index} {schedule:?} reuse={reuse}"
                 );
-                for (index, id) in phase.ids.iter().enumerate() {
-                    assert_eq!(parser.tool_call_id(index), id.as_deref());
-                }
             }
             let finished = parser.finish().unwrap().events;
-            assert_eq!(
-                assemble(&finished),
-                eof,
-                "unexpected EOF output: {family} {schedule:?}"
-            );
             events.extend(finished);
             let final_ids: Vec<_> = phases
                 .last()
@@ -186,30 +197,25 @@ fn assert_checkpoints(
                 .map(|id| id.as_deref())
                 .chain(eof_ids.iter().copied().map(Some))
                 .collect();
-            let calls: Vec<_> = events
-                .iter()
-                .filter_map(|event| match event {
-                    UnifiedParserEvent::ToolCall(delta) => Some(delta),
-                    _ => None,
-                })
-                .collect();
+            let completed = assert_published_identities(
+                parser.as_ref(),
+                &events,
+                matches!(init.tool_output_mode, UnifiedToolOutputMode::Native),
+            );
             assert_eq!(
-                calls.len(),
+                completed.len(),
                 final_ids.len(),
                 "duplicate/unfinished EOF call"
             );
-            for (index, (delta, id)) in calls.iter().zip(&final_ids).enumerate() {
-                assert_eq!(delta.tool_index, index);
-                assert!(delta.complete);
-                assert_eq!(parser.tool_call_id(index), *id);
+            for (index, id) in completed.iter().zip(&final_ids) {
+                assert_eq!(parser.tool_call_id(*index), *id);
             }
-            assert_eq!(parser.tool_call_id(final_ids.len()), None);
             let mut expected = phases.last().unwrap().events.clone();
             expected.extend_from_slice(eof);
             assert_eq!(assemble(&events), expected);
             assert!(parser.finish().is_err());
             assert_eq!(parser.reset(), "");
-            for index in 0..=final_ids.len() {
+            for index in 0..=events.len() {
                 assert_eq!(parser.tool_call_id(index), None);
             }
             // Reset while syntax is pending as well as after a finished request.

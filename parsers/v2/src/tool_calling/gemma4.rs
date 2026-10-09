@@ -13,7 +13,7 @@
 //! The streaming concerns (buffering, chunk-split marker safety, normal_text
 //! suppression, orphan-close stripping, EOF-truncation drop) live in the shared
 //! [`WrappedBlockScanner`], not here. Gemma 4 supplies only what its markers
-//! cannot express, through [`InvokeScan`]: `<tool_call|>` and `call:` both occur
+//! cannot express, through [`InvokeBoundary`]: `<tool_call|>` and `call:` both occur
 //! legitimately INSIDE a `<|"|>`-delimited string value, so where an invoke ends
 //! and whether a `call:` opens one are answered by the v1 balanced,
 //! string-aware scan rather than by `find`. One scanner, one boundary
