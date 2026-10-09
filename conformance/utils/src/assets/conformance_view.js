@@ -875,8 +875,9 @@
       // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
         + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
-        + '<span class="case-label-full">' + escapeHtml(label) + '</span>'
-        + '<span class="case-label-short" aria-hidden="true">' + shortLabel + '</span>'
+        + '<span class="case-label-full">' + escapeHtml(label) + '</span> '
+        + '<span class="case-label-short' + (c.display_number != null ? ' case-label-reference' : '')
+        + '" aria-hidden="true">' + shortLabel + '</span>'
         + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];

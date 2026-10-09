@@ -267,6 +267,7 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 #tab-unified .transpose-table tr.section td { color: #8a8f98; }
 body.transpose-mode .transpose-table .case-label-full { display: inline; }
 body.transpose-mode .transpose-table .case-label-short { display: none; }
+body.transpose-mode .transpose-table .case-label-reference { display: inline-block; margin-left: 0.8em; white-space: nowrap; }
 .view-overview .parity-option { display: none; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }

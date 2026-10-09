@@ -801,7 +801,25 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         _set_transpose(driver, True)
         transposed = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-transpose-table] th.trow-case a")
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") != "none"
-        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
+        reference = transposed.find_element(By.CSS_SELECTOR, ".case-label-short")
+        assert reference.value_of_css_property("display") == "inline-block"
+        assert reference.text == short_label
+        assert transposed.text == f"{full_label} {short_label}"
+        assert float(reference.value_of_css_property("margin-left")[:-2]) > 0
+        full_bounds = transposed.find_element(By.CSS_SELECTOR, ".case-label-full").rect
+        assert reference.rect["x"] > full_bounds["x"] + full_bounds["width"]
+        reference_number = reference.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
+        assert reference_number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert float(reference_number.value_of_css_property("font-size")[:-2]) < float(
+            transposed.value_of_css_property("font-size")[:-2]
+        )
+        transpose_labels = driver.execute_script(
+            "return Array.from(document.querySelectorAll('#tab-unified .transpose-table th.trow-case a')).map(a=>["
+            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
+            "getComputedStyle(a.querySelector('.case-label-short')).display]);"
+        )
+        assert [(full, short) for full, short, _ in transpose_labels] == [(full, short) for full, short, _ in label_pairs]
+        assert all(display == "inline-block" for _, _, display in transpose_labels)
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
         model_header = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table thead .tcol-model")
         assert model_header.value_of_css_property("background-color") == "rgba(15, 23, 42, 1)"
@@ -811,6 +829,11 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         _set_transpose(driver, False)
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
         assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        _click_tab(driver, "tab-toolcalling-batch")
+        _set_transpose(driver, True)
+        other_header = driver.find_element(By.CSS_SELECTOR, "#tab-toolcalling-batch .transpose-table th.trow-case a")
+        assert not other_header.find_elements(By.CSS_SELECTOR, ".case-label-reference")
+        assert other_header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
     finally:
         driver.get(f"file://{rendered_page}?transpose=0")
 
