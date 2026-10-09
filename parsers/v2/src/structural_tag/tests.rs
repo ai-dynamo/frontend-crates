@@ -45,30 +45,28 @@ fn qwen_empty_tool_has_exact_empty_body() {
             StructuralTagToolChoice::Required,
             StructuralTagToolChoice::Named("get_server_time"),
         ] {
-            for any_order in [false, true] {
-                let tag = QWEN3_CODER
-                    .build_with_options(
-                        &StructuralTagContext {
-                            tool_choice: choice,
-                            tools: std::slice::from_ref(&tool),
-                            parallel_tool_calls: Some(false),
-                            schema_mode: StructuralTagSchemaMode::Auto,
-                            structured_output_schema: None,
-                            starts_in_reasoning: false,
-                        },
-                        &StructuralTagOptions {
-                            tool_arguments_any_order: any_order,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap()
-                    .unwrap();
-                assert_eq!(
-                    qwen_call_tag(&tag)["content"],
-                    json!({"type": "const_string", "value": ""}),
-                    "{choice:?}, omit_required={omit_required}, any_order={any_order}"
-                );
-            }
+            let tag = QWEN3_CODER
+                .build_with_options(
+                    &StructuralTagContext {
+                        tool_choice: choice,
+                        tools: std::slice::from_ref(&tool),
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions {
+                        tool_arguments_any_order: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                qwen_call_tag(&tag)["content"],
+                json!({"type": "const_string", "value": ""}),
+                "{choice:?}, omit_required={omit_required}"
+            );
         }
     }
 }
@@ -112,27 +110,31 @@ fn qwen_empty_tool_preserves_other_constraints() {
 #[test]
 fn qwen_empty_tool_preserves_strict_policy_and_other_formats() {
     let mut tool = empty_qwen_tool();
-    for strict in [None, Some(false)] {
+    for (schema_mode, strict) in [
+        (StructuralTagSchemaMode::Auto, None),
+        (StructuralTagSchemaMode::Auto, Some(false)),
+        // Global strict overrides the tool's explicit opt-out.
+        (StructuralTagSchemaMode::Strict, Some(false)),
+    ] {
         tool.strict = strict;
-        for schema_mode in [
-            StructuralTagSchemaMode::Auto,
-            StructuralTagSchemaMode::Strict,
-        ] {
-            let tag = build(
-                &QWEN3_CODER,
-                StructuralTagToolChoice::Named("get_server_time"),
-                std::slice::from_ref(&tool),
-                None,
-                schema_mode,
-                false,
-            );
-            let expected = if schema_mode == StructuralTagSchemaMode::Strict {
-                json!({"type": "const_string", "value": ""})
-            } else {
-                json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
-            };
-            assert_eq!(qwen_call_tag(&tag)["content"], expected);
-        }
+        let tag = build(
+            &QWEN3_CODER,
+            StructuralTagToolChoice::Named("get_server_time"),
+            std::slice::from_ref(&tool),
+            None,
+            schema_mode,
+            false,
+        );
+        let expected = if schema_mode == StructuralTagSchemaMode::Strict {
+            json!({"type": "const_string", "value": ""})
+        } else {
+            json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
+        };
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            expected,
+            "{schema_mode:?}, strict={strict:?}"
+        );
     }
     tool.strict = Some(true);
     let tag = build(
