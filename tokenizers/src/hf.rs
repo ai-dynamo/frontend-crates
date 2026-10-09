@@ -155,7 +155,18 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
     }
     // Dedups against existing added-tokens, so this is a no-op when
     // tokenizer.json already had them. Return value = net-new count.
-    let added = tokenizer.add_special_tokens(&to_add);
+    let added = match tokenizer.add_special_tokens(to_add.iter().cloned()) {
+        Ok(added) => added,
+        Err(e) => {
+            tracing::warn!(
+                target: "tokenizer",
+                path = %cfg_path.display(),
+                error = %e,
+                "special-token merge from tokenizer_config.json failed; skipping"
+            );
+            return;
+        }
+    };
     if added > 0 {
         // Warn (not debug) when the merge actually promotes anything —
         // intentionally loud so accidental promotion of a previously-
