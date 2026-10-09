@@ -3,7 +3,6 @@
 
 //! Decision wire contracts. Semantic validation belongs to `dynamo-decisions`.
 pub mod openai;
-pub mod sglang;
 pub mod systemone;
 
 use serde::{Deserialize, Serialize};
