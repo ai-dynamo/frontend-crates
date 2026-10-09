@@ -3,13 +3,15 @@
 
 //! Per-request video options: frame sampling and pixel budgets.
 //!
-//! The names follow the OpenAI-compatible request surface that vLLM defines:
-//! sampling options (`fps`, `max_frames`, `num_frames`) travel in
-//! `media_io_kwargs.video`, pixel budgets (`total_pixels`,
-//! `max_pixels_per_frame`) in `mm_processor_kwargs`. A router deserializes
-//! each namespace into [`VideoOptions`] and [`VideoPixelBudget`]; the crate
-//! turns them into a frame count ([`resolve_num_frames`]) and, per model
-//! family, a target frame size (`QwenVlSpec::video_resize`).
+//! The sampling options (`fps`, `max_frames`, `num_frames`) are vLLM's
+//! `media_io_kwargs.video` keys. The pixel budgets (`total_pixels`,
+//! `max_pixels_per_frame`) are specific to this crate: vLLM passes
+//! `mm_processor_kwargs` through to the HF processor, whose Qwen3-VL video
+//! keys are `size` (`shortest_edge` / `longest_edge`) and `max_video_tokens`.
+//! See [`VideoPixelBudget`] for how the two map. A router deserializes each
+//! namespace into [`VideoOptions`] and [`VideoPixelBudget`]; the crate turns
+//! them into a frame count ([`resolve_num_frames`]) and, per model family, a
+//! target frame size (`QwenVlSpec::video_resize`).
 //!
 //! Nothing here decodes video. It is the arithmetic a decoder and a resizer
 //! must agree on, kept pure so every consumer gets the same answer.
@@ -90,7 +92,14 @@ fn unset_if_minus_one_f64<'de, D: serde::Deserializer<'de>>(
     Ok(value.filter(|v| *v != -1.0))
 }
 
-/// Pixel budgets (`mm_processor_kwargs`), both optional.
+/// Per-request pixel budgets, both optional. These keys are specific to this
+/// crate, not vLLM or HF keys; a router forwarding a request to vLLM must not
+/// pass them on as they are. Their HF Qwen3-VL equivalents:
+///
+/// * `total_pixels`: the video processor's `size["longest_edge"]` (named
+///   after qwen-vl-utils' per-video `total_pixels`).
+/// * `max_pixels_per_frame`: `max_video_tokens * (patch_size * merge_size)^2`,
+///   applied as HF does with `cap_pixels_per_frame=True`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
 pub struct VideoPixelBudget {
     /// Budget for the whole clip: all sampled frames share it, so more frames
