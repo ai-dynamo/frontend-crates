@@ -184,7 +184,7 @@ def _canonical_json_number(token):
     exponent_digits = exponent.lstrip("-")
     if len(exponent_digits) <= 18:
         exponent = int(exponent)
-    return ["number", -1 if sign else 1, [int(digit) for digit in digits], exponent]
+    return ["number", 1 if sign else 0, [int(digit) for digit in digits], exponent]
 
 
 def canonical_arguments(arguments):

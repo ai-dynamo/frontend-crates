@@ -177,7 +177,7 @@ def test_extreme_json_exponents_are_canonicalized_without_expanding_values():
     different_value = canonical_arguments('{"value":1e' + shifted_exponent + '}')
     assert large == same_value
     assert large != different_value
-    assert large[1][0][1] == ["number", 1, [1], exponent]
+    assert large[1][0][1] == ["number", 0, [1], exponent]
 
     negative_exponent = "-" + exponent
     smaller = str(int(exponent) + 1)
@@ -187,7 +187,9 @@ def test_extreme_json_exponents_are_canonicalized_without_expanding_values():
 
     long_exponent = "9" * 5000
     result = canonical_arguments('{"value":1e' + long_exponent + '}')
-    assert result[1][0][1] == ["number", 1, [1], long_exponent]
+    assert result[1][0][1] == ["number", 0, [1], long_exponent]
+    negative = canonical_arguments('{"value":-1e' + long_exponent + '}')
+    assert negative[1][0][1] == ["number", 1, [1], long_exponent]
     large_json = '{"value":1e' + exponent + '}'
     same_json = '{"value":10e' + shifted_exponent + '}'
     assert candidate_sig({"calls": [{"name": "f", "arguments": large_json}]}) == candidate_sig(
