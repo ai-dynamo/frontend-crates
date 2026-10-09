@@ -5,7 +5,7 @@
 //! `cap_pixels_per_frame` branch of `Qwen3VLVideoProcessor.resize`) return,
 //! as recorded by `tests/fixtures/video/generate.py`.
 
-use dynamo_multimodal::models::qwen_vl::{QwenVlSpec, smart_video_resize};
+use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, smart_video_resize};
 use dynamo_multimodal::video::VideoPixelBudget;
 
 #[derive(serde::Deserialize)]
@@ -32,7 +32,7 @@ struct BudgetCase {
 
 #[derive(serde::Deserialize)]
 struct Fixture {
-    spec: serde_json::Value,
+    video_config: Qwen3VlVideo,
     resize: Vec<ResizeCase>,
     budget: Vec<BudgetCase>,
 }
@@ -64,20 +64,14 @@ fn smart_video_resize_matches_hf() {
 #[test]
 fn request_budgets_match_hf_cap_semantics() {
     let f = fixture();
-    // The image-side fields are unused by the resize arithmetic.
-    let mut spec = f.spec.clone();
-    spec["image_token_id"] = 0.into();
-    spec["image_mean"] = serde_json::json!([0.5, 0.5, 0.5]);
-    spec["image_std"] = serde_json::json!([0.5, 0.5, 0.5]);
-    let spec: QwenVlSpec = serde_json::from_value(spec).unwrap();
     for c in f.budget {
         let budget = VideoPixelBudget {
             total_pixels: c.total_pixels,
             max_pixels_per_frame: c.max_pixels_per_frame,
         };
-        let bounds = spec.image_bounds_for_video();
-        let (h, w) = spec
-            .video_resize(&bounds, c.num_frames, c.height, c.width, &budget)
+        let (h, w) = f
+            .video_config
+            .resize(c.num_frames, c.height, c.width, &budget)
             .unwrap();
         assert_eq!(
             [h, w],

@@ -1,11 +1,14 @@
 {
  "source": "https://raw.githubusercontent.com/huggingface/transformers/528c26713c8f3774fb56d409da766bc95452aafb/src/transformers/models/qwen3_vl/video_processing_qwen3_vl.py",
- "spec": {
+ "video_config": {
+  "video_processor_type": "Qwen3VLVideoProcessor",
   "patch_size": 16,
   "merge_size": 2,
   "temporal_patch_size": 2,
-  "min_pixels": 65536,
-  "max_pixels": 16777216
+  "size": {
+   "shortest_edge": 65536,
+   "longest_edge": 16777216
+  }
  },
  "resize": [
   {

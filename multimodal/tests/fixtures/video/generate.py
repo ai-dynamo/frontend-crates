@@ -87,8 +87,10 @@ def main() -> None:
                  factor=factor, min_pixels=lo, max_pixels=hi, expected=expected)
         )
 
-    spec = dict(patch_size=16, merge_size=2, temporal_patch_size=temporal,
-                min_pixels=min_px, max_pixels=max_px)
+    # The budget cases' model, as a `video_preprocessor_config.json` would give it.
+    video_config = dict(video_processor_type="Qwen3VLVideoProcessor", patch_size=16,
+                        merge_size=2, temporal_patch_size=temporal,
+                        size=dict(shortest_edge=min_px, longest_edge=max_px))
     budget_cases = []
     for frames, h, w, total, cap in [
         (32, 1080, 1920, None, None),
@@ -111,7 +113,8 @@ def main() -> None:
 
     out = Path(__file__).with_name("smart_resize.json")
     out.write_text(json.dumps(
-        dict(source=SOURCE_URL, spec=spec, resize=resize_cases, budget=budget_cases),
+        dict(source=SOURCE_URL, video_config=video_config, resize=resize_cases,
+             budget=budget_cases),
         indent=1) + "\n")
     print(f"wrote {out}")
 

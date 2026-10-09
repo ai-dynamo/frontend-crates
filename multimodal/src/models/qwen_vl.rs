@@ -9,13 +9,17 @@
 //! `(gh/m, gw/m, m, m)`, features `(C, tps, ps, ps)`, temporal copies
 //! duplicated for stills) — plus the image-only M-RoPE fast path. All
 //! parameters come from the runtime spec.
+//!
+//! Video sizing is separate: [`Qwen3VlVideo`] mirrors HF's
+//! `Qwen3VLVideoProcessor` and reads the model's
+//! `video_preprocessor_config.json`, not the image spec.
 
 use crate::image::resize;
 use crate::processor::{
     DecodedMedia, Geometry, MediaMetadata, MmFamilyProcessor, PositionOutput, ProcessedItem,
     Tensor, TensorData, TokenLayout,
 };
-use crate::video::{VideoBounds, VideoPixelBudget};
+use crate::video::VideoPixelBudget;
 use crate::{MmError, Result, execution, token_layout};
 
 const MAX_RATIO: f64 = 200.0;
@@ -412,40 +416,119 @@ pub fn smart_video_resize(
     Ok((h_bar, w_bar))
 }
 
-impl QwenVlSpec {
-    /// The image bounds as video bounds: the fallback when the video
-    /// processor's own bounds are unknown.
-    pub fn image_bounds_for_video(&self) -> VideoBounds {
-        VideoBounds {
-            min_pixels: self.min_pixels,
-            max_pixels: self.max_pixels,
-        }
-    }
+/// The video processor type [`Qwen3VlVideo`] accepts.
+const QWEN3_VL_VIDEO_PROCESSOR: &str = "Qwen3VLVideoProcessor";
 
+/// Video sizing of HF's `Qwen3VLVideoProcessor`, deserialized from the
+/// model's `video_preprocessor_config.json` (unknown keys are ignored).
+///
+/// Deserializing fails unless `video_processor_type` is
+/// `Qwen3VLVideoProcessor` and `size` gives both bounds. Video is never sized
+/// with a model's image bounds, which can differ (Qwen3-VL-8B: 65,536 to
+/// 16,777,216 pixels for images, 4,096 to 25,165,824 for a clip), or with the
+/// rules of Qwen2-VL and Qwen2.5-VL, which size video differently.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(try_from = "RawQwen3VlVideo")]
+pub struct Qwen3VlVideo {
+    patch_size: usize,
+    merge_size: usize,
+    temporal_patch_size: usize,
+    /// `size["shortest_edge"]`: lower bound on the clip's pixels.
+    min_pixels: usize,
+    /// `size["longest_edge"]`: upper bound on the clip's pixels, and the
+    /// ceiling for any request budget.
+    max_pixels: usize,
+}
+
+/// The wire form of [`Qwen3VlVideo`], before validation.
+#[derive(serde::Deserialize)]
+struct RawQwen3VlVideo {
+    video_processor_type: String,
+    patch_size: usize,
+    merge_size: usize,
+    temporal_patch_size: usize,
+    size: RawVideoSize,
+    /// Must be absent or `true`: `false` skips resizing in HF.
+    #[serde(default)]
+    do_resize: Option<bool>,
+    /// Must be absent or `false`: `true` caps frames at `max_video_tokens`,
+    /// which this crate does not implement.
+    #[serde(default)]
+    cap_pixels_per_frame: Option<bool>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawVideoSize {
+    shortest_edge: usize,
+    longest_edge: usize,
+}
+
+impl TryFrom<RawQwen3VlVideo> for Qwen3VlVideo {
+    type Error = MmError;
+
+    fn try_from(raw: RawQwen3VlVideo) -> Result<Self> {
+        if raw.video_processor_type != QWEN3_VL_VIDEO_PROCESSOR {
+            return Err(MmError::unsupported(format!(
+                "video processor {} is not {QWEN3_VL_VIDEO_PROCESSOR}",
+                raw.video_processor_type
+            )));
+        }
+        if raw.do_resize == Some(false) || raw.cap_pixels_per_frame == Some(true) {
+            return Err(MmError::unsupported(
+                "video processor configs with do_resize = false or cap_pixels_per_frame = true are not supported",
+            ));
+        }
+        if raw.patch_size == 0 || raw.merge_size == 0 || raw.temporal_patch_size == 0 {
+            return Err(MmError::invalid_input(
+                "video processor patch, merge and temporal patch sizes must be at least 1",
+            ));
+        }
+        if raw.patch_size.checked_mul(raw.merge_size).is_none() {
+            return Err(MmError::invalid_input(
+                "video processor patch_size * merge_size overflows",
+            ));
+        }
+        let size = raw.size;
+        if size.shortest_edge == 0 || size.shortest_edge > size.longest_edge {
+            return Err(MmError::invalid_input(format!(
+                "video processor size must have 0 < shortest_edge <= longest_edge, got {} and {}",
+                size.shortest_edge, size.longest_edge
+            )));
+        }
+        Ok(Self {
+            patch_size: raw.patch_size,
+            merge_size: raw.merge_size,
+            temporal_patch_size: raw.temporal_patch_size,
+            min_pixels: size.shortest_edge,
+            max_pixels: size.longest_edge,
+        })
+    }
+}
+
+impl Qwen3VlVideo {
     /// Target `(height, width)` for each of `num_frames` sampled frames, as
-    /// HF's `Qwen3VLVideoProcessor` computes it. Other Qwen VL generations
-    /// size video differently; do not use this for them.
+    /// HF's `Qwen3VLVideoProcessor` computes it.
     ///
-    /// `bounds` are the model's clip bounds (HF's video `size`); pass
-    /// [`QwenVlSpec::image_bounds_for_video`] only when the video config is not
-    /// available. A request can only tighten the model's clip budget:
-    /// `budget.total_pixels` is clamped to `bounds.max_pixels`, so a payload
-    /// cannot raise memory use above what the model config allows.
-    /// `bounds.min_pixels` is lowered to the effective budget when a small
+    /// A request can only tighten the model's clip budget:
+    /// `budget.total_pixels` is clamped to the model's maximum, so a payload
+    /// cannot raise memory use above what the model config allows. The
+    /// model's minimum is lowered to the effective budget when a small
     /// request would otherwise invert the bounds (HF does not validate this).
     /// `max_pixels_per_frame` follows HF's `cap_pixels_per_frame`: a frame gets
     /// at most the cap or its even share of the clip budget, whichever is
     /// smaller, but never less than `1.05 * min_pixels`, so the cap can be
-    /// exceeded when it is below that floor.
+    /// exceeded when it is below that floor. Unlike HF, the resulting clip
+    /// budget is clamped to the model's maximum: with many frames, HF's floor
+    /// can push it past `longest_edge`.
     ///
     /// The budget is the target of HF's algorithm, not a hard limit, and HF's
     /// result can exceed it: dimensions round to the nearest multiple of the
     /// factor, the frame count rounds to the temporal factor, a side never goes
     /// below the factor (thin frames), and too-small clips round up to the
     /// minimum. A budget under one `factor`-sized cell per frame is rejected.
-    pub fn video_resize(
+    pub fn resize(
         &self,
-        bounds: &VideoBounds,
         num_frames: usize,
         height: usize,
         width: usize,
@@ -455,26 +538,24 @@ impl QwenVlSpec {
         if num_frames == 0 {
             return Err(MmError::invalid_input("video has no sampled frames"));
         }
-        let factor = self
-            .patch_size
-            .checked_mul(self.merge_size)
-            .ok_or_else(|| {
-                MmError::invalid_input("qwen_vl spec: patch_size * merge_size overflows")
-            })?;
+        // Checked for overflow when the config was read.
+        let factor = self.patch_size * self.merge_size;
         let mut max_pixels = budget
             .total_pixels
-            .map_or(bounds.max_pixels, |t| t.min(bounds.max_pixels));
+            .map_or(self.max_pixels, |t| t.min(self.max_pixels));
         let cell = factor.saturating_mul(factor).saturating_mul(num_frames);
         if max_pixels < cell {
             return Err(MmError::invalid_input(format!(
                 "video pixel budget {max_pixels} is below one {factor}x{factor} cell per frame for {num_frames} frames"
             )));
         }
-        let min_pixels = bounds.min_pixels.min(max_pixels);
+        let min_pixels = self.min_pixels.min(max_pixels);
         if let Some(cap) = budget.max_pixels_per_frame {
             let floor = (min_pixels as f64 * 1.05) as usize;
             let per_frame = cap.min(max_pixels / num_frames).max(floor);
-            max_pixels = per_frame.saturating_mul(num_frames);
+            // HF lets the floor push the clip past `longest_edge`; a request
+            // never raises the model's maximum, so clamp it back.
+            max_pixels = per_frame.saturating_mul(num_frames).min(self.max_pixels);
         }
         smart_video_resize(
             num_frames,
@@ -677,116 +758,182 @@ mod tests {
         assert_eq!(smart_resize(28, 5600, 28, 3136, 3136).unwrap(), (28, 784));
     }
 
-    fn video_spec() -> QwenVlSpec {
-        QwenVlSpec {
+    /// Qwen3-VL-8B-Instruct's `video_preprocessor_config.json`, verbatim.
+    const QWEN3_VL_8B_VIDEO_CONFIG: &str = r#"{
+        "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+        "patch_size": 16,
+        "temporal_patch_size": 2,
+        "merge_size": 2,
+        "image_mean": [0.5, 0.5, 0.5],
+        "image_std": [0.5, 0.5, 0.5],
+        "processor_class": "Qwen3VLProcessor",
+        "video_processor_type": "Qwen3VLVideoProcessor"
+    }"#;
+
+    /// Qwen3-VL's factors with the given clip bounds.
+    fn qwen3_video(min_pixels: usize, max_pixels: usize) -> Qwen3VlVideo {
+        Qwen3VlVideo {
             patch_size: 16,
-            min_pixels: 65536,
-            max_pixels: 16_777_216,
-            ..valid_spec()
+            merge_size: 2,
+            temporal_patch_size: 2,
+            min_pixels,
+            max_pixels,
         }
     }
 
-    fn bounds(spec: &QwenVlSpec) -> VideoBounds {
-        spec.image_bounds_for_video()
+    fn default_video() -> Qwen3VlVideo {
+        qwen3_video(65536, 16_777_216)
+    }
+
+    #[test]
+    fn video_bounds_come_from_the_video_processor_config() {
+        let video: Qwen3VlVideo = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        assert_eq!(video, qwen3_video(4096, 25_165_824));
+        // HF's smart_resize for these bounds; the model's image bounds
+        // (65,536 to 16,777,216) would give (512, 960) instead.
+        let none = VideoPixelBudget::default();
+        assert_eq!(video.resize(32, 1080, 1920, &none).unwrap(), (640, 1152));
+    }
+
+    #[test]
+    fn other_video_processors_and_incomplete_configs_are_refused() {
+        let config: serde_json::Value = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        let with = |key: &str, value: serde_json::Value| {
+            let mut c = config.clone();
+            c[key] = value;
+            c
+        };
+        let without = |key: &str| {
+            let mut c = config.clone();
+            c.as_object_mut().unwrap().remove(key);
+            c
+        };
+        let refused = [
+            // Another generation's processor, and an image processor config.
+            with("video_processor_type", "Qwen2VLVideoProcessor".into()),
+            without("video_processor_type"),
+            without("size"),
+            with("size", serde_json::json!({"longest_edge": 25165824})),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 4096, "shortest_edge": 8192}),
+            ),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 4096, "shortest_edge": 0}),
+            ),
+            with("merge_size", 0.into()),
+            with("patch_size", usize::MAX.into()),
+            // Settings that change HF's sizing in ways not implemented here.
+            with("do_resize", false.into()),
+            with("cap_pixels_per_frame", true.into()),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 25165824, "shortest_edge": 4096, "max_pixels": 1}),
+            ),
+        ];
+        for c in refused {
+            assert!(
+                serde_json::from_value::<Qwen3VlVideo>(c.clone()).is_err(),
+                "{c}"
+            );
+        }
+        // Their defaults, spelled out, are fine.
+        let mut explicit = with("do_resize", true.into());
+        explicit["cap_pixels_per_frame"] = false.into();
+        assert!(serde_json::from_value::<Qwen3VlVideo>(explicit).is_ok());
+        let r = serde_json::from_value::<Qwen3VlVideo>(with(
+            "video_processor_type",
+            "Qwen2VLVideoProcessor".into(),
+        ));
+        assert!(r.is_err_and(|e| e.to_string().contains("is not Qwen3VLVideoProcessor")));
     }
 
     #[test]
     fn video_request_budget_cannot_exceed_the_model_maximum() {
-        let spec = video_spec();
-        let b = bounds(&spec);
+        let video = default_video();
         let huge = VideoPixelBudget {
             total_pixels: Some(usize::MAX),
             max_pixels_per_frame: None,
         };
-        let base = spec
-            .video_resize(&b, 32, 2160, 3840, &VideoPixelBudget::default())
+        let base = video
+            .resize(32, 2160, 3840, &VideoPixelBudget::default())
             .unwrap();
-        assert_eq!(spec.video_resize(&b, 32, 2160, 3840, &huge).unwrap(), base);
-    }
-
-    #[test]
-    fn video_bounds_can_differ_from_the_image_bounds() {
-        let spec = video_spec();
-        let none = VideoPixelBudget::default();
-        let image = spec
-            .video_resize(&bounds(&spec), 32, 1080, 1920, &none)
-            .unwrap();
-        let smaller = VideoBounds {
-            min_pixels: 65536,
-            max_pixels: 1_000_000,
-        };
-        let video = spec.video_resize(&smaller, 32, 1080, 1920, &none).unwrap();
-        assert!(video.0 * video.1 < image.0 * image.1);
+        assert_eq!(video.resize(32, 2160, 3840, &huge).unwrap(), base);
     }
 
     #[test]
     fn video_budget_below_one_cell_per_frame_is_rejected() {
-        let spec = video_spec();
-        let b = bounds(&spec);
+        let video = default_video();
         let tiny = VideoPixelBudget {
             total_pixels: Some(1_000),
             max_pixels_per_frame: Some(10),
         };
-        assert!(spec.video_resize(&b, 8, 1080, 1920, &tiny).is_err());
+        assert!(video.resize(8, 1080, 1920, &tiny).is_err());
         // Exactly one 32x32 cell per frame is the smallest accepted budget.
         let edge = VideoPixelBudget {
             total_pixels: Some(8 * 32 * 32),
             max_pixels_per_frame: None,
         };
-        assert_eq!(
-            spec.video_resize(&b, 8, 1080, 1920, &edge).unwrap(),
-            (32, 32)
-        );
+        assert_eq!(video.resize(8, 1080, 1920, &edge).unwrap(), (32, 32));
     }
 
     #[test]
     fn video_budget_is_a_target_that_hf_rounding_can_overshoot() {
         // Pinned from HF's own function (see tests/video_golden.rs): the budget
         // steers the algorithm but is not enforced afterwards.
-        let spec = video_spec();
-        let b = VideoBounds {
-            min_pixels: 65536,
-            max_pixels: 16_777_216,
-        };
+        let video = default_video();
         let one_point_three = VideoPixelBudget {
             total_pixels: Some(1_300_000),
             max_pixels_per_frame: None,
         };
         // 5 frames round to t_bar = 4, so 4 * 480 * 640 fits; the real clip is 5 frames.
-        let (h, w) = spec
-            .video_resize(&b, 5, 480, 640, &one_point_three)
-            .unwrap();
+        let (h, w) = video.resize(5, 480, 640, &one_point_three).unwrap();
         assert_eq!((h, w), (480, 640));
         assert!(5 * h * w > 1_300_000);
     }
 
     #[test]
     fn video_request_total_below_the_minimum_lowers_the_minimum() {
-        // A 3 MP budget under a 4 MP minimum would invert the bounds.
-        let spec = video_spec();
-        let b = VideoBounds {
-            min_pixels: 4_000_000,
-            max_pixels: 16_777_216,
-        };
+        // A 3 MP budget under a 4 MP minimum would invert the bounds; the
+        // minimum drops to 3 MP. HF's smart_resize with min = max = 3,000,000
+        // gives (640, 1152).
+        let video = qwen3_video(4_000_000, 16_777_216);
         let budget = VideoPixelBudget {
             total_pixels: Some(3_000_000),
             max_pixels_per_frame: None,
         };
-        assert!(spec.video_resize(&b, 4, 1080, 1920, &budget).is_ok());
+        assert_eq!(video.resize(4, 1080, 1920, &budget).unwrap(), (640, 1152));
+        // Small frames take the scale-up branch, which reads the minimum:
+        // HF gives (768, 1024) for a 3,000,000 minimum, (256, 320) for 1.
+        assert_eq!(video.resize(4, 240, 320, &budget).unwrap(), (768, 1024));
+    }
+
+    #[test]
+    fn a_per_frame_cap_never_raises_the_clip_past_the_model_maximum() {
+        // 18,000 frames: HF's 1.05 * min floor (4,300 px a frame) times the
+        // frame count is about 77M, three times Qwen3-VL-8B's 25,165,824.
+        // Clamped, the cap changes nothing; HF's own result for these bounds
+        // without a cap is (32, 32).
+        let video: Qwen3VlVideo = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        let capped = VideoPixelBudget {
+            total_pixels: None,
+            max_pixels_per_frame: Some(1_000),
+        };
+        assert_eq!(video.resize(18_000, 1080, 1920, &capped).unwrap(), (32, 32));
     }
 
     #[test]
     fn video_resize_rejects_empty_input_and_bad_budgets() {
-        let spec = video_spec();
-        let b = bounds(&spec);
+        let video = default_video();
         let none = VideoPixelBudget::default();
-        assert!(spec.video_resize(&b, 0, 480, 640, &none).is_err());
-        assert!(spec.video_resize(&b, 8, 0, 640, &none).is_err());
+        assert!(video.resize(0, 480, 640, &none).is_err());
+        assert!(video.resize(8, 0, 640, &none).is_err());
         let zero = VideoPixelBudget {
             total_pixels: Some(0),
             max_pixels_per_frame: None,
         };
-        assert!(spec.video_resize(&b, 8, 480, 640, &zero).is_err());
+        assert!(video.resize(8, 480, 640, &zero).is_err());
     }
 
     #[test]
@@ -801,17 +948,8 @@ mod tests {
         };
         let n = resolve_num_frames(&options, 5.0, 150).unwrap();
         assert_eq!(n, 1);
-        let spec = video_spec();
-        assert!(
-            spec.video_resize(
-                &bounds(&spec),
-                n as usize,
-                480,
-                640,
-                &VideoPixelBudget::default()
-            )
-            .is_err()
-        );
+        let none = VideoPixelBudget::default();
+        assert!(default_video().resize(n as usize, 480, 640, &none).is_err());
     }
 
     #[test]
@@ -831,17 +969,6 @@ mod tests {
             smart_video_resize(3, 60_000_000, 60_000_000, 2, 32, 1, 10_799_999_999_999_997)
                 .is_err()
         );
-    }
-
-    #[test]
-    fn video_resize_rejects_an_overflowing_factor() {
-        let spec = QwenVlSpec {
-            patch_size: usize::MAX,
-            merge_size: 2,
-            ..video_spec()
-        };
-        let r = spec.video_resize(&bounds(&spec), 8, 480, 640, &VideoPixelBudget::default());
-        assert!(r.is_err());
     }
 
     #[test]

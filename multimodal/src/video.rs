@@ -11,7 +11,8 @@
 //! See [`VideoPixelBudget`] for how the two map. A router deserializes each
 //! namespace into [`VideoOptions`] and [`VideoPixelBudget`]; the crate turns
 //! them into a frame count ([`resolve_num_frames`]) and, per model family, a
-//! target frame size (`QwenVlSpec::video_resize`).
+//! target frame size (`Qwen3VlVideo::resize`, which takes the model's bounds
+//! from its video processor config).
 //!
 //! Nothing here decodes video. It is the arithmetic a decoder and a resizer
 //! must agree on, kept pure so every consumer gets the same answer.
@@ -109,19 +110,10 @@ pub struct VideoPixelBudget {
     pub total_pixels: Option<usize>,
     /// Cap on one frame's pixels. A frame also never gets more than its even
     /// share of the clip budget, and never less than `1.05 * min_pixels`, so
-    /// the cap is exceeded when it is below that floor.
+    /// the cap is exceeded when it is below that floor. The clip as a whole
+    /// still stays within the model's maximum.
     #[serde(default)]
     pub max_pixels_per_frame: Option<usize>,
-}
-
-/// The model's clip-level pixel bounds (HF's video `size`:
-/// `shortest_edge` / `longest_edge`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
-pub struct VideoBounds {
-    /// Lower bound on the clip's pixels; small clips are scaled up to it.
-    pub min_pixels: usize,
-    /// Upper bound on the clip's pixels; the ceiling for any request budget.
-    pub max_pixels: usize,
 }
 
 impl VideoOptions {
