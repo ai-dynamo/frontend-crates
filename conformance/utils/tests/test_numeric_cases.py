@@ -169,6 +169,37 @@ def test_nonfinite_numbers_are_invalid_and_never_match_zero(token):
         {"calls": [{"name": "f", "arguments": finite}]})
 
 
+def test_extreme_json_exponents_are_canonicalized_without_expanding_values():
+    exponent = "1" + "0" * 40
+    shifted_exponent = str(int(exponent) - 1)
+    large = canonical_arguments('{"value":1e' + exponent + '}')
+    same_value = canonical_arguments('{"value":10e' + shifted_exponent + '}')
+    different_value = canonical_arguments('{"value":1e' + shifted_exponent + '}')
+    assert large == same_value
+    assert large != different_value
+    assert large[1][0][1] == ["number", 1, [1], exponent]
+
+    negative_exponent = "-" + exponent
+    smaller = str(int(exponent) + 1)
+    assert canonical_arguments('{"value":1e' + negative_exponent + '}') == canonical_arguments(
+        '{"value":10e-' + smaller + '}'
+    )
+
+    long_exponent = "9" * 5000
+    result = canonical_arguments('{"value":1e' + long_exponent + '}')
+    assert result[1][0][1] == ["number", 1, [1], long_exponent]
+    large_json = '{"value":1e' + exponent + '}'
+    same_json = '{"value":10e' + shifted_exponent + '}'
+    assert candidate_sig({"calls": [{"name": "f", "arguments": large_json}]}) == candidate_sig(
+        {"calls": [{"name": "f", "arguments": same_json}]}
+    )
+    assert report._unified_classify(
+        "qwen3",
+        [{"kind": "tool_call", "name": "f", "arguments": large_json}],
+        [{"kind": "tool_call", "name": "f", "arguments": same_json}],
+    ) == "MATCH"
+
+
 @pytest.mark.parametrize("label", ["7-14", "7-15", "7-14.unrelated", "7-15.unrelated"])
 def test_numeric_groups_do_not_claim_independent_schema_cases(label):
     assert numeric_group(label) is None
