@@ -487,6 +487,59 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn nemotron_missing_parameter_close_preserves_private_reasoning() {
+        use dynamo_parsers::ReasoningParser;
+        for alias in ["nemotron3", "nemotron_v3"] {
+            let mut parser =
+                dynamo_parsers::ReasoningParserType::get_reasoning_parser_from_name(alias);
+            let mut chunks = Vec::new();
+            let mut reasoning = String::new();
+            for text in [
+                "<think>inspect</think>",
+                "<tool_call><function=read><parameter=path>a.txt</function></tool_call>",
+                "<think>private reasoning</think>",
+                "done",
+            ] {
+                let parsed = parser.parse_reasoning_streaming_incremental(text, &[]);
+                reasoning.push_str(&parsed.reasoning_text);
+                chunks.push(create_mock_response_chunk(parsed.normal_text, 0));
+            }
+            let tail = parser.finish_reasoning_stream();
+            reasoning.push_str(&tail.reasoning_text);
+            chunks.push(create_mock_response_chunk(tail.normal_text, 0));
+            chunks.push(create_final_response_chunk(0));
+            let jail = JailedStream::builder()
+                .tool_call_parser("qwen3_coder")
+                .build();
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
+            let mut content = String::new();
+            let mut calls = Vec::new();
+            for result in results {
+                assert!(result.error.is_none());
+                if let Some(response) = result.data {
+                    for choice in response.choices {
+                        if let Some(text) = choice.delta.content {
+                            content.push_str(test_utils::extract_text(&text));
+                        }
+                        calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                    }
+                }
+            }
+            assert_eq!(reasoning, "inspectprivate reasoning");
+            assert_eq!(content, "done");
+            assert_eq!(calls.len(), 1);
+            let function = calls[0].function.as_ref().unwrap();
+            assert_eq!(function.name.as_deref(), Some("read"));
+            let args: serde_json::Value =
+                serde_json::from_str(function.arguments.as_deref().unwrap()).unwrap();
+            assert_eq!(args["path"], "a.txt");
+        }
+    }
+
+    #[tokio::test]
     async fn test_jailed_stream_with_tool_calls() {
         // Create chunks representing a tool call
         let chunks = vec![
