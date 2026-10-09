@@ -508,7 +508,9 @@ def _canon_call_for_sig(call: object) -> object:
     `2`) still differ."""
     if not isinstance(call, dict):
         return call
-    return {**call, "arguments": canonical_arguments(call.get("arguments"))}
+    if "arguments" not in call:
+        return call
+    return {**call, "arguments": canonical_arguments(call["arguments"])}
 
 
 def candidate_sig(block: object) -> str:

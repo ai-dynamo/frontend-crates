@@ -80,6 +80,12 @@ def test_rounded_output_is_red_in_both_report_paths(raw, rounded):
     assert canonical_arguments('{"value":"42"}') != canonical_arguments('{"value":42}')
 
 
+def test_missing_arguments_differ_from_explicit_json_null():
+    missing = {"calls": [{"name": "f"}]}
+    explicit_null = {"calls": [{"name": "f", "arguments": "null"}]}
+    assert candidate_sig(missing) != candidate_sig(explicit_null)
+
+
 def test_minimax_m2_is_stream_only():
     assert "minimax_m2" not in unified.FAMILIES
     assert len(stream.build_cases("minimax_m2")) == len(NUMERIC_VARIANTS)
