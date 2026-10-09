@@ -1118,6 +1118,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamo-decisions"
+version = "0.1.0"
+dependencies = [
+ "dynamo-protocols",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "dynamo-demo-server"
 version = "0.1.0"
 dependencies = [
