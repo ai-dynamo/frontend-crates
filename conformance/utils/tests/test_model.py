@@ -1402,3 +1402,72 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
             assert cell["status"] == "na"
     glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
     assert [r[0] for r in glossary["rows"]] == ["35-5"]
+
+
+def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures(model_v2):
+    """A parity/defect annotation must never erase a captured oracle disagreement."""
+    manifest = json.loads((REPO / "conformance/fixtures-manifest.json").read_text())
+    versions = manifest["crates"]
+    v1, v2 = versions["dynamo-parsers"], versions["dynamo-parsers-v2"]
+    batch_tab = _tab(model_v2, "tab-toolcalling-batch")
+    stream_tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    indexed = {
+        tab["id"]: {(row["family"], cell["case_id"]): cell
+                    for row in tab["rows"] for cell in leaf_cells(row).values()
+                    if cell.get("case_id")}
+        for tab in (batch_tab, stream_tab)
+    }
+    root = _cache_root() / "toolcalling"
+    modes = [
+        ("fixtures-batch-v1", root / f"fixtures-batch-v1/dynamo_v1-{v1}", batch_tab, f"dynamo_v1-b-{v1.replace('.', '-')}", "batch"),
+        ("fixtures-stream-v1", root / f"fixtures-stream-v1/dynamo_v2-{v2}", stream_tab, f"dynamo_v2-{v2.replace('.', '-')}", "stream"),
+        ("fixtures-batch-v1", root / "fixtures-batch-on-stream-v1", batch_tab, f"dynamo_v2-s-{v2.replace('.', '-')}", "batch-stream"),
+    ]
+    checked = mismatches = hidden_mismatches = 0
+    for input_tree, captures, tab, candidate_key, mode in modes:
+        for path in sorted(captures.glob("*/TOOLCALLING.*.7.schema.yaml")):
+            doc = yaml.safe_load(path.read_text())
+            inputs = yaml.safe_load((root / input_tree / "inputs" / path.parent.name / path.name).read_text())["cases"]
+            for cid, capture in doc["cases"].items():
+                if "unavailable" in capture:
+                    continue
+                if mode == "batch":
+                    actual = capture["expected"]["dynamo_v1"]
+                elif mode == "batch-stream":
+                    actual = capture["dynamo_v2"]
+                else:
+                    names, arguments, text = {}, {}, ""
+                    for chunk in capture["chunks"]:
+                        text += chunk.get("normal_text") or ""
+                        for delta in chunk.get("expected", []):
+                            index = delta["index"]
+                            if delta.get("name"):
+                                names[index] = names.get(index, "") + delta["name"]
+                            arguments[index] = arguments.get(index, "") + (delta.get("arguments") or "")
+                    calls = []
+                    for index, name in sorted(names.items()):
+                        raw = arguments[index]
+                        try:
+                            value = json.loads(raw)
+                        except ValueError:
+                            value = raw
+                        calls.append({"name": name, "arguments": value})
+                    actual = {"calls": calls, "normal_text": text}
+                golden = inputs[cid]["golden"]
+                differs = json.dumps(actual, sort_keys=True) != json.dumps(golden, sort_keys=True)
+                if doc["family"] in table._HIDDEN_TOOL_CALLING_FAMILIES:
+                    # Nano duplicates Qwen3Coder; Deci is a deprecated model row.
+                    # Keep their captures/goldens intact without changing visibility.
+                    assert (doc["family"], cid) not in indexed[tab["id"]]
+                    hidden_mismatches += differs
+                    continue
+                cell = indexed[tab["id"]][(doc["family"], cid)]
+                assert cell["red_on_diff"], (mode, doc["family"], cid)
+                cmp = cell["cmp"]
+                assert "golden" in cmp and candidate_key in cmp
+                # JSON spelling distinguishes bool/int as well as string/number.
+                assert (cmp[candidate_key]["sig"] != cmp["golden"]["sig"]) == differs, (mode, doc["family"], cid)
+                checked += 1
+                mismatches += differs
+    assert checked > 0, "no independently authored schema probes were checked"
+    print(f"Preserved {mismatches} visible authored-golden disagreements across {checked} current schema captures; {hidden_mismatches} additional hidden alias disagreements remain in the fixtures")

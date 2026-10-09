@@ -2,46 +2,3737 @@ provenance:
   status: captured
   origin:
     crate_version: 0.7.20
-    git_commit: 56098f7784da6ec180bee29b02e3165fb1b8fcac
-    source_sha256: 542d0e33e9ea94c09d1223274bfd6fd01b97497b14a9484c33107ed3393226e2
+    git_commit: 8c86cb855effd682692f26df42853d6a179113db
+    source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
 document:
   mode: unified
 changes:
-  malformed_json_then_two_valid_calls:
+  schema_const_array_allof:
+    case_key: UNIFIED.7-18.const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 7daabc2f1ec0f3b992564c9ec20939d523038b1a53529c1819945fa8550a7b8c
     observation:
       value:
         assembled:
         - kind: tool_call
-          name: echo
+          name: schema_probe
           arguments:
-            value: é
-        - kind: tool_call
-          name: echo
-          arguments:
-            value: Café
+            value: '[1,2]'
         chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
         - expected: []
         - expected:
           - kind: tool_call
-            name: echo
-            arguments: '{"value":"é"}'
+            name: schema_probe
+            arguments: '{"value":"[1,2]"}'
             complete: true
-          - kind: tool_call
-            name: echo
-            arguments: '{"value":"Café"}'
-            complete: true
+        - expected: []
+  schema_const_array_bare:
+    case_key: UNIFIED.7-18.const_array_bare
     stimulus:
       ref: current
-      semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
-    case_key: UNIFIED.5-4
+      semantic_sha256: 34531ee6b5772b183ed287942da8e5c03eedaa75c0cf54599d7324eee4fafd2a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_array_ref:
+    case_key: UNIFIED.7-18.const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: c4c097ea109222adfe1ee5fce92c6e9ee2f9b86b3c331e7dfae9b59a133a15da
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_array_typed:
+    case_key: UNIFIED.7-18.const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2dcf08826f4efd1434f0246f7cb100784d64cfb831512a48a781d7fee9478e5d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_allof:
+    case_key: UNIFIED.7-18.const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 2d703c59eff200c80b3dafff930752adc4e4961e64cc2936f8df78681c1060f5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_bare:
+    case_key: UNIFIED.7-18.const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 094617a77ee4774da8e48a4e5ee7b8ad86e3bbce8f46d3c3d42c51017cf8d4e3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_ref:
+    case_key: UNIFIED.7-18.const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f9fd9833ec6a4d3142b342ec624a564070aeb9e5689df8a47698828da64cb703
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_typed:
+    case_key: UNIFIED.7-18.const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 636b821cfa93dee7a976f9ba501d9da5b88f6bdd3f2a0dd575983bc39f24005f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"true"}'
+            complete: true
+        - expected: []
+  schema_const_entity_allof:
+    case_key: UNIFIED.7-18.const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 33196d2c97544a6230308a907aab0d45bc08644f87e49223364f23ed4c4f5e9d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_bare:
+    case_key: UNIFIED.7-18.const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 52a9f4fb297cb66ccc38b5a65b3675f7c33b3b33a73ce175c90698d61eb8518f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_ref:
+    case_key: UNIFIED.7-18.const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 6863fc402a9677abe8ecdd2b2dd8783af1480c662d57c9d7df3b8fe58e64173e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_typed:
+    case_key: UNIFIED.7-18.const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4e78cc8047866ef050f6d651525d6f8adb2529a52c9164108df792ab7df9ac3a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_null_allof:
+    case_key: UNIFIED.7-18.const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 19ba9b64c6eb97e2489b14914b30399ccb4d3cc860de2789cea003aea63b7bcd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_null_bare:
+    case_key: UNIFIED.7-18.const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: c7f3523fdb62906e5446db548c61ac1bfb1b3f4dca0f32d12762e8b353742211
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_null_ref:
+    case_key: UNIFIED.7-18.const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: b5391a64778c70e58d54794deafb98abb5bc8a0c0fcf355135df4658ad24ae5b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_null_typed:
+    case_key: UNIFIED.7-18.const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: c2b72635c5a74eefdd4b4c64e2b9fe1c918044f4b1633c5c07e8c078859fff82
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_number_allof:
+    case_key: UNIFIED.7-18.const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 7e03cc450b53895e944c9448e347e991040c876fddd3da2d024e5d3db20631a1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_const_number_bare:
+    case_key: UNIFIED.7-18.const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 5b26466488ee11844936207abc509999cb6fffcd99878a8212698247057d117e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_const_number_ref:
+    case_key: UNIFIED.7-18.const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 2e96387f186785edca5d13f5dcc26499cb3869e4a4d5de60559de87a2bde74f5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_const_number_typed:
+    case_key: UNIFIED.7-18.const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 66a6d0eb694ff7f35cd91ca9fc98f76bef17f66aee83f5197e536d4202a1b676
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_const_object_allof:
+    case_key: UNIFIED.7-18.const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: edb8e29d9e4006576985ebf30d385ed41b908cb855b2d33361762b58f6be651b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_bare:
+    case_key: UNIFIED.7-18.const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f158cf1fb05724151363e359621aa83f2c6d613998e22bfaaf6e214e0740d0ad
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_ref:
+    case_key: UNIFIED.7-18.const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 0d10e51dda6923330d890d4dfc976d9cdc34dd82f2eaf59c23d556ce82aff996
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_typed:
+    case_key: UNIFIED.7-18.const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2c009fbe32d8820eca41fe64cc4540540ea2fe163cab5399d8f6e20331110ed1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_plain_allof:
+    case_key: UNIFIED.7-18.const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 4ba5a512b594fc3c644baf8d2bd3c63e1bfd579fb90c3357666029aecd018d42
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_bare:
+    case_key: UNIFIED.7-18.const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 04a912959efafff0313d057f011845f03abc1168149341f8cc25c696ce9570af
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_ref:
+    case_key: UNIFIED.7-18.const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: d8f9f3ef452eb0a3ba2d43f448810b5a79196f6e9a367e1fbafd342414a46e3a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_typed:
+    case_key: UNIFIED.7-18.const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 53ae341ac950716f7d498205ea98aa4f99ca56329bfa16361bd0ef00f96b478b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_const_quoted_allof:
+    case_key: UNIFIED.7-18.const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 2b878d65d600d364db774356a17d980f996124156bf70c3387e5e61f8e1b411e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_bare:
+    case_key: UNIFIED.7-18.const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 081f65ef38a934b3f25d2debcd3207e27722aefce639b039d5220020955fa257
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_ref:
+    case_key: UNIFIED.7-18.const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: c2182ce794ff77f54b2231d8c84833250bf34257b76a417bc0485855e4238904
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_typed:
+    case_key: UNIFIED.7-18.const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 822ee8cd0eae9847c04c3d3c546cad49643d4d800e493a684fb0d57674bda339
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_space_allof:
+    case_key: UNIFIED.7-18.const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: dab58d9883889071a27d66c9f5b9d6a68e0f58404b3f465203c1e69ac90cbe65
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_bare:
+    case_key: UNIFIED.7-18.const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 17ec4a738967568068985b588dbc1ed1e9c4bfc73cfeebc3ca6b5347693f22d8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_ref:
+    case_key: UNIFIED.7-18.const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 200b58b1a8f23889d8da2d1cd652812f73ce352dfecc32d8f2b1238073aa000a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_typed:
+    case_key: UNIFIED.7-18.const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 27436b875fcc9eb1368350424ba1c3a26fb3a729c2c9ed083dee4c453ee7e219
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_unicode_allof:
+    case_key: UNIFIED.7-18.const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: ebe7c8dac5e40fea8f338242b73cf2e93a363dd0d9476451eecc6db3742ab55b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_bare:
+    case_key: UNIFIED.7-18.const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f6c46aa5379263d78957b0a21adf7933da2764206935303bba1b81eed7f3de8f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_ref:
+    case_key: UNIFIED.7-18.const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: a53f31ee578f9dedd7be2900b10033caf3a570a5e754f6df1a7d3c8fa7b70bae
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_typed:
+    case_key: UNIFIED.7-18.const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5018110982b8d8278f5729bbe1694aef890ae8fe3750d693c3a06d098239d026
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"café"}'
+            complete: true
+        - expected: []
+  schema_declared_array:
+    case_key: UNIFIED.7-17.declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: 87d694327b1c609912516581bde8f00a99b331c22376d52b73e75040bbe8bea0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":[1,2]}'
+            complete: true
+        - expected: []
+  schema_declared_boolean:
+    case_key: UNIFIED.7-17.declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: 9704923c76409e1af9cde15cff68d3101b7011bb0ebe83cf184d06d01f35c2ac
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":true}'
+            complete: true
+        - expected: []
+  schema_declared_integer:
+    case_key: UNIFIED.7-17.declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 7f41ab998c7ef564b7eef92eb8cb27b5305fbe63b17b405ee481a17b9999641c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_declared_null:
+    case_key: UNIFIED.7-17.declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: bddb09841e3b7b585da2a181df207440305139e9913377f01a3c174a87ffde4b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_declared_number:
+    case_key: UNIFIED.7-17.declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: 6924bbc756ea767501759bab484bc3faed41ad4c54ff449087417a13522e79b3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":3.5}'
+            complete: true
+        - expected: []
+  schema_declared_object:
+    case_key: UNIFIED.7-17.declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 493e65b7dc8303039cf5f05652c752e5f6cef94319fcfd00357e5af739541b58
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":{"x":1}}'
+            complete: true
+        - expected: []
+  schema_declared_string:
+    case_key: UNIFIED.7-17.declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: 08a475ce2720b4b1c9eedca203eabad368bf846318a29131926e566cd0e9f5e8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: plain
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"plain"}'
+            complete: true
+        - expected: []
+  schema_enum_integer:
+    case_key: UNIFIED.7-23.enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 50e3b4a514205c5d8f82e31a319863b1e9d07aace1284737ea467d8b781ef288
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_enum_string:
+    case_key: UNIFIED.7-23.enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: 31f1a9c06f9b5335dd9402823750f426f71f982f01bc83c7a7e5b23b67c49d49
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_escaped_ref_const:
+    case_key: UNIFIED.7-21.escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: f2a833ea12f7380b65c1615fdd86f1d67e922cf614873796d2ffbe2c46bdf373
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"\"hello\""}'
+            complete: true
+        - expected: []
+  schema_id_direct_integer:
+    case_key: UNIFIED.7-17.id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 02a35a2939d45b30c419002444651742f6f70a1fed29737d78837ec58045cde0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_integer_const_ambiguous:
+    case_key: UNIFIED.7-25.integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 7682b5ccd8dd6287aa9d56638531f34bd8e4e3dac7402e0fcbfde3bb83e03870
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_intersection_anyof:
+    case_key: UNIFIED.7-22.intersection_anyOf
+    stimulus:
+      ref: current
+      semantic_sha256: f41e779a31fef3c19206cc0f366f99180345863d0c8f002e555234572339ebd3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_intersection_oneof:
+    case_key: UNIFIED.7-22.intersection_oneOf
+    stimulus:
+      ref: current
+      semantic_sha256: b6846a597d87576ac3789f789769e5f82c015ac7d7004d901ef9185378a2beee
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_null_union_ambiguous:
+    case_key: UNIFIED.7-25.null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: bf65c86f2e3993235a86c315a41f3a66af3f6dde3268377dd0a9abeb1b9fc48d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_nullable_string:
+    case_key: UNIFIED.7-24.nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: f105fe957319514be2b56dbb2cb66d48a0a620b5b812716a526184dae3d93f7b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_object_const_union:
+    case_key: UNIFIED.7-25.object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 16d4edeb1ede5a87389e2f2a041dabf29fa5526dd6c643697eb35a6c941dfc55
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_percent_ref_const:
+    case_key: UNIFIED.7-21.percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 6dab91ef178b495cf1adacb729d84dcc9fbb7d5047d4e3ac93169acac1fe1194
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_ref_sibling_integer:
+    case_key: UNIFIED.7-21.ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: fdb65fb71ba0b4e632e04b8b3ed7df1dfc98c94a368b253c18c297cfa8c31031
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_ref_union_anyof_integer:
+    case_key: UNIFIED.7-21.ref_union_anyOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 37f9e5ba6d9c92794a89851873d046a34d44ce337828c00cc5b315f1c18eedfc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":-7}'
+            complete: true
+        - expected: []
+  schema_ref_union_anyof_string:
+    case_key: UNIFIED.7-21.ref_union_anyOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: c4155483c90eb193ba46bd97268b27fb099cf8efc67edfc527ae22ea33386606
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_ref_union_oneof_integer:
+    case_key: UNIFIED.7-21.ref_union_oneOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 98900225f11d4570c9af12b1b1eee949bf3a76958d15743a5a564fee2edde2c8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":-7}'
+            complete: true
+        - expected: []
+  schema_ref_union_oneof_string:
+    case_key: UNIFIED.7-21.ref_union_oneOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 4f7367a72c4b42518bac2f55136a3c757a53761d48a8d31d4f7adc8e93dd56d1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_type_array_integer_null:
+    case_key: UNIFIED.7-24.type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: ada79be065137734ddbdf89e883225e74cce09ea9867f2eec940baf0c7073c8f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_type_array_integer_null_null:
+    case_key: UNIFIED.7-24.type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: cee56161f4734cf0425ea6bc2dac0b310e347249345e20d558eeaab7d47f3072
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_type_array_string_integer:
+    case_key: UNIFIED.7-24.type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 26d6298b7a6fe94c5fda7a415c24a6bb2d9a0060a892226278ac5c8cf7a64a36
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"42"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d07016084d6ff2d19b873e728d31cf8b46719ddeefb78d255df3935bde394a9f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8f6398d15f53749c02f23f646932663eeb61ca2ced0741df9e4bd0adf16ca3d9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":[1,2]}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_string:
+    case_key: UNIFIED.7-19.union_anyOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: d6d14bc3b8da88f7a010f4a35bc3b294ce01ec59ee026123814b1b3784091ea4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_typed:
+    case_key: UNIFIED.7-19.union_anyOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 076c7581dce676d8d021249e9299a2bd3175dba8f5acf0d5c3e2125e9a7640a3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":[1,2]}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 16c1f2cb72c714f2f5292e93bcb82b48d4c459e029e4fbda37620540be716559
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1a5805f74f410a32e56c2ac21c5463cad1fef9b2dd32745a1847ebbb48fb02d4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":true}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_string:
+    case_key: UNIFIED.7-19.union_anyOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 598be2c25be8dfaca58b207367950be7c97f85d3c36b47de9327d6cf5ca14387
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_typed:
+    case_key: UNIFIED.7-19.union_anyOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 62e68128f3ff2eef4f0b2820048209cd07e381676e190a068557ae398d1edb34
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":true}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: c6a8094ca437cf418b9357bda2edd98b95574bc1ea5fd2ae4c2152a868e6487e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7840211c89f55d7c2155bbc1eb7b37ec9fba366c6ad77f539172f43fa2fa2067
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_string:
+    case_key: UNIFIED.7-19.union_anyOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: fa05a7e96385c98940a12ab45b387e5c9fbe6893d864407130525d43a0dfaa9d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_typed:
+    case_key: UNIFIED.7-19.union_anyOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5bfb6c594a6edd2d927ce99077222889ee4534c9d5b575478787f38f0a9b804b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 548d57b829dc665c3a74519fd82670f98ee3204080c389a1de83b2ed45d45773
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 41bf7412a2da4824b58f40de08ad76a034571f37015998f8218ad6343331f791
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_string:
+    case_key: UNIFIED.7-19.union_anyOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 69bb7b6f09632fbc27df3360d2ece46a2da32df3355efa154d1d00a917c9a3a6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_typed:
+    case_key: UNIFIED.7-19.union_anyOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0e6213339104bf40858079508df0721421196dfd6eae3c48cce62d9f9442d340
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: c26ed0998c13834a3b74936626e646de30c1e858a0b23f482faf9134db83c297
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8e3022e57423ce427d9e469a49d42ab02aa07671ea8b29e860fcfd8de5bc8b98
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":3.5}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_string:
+    case_key: UNIFIED.7-19.union_anyOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 3787764fc0d189af40592caf8695faf6a7463888e8cf6701e51169b5b33672a2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_typed:
+    case_key: UNIFIED.7-19.union_anyOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 98a4600636b56d4c0c8c95bdfff390f7865ae80ddd330201d699d5611998c631
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":3.5}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_reverse_string:
+    case_key: UNIFIED.7-19.union_anyOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 909732f0ced15f7b8c69dcd3051b9a6bb81e7cd293443c80f1b62ae7dec9989b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_reverse_typed:
+    case_key: UNIFIED.7-19.union_anyOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 290b0ce4af2229742d6021a261105b25dd60ca1962ff8ff81fd4a75f5df56dbe
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":{"x":1}}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_string:
+    case_key: UNIFIED.7-19.union_anyOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: f9309a2f695df87a8dd4480b970cc7c6a4659b92498dfb4eccd557021323bc7b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_typed:
+    case_key: UNIFIED.7-19.union_anyOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d95cf070e0fe6c5e98a0f18a68604e91d2eac6ab457d684c34d819fe022dfc28
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":{"x":1}}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 4af99fcf8cdaf1a65e18145a62bd8222d15950e0cf95b3962a9c98c6798c0037
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 94af7d522de62823115e422a71e0fc3214da878a16f8d97bbf389ebd20e5ccb3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":[1,2]}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_string:
+    case_key: UNIFIED.7-20.union_oneOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: afb8ffb31ad9d6814c413fb2d6ad83b1b97ca9c8d0f5f420395bb242bcb0d1d5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_typed:
+    case_key: UNIFIED.7-20.union_oneOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1c152863799109da3a451202e375716a3ef0ab2e33e78bd31a6773ecd928abcf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":[1,2]}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: c908ae72494e92d52ce53673f95a1ac2db941e8b330233ffba73546e1bf1f327
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3676ac98df738a8809c6dd06f4357d82cda649a14e74cc44fbfdb543dd3f0612
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":true}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_string:
+    case_key: UNIFIED.7-20.union_oneOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: e9121ea9645d4f369bb76191427822a4cce3b098908b547a653760a790f05a0a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_typed:
+    case_key: UNIFIED.7-20.union_oneOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5e08ee234e4ed41a407b40ed733546e2dac64987d8340dd9cbabe13d29998797
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":true}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: ccd2f8ba7e1fac21251773ccb515069a19c400668d38a544d9ecc48e5cf1781e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: c66523f41d07d6d76fd7b3836f54fc8e8da8b8436f83168160ae34a9534b329d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_string:
+    case_key: UNIFIED.7-20.union_oneOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: f4fed0d1823439f1a344e4df14bb71faed7e2b1f1cebbdac1a695aa4b21d1c28
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_typed:
+    case_key: UNIFIED.7-20.union_oneOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 137d64a6e49037bfe22119349e32322998f91a6d07e1d599266e7006915a6230
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":42}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 11a777fe2ecfdb5449fac58acdffa69f4b54a41eef6cca2507006b2be08f1e20
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a1330fcbb2ec9c1792a730b34eecbf9368f63040d553ecc5d95b04539b20cb16
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_string:
+    case_key: UNIFIED.7-20.union_oneOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: cd6c4c932241e65759d48e9a728f14e25cfd0d89aad6f68ecce8430887d65dc5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_typed:
+    case_key: UNIFIED.7-20.union_oneOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: dbe3b3298ca674f4fce7353424719eb58f6aaf6f10c1b04627f5a31f56ba9b15
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":null}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1563531882f0c2ec82124de75c27c68459a72e0b5c0ac8f4c32119dc2037f282
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e68214b1e39b60d9688105d24bfa13e0c1fb4ffeb0984546d19dae6a03e55fed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":3.5}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_string:
+    case_key: UNIFIED.7-20.union_oneOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 2614958f63585d1edc30b58671e8509bc021936eb3711d7683477490e9190896
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_typed:
+    case_key: UNIFIED.7-20.union_oneOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 03f32e5cec7e37e22b9e5cbcb0c91da7c72f711f45384342bd4f0ba85d0fb37e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":3.5}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_reverse_string:
+    case_key: UNIFIED.7-20.union_oneOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 789a672fb02dd3cbfd34f2783c48d8da14efd91d5a473fdcc5058a7f36bff023
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_reverse_typed:
+    case_key: UNIFIED.7-20.union_oneOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ade22f61e3c74dc069fcde490a7867dd9b6dce7937ca3dac9b701031cc4de3ec
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":{"x":1}}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_string:
+    case_key: UNIFIED.7-20.union_oneOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0b62d4f7c7f6e9abd4b18e31e46be8d09316920e6d1c7abd33e9115104dd212d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_typed:
+    case_key: UNIFIED.7-20.union_oneOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 30bbf58268f15fe7c95071d7d6e6719768d9d68d6df1ea0d3d5406e7ebe99cbf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":{"x":1}}'
+            complete: true
+        - expected: []
 metadata_changes: {}
 document_overrides:
-  malformed_json_then_two_valid_calls:
+  schema_const_array_allof:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
       capture_origin:
         crate_version: 0.7.20
-        source_sha256: 542d0e33e9ea94c09d1223274bfd6fd01b97497b14a9484c33107ed3393226e2
-        git_commit: 56098f7784da6ec180bee29b02e3165fb1b8fcac
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_array_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_array_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_array_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_boolean_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_boolean_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_boolean_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_boolean_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_entity_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_entity_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_entity_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_entity_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_null_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_null_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_null_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_number_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_number_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_number_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_number_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_object_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_object_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_object_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_object_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_plain_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_plain_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_plain_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_plain_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_quoted_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_quoted_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_quoted_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_quoted_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_space_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_space_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_space_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_space_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_unicode_allof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_unicode_bare:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_unicode_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_const_unicode_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_array:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_boolean:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_null:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_number:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_declared_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_enum_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_enum_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_escaped_ref_const:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_id_direct_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_integer_const_ambiguous:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_intersection_anyof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_intersection_oneof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_null_union_ambiguous:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_nullable_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_object_const_union:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_percent_ref_const:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_ref_sibling_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_ref_union_anyof_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_ref_union_anyof_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_ref_union_oneof_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_ref_union_oneof_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_type_array_integer_null:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_type_array_integer_null_null:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_type_array_string_integer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_array_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_array_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_boolean_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_integer_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_integer_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_null_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_null_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_number_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_number_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_object_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_anyof_object_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_array_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_array_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_boolean_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_integer_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_integer_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_null_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_null_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_number_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_number_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_object_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  schema_union_oneof_object_typed:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
+        git_commit: 8c86cb855effd682692f26df42853d6a179113db
       inherited_from: null

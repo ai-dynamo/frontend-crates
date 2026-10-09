@@ -637,7 +637,9 @@ fn render_think_channel(
         .transpose()?;
 
     open_tag(segments, "think", []);
-    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
+    // Match encoding_k3.py: only an empty string means "no reasoning", so
+    // whitespace-only reasoning is still rendered.
+    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.is_empty()) {
         text(segments, reasoning);
     }
     close_tag(segments, "think");
@@ -2182,6 +2184,21 @@ mod tests {
             "{\"a\": 1, \"b\": [true, false]}",
             "<|close|>argument<|sep|>"
         )));
+    }
+
+    #[test]
+    fn assistant_history_keeps_whitespace_only_reasoning() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "reasoning_content": "\n\n", "content": "Hi"},
+            {"role": "user", "content": "Again"}
+        ]));
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(
+            rendered.contains("<|open|>think<|sep|>\n\n<|close|>think<|sep|>"),
+            "whitespace-only reasoning must be rendered like encoding_k3.py"
+        );
     }
 
     fn pending_texts(prompt: &RenderedPrompt) -> Vec<String> {

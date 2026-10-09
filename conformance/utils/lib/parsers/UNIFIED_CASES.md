@@ -148,7 +148,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 114 of the 134 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 228 of the 248 taxonomy cases for this family.
 - Generated cases include `30-13`, the single-family `deepseek-1` case, Guided Decoding cases `31-1` through `35-4` except `muse-1` and `35-5`, the marker-discriminating Response row `50-4`, and `40-1` through `40-6` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
 - The 20 omitted cases are `kimi-1` through `kimi-8`, `gemma-1` through `gemma-2`, `glm5-1` and `glm5-2`, `7-4.mixed_labels`, `7-4.ref`, `7-5.ref`, `35-5`, and `muse-1` through `muse-4`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-5` tests DeepSeek V4's rejected-header quote ownership. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.
@@ -420,3 +420,21 @@ Name the missing DIMENSION, not the example. `guided_json_stray_prefix_before_re
 The check is the count: if a review round produced N defects the corpus missed and the scenario count did not move, the holes are still open.
 
 **A duplicate is worse than a gap.** Before adding, normalize `(input, init, golden)` across the corpus and drop any crossing that already exists. A generated product once recreated three hand-authored scenarios — 9 cases across families — inflating the count while testing nothing new, and leaving two names for one behaviour to drift apart. `test_no_two_scenarios_have_identical_behaviour` now enforces this.
+
+## Shared schema conformance probes
+
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.
+
+- **`UNIFIED.7-17.*`** Declared JSON argument types.
+- **`UNIFIED.7-18.*`** String constants retain their literal spelling.
+- **`UNIFIED.7-19.*`** anyOf constant and typed alternatives in both orders.
+- **`UNIFIED.7-20.*`** oneOf constant and typed alternatives in both orders.
+- **`UNIFIED.7-21.*`** Local references and sibling type intersections.
+- **`UNIFIED.7-22.*`** Composition intersects union type hints.
+- **`UNIFIED.7-23.*`** Enums preserve declared argument types.
+- **`UNIFIED.7-24.*`** Type arrays and nullable argument interpretation.
+- **`UNIFIED.7-25.*`** Ambiguous native strings retain established preference.
+
+All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
+
+Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.

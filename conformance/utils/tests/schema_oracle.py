@@ -6,6 +6,23 @@ import re
 from urllib.parse import unquote
 
 
+def _json_equal(left: object, right: object) -> bool:
+    """JSON numbers compare mathematically; booleans never compare as numbers."""
+    if type(left) in (int, float) and type(right) in (int, float):
+        return left == right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            _json_equal(value, right[key]) for key, value in left.items()
+        )
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _json_equal(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
 def _local_reference(root_schema: dict, reference: str) -> dict:
     assert isinstance(reference, str) and reference.startswith("#"), reference
     fragment = unquote(reference[1:], errors="strict")
@@ -40,7 +57,7 @@ def matches_schema(
     assert schema.keys() <= {
         "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
         "nullable", "minLength", "required", "$ref", "$defs", "definitions",
-        "allOf", "minimum",
+        "allOf", "minimum", "additionalProperties",
     }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
@@ -66,9 +83,9 @@ def matches_schema(
     assert all(isinstance(k, str) and k in types for k in kinds), schema
     if kinds and not any(types[k] for k in kinds):
         return False
-    if "const" in schema and value != schema["const"]:
+    if "const" in schema and not _json_equal(value, schema["const"]):
         return False
-    if "enum" in schema and value not in schema["enum"]:
+    if "enum" in schema and not any(_json_equal(value, item) for item in schema["enum"]):
         return False
     if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
         return False
@@ -93,8 +110,16 @@ def matches_schema(
         if not set(schema.get("required", [])) <= value.keys():
             return False
         properties = schema.get("properties", {})
-        if not all(key in value for key in schema.get("required", [])):
-            return False
+        additional = schema.get("additionalProperties", True)
+        assert isinstance(additional, (bool, dict)), schema
+        for key, item in value.items():
+            if key not in properties:
+                if additional is False:
+                    return False
+                if isinstance(additional, dict) and not matches_schema(
+                    item, additional, root_schema, _references
+                ):
+                    return False
         return all(
             matches_schema(item, properties[key], root_schema, _references)
             for key, item in value.items() if key in properties

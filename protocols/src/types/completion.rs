@@ -97,8 +97,11 @@ where
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::completion::CreateCompletionRequest))]
 pub struct CreateCompletionRequest {
     pub model: String,
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::Prompt))]
     pub prompt: Prompt,
     /// Base64-encoded PyTorch tensor containing pre-computed embeddings.
     /// At least one of prompt or prompt_embeds is required.
