@@ -87,7 +87,20 @@ impl KimiK3Formatter {
         if self.exclude_tools_when_tool_choice_none && tool_choice_kind == Some("none") {
             tools = None;
         }
-        let tools = tools.map(deep_sort);
+        // Match native TRT-LLM FunctionDefinition.model_dump(): its optional
+        // strict field is present as null when omitted in the HTTP request.
+        // Preserve explicit booleans/null and do not mutate the request.
+        let tools = tools.map(|mut tools| {
+            if let Some(items) = tools.as_array_mut() {
+                for tool in items {
+                    if let Some(function) = tool.get_mut("function").and_then(Value::as_object_mut)
+                    {
+                        function.entry("strict").or_insert(Value::Null);
+                    }
+                }
+            }
+            deep_sort(tools)
+        });
 
         let args = req.chat_template_args();
         // Moonshot's K3 API defines named tool choice as incompatible with
@@ -1128,6 +1141,24 @@ mod tests {
         }
     }
 
+    #[test]
+    fn omitted_tool_strict_matches_explicit_null_without_mutating_request() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request.tools = Some(json!([{"type":"function", "function":{"name":"lookup"}}]));
+        let original = request.tools.clone();
+        let omitted = fmt().render(&request).unwrap();
+        assert_eq!(request.tools, original);
+        request.tools.as_mut().unwrap()[0]["function"]["strict"] = Value::Null;
+        assert_eq!(omitted, fmt().render(&request).unwrap());
+        assert!(omitted.contains("\"strict\":null"));
+        for strict in [false, true] {
+            request.tools.as_mut().unwrap()[0]["function"]["strict"] = Value::Bool(strict);
+            let explicit = fmt().render(&request).unwrap();
+            assert!(explicit.contains(&format!("\"strict\":{strict}")));
+            assert_ne!(omitted, explicit);
+        }
+    }
+
     /// Default formatter: no worker declaration, so the checkpoint token.
     fn fmt() -> KimiK3Formatter {
         KimiK3Formatter::new(true)
@@ -2154,7 +2185,7 @@ mod tests {
         assert!(rendered.contains(concat!(
             "[{\"function\":{\"description\":\"Get weather\",",
             "\"name\":\"weather\",\"parameters\":{\"properties\":",
-            "{\"city\":{\"type\":\"string\"}},\"type\":\"object\"}},",
+            "{\"city\":{\"type\":\"string\"}},\"type\":\"object\"},\"strict\":null},",
             "\"type\":\"function\"}]"
         )));
     }

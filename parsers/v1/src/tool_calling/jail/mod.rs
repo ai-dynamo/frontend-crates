@@ -1023,6 +1023,12 @@ impl ChoiceJailState {
                     suffix,
                     ..
                 } => {
+                    let prefix =
+                        if jail_stream.native_k3_text_compat() && marker == "<|end_of_msg|>" {
+                            trim_partial_kimi_tools_open(&prefix).to_string()
+                        } else {
+                            prefix
+                        };
                     let prefix_has_harmony_protocol =
                         is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                             && contains_harmony_protocol(&prefix);
@@ -1304,6 +1310,29 @@ impl ChoiceJailState {
 
     /// Finalize any remaining content when stream ends
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
+        if jail_stream.native_k3_text_compat() {
+            // Native streaming drops incomplete tool envelopes and held openers.
+            // Aggregate requests instead use the whole-response parser.
+            let held_output = self.is_jailed || !self.partial_match_buffer.is_empty();
+            self.end_jail();
+            self.partial_match_buffer.clear();
+            // Suppressing unfinished text must not suppress terminal metadata.
+            return held_output
+                .then_some(self.stream_finish_reason)
+                .flatten()
+                .map(|reason| {
+                    ChoiceEmission::Content(create_choice_stream(
+                        self.index,
+                        Some(Role::Assistant),
+                        "",
+                        None,
+                        Some(reason),
+                        None,
+                    ))
+                })
+                .into_iter()
+                .collect();
+        }
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
@@ -1469,7 +1498,27 @@ pub struct JailedStream {
     guided_streaming: bool,
 }
 
+fn trim_partial_kimi_tools_open(text: &str) -> &str {
+    const OPEN: &str = "<|open|>tools<|sep|>";
+    for len in (1..OPEN.len()).rev() {
+        if text.ends_with(&OPEN[..len]) {
+            return &text[..text.len() - len];
+        }
+    }
+    text
+}
+
 impl JailedStream {
+    fn native_k3_text_compat(&self) -> bool {
+        self.tool_call_parser
+            .as_deref()
+            .and_then(|name| get_tool_parser_map().get(name))
+            .is_some_and(|config| {
+                matches!(&config.parser_config,
+                ParserConfig::KimiK3(k3) if k3.native_text_compat)
+            })
+    }
+
     /// Create a new builder for configuring a JailedStream
     pub fn builder() -> JailedStreamBuilder {
         JailedStreamBuilder::new()
@@ -4899,5 +4948,174 @@ mod tests {
             .position(|c| c.delta.tool_calls.as_ref().is_some_and(|t| !t.is_empty()))
             .expect("call emitted");
         assert!(reasoning_at < call_at, "reasoning must precede the call");
+    }
+    // Run separately so the process-global parser registry is initialized with
+    // the opt-in flag before other tests: DYN_K3_NATIVE_TEXT_COMPAT=1 cargo test
+    // native_text_compat_matches_native_oracle -- --ignored
+    #[tokio::test]
+    #[ignore = "requires isolated DYN_K3_NATIVE_TEXT_COMPAT=1 process"]
+    async fn native_text_compat_matches_native_oracle() {
+        assert_eq!(
+            std::env::var("DYN_K3_NATIVE_TEXT_COMPAT").as_deref(),
+            Ok("1")
+        );
+        let fixtures: serde_json::Value =
+            serde_json::from_str(include_str!("native_text_compat_fixtures.json")).unwrap();
+        for fixture in fixtures.as_array().unwrap() {
+            let raw = fixture["raw"].as_str().unwrap();
+            let expected_content = fixture["expected"]["content"].as_str().unwrap();
+            let expected_calls: Vec<(String, serde_json::Value)> = fixture["expected"]["calls"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|call| {
+                    (
+                        call["name"].as_str().unwrap().to_string(),
+                        call["arguments"].clone(),
+                    )
+                })
+                .collect();
+            for split in raw
+                .char_indices()
+                .map(|(i, _)| i)
+                .chain(std::iter::once(raw.len()))
+            {
+                let responses =
+                    apply_kimi_k3(vec![text_chunk(&raw[..split]), text_chunk(&raw[split..])]).await;
+                assert_eq!(
+                    collect_text_content(&responses),
+                    expected_content,
+                    "non-tool bytes changed at split {split}"
+                );
+                let calls: Vec<(String, serde_json::Value)> = collect_tool_calls(&responses)
+                    .into_iter()
+                    .map(|(name, args)| (name, serde_json::from_str(&args).unwrap()))
+                    .collect();
+                assert_eq!(
+                    calls, expected_calls,
+                    "tool call lost or duplicated at split {split}"
+                );
+            }
+            let chunks = raw.chars().map(|c| text_chunk(&c.to_string())).collect();
+            let responses = apply_kimi_k3(chunks).await;
+            assert_eq!(collect_text_content(&responses), expected_content);
+            let calls: Vec<(String, serde_json::Value)> = collect_tool_calls(&responses)
+                .into_iter()
+                .map(|(name, args)| (name, serde_json::from_str(&args).unwrap()))
+                .collect();
+            assert_eq!(calls, expected_calls);
+        }
+    }
+    #[tokio::test]
+    #[ignore = "requires isolated DYN_K3_NATIVE_TEXT_COMPAT=1 process"]
+    async fn native_text_compat_real_eom_preserves_streaming_markers() {
+        assert_eq!(
+            std::env::var("DYN_K3_NATIVE_TEXT_COMPAT").as_deref(),
+            Ok("1")
+        );
+        let fixtures: serde_json::Value =
+            serde_json::from_str(include_str!("native_text_compat_fixtures.json")).unwrap();
+        for fixture in fixtures.as_array().unwrap() {
+            let body = fixture["raw"].as_str().unwrap();
+            let raw = format!("{body}<|end_of_msg|>");
+            let expected_content = fixture["expected"]["content"].as_str().unwrap();
+            let expected_calls: Vec<(String, serde_json::Value)> = fixture["expected"]["calls"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|call| {
+                    (
+                        call["name"].as_str().unwrap().to_string(),
+                        call["arguments"].clone(),
+                    )
+                })
+                .collect();
+            // Every two-part character boundary, including an isolated EOM;
+            // then character-at-a-time stress (real special token is atomic).
+            let mut partitions: Vec<Vec<String>> = raw
+                .char_indices()
+                .map(|(i, _)| i)
+                .chain(std::iter::once(raw.len()))
+                .map(|cut| vec![raw[..cut].to_string(), raw[cut..].to_string()])
+                .collect();
+            partitions.push(raw.chars().map(|c| c.to_string()).collect());
+            for chunks in partitions {
+                let responses = apply_kimi_k3(chunks.iter().map(|s| text_chunk(s)).collect()).await;
+                assert_eq!(collect_text_content(&responses), expected_content);
+                let calls: Vec<(String, serde_json::Value)> = collect_tool_calls(&responses)
+                    .into_iter()
+                    .map(|(name, args)| (name, serde_json::from_str(&args).unwrap()))
+                    .collect();
+                assert_eq!(calls, expected_calls);
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires isolated DYN_K3_NATIVE_TEXT_COMPAT=1 process"]
+    async fn native_text_compat_mode_preserves_terminal_metadata() {
+        assert_eq!(
+            std::env::var("DYN_K3_NATIVE_TEXT_COMPAT").as_deref(),
+            Ok("1")
+        );
+        for tail in [
+            "",
+            "<|end_of_msg|>",
+            "<|open|>too",
+            "<|open|>tools<|sep|><|open|>call tool=\"run\" index=\"1\"<|sep|>",
+        ] {
+            let raw = format!("answer{tail}");
+            for reason in [Some(FinishReason::Stop), Some(FinishReason::Length), None] {
+                for cut in 0..=raw.len() {
+                    let mut chunks = vec![text_chunk(&raw[..cut]), text_chunk(&raw[cut..])];
+                    if let Some(reason) = reason {
+                        let mut terminal = text_chunk("");
+                        terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(reason);
+                        chunks.push(terminal);
+                    }
+                    let responses: Vec<_> = apply_tool_calling_jail(
+                        Some("kimi_k3".to_string()),
+                        None,
+                        None,
+                        false,
+                        stream::iter(chunks),
+                    )
+                    .collect()
+                    .await;
+                    assert_eq!(collect_text_content(&responses), "answer");
+                    assert!(collect_tool_calls(&responses).is_empty());
+                    let reasons: Vec<_> = responses
+                        .iter()
+                        .filter_map(|r| r.data.as_ref())
+                        .flat_map(|r| r.choices.iter())
+                        .filter_map(|c| c.finish_reason)
+                        .collect();
+                    assert_eq!(reasons, reason.into_iter().collect::<Vec<_>>());
+                }
+            }
+        }
+        for reason in [FinishReason::Stop, FinishReason::Length] {
+            let mut terminal = text_chunk("");
+            terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(reason);
+            let responses: Vec<_> = apply_tool_calling_jail(
+                Some("kimi_k3".to_string()),
+                None,
+                None,
+                false,
+                stream::iter(vec![text_chunk(&kimi_k3_tool_call("run")), terminal]),
+            )
+            .collect()
+            .await;
+            assert_eq!(collect_tool_calls(&responses).len(), 1);
+            assert_eq!(
+                responses
+                    .iter()
+                    .filter_map(|r| r.data.as_ref())
+                    .flat_map(|r| r.choices.iter())
+                    .filter(|c| c.finish_reason.is_some())
+                    .count(),
+                1
+            );
+        }
     }
 }

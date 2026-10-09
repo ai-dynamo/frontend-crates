@@ -298,10 +298,17 @@ pub struct KimiK2ParserConfig {
 pub struct KimiK3ParserConfig {
     #[serde(default)]
     pub allow_eof_recovery: bool,
+    /// Preserve actual non-tool XTML text as native TRT-LLM serving does.
+    /// Only enable with reasoning parsing disabled for a matched native recipe.
+    #[serde(default)]
+    pub native_text_compat: bool,
 }
 
 impl KimiK3ParserConfig {
     pub(crate) fn start_tokens(&self) -> Vec<&'static str> {
+        if self.native_text_compat {
+            return vec!["<|open|>tools<|sep|>", "<|end_of_msg|>"];
+        }
         super::xtml::JAIL_BOUNDARIES
             .into_iter()
             .chain(super::xtml::SPACED_JAIL_BOUNDARIES)
@@ -309,6 +316,9 @@ impl KimiK3ParserConfig {
     }
 
     pub(crate) fn end_tokens(&self) -> Vec<&'static str> {
+        if self.native_text_compat {
+            return vec!["<|close|>tools<|sep|>", "<|end_of_msg|>"];
+        }
         use super::xtml::{
             END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, SPACED_MESSAGE_CLOSE,
             SPACED_RESPONSE_CLOSE, SPACED_RESPONSE_OPEN, SPACED_TOOLS_CLOSE, TOOLS_CLOSE,
@@ -435,7 +445,9 @@ pub enum ParserConfig {
 impl ParserConfig {
     pub(crate) fn terminal_marker_policy(&self) -> TerminalMarkerPolicy {
         match self {
-            Self::KimiK3(_) => super::xtml::TERMINAL_MARKER_POLICY,
+            Self::KimiK3(config) if !config.native_text_compat => {
+                super::xtml::TERMINAL_MARKER_POLICY
+            }
             _ => TerminalMarkerPolicy::default(),
         }
     }
@@ -879,8 +891,14 @@ impl ToolCallConfig {
     /// Kimi K3 XTML channels. Unlike K2, arguments are nested typed XTML
     /// blocks rather than one JSON object behind Kimi-specific section tokens.
     pub fn kimi_k3() -> Self {
+        // Read once when this parser config is created, never per token/chunk.
+        let config = KimiK3ParserConfig {
+            native_text_compat: std::env::var("DYN_K3_NATIVE_TEXT_COMPAT")
+                .is_ok_and(|value| value == "1"),
+            ..Default::default()
+        };
         Self {
-            parser_config: ParserConfig::KimiK3(KimiK3ParserConfig::default()),
+            parser_config: ParserConfig::KimiK3(config),
             structural_tag_builder: Some(StructuralTagBuilder::KimiK3),
         }
     }

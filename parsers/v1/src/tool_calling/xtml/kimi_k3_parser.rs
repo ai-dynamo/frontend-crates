@@ -142,8 +142,20 @@ pub fn detect_tool_call_start_kimi_k3(chunk: &str, config: &KimiK3ParserConfig) 
 /// its outer close marker, while a recoverable bare call ends at `call` close.
 pub fn find_tool_call_end_position_kimi_k3(
     chunk: &str,
-    _config: &KimiK3ParserConfig,
+    config: &KimiK3ParserConfig,
 ) -> Option<usize> {
+    if config.native_text_compat {
+        // A real EOM is a terminal boundary even when emitted on its own.
+        // Consume it without releasing it as ordinary non-tool text.
+        let eom_end = chunk.find(END_OF_MSG).map(|i| i + END_OF_MSG.len());
+        let tools_end = chunk.find(TOOLS_OPEN).and_then(|start| {
+            let after_start = start + TOOLS_OPEN.len();
+            chunk[after_start..]
+                .find(TOOLS_CLOSE)
+                .map(|end| after_start + end + TOOLS_CLOSE.len())
+        });
+        return tools_end.into_iter().chain(eom_end).min();
+    }
     let (start, wire_marker, marker) = first_wire_marker(chunk)?;
     let after_start = &chunk[start..];
 
@@ -177,12 +189,50 @@ pub fn try_tool_call_parse_kimi_k3(
     config: &KimiK3ParserConfig,
     _tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    if config.native_text_compat {
+        // Native KimiK3ToolParser treats only the tools envelope as parser-owned.
+        // Preserve original bytes; do not normalize, synthesize, or pad markers.
+        let normal = if let Some(start) = message.find(TOOLS_OPEN) {
+            message[..start].to_string()
+        } else if !config.allow_eof_recovery {
+            // Streaming native text preserves message-close and other real
+            // framing. Its engine has already removed the terminal stop token.
+            // Match that wire behavior by consuming only the actual EOM here.
+            message
+                .split_once(END_OF_MSG)
+                .map_or(message, |(prefix, _)| prefix)
+                .to_string()
+        } else {
+            // Keep the existing aggregate-mode native suffix rule separate.
+            native_non_tool_text(message).to_string()
+        };
+        return Ok((extract_calls(message, config), Some(normal)));
+    }
     let normalized = normalize_spaced_markers(message);
     let sanitized = strip_orphan_think_close(normalized.as_ref());
     let message = sanitized.as_ref();
     let normal_text = extract_response_text(message);
     let calls = extract_calls(message, config);
     Ok((calls, Some(normal_text)))
+}
+
+// Match native aggregate parser's trailing (message-close|EOM)+\s*$ rule.
+// Streaming plain text bypasses this function, matching native increments.
+fn native_non_tool_text(message: &str) -> &str {
+    let mut end = message.trim_end().len();
+    let mut matched = false;
+    loop {
+        let prefix = &message[..end];
+        if prefix.ends_with(MESSAGE_CLOSE) {
+            end -= MESSAGE_CLOSE.len();
+        } else if prefix.ends_with(END_OF_MSG) {
+            end -= END_OF_MSG.len();
+        } else {
+            break;
+        }
+        matched = true;
+    }
+    if matched { &message[..end] } else { message }
 }
 
 fn strip_orphan_think_close(message: &str) -> Cow<'_, str> {
@@ -313,14 +363,22 @@ fn extract_calls(message: &str, config: &KimiK3ParserConfig) -> Vec<ToolCallResp
         if let Some(close) = logical[body_start..].find(TOOLS_CLOSE) {
             parse_calls_region(&logical[body_start..body_start + close], false, &mut calls);
         } else if config.allow_eof_recovery {
-            parse_calls_region(&logical[body_start..], true, &mut calls);
+            parse_calls_region(
+                &logical[body_start..],
+                !config.native_text_compat,
+                &mut calls,
+            );
         }
         return calls;
     }
 
     // A complete bare call is delimiter-terminated and therefore recoverable
     // even if the outer tools wrapper is absent.
-    parse_calls_region(logical, config.allow_eof_recovery, &mut calls);
+    parse_calls_region(
+        logical,
+        config.allow_eof_recovery && !config.native_text_compat,
+        &mut calls,
+    );
     calls
 }
 
@@ -756,6 +814,7 @@ mod tests {
 
         let recovery = KimiK3ParserConfig {
             allow_eof_recovery: true,
+            ..Default::default()
         };
         let (recovered, _) =
             try_tool_call_parse_kimi_k3(&complete_without_outer_closes, &recovery, None).unwrap();
@@ -803,5 +862,35 @@ mod tests {
             find_tool_call_end_position_kimi_k3(TOOLS_OPEN, &config),
             None
         );
+    }
+    #[test]
+    fn native_text_aggregate_recovers_complete_inner_calls_only() {
+        let config = KimiK3ParserConfig {
+            allow_eof_recovery: true,
+            native_text_compat: true,
+        };
+        let complete = call("tool=\"run\" index=\"1\"", &arg("x", Some("number"), "1"));
+        let incomplete = format!(
+            "{CALL_OPEN_PREFIX} tool=\"run\" index=\"2\"{SEP}{}",
+            arg("x", Some("number"), "2")
+        );
+        for raw in [
+            format!("{TOOLS_OPEN}{complete}{incomplete}"),
+            format!("{complete}{incomplete}"),
+        ] {
+            let (calls, _) = try_tool_call_parse_kimi_k3(&raw, &config, None).unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(
+                serde_json::from_str::<Value>(&calls[0].function.arguments).unwrap(),
+                serde_json::json!({"x": 1})
+            );
+        }
+        let (_, content) = try_tool_call_parse_kimi_k3(
+            &format!("answer{MESSAGE_CLOSE}{END_OF_MSG}  "),
+            &config,
+            None,
+        )
+        .unwrap();
+        assert_eq!(content.as_deref(), Some("answer"));
     }
 }

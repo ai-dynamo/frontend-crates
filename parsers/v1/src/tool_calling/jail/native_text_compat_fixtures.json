@@ -1,0 +1,38 @@
+[
+  {
+    "raw": "thinking<|close|>think<|sep|><|open|>response<|sep|>answer<|close|>response<|sep|><|close|>message<|sep|>",
+    "expected": {
+      "content": "thinking<|close|>think<|sep|><|open|>response<|sep|>answer<|close|>response<|sep|><|close|>message<|sep|>",
+      "calls": []
+    }
+  },
+  {
+    "raw": "thinking<|close|>think<|sep|><|open|>response<|sep|><|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool=\"run\" index=\"1\"<|sep|><|open|>argument key=\"cmd\" type=\"string\"<|sep|>echo hi<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+    "expected": {
+      "content": "thinking<|close|>think<|sep|><|open|>response<|sep|><|close|>response<|sep|>",
+      "calls": [
+        {
+          "name": "run",
+          "arguments": {
+            "cmd": "echo hi"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "raw": "résumé <|example|> literal<|close|>think<|sep|><|open|>response<|sep|>done<|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool=\"run\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|>{\"x\": 2, \"ok\": true}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+    "expected": {
+      "content": "résumé <|example|> literal<|close|>think<|sep|><|open|>response<|sep|>done<|close|>response<|sep|>",
+      "calls": [
+        {
+          "name": "run",
+          "arguments": {
+            "x": 2,
+            "ok": true
+          }
+        }
+      ]
+    }
+  }
+]
