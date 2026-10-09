@@ -180,8 +180,6 @@ pub enum ReasoningParserType {
     /// into Qwen's behavior.
     DeepSeekV4,
     NemotronDeci,
-    /// Nemotron v3 may enter a tool call without closing its thinking block.
-    NemotronV3,
     Kimi,
     KimiK25,
     /// Kimi K3 XTML reasoning channel:
@@ -202,6 +200,8 @@ pub enum ReasoningParserType {
     /// Inkling (thinkingmachines/Inkling-NVFP4): block-structured reasoning, tool-call
     /// blocks passed through verbatim. See [`crate::reasoning::inkling_parser`].
     Inkling,
+    /// Nemotron v3 may enter a tool call without closing its thinking block.
+    NemotronV3,
 }
 
 #[derive(std::fmt::Debug)]
