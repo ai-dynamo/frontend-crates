@@ -22,6 +22,7 @@ from selenium import webdriver  # noqa: E402
 from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
 from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not any(shutil.which(b) for b in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")),
@@ -749,6 +750,10 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         group_heading = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group .col-toggle-label")
         assert group_heading.text.startswith("TC ")
         assert group_heading.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        group_cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group")
+        assert group_cell.value_of_css_property("text-align") == "left"
+        assert group_cell.value_of_css_property("padding-left") == "8px"
+        assert 8 <= group_heading.rect["x"] - group_cell.rect["x"] < 35
         label_pairs = driver.execute_script(
             "return Array.from(document.querySelectorAll('#tab-unified th.case-sub a')).map(a=>["
             "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
@@ -825,15 +830,36 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         assert model_header.value_of_css_property("background-color") == "rgba(15, 23, 42, 1)"
         transpose_group = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table tr.section td")
         assert transpose_group.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert transpose_group.value_of_css_property("text-align") == "left"
+        assert transpose_group.value_of_css_property("padding-left") == "8px"
+        text_inset = driver.execute_script(
+            "const e=arguments[0],range=document.createRange();range.selectNodeContents(e);"
+            "return range.getBoundingClientRect().left-e.getBoundingClientRect().left;", transpose_group
+        )
+        assert 8 <= text_inset <= 10
 
         _set_transpose(driver, False)
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
         assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        expanded_width = group_cell.rect["width"]
+        ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+        WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+        group_toggle = group_cell.find_element(By.CSS_SELECTOR, ".col-toggle")
+        group_toggle.click()
+        assert "col-collapsed" in group_cell.get_attribute("class").split()
+        assert group_cell.value_of_css_property("padding-left") == "2px"
+        assert group_cell.rect["width"] < expanded_width
+        group_toggle.click()
+        assert group_cell.value_of_css_property("padding-left") == "8px"
+        assert abs(group_cell.rect["width"] - expanded_width) <= 1
         _click_tab(driver, "tab-toolcalling-batch")
         _set_transpose(driver, True)
         other_header = driver.find_element(By.CSS_SELECTOR, "#tab-toolcalling-batch .transpose-table th.trow-case a")
         assert not other_header.find_elements(By.CSS_SELECTOR, ".case-label-reference")
         assert other_header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
+        for cell in driver.find_elements(By.CSS_SELECTOR, "#tab-toolcalling-batch .transpose-table tr.section td"):
+            assert cell.value_of_css_property("text-align") == "left"
+            assert cell.value_of_css_property("padding-left") == "8px"
     finally:
         driver.get(f"file://{rendered_page}?transpose=0")
 
