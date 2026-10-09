@@ -219,7 +219,27 @@ def display_tax(scenario):
 def display_sort_key(scenario):
     group, _ = display_tax(scenario)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
-    return group_key, taxonomy_sort_key(scenario)
+    return group_key, case_description(scenario), scenario
+
+
+DISPLAY_PREFIXES = {"deepseek": ("deepseek_v41", "ds41"),
+                    "deepseek_v4": ("deepseek_v4", "ds4")}
+
+
+def display_case_labels(scenarios):
+    """Display ranks belong to the visible corpus, never to capture identities."""
+    labels = {}
+    counts = {}
+    for scenario in sorted(set(scenarios), key=display_sort_key):
+        group, _ = display_tax(scenario)
+        counts[group] = counts.get(group, 0) + 1
+        full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
+        labels[scenario] = {
+            "label": f"{full_prefix}-{case_description(scenario)}",
+            "compact_prefix": compact_prefix,
+            "display_number": counts[group],
+        }
+    return labels
 
 
 def taxonomy_sort_key(scenario):

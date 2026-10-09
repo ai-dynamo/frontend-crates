@@ -134,3 +134,21 @@ def test_other_families_do_not_gain_missing_mixed_probes():
     group_null_variants(tab)
     assert "7-4.mixed_labels" not in leaf_cells(row)
     assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+
+
+def test_unified_display_order_does_not_change_variant_aggregation():
+    labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
+    columns = [{"label": unified_taxonomy.historical_case_label(label),
+                "sub": unified_taxonomy.scenario_for_label(label), "group_key": "7"}
+               for label in labels]
+    tab = {"id": "tab-unified", "columns": columns,
+           "rows": [{"family": "glm47", "cells": {
+               col["sub"]: {**make_cell(col["label"], sig=i + 1), "sub": col["sub"]}
+               for i, col in enumerate(columns)}}],
+           "column_groups": [{"key": "7", "span": len(columns)}], "stats": {}}
+    reordered = copy.deepcopy(tab)
+    reordered["columns"].reverse()
+    group_null_variants(tab)
+    group_null_variants(reordered)
+    assert tab["rows"] == reordered["rows"]
+    assert tab["stats"] == reordered["stats"]

@@ -92,6 +92,9 @@ def group_null_variants(tab: dict) -> None:
     display_labels: dict[str, str] = {}
     for parent, description in NULL_DESCRIPTIONS.items():
         members = [column for column in columns if null_group(metadata_label(column)) == parent]
+        if unified:
+            # Display sorting must not change the parent oracle or variant order.
+            members.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
         if not members:
             continue
         root = next((column for column in members if metadata_label(column) == parent), members[0])
@@ -100,6 +103,8 @@ def group_null_variants(tab: dict) -> None:
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
         mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")]
+        if unified:
+            mixed.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
         referenced = members + (mixed if parent == "7-5" else [])
         root["desc"] = description
         for row in tab["rows"]:

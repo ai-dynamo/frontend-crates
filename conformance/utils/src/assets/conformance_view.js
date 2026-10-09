@@ -764,7 +764,10 @@
       });
       });
     });
-    return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', init: col.init,
+    const caseHead = caseId || fullCaseId(tab, col);
+    const head = col.display_number != null && caseHead !== (tab.case_prefix || '') + col.label
+      ? caseHead + ' (' + col.label + ')' : caseHead;
+    return { head: head, desc: col.desc || '', init: col.init,
              grammar: rows, cands: colDefs || [] };
   }
 
@@ -859,24 +862,15 @@
     var cols = tab.columns || [];
     var href = escapeAttr(tab.case_docs_href || '');
     var h = '';
-    function syntheticCaseNumber(label) {
-      // Keep the placeholder stable across renders without implying a real subcase ID.
-      var hash = 2166136261;
-      for (var i = 0; i < label.length; i++) {
-        hash = Math.imul(hash ^ label.charCodeAt(i), 16777619) >>> 0;
-      }
-      return String(10 + (hash % 90));
-    }
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
       var label = String(c.label || '');
-      var descriptiveLabel = label.match(/^([^-]+)-.+$/);
-      var shortLabel = descriptiveLabel
-        ? escapeHtml(descriptiveLabel[1]) + '-<span class="case-label-placeholder">'
-          + syntheticCaseNumber(label) + '</span>'
+      var shortLabel = c.display_number != null
+        ? escapeHtml(c.compact_prefix) + '-<span class="case-label-placeholder">'
+          + escapeHtml(String(c.display_number)) + '</span>'
         : escapeHtml(label);
       var prefix = tab.case_prefix || '';
-      var fullId = label.indexOf(prefix) === 0 ? label : prefix + label;
+      var fullId = c.case_id || (label.indexOf(prefix) === 0 ? label : prefix + label);
       // The rich grammar popup replaces the old native `title` tooltip (which could
       // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'

@@ -3078,6 +3078,15 @@ def build_combined_model(output_path: Path | None = None,
                                       "version": None,
                                       "parse_mode": "batch" if tab["mode"] == "batch" else "stream"})
         group_null_variants(tab)
+        if tab["id"] == "tab-unified":
+            # Rank the visible columns after variants have been folded into parents.
+            labels = unified_taxonomy.display_case_labels(column["sub"] for column in tab["columns"])
+            display_by_label = {column["label"]: labels[column["sub"]]["label"] for column in tab["columns"]}
+            for column in tab["columns"]:
+                column["case_id"] = "UNIFIED." + column["label"]
+                column.update(labels[column["sub"]])
+            for group in tab["glossary"]:
+                group["rows"] = [(display_by_label.get(label, label), desc) for label, desc in group["rows"]]
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
                              legend_html=legend_html)
 

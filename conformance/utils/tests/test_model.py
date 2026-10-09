@@ -1257,7 +1257,7 @@ def test_stream_regression_matrix_uses_consistent_display_ids(model_v2):
 
 
 @pytest.mark.parametrize("scenario,label,family", [
-    ("deepseek_v41_json_invocation_body", "deepseek-json_invocation_body", "deepseek_v41"),
+    ("deepseek_v41_json_invocation_body", "deepseek_v41-json_invocation_body", "deepseek_v41"),
     ("glm47_reference_type_intersection", "glm5-reference_type_intersection", "glm47"),
 ])
 def test_targeted_unified_regressions_use_family_specific_columns(model_v2, scenario, label, family):
@@ -1272,7 +1272,7 @@ def test_targeted_unified_regressions_use_family_specific_columns(model_v2, scen
         cell = row["cells"][scenario]
         assert (cell["status"] == "na") == (row["family"] != family)
         if row["family"] == family:
-            assert cell["case_id"] == "UNIFIED." + label
+            assert cell["case_id"] == table.unified_taxonomy.numbered_id(scenario)
 
 
 def test_unified_family_specific_groups_are_labeled_single_family_tests(model_v2):
@@ -1388,7 +1388,10 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     scenario = "guided_response_rejected_header_quote_ownership"
     tab = _tab(model_v2, "tab-unified")
     column = next(c for c in tab["columns"] if c["sub"] == scenario)
-    assert column["label"] == "35-guided_response_rejected_header_quote_ownership"
+    assert column["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
+    assert column["compact_prefix"] == "ds4"
+    assert column["display_number"] == 1
+    assert column["case_id"] == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
     assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
@@ -1401,7 +1404,7 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
         if row["family"] != "deepseek_v4":
             assert cell["status"] == "na"
     glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
-    assert [r[0] for r in glossary["rows"]] == ["35-guided_response_rejected_header_quote_ownership"]
+    assert [r[0] for r in glossary["rows"]] == ["deepseek_v4-guided_response_rejected_header_quote_ownership"]
 
 
 def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures(model_v2):

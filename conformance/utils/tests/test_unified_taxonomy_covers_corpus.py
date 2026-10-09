@@ -1680,3 +1680,23 @@ def test_schema_id_oracle_preserves_scalar_constraints_and_rejects_reference_sco
 def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scenario):
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
+
+
+def test_display_ranks_follow_descriptions_without_changing_capture_ids():
+    scenarios = list(UNIFIED_TAX)
+    identities = {scenario: numbered_id(scenario) for scenario in scenarios}
+    labels = taxonomy.display_case_labels(reversed(scenarios))
+    assert labels == taxonomy.display_case_labels(scenarios + scenarios)
+    groups = defaultdict(list)
+    for scenario in sorted(scenarios, key=taxonomy.display_sort_key):
+        groups[taxonomy.display_tax(scenario)[0]].append(scenario)
+    for members in groups.values():
+        assert [taxonomy.case_description(s) for s in members] == sorted(taxonomy.case_description(s) for s in members)
+        assert [labels[s]["display_number"] for s in members] == list(range(1, len(members) + 1))
+    v4 = labels["guided_response_rejected_header_quote_ownership"]
+    assert v4["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
+    assert v4["compact_prefix"] == "ds4"
+    v41 = labels["deepseek_v41_json_invocation_body"]
+    assert v41["label"] == "deepseek_v41-json_invocation_body"
+    assert v41["compact_prefix"] == "ds41"
+    assert identities == {scenario: numbered_id(scenario) for scenario in scenarios}

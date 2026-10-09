@@ -738,7 +738,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
         short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
         assert full_label.startswith("1-")
-        assert re.fullmatch(r"1-\d{2}", short_label)
+        assert short_label == "1-1"
         placeholder = header.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
         assert placeholder.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
         assert float(placeholder.value_of_css_property("font-size")[:-2]) < float(
@@ -760,13 +760,22 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             group_name, separator, description = full.partition("-")
             assert separator
             if description:
-                assert re.fullmatch(re.escape(group_name) + r"-\d{2}", short)
+                compact_prefix = {"deepseek_v4": "ds4", "deepseek_v41": "ds41"}.get(group_name, group_name)
+                assert re.fullmatch(re.escape(compact_prefix) + r"-[1-9]\d*", short)
                 assert has_placeholder
                 has_model_specific_label = has_model_specific_label or not group_name.isdigit()
             else:
                 assert short == full
                 assert not has_placeholder
         assert has_model_specific_label
+        by_prefix = {}
+        for full, short, _ in label_pairs:
+            prefix, number = short.split("-", 1)
+            by_prefix.setdefault(prefix, []).append((full.split("-", 1)[1], int(number)))
+        for pairs in by_prefix.values():
+            assert [desc for desc, _ in pairs] == sorted(desc for desc, _ in pairs)
+            assert [number for _, number in pairs] == list(range(1, len(pairs) + 1))
+        assert by_prefix["ds4"][0][1] == by_prefix["ds41"][0][1] == 1
 
         ActionChains(driver).move_to_element(header).perform()
         driver.execute_script(
@@ -785,6 +794,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             time.sleep(0.1)
         assert tip is not None, "case description tooltip did not open on hover"
         assert header.get_attribute("aria-label") in tip.text
+        assert full_label in tip.text
         assert tip.find_element(By.CSS_SELECTOR, ".ttip-head-desc").text
 
         driver.execute_script("document.documentElement.setAttribute('data-theme', 'dark')")
