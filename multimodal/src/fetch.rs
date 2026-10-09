@@ -9,11 +9,7 @@
 //!   (`http`, `https`, `data:` only). It refuses private and internal
 //!   destinations, revalidates every redirect hop, filters DNS answers so a
 //!   rebinding hostname cannot reach a blocked address, and caps the number of
-//!   bytes read. Ported from the fetcher in `ai-dynamo/dynamo`'s
-//!   `lib/llm/src/preprocessor/media/loader.rs` so routers and engines share one
-//!   policy; the blocked ranges are that list plus the IPv6 translation and
-//!   tunnel ranges (NAT64, 6to4, Teredo) it lacks. The policy is a
-//!   [`FetchPolicy`] fixed when the fetcher is built, and the fetcher owns the
+//!   bytes read. The policy is a [`FetchPolicy`] fixed when the fetcher is built, and the fetcher owns the
 //!   HTTP client that enforces it, so the two cannot drift apart.
 //! * [`fetch_bytes`] and friends: a planned trusted-source helper (parity
 //!   anchor: `transformers.image_utils.load_image`, which also reads local
@@ -272,11 +268,13 @@ pub struct FetchPolicy {
     /// Whole-fetch timeout, DNS pre-flight included. `None` disables it. The
     /// system resolver runs on Tokio's blocking pool, and a lookup already in
     /// flight keeps running after the timeout fires; a stalled resolver can
-    /// therefore still occupy blocking threads.
+    /// therefore still occupy blocking threads. A `data:` URL involves no
+    /// waiting and is not bounded by it; see `max_data_url_bytes`.
     pub timeout: Option<Duration>,
     /// Cap on a downloaded body, in bytes.
     pub max_bytes: u64,
-    /// Cap on a `data:` URL's payload, in bytes.
+    /// Cap on a `data:` URL's payload, in bytes. The payload is decoded inline
+    /// on the calling task, so this cap is what bounds that work.
     pub max_data_url_bytes: usize,
     /// Honour the proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`,
     /// `ALL_PROXY`, `NO_PROXY`). Off by default: behind a proxy the proxy
@@ -468,9 +466,10 @@ impl MediaFetcher {
 
     /// Fetch one media URL into raw bytes.
     ///
-    /// `data:` URLs must be base64 and are decoded; `http(s)` bodies are
-    /// streamed and stop at `max_bytes`. An empty payload is an error. The whole
-    /// fetch, DNS pre-flight included, is bounded by `timeout`.
+    /// `data:` URLs must be base64 and are decoded inline, up to
+    /// `max_data_url_bytes`; `http(s)` bodies are streamed and stop at
+    /// `max_bytes`. An empty payload is an error. An `http(s)` fetch, DNS
+    /// pre-flight included, is bounded by `timeout`.
     pub async fn fetch(&self, src: &str) -> crate::Result<Vec<u8>> {
         match self.policy.timeout {
             Some(limit) => tokio::time::timeout(limit, self.fetch_inner(src))
@@ -660,7 +659,6 @@ fn filter_resolved(
     Ok(addrs)
 }
 
-/// Resolve `host` and apply [`filter_resolved`].
 async fn resolve_filtered(
     host: &str,
     allow_private: bool,
@@ -1131,12 +1129,10 @@ mod fetcher_tests {
         })
         .await;
         let f = internal();
-        // a3 -> a2 -> a1 -> done is exactly three redirects.
         assert_eq!(
             f.fetch(&format!("http://{addr}/a3")).await.unwrap(),
             b"arrived"
         );
-        // b4 -> a3 -> a2 -> a1 -> done is four.
         for p in ["/b4", "/loop"] {
             let r = f.fetch(&format!("http://{addr}{p}")).await;
             assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{p}: {r:?}");
