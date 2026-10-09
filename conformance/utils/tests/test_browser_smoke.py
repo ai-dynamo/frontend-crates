@@ -798,7 +798,8 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
                 break
             time.sleep(0.1)
         assert tip is not None, "case description tooltip did not open on hover"
-        assert header.get_attribute("aria-label") in tip.text
+        assert tip.find_element(By.CSS_SELECTOR, ".ttip-head > span[title]").get_attribute("title") == header.get_attribute("aria-label")
+        assert f"{full_label} ({short_label})" in tip.find_element(By.CSS_SELECTOR, ".ttip-head").text
         assert full_label in tip.text
         assert tip.find_element(By.CSS_SELECTOR, ".ttip-head-desc").text
 
@@ -1358,3 +1359,44 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transpo
         assert result["labelWidth"] > 0 and result["headerWidth"] > 0
     finally:
         driver.get(f"file://{rendered_page}")
+
+
+def test_popup_headings_include_compact_references(driver, rendered_page):
+    try:
+        for transpose in ("0", "1"):
+            driver.get(f"file://{rendered_page}?tab=tab-unified&transpose={transpose}")
+            table = "#tab-unified table[data-transpose-table]" if transpose == "1" else "#tab-unified table:not([data-transpose-table])"
+            header_selector = "th.trow-case" if transpose == "1" else "th.case-sub"
+            for prefix in ("1-", "deepseek_v41-", "7-arg_json_null"):
+                header = driver.execute_script(
+                    "return Array.from(document.querySelectorAll(arguments[0])).find(e=>"
+                    "e.querySelector('.case-label-full').textContent.startsWith(arguments[1]));",
+                    f"{table} {header_selector}", prefix,
+                )
+                full = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
+                short = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
+                cell = driver.execute_script(
+                    "const h=arguments[0], t=h.closest('table');"
+                    "return t.hasAttribute('data-transpose-table') ? h.parentElement.querySelector('td[data-ttip-id]') : "
+                    "Array.from(t.querySelectorAll('tbody tr')).map(r=>r.querySelectorAll('td.cell')[Array.from(t.querySelectorAll('th.case-sub')).indexOf(h)]).find(e=>e && e.hasAttribute('data-ttip-id'));",
+                    header,
+                )
+                assert cell is not None
+                for target in (header, cell):
+                    ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+                    WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", target)
+                    ActionChains(driver).move_to_element(target).perform()
+                    driver.execute_script(
+                        "arguments[0].dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
+                        "arguments[0].dispatchEvent(new PointerEvent('pointerenter'));", target,
+                    )
+                    popup = WebDriverWait(driver, 5).until(lambda d: d.find_element(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+                    heading = popup.find_element(By.CSS_SELECTOR, ".ttip-head")
+                    assert heading.text.startswith(f"{full} ({short})")
+                    number = heading.find_element(By.CSS_SELECTOR, ".popup-case-reference .case-label-placeholder")
+                    assert number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+                    assert float(number.value_of_css_property("font-size")[:-2]) < float(heading.value_of_css_property("font-size")[:-2])
+                    assert heading.find_element(By.CSS_SELECTOR, "span[title]").get_attribute("title").startswith("UNIFIED.")
+    finally:
+        driver.get(f"file://{rendered_page}?tab=tab-unified&transpose=0")

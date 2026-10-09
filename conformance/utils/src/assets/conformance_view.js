@@ -530,6 +530,19 @@
     return '<ul class="ttip-config">' + items.join('') + '</ul>';
   }
 
+  function compactCaseLabelHtml(col) {
+    return escapeHtml(col.compact_prefix) + '-<span class="case-label-placeholder">'
+      + escapeHtml(String(col.display_number)) + '</span>';
+  }
+
+  function popupCaseHeadingHtml(model) {
+    const col = model.popupCase;
+    if (!col || col.display_number == null) { return escapeHtml(model.head || ''); }
+    return '<span title="' + escapeAttr(model.head || '') + '">' + escapeHtml(col.label)
+      + ' (<span class="popup-case-reference">' + compactCaseLabelHtml(col) + '</span>)</span>'
+      + (model.family ? ' — ' + escapeHtml(model.family) : '');
+  }
+
   // --- Tooltip content (built lazily into the empty .ttip) -------------------
   function buildTooltipHtml(m) {
     if (m && m.grammar) { return buildGrammarHtml(m); }
@@ -538,7 +551,7 @@
     // accent color, the description follows inline in the normal tooltip text color (not
     // the loud section blue). Falls back to its own line only when there is no id/head.
     if (m.head) {
-      h += '<div class="ttip-head">' + escapeHtml(m.head)
+      h += '<div class="ttip-head">' + popupCaseHeadingHtml(m)
         + (m.description ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span>' : '')
         + '</div>';
     } else if (m.description) {
@@ -765,9 +778,7 @@
       });
     });
     const caseHead = caseId || fullCaseId(tab, col);
-    const head = col.display_number != null && caseHead !== (tab.case_prefix || '') + col.label
-      ? caseHead + ' (' + col.label + ')' : caseHead;
-    return { head: head, desc: col.desc || '', init: col.init,
+    return { head: caseHead, popupCase: col, desc: col.desc || '', init: col.init,
              grammar: rows, cands: colDefs || [] };
   }
 
@@ -785,7 +796,7 @@
   function buildGrammarHtml(m) {
     // Id + description on ONE line: the id keeps its accent color, the description follows
     // inline in the normal tooltip text color (not the loud section blue).
-    var h = '<div class="ttip-head">' + escapeHtml(m.head || '')
+    var h = '<div class="ttip-head">' + popupCaseHeadingHtml(m)
       + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
     h += buildConfigHtml(m.init);
@@ -866,8 +877,7 @@
       var c = cols[i];
       var label = String(c.label || '');
       var shortLabel = c.display_number != null
-        ? escapeHtml(c.compact_prefix) + '-<span class="case-label-placeholder">'
-          + escapeHtml(String(c.display_number)) + '</span>'
+        ? compactCaseLabelHtml(c)
         : escapeHtml(label);
       var prefix = tab.case_prefix || '';
       var fullId = c.case_id || (label.indexOf(prefix) === 0 ? label : prefix + label);
@@ -1178,6 +1188,7 @@
     (page.tabs || []).forEach(function (tab) {
       var meta = tab.cand_meta || {};
       var base = tab.fixture_href_base || '';
+      const columnsBySub = new Map((tab.columns || []).map(col => [col.sub, col]));
       (tab.rows || []).forEach(function (row) {
         var cells = row.cells || {};
         Object.keys(cells).forEach(function (sub) {
@@ -1186,6 +1197,8 @@
           (cell.facts || []).forEach(function (f) { S(f, 'reason'); });
           var tip = cell.tooltip;
           if (!tip) { return; }
+          tip.popupCase = columnsBySub.get(sub);
+          tip.family = cell.family;
           S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
           if (tip.input) { S(tip.input, 'text'); }
           (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });
