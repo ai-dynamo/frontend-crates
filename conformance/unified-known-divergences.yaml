@@ -6,9 +6,13 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-muse_glimmer:
-  UNIFIED.deepseek_v41_mixed_control_text_in_string.muse_glimmer:
+gemma4:
+  UNIFIED.malformed_json_then_two_valid_calls.gemma4:
     golden:
-      note: Muse Glimmer does not preserve marker-looking text inside a string argument; this 7-3 parser failure remains recorded.
-      actual: >-
-        reasoning("quoted")  |  text(" <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>")
+      note: An unfinished native string consumes both later echo calls; parser fix is outside this capture change.
+      actual: ''
+deepseek_v41:
+  UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
+    golden:
+      note: Malformed object parameter raises before either later echo call; parser fix is outside this capture change.
+      actual: 'ERROR: native push: EOF while parsing a string at line 1 column 16'

@@ -241,6 +241,42 @@ mod tests {
     }
 
     #[test]
+    fn schema_references_and_boolean_fallback_use_shared_xml_typing() {
+        let tools = vec![Tool {
+            name: "capture_payload".to_string(),
+            description: None,
+            parameters: serde_json::json!({
+                "type": "object",
+                "$defs": {
+                    "Count": {"type": "integer"},
+                    "Flag": {"type": "boolean", "allOf": [{"description": "flag"}]}
+                },
+                "properties": {
+                    "count": {"$ref": "#/$defs/Count"},
+                    "flag": {"$ref": "#/$defs/Flag"}
+                }
+            }),
+            strict: None,
+        }];
+        let input = "<minimax:tool_call><invoke name=\"capture_payload\"><parameter name=\"count\">42</parameter><parameter name=\"flag\">yes</parameter></invoke></minimax:tool_call>";
+        for chunks in [
+            vec![input],
+            input
+                .as_bytes()
+                .chunks(1)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect(),
+        ] {
+            let merged = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(merged.calls.len(), 1);
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&merged.calls[0].arguments).unwrap(),
+                serde_json::json!({"count": 42, "flag": false})
+            );
+        }
+    }
+
+    #[test]
     fn preserves_prefix_text_before_block() {
         let out = parse_chunks(
             &weather_tools(),
@@ -436,6 +472,7 @@ mod tests {
                 for ty in [
                     serde_json::json!(["number", "null"]),
                     serde_json::json!(["integer", "null"]),
+                    serde_json::json!(["number", "string"]),
                 ] {
                     let mut schema = serde_json::json!({"type":ty});
                     schema[keyword] = if keyword == "const" {
@@ -506,6 +543,8 @@ mod tests {
     fn large_fractional_arguments_remain_exact_json_numbers() {
         for raw in [
             "9007199254740992.5",
+            "9007199254740993.1",
+            "9007199254740993.25",
             "9.0071992547409925e15",
             "0.10000000000000000001",
             "-9007199254740992.5",

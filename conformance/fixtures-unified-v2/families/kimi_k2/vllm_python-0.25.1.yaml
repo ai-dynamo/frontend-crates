@@ -2017,5 +2017,130 @@ changes:
         - expected:
           - kind: text
             text: done
+  retired__1_2:
+    case_key: UNIFIED.kimi_k2-1
+    stimulus:
+      ref: current
+      semantic_sha256: 5e4d9afd9d6c3f1d36affc9a1fcd89672ad7278af0c4283cf1db10b7ce93b30d
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__30_14:
+    case_key: UNIFIED.30-14
+    stimulus:
+      ref: current
+      semantic_sha256: 51b77647ea52b5b52d205c98305c0bf77c64fdecf45f36dd0b329d8972e82576
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<|tool_call_begin|>functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: 'functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        - expected: []
+  retired__31_33:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: 8319d847f26b4c16b14b085db32bfd8235a97197851bab69bbf886f70875d388
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after'
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: before
+        - expected:
+          - kind: reasoning
+            text: ' <|tool_call_begin|>'
+        - expected:
+          - kind: reasoning
+            text: functions.f:0
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_argument_begin|>
+        - expected:
+          - kind: reasoning
+            text: '{"x": "é🙂'
+        - expected:
+          - kind: reasoning
+            text: <par{value}"}<|tool_call_end|>
+        - expected:
+          - kind: reasoning
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_40:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: b3f218d7201d4521882a22506aad94ad5118810b4ba406230f7b7b8345f4be14
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "quoted'
+        - kind: text
+          text: '"}<|tool_call_end|> after[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: before
+        - expected:
+          - kind: reasoning
+            text: ' <|tool_call_begin|>'
+        - expected:
+          - kind: reasoning
+            text: functions.f:0
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_argument_begin|>
+        - expected:
+          - kind: reasoning
+            text: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: text
+            text: '"}'
+        - expected:
+          - kind: text
+            text: <|tool_call_end|>
+        - expected:
+          - kind: text
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
 metadata_changes: {}
 document_overrides: {}

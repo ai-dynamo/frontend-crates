@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::Tool;
 
@@ -11,6 +11,144 @@ use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
     StructuralTagToolChoice,
 };
+
+fn empty_qwen_tool() -> Tool {
+    Tool {
+        name: "get_server_time".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object", "properties": {}, "required": [], "additionalProperties": false
+        }),
+        // Dynamo normalizes an omitted strict field to true before calling v2.
+        strict: Some(true),
+    }
+}
+
+fn qwen_call_tag(tag: &Value) -> &Value {
+    let format = &tag["format"];
+    if format["type"] == "tag" {
+        format
+    } else {
+        &format["tags"][0]
+    }
+}
+
+#[test]
+fn qwen_empty_tool_has_exact_empty_body() {
+    for omit_required in [false, true] {
+        let mut tool = empty_qwen_tool();
+        if omit_required {
+            tool.parameters.as_object_mut().unwrap().remove("required");
+        }
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Named("get_server_time"),
+        ] {
+            let tag = QWEN3_CODER
+                .build_with_options(
+                    &StructuralTagContext {
+                        tool_choice: choice,
+                        tools: std::slice::from_ref(&tool),
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions {
+                        tool_arguments_any_order: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                qwen_call_tag(&tag)["content"],
+                json!({"type": "const_string", "value": ""}),
+                "{choice:?}, omit_required={omit_required}"
+            );
+        }
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_other_constraints() {
+    let mut tool = empty_qwen_tool();
+    for schema in [
+        json!({"type": "object", "properties": {"utc": {"type": "boolean"}}, "additionalProperties": false}),
+        json!({"type": "object", "properties": {}}),
+        json!({"type": "object", "properties": {}, "additionalProperties": true}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "minProperties": 1}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "$id": "https://example.com/tool"}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "required": ["missing"]}),
+    ] {
+        tool.parameters = schema.clone();
+        let tag = QWEN3_CODER
+            .build_with_options(
+                &StructuralTagContext {
+                    tool_choice: StructuralTagToolChoice::Named("get_server_time"),
+                    tools: std::slice::from_ref(&tool),
+                    parallel_tool_calls: None,
+                    schema_mode: StructuralTagSchemaMode::Auto,
+                    structured_output_schema: None,
+                    starts_in_reasoning: false,
+                },
+                &StructuralTagOptions {
+                    tool_arguments_any_order: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            json!({"type": "json_schema", "json_schema": schema, "style": "qwen_xml", "any_order": true})
+        );
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_strict_policy_and_other_formats() {
+    let mut tool = empty_qwen_tool();
+    for (schema_mode, strict) in [
+        (StructuralTagSchemaMode::Auto, None),
+        (StructuralTagSchemaMode::Auto, Some(false)),
+        // Global strict overrides the tool's explicit opt-out.
+        (StructuralTagSchemaMode::Strict, Some(false)),
+    ] {
+        tool.strict = strict;
+        let tag = build(
+            &QWEN3_CODER,
+            StructuralTagToolChoice::Named("get_server_time"),
+            std::slice::from_ref(&tool),
+            None,
+            schema_mode,
+            false,
+        );
+        let expected = if schema_mode == StructuralTagSchemaMode::Strict {
+            json!({"type": "const_string", "value": ""})
+        } else {
+            json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
+        };
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            expected,
+            "{schema_mode:?}, strict={strict:?}"
+        );
+    }
+    tool.strict = Some(true);
+    let tag = build(
+        &GLM47,
+        StructuralTagToolChoice::Named("get_server_time"),
+        std::slice::from_ref(&tool),
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        tag["format"]["content"],
+        json!({"type": "json_schema", "json_schema": tool.parameters, "style": "glm_xml"})
+    );
+}
 
 fn build_with_structured_output(
     builder: &super::StructuralTagBuilder,

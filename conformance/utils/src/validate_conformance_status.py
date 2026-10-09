@@ -235,6 +235,52 @@ def cell_state(cell: dict | None, ref: dict) -> tuple[str, str]:
     return "green", ""
 
 
+def validate_unified_known_divergences(model: dict, registry: Path, families: list[str]) -> None:
+    """Validate fixture leaves against the registry also used by Rust parity gates."""
+    tabs = select_tabs(model, ["unified"])
+    if len(tabs) != 1:
+        raise ValueError("expected exactly one Unified tab")
+    tab = tabs[0]
+    rows = select_rows(tab, [])
+    actual_families = [row["family"] for row in rows]
+    if len(actual_families) != len(set(actual_families)):
+        raise ValueError("Unified has duplicate family rows")
+    if set(actual_families) != set(families):
+        raise ValueError(
+            "Unified display families differ from the generator: "
+            f"missing={sorted(set(families) - set(actual_families))} "
+            f"extra={sorted(set(actual_families) - set(families))}"
+        )
+    known = yaml.safe_load(registry.read_text())
+    if not isinstance(known, dict):
+        raise ValueError(f"{registry}: expected a family mapping")
+    unknown = set(known) - set(families)
+    if unknown:
+        raise ValueError(f"{registry}: unknown families: {sorted(unknown)}")
+    ref = reference(tab)
+    for row in rows:
+        family = row["family"]
+        expected = set()
+        for case_id, checks in known.get(family, {}).items():
+            suffix = f".{family}"
+            if not case_id.startswith("UNIFIED.") or not case_id.endswith(suffix):
+                raise ValueError(f"{registry}: invalid case ID for {family}: {case_id}")
+            if "golden" in checks:
+                expected.add(case_id[len("UNIFIED."):-len(suffix)])
+        # Display columns group null variants. Their leaves retain the exact
+        # registry identities, so a new failure cannot hide inside a red group.
+        states = {sub: cell_state(cell, ref)[0] for sub, cell in leaf_cells(row).items()}
+        if not states or all(state == "na" for state in states.values()):
+            raise ValueError(f"Unified {family}: no applicable fixture leaves")
+        empty = sorted(sub for sub, state in states.items() if state == "empty")
+        actual = {sub for sub, state in states.items() if state == "red"}
+        if empty or actual != expected:
+            raise ValueError(
+                f"Unified display differs from known divergences for {family}: "
+                f"empty={empty} expected_red={sorted(expected)} actual_red={sorted(actual)}"
+            )
+
+
 def build_status(model: dict, tabs: list[dict], requested_models: list[str], html_path: Path) -> dict:
     reports = []
     for tab in tabs:
