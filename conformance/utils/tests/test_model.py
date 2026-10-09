@@ -1812,8 +1812,21 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
 
 def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures(model_v2):
     """A parity/defect annotation must never erase a captured oracle disagreement."""
+    manifest = json.loads((REPO / "conformance/fixtures-manifest.json").read_text())
+    versions = manifest["crates"]
+    v1 = versions["dynamo-parsers"]
     batch_tab = _tab(model_v2, "tab-toolcalling-batch")
     stream_tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    stream_candidate = next(
+        candidate
+        for candidate in stream_tab["candidates"]
+        if candidate["impl"] == "dynamo" and candidate["parse_mode"] == "stream"
+    )
+    batch_stream_candidate = next(
+        candidate
+        for candidate in batch_tab["candidates"]
+        if candidate["impl"] == "dynamo" and candidate["parse_mode"] == "stream"
+    )
     indexed = {
         tab["id"]: {(row["family"], cell["case_id"]): cell
                     for row in tab["rows"] for cell in leaf_cells(row).values()
@@ -1822,9 +1835,21 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
     }
     root = _cache_root() / "toolcalling"
     modes = [
-        ("fixtures-batch-v1", "fixtures-batch-v1/dynamo_v1-", batch_tab, "dynamo_v1-b-", "batch"),
-        ("fixtures-stream-v1", "fixtures-stream-v1/dynamo_v2-", stream_tab, "dynamo_v2-", "stream"),
-        ("fixtures-batch-v1", "fixtures-batch-on-stream-v1", batch_tab, "dynamo_v2-s-", "batch-stream"),
+        ("fixtures-batch-v1", root / f"fixtures-batch-v1/dynamo_v1-{v1}", batch_tab, f"dynamo_v1-b-{v1.replace('.', '-')}", "batch"),
+        (
+            "fixtures-stream-v1",
+            root / f"fixtures-stream-v1/dynamo_v2-{stream_candidate['version']}",
+            stream_tab,
+            stream_candidate["key"],
+            "stream",
+        ),
+        (
+            "fixtures-batch-v1",
+            root / "fixtures-batch-on-stream-v1",
+            batch_tab,
+            batch_stream_candidate["key"],
+            "batch-stream",
+        ),
     ]
     checked = mismatches = hidden_mismatches = 0
     for input_tree, capture_tree, tab, candidate_prefix, mode in modes:
@@ -2049,7 +2074,7 @@ def test_numeric_columns_share_argument_heading_and_band(model_v2):
         columns = tab["columns"]
         numeric_labels = {"7-17", "7-18", "7-19"}
         numeric = [column for column in columns if column["label"] in numeric_labels]
-        assert [column["label"] for column in numeric] == ["7-17", "7-18", "7-19"]
+        assert [column["label"] for column in numeric] == ["7-17", "7-19", "7-18"]
         previous = next(column for column in columns
                         if column["group_key"] == numeric[0]["group_key"]
                         and column["label"] not in numeric_labels)
@@ -2120,7 +2145,7 @@ def test_bare_schema_cases_remain_independent_of_numeric_groups(model_v2):
             assert cell["status"] != "na"
     numeric_columns = [c for c in tab["columns"] if c["label"] in {"7-17", "7-18", "7-19"}]
     assert len(numeric_columns) == 3
-    source_groups = {"7-17": "7-14.", "7-18": "7-14.", "7-19": "7-15."}
+    source_groups = {"7-17": "7-14.", "7-19": "7-14.", "7-18": "7-15."}
     for column in numeric_columns:
         for row in tab["rows"]:
             cell = row["cells"].get(column["sub"])
@@ -2142,7 +2167,7 @@ def test_nested_minimax_markup_stays_in_its_named_family_section(mode):
 def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_id):
     tab = _tab(model_v2, tab_id)
     columns = {column["label"]: column for column in tab["columns"]}
-    counts = {"7-17": 9, "7-18": 3, "7-19": 7}
+    counts = {"7-17": 9, "7-19": 3, "7-18": 7}
     schema_families = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
     for row in tab["rows"]:
         if row.get("section"):
@@ -2150,7 +2175,7 @@ def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_
         for label, count in counts.items():
             cell = row["cells"][columns[label]["sub"]]
             assert len(cell["variants"]) == count, (tab_id, row["family"], label)
-            assert (cell["status"] == "na") == (label == "7-18" and row["family"] not in schema_families)
+            assert (cell["status"] == "na") == (label == "7-19" and row["family"] not in schema_families)
 
 
 @pytest.mark.parametrize("mode", ["batch", "streamv1"])
