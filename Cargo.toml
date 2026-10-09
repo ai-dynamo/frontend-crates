@@ -41,7 +41,7 @@ dynamo-protocols = { path = "protocols", version = "8.1.0" }
 dynamo-renderer = { path = "renderer", version = "8.0.1" }
 dynamo-tokenizers = { path = "tokenizers", version = "3.1.0" }
 either = { version = "1.13", features = ["serde"] }
-fastokens = "0.3.1"
+fastokens = "0.3.3"
 futures = "0.3"
 gif = "0.14"
 hf-hub = { version = "1.0", default-features = false, features = ["rustls-tls"] }
