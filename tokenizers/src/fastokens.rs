@@ -121,11 +121,10 @@ impl Tokenizer for FastTokenizer {
 /// [`TikTokenTokenizer::from_file_auto`](crate::TikTokenTokenizer::from_file_auto).
 ///
 /// Plain-text prefix caching ([`CachedTokenizer`](crate::CachedTokenizer)) is rejected for
-/// this backend: `fastokens` pre-tokenizes text that contains a special token with its regex
-/// engine but plain text with a hand-written scanner, and the two disagree on the Unicode
-/// case folding of `(?i:'s)` (`'ſ`, U+017F). Splitting a prompt after a special token
-/// therefore changes ids, which is exactly the invariant the cache relies on. Segmented
-/// encodes are unaffected: every segment is encoded on its own with or without a cache.
+/// this backend pending validation of the full cache matrix. In fastokens 0.3.3, the
+/// known Unicode contraction case is consistent across a special-token boundary, but
+/// still differs from tiktoken-rs. Segmented encodes are unaffected by the cache gate:
+/// every segment is encoded on its own with or without a cache.
 pub struct FastTikTokenTokenizer {
     inner: fastokens::Tokenizer,
     /// Decoding joins raw bytes itself because `fastokens`' decoder returns a lossy `String`,
@@ -219,10 +218,8 @@ impl Decoder for FastTikTokenTokenizer {
 impl Tokenizer for FastTikTokenTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         Err(Error::msg(
-            "fastokens over tiktoken.model does not satisfy the prefix-cache invariant: its \
-             scanner (plain text) and regex path (text containing special tokens) disagree on \
-             the case folding of (?i:'s), so encode(prefix) + encode(suffix) can differ from \
-             encode(prefix + suffix) across a special-token boundary",
+            "fastokens over tiktoken.model plain-text prefix caching is disabled pending \
+             validation of the full cache matrix",
         ))
     }
 
@@ -476,7 +473,7 @@ mod tiktoken_parity_tests {
         "/tests/data/sample-models/mock-tiktoken-bpe/tiktoken.model"
     );
     /// All 256 byte tokens plus the merges ` I` and ` I'`, with the Kimi pattern: the
-    /// smallest vocabulary on which fastokens' scanner and regex paths disagree.
+    /// smallest vocabulary that exposes fastokens' Unicode contraction mismatch with tiktoken-rs.
     const CONTRACTION_PATH: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/data/sample-models/mock-tiktoken-contraction/tiktoken.model"
@@ -605,14 +602,11 @@ mod tiktoken_parity_tests {
         assert!(error.contains("fastokens"), "{error}");
     }
 
-    /// Canary for the reason `validate_prefix_cache` rejects this backend. The reference
-    /// tokenizer satisfies `encode(special) + encode(suffix) == encode(special + suffix)`;
-    /// fastokens does not, because its scanner does not fold `ſ` into the `'s` contraction
-    /// the way its regex path (and tiktoken) does. When this test starts failing, fastokens
-    /// has fixed the scanner: re-run the cache matrix with this backend and flip
-    /// `validate_prefix_cache` to `Ok(())`.
+    /// Fastokens 0.3.3 is consistent across this special-token boundary, but still
+    /// differs from tiktoken-rs on the Unicode case folding of `(?i:'s)` (`'ſ`).
+    /// This single case does not establish the full plain-text prefix-cache contract.
     #[test]
-    fn canary_fastokens_scanner_disagrees_with_its_regex_path() {
+    fn unicode_contraction_is_consistent_across_special_token_boundary() {
         let reference = TikTokenTokenizer::from_file_auto(CONTRACTION_PATH).unwrap();
         let fast = FastTikTokenTokenizer::from_file_auto(CONTRACTION_PATH).unwrap();
         let special = "<|end_of_msg|>";
@@ -629,11 +623,14 @@ mod tiktoken_parity_tests {
 
         let fast_full = fast.encode(&full).unwrap().token_ids().to_vec();
         let fast_suffix = fast.encode(suffix).unwrap().token_ids().to_vec();
-        assert_eq!(fast_full, ref_full, "the regex path matches tiktoken-rs");
         assert_ne!(
+            fast_full, ref_full,
+            "revisit the known Unicode contraction mismatch"
+        );
+        assert_eq!(
             fast_full[1..],
             fast_suffix[..],
-            "fastokens' scanner now agrees with its regex path; revisit validate_prefix_cache"
+            "splitting at this special-token boundary must preserve fastokens ids"
         );
     }
 }
