@@ -262,6 +262,9 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .checkbox-option.cmp-detailed input { accent-color: #8a8f98; }
 .case-label-full { display: none; }
 .case-label-short { display: inline; }
+.case-label-placeholder { color: #8a8f98; font-size: 0.72em; }
+#tab-unified th.case-group .col-toggle-label,
+#tab-unified .transpose-table tr.section td { color: #8a8f98; }
 body.transpose-mode .transpose-table .case-label-full { display: inline; }
 body.transpose-mode .transpose-table .case-label-short { display: none; }
 .view-overview .parity-option { display: none; }
@@ -823,6 +826,7 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 }
 :root[data-theme="dark"] th.case-group.case-band-0 { background: #1a2436; }
 :root[data-theme="dark"] th.case-group.case-band-1 { background: #0f172a; }
+:root[data-theme="dark"] .transpose-table > thead > tr.transpose-models > th { background: #0f172a; }
 :root[data-theme="dark"] th.case-sub.case-band-0,
 :root[data-theme="dark"] td.cell.case-band-0 { background: #16202f; }
 :root[data-theme="dark"] th.case-sub.case-band-1,

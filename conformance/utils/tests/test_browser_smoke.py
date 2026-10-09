@@ -11,6 +11,7 @@ on Reasoning (which has no vLLM Rust column).
 Skips when Selenium or headless Chrome aren't available, so it adds no hard test
 dependency — it runs where a browser exists and is a no-op otherwise.
 """
+import re
 import shutil
 import time
 
@@ -737,18 +738,35 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
         short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
         assert full_label.startswith("1-")
-        assert short_label == "1-..."
+        assert re.fullmatch(r"1-\d{2}", short_label)
+        placeholder = header.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
+        assert placeholder.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert float(placeholder.value_of_css_property("font-size")[:-2]) < float(
+            header.value_of_css_property("font-size")[:-2]
+        )
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
         assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        group_heading = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group .col-toggle-label")
+        assert group_heading.text.startswith("TC ")
+        assert group_heading.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
         label_pairs = driver.execute_script(
             "return Array.from(document.querySelectorAll('#tab-unified th.case-sub a')).map(a=>["
-            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent]);"
+            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
+            "Boolean(a.querySelector('.case-label-placeholder'))]);"
         )
         assert label_pairs
-        for full, short in label_pairs:
-            case_number, separator, description = full.partition("-")
+        has_model_specific_label = False
+        for full, short, has_placeholder in label_pairs:
+            group_name, separator, description = full.partition("-")
             assert separator
-            assert short == (case_number + "-..." if case_number.isdigit() and description else full)
+            if description:
+                assert re.fullmatch(re.escape(group_name) + r"-\d{2}", short)
+                assert has_placeholder
+                has_model_specific_label = has_model_specific_label or not group_name.isdigit()
+            else:
+                assert short == full
+                assert not has_placeholder
+        assert has_model_specific_label
 
         ActionChains(driver).move_to_element(header).perform()
         driver.execute_script(
@@ -769,11 +787,16 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         assert header.get_attribute("aria-label") in tip.text
         assert tip.find_element(By.CSS_SELECTOR, ".ttip-head-desc").text
 
+        driver.execute_script("document.documentElement.setAttribute('data-theme', 'dark')")
         _set_transpose(driver, True)
         transposed = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-transpose-table] th.trow-case a")
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") != "none"
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
+        model_header = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table thead .tcol-model")
+        assert model_header.value_of_css_property("background-color") == "rgba(15, 23, 42, 1)"
+        transpose_group = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table tr.section td")
+        assert transpose_group.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
 
         _set_transpose(driver, False)
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"

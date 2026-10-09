@@ -859,10 +859,22 @@
     var cols = tab.columns || [];
     var href = escapeAttr(tab.case_docs_href || '');
     var h = '';
+    function syntheticCaseNumber(label) {
+      // Keep the placeholder stable across renders without implying a real subcase ID.
+      var hash = 2166136261;
+      for (var i = 0; i < label.length; i++) {
+        hash = Math.imul(hash ^ label.charCodeAt(i), 16777619) >>> 0;
+      }
+      return String(10 + (hash % 90));
+    }
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
       var label = String(c.label || '');
-      var shortLabel = label.replace(/^(\d+)-.+$/, '$1-...');
+      var descriptiveLabel = label.match(/^([^-]+)-.+$/);
+      var shortLabel = descriptiveLabel
+        ? escapeHtml(descriptiveLabel[1]) + '-<span class="case-label-placeholder">'
+          + syntheticCaseNumber(label) + '</span>'
+        : escapeHtml(label);
       var prefix = tab.case_prefix || '';
       var fullId = label.indexOf(prefix) === 0 ? label : prefix + label;
       // The rich grammar popup replaces the old native `title` tooltip (which could
@@ -870,7 +882,7 @@
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
         + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
         + '<span class="case-label-full">' + escapeHtml(label) + '</span>'
-        + '<span class="case-label-short" aria-hidden="true">' + escapeHtml(shortLabel) + '</span>'
+        + '<span class="case-label-short" aria-hidden="true">' + shortLabel + '</span>'
         + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];
