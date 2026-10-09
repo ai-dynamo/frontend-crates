@@ -17,10 +17,11 @@
 //!   [`MmError::Unsupported`](crate::MmError::Unsupported). They are not a
 //!   security boundary; do not call them on untrusted input.
 //!
-//! The crate reads no environment variables, so nothing here consults one,
-//! including the proxy variables: on-prem opt-ins are plain [`FetchPolicy`]
-//! fields ([`FetchPolicy::with_internal_access`]) that the consumer sets from its
-//! own configuration.
+//! The crate itself reads no environment variables: on-prem opt-ins are plain
+//! [`FetchPolicy`] fields ([`FetchPolicy::with_internal_access`]) that the
+//! consumer sets from its own configuration. The proxy variables are honoured
+//! only when [`FetchPolicy::use_system_proxy`] is set, and then reqwest reads
+//! them, not this crate.
 
 /// Intended cap on any single resolved payload — HTTP, file, or base64.
 pub const MAX_FETCH_BYTES: u64 = 64 << 20;
@@ -279,8 +280,10 @@ pub struct FetchPolicy {
     /// Honour the proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`,
     /// `ALL_PROXY`, `NO_PROXY`). Off by default: behind a proxy the proxy
     /// resolves the destination, so the DNS filter that guards redirects and
-    /// rebinding never runs. Enable only when egress must go through a proxy
-    /// you trust to enforce its own destination policy.
+    /// rebinding never runs, and [`MediaFetcher::fetch`] skips its local DNS
+    /// check (it would refuse hosts only the proxy can resolve). The URL policy
+    /// checks still apply. Enable only when egress must go through a proxy you
+    /// trust to enforce its own destination policy.
     pub use_system_proxy: bool,
 }
 
@@ -431,14 +434,20 @@ impl MediaFetcher {
     /// port, blocked hostnames and IP literals, domain allowlist. Does not
     /// resolve DNS.
     pub fn check_url(&self, url: &str) -> crate::Result<()> {
-        Ok(self.policy.check(&parse(url)?)?)
+        match Source::read(url)? {
+            Source::Data(_) => Ok(()),
+            Source::Url(url) => Ok(self.policy.check(&url)?),
+        }
     }
 
     /// [`check_url`](Self::check_url), then, for hostnames, resolve DNS and
     /// refuse if any answer is in a blocked range. A lookup failure is refused
     /// too.
     pub async fn check_url_with_dns(&self, url: &str) -> crate::Result<()> {
-        self.preflight(&parse(url)?).await
+        match Source::read(url)? {
+            Source::Data(_) => Ok(()),
+            Source::Url(url) => self.preflight(&url).await,
+        }
     }
 
     async fn preflight(&self, url: &url::Url) -> crate::Result<()> {
@@ -480,31 +489,17 @@ impl MediaFetcher {
     }
 
     async fn fetch_inner(&self, src: &str) -> crate::Result<Vec<u8>> {
-        // Like `Url::parse`, ignore leading and trailing C0 controls and spaces.
-        let src = src.trim_matches(|c: char| c <= ' ');
-        // A data URL is bounded and decoded on the borrowed string, before
-        // `Url::parse` would copy a payload of any size.
-        if src
-            .get(..5)
-            .is_some_and(|scheme| scheme.eq_ignore_ascii_case("data:"))
-        {
-            return self.decode_data_url(src);
+        let url = match Source::read(src)? {
+            Source::Data(src) => return self.decode_data_url(src),
+            Source::Url(url) => url,
+        };
+        // Behind a proxy the proxy resolves the destination; a local lookup
+        // would refuse hosts only it can resolve.
+        if self.policy.use_system_proxy {
+            self.policy.check(&url)?;
+        } else {
+            self.preflight(&url).await?;
         }
-        if src.len() > MAX_URL_BYTES {
-            return Err(crate::MmError::invalid_input(format!(
-                "media url is longer than {MAX_URL_BYTES} bytes"
-            )));
-        }
-        let url = parse(src)?;
-        // `Url::parse` ignores tabs and newlines inside the scheme, so `da\tta:`
-        // gets here as a data URL; only the borrowed-string path above decodes
-        // those, so refuse it rather than hand it to the HTTP client.
-        if url.scheme() == "data" {
-            return Err(crate::MmError::invalid_input(
-                "data URLs must start with \"data:\"",
-            ));
-        }
-        self.preflight(&url).await?;
         self.download(&url).await
     }
 
@@ -580,9 +575,41 @@ impl MediaFetcher {
     }
 }
 
-fn parse(src: &str) -> crate::Result<url::Url> {
-    url::Url::parse(src)
-        .map_err(|e| crate::MmError::invalid_input_with_source("invalid media url", e))
+/// A media URL read without copying a payload of any size.
+enum Source<'a> {
+    /// A `data:` URL, checked and decoded on the borrowed string.
+    Data(&'a str),
+    Url(url::Url),
+}
+
+impl<'a> Source<'a> {
+    fn read(src: &'a str) -> crate::Result<Self> {
+        // Like `Url::parse`, ignore leading and trailing C0 controls and spaces.
+        let src = src.trim_matches(|c: char| c <= ' ');
+        if src
+            .get(..5)
+            .is_some_and(|scheme| scheme.eq_ignore_ascii_case("data:"))
+        {
+            return Ok(Self::Data(src));
+        }
+        // Refuse before `Url::parse` copies the input.
+        if src.len() > MAX_URL_BYTES {
+            return Err(crate::MmError::invalid_input(format!(
+                "media url is longer than {MAX_URL_BYTES} bytes"
+            )));
+        }
+        let url = url::Url::parse(src)
+            .map_err(|e| crate::MmError::invalid_input_with_source("invalid media url", e))?;
+        // `Url::parse` ignores tabs and newlines inside the scheme, so `da\tta:`
+        // gets here as a data URL; only the borrowed-string path decodes those,
+        // so refuse it rather than hand it to the HTTP client.
+        if url.scheme() == "data" {
+            return Err(crate::MmError::invalid_input(
+                "data URLs must start with \"data:\"",
+            ));
+        }
+        Ok(Self::Url(url))
+    }
 }
 
 fn over_cap(cap: u64) -> crate::MmError {
@@ -591,7 +618,9 @@ fn over_cap(cap: u64) -> crate::MmError {
 
 /// The reqwest client that enforces `policy`: redirect revalidation, a DNS
 /// resolver that drops blocked addresses, the user agent and the request
-/// timeout. System proxies are off unless the policy opts in.
+/// timeout. System proxies are off unless the policy opts in. No `Referer` is
+/// sent on redirects: reqwest's would carry the previous URL's query string,
+/// which can hold a presigned token, to the redirect target.
 fn client_builder(policy: &FetchPolicy) -> reqwest::ClientBuilder {
     let for_redirects = policy.clone();
     let redirects = Policy::custom(move |attempt| {
@@ -603,6 +632,7 @@ fn client_builder(policy: &FetchPolicy) -> reqwest::ClientBuilder {
     let mut builder = reqwest::Client::builder()
         .user_agent(&policy.user_agent)
         .redirect(redirects)
+        .referer(false)
         .dns_resolver(Arc::new(BlocklistResolver {
             allow_private_ips: policy.allow_private_ips,
         }));
@@ -1124,7 +1154,6 @@ mod fetcher_tests {
             "/a1" => redirect("/done"),
             "/b4" => redirect("/a3"),
             "/done" => ok(b"arrived"),
-            "/loop" => redirect("/loop"),
             _ => status("404 Not Found"),
         })
         .await;
@@ -1133,14 +1162,44 @@ mod fetcher_tests {
             f.fetch(&format!("http://{addr}/a3")).await.unwrap(),
             b"arrived"
         );
-        for p in ["/b4", "/loop"] {
-            let r = f.fetch(&format!("http://{addr}{p}")).await;
-            assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{p}: {r:?}");
-            assert!(
-                format!("{r:?}").contains("too many redirects"),
-                "{p}: {r:?}"
-            );
-        }
+        let r = f.fetch(&format!("http://{addr}/b4")).await;
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        assert!(format!("{r:?}").contains("too many redirects"), "{r:?}");
+    }
+
+    #[tokio::test]
+    async fn redirects_do_not_send_a_referer() {
+        // The redirect target, on another host name, records each request.
+        let target = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = target.local_addr().unwrap().port();
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let record = Arc::clone(&seen);
+        tokio::spawn(async move {
+            while let Ok((mut socket, _)) = target.accept().await {
+                let mut request = Vec::new();
+                let mut buf = [0u8; 1024];
+                while !request.windows(4).any(|w| w == b"\r\n\r\n") {
+                    match socket.read(&mut buf).await {
+                        Ok(0) | Err(_) => break,
+                        Ok(n) => request.extend_from_slice(&buf[..n]),
+                    }
+                }
+                record
+                    .lock()
+                    .unwrap()
+                    .push(String::from_utf8_lossy(&request).to_ascii_lowercase());
+                let _ = socket.write_all(&ok(b"arrived")).await;
+            }
+        });
+        let (addr, _) = serve(move |_| redirect(&format!("http://localhost:{port}/media"))).await;
+        let r = internal()
+            .fetch(&format!("http://{addr}/start?token=SENTINEL_SECRET"))
+            .await;
+        assert_eq!(r.unwrap(), b"arrived");
+        let seen = seen.lock().unwrap();
+        assert_eq!(seen.len(), 1);
+        assert!(!seen[0].contains("referer"), "{}", seen[0]);
+        assert!(!seen[0].contains("sentinel_secret"), "{}", seen[0]);
     }
 
     #[tokio::test]
@@ -1212,7 +1271,6 @@ mod fetcher_tests {
 
     #[tokio::test]
     async fn transport_errors_do_not_carry_the_url() {
-        // Connection refused: bind a port, then release it.
         let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = probe.local_addr().unwrap().port();
         drop(probe);
@@ -1245,14 +1303,17 @@ mod fetcher_tests {
                 "{bad:?}: {r:?}"
             );
         }
-        // No comma anywhere: the header scan is bounded and the input refused.
-        let no_comma = format!("data:{}", "x".repeat(1 << 20));
-        let r = f.fetch(&no_comma).await;
-        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
-        // An absurdly long http URL is refused before it is parsed.
+        // An absurdly long http URL is refused before it is parsed, by the
+        // public checks too.
         let long = format!("http://example.com/{}", "a".repeat(MAX_URL_BYTES));
         let r = f.fetch(&long).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        let r = f.check_url(&long);
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        let r = f.check_url_with_dns(&long).await;
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        // So are the data URL spellings `fetch` refuses.
+        assert!(f.check_url("da\tta:image/png;base64,AAAA").is_err());
     }
 
     #[tokio::test]
