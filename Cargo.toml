@@ -54,6 +54,7 @@ image = { version = "0.25", default-features = false, features = [
     "bmp",
 ] }
 ipnet = "2"
+matroska-demuxer = "0.8"
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
@@ -63,6 +64,7 @@ percent-encoding = "2.3"
 png = "0.18"
 pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
+re_mp4 = "0.5"
 regex = "1"
 rstest = "0.25"
 rustc-hash = "1.1"
