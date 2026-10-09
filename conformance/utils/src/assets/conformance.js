@@ -1338,6 +1338,7 @@
     if (enabled) {
       document.querySelectorAll('.tab-panel').forEach(ensureTransposed);
     }
+    document.documentElement.classList.remove('transpose-pending');
     if (shouldUpdateUrl) {
       updateTransposeUrl(Boolean(enabled));
     }

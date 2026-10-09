@@ -46,6 +46,39 @@ window.matchMedia = function (q) {
 """
 
 
+_RECORD_FIRST_VISIBLE_MATRIX_JS = """
+window.__firstVisibleMatrix = null;
+window.__firstMatrixInsertion = null;
+function recordFirstVisibleMatrix() {
+  const panel = document.querySelector('.tab-panel.active');
+  if (!panel) return;
+  const original = panel.querySelector('table[data-parity-table]:not([data-transpose-table])');
+  if (!window.__firstMatrixInsertion && original) {
+    window.__firstMatrixInsertion = {
+      pending: document.documentElement.classList.contains('transpose-pending'),
+      transposeMode: document.body.classList.contains('transpose-mode'),
+      originalDisplay: getComputedStyle(original).display
+    };
+  }
+  if (window.__firstVisibleMatrix) return;
+  const table = Array.from(panel.querySelectorAll(
+    'table[data-parity-table], table[data-transpose-table]'
+  )).find(function (candidate) {
+    return getComputedStyle(candidate).display !== 'none';
+  });
+  if (table) {
+    window.__firstVisibleMatrix = {
+      kind: table.hasAttribute('data-transpose-table') ? 'transpose' : 'horizontal',
+      pending: document.documentElement.classList.contains('transpose-pending'),
+      transposeMode: document.body.classList.contains('transpose-mode')
+    };
+  }
+}
+const observer = new MutationObserver(recordFirstVisibleMatrix);
+observer.observe(document, {childList: true, subtree: true, attributes: true});
+"""
+
+
 def _chrome(rendered_page, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
@@ -664,6 +697,37 @@ def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_pa
             assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == selected
     finally:
         driver.get(f"file://{rendered_page}?transpose=0")
+
+
+@pytest.mark.parametrize("override,expected", [("", "transpose"), ("1", "transpose"),
+                                               ("true", "transpose"), ("0", "horizontal"),
+                                               ("false", "horizontal")])
+def test_first_visible_matrix_matches_transpose_url(rendered_page, override, expected):
+    d = _chrome(rendered_page, force_hover=False)
+    try:
+        d.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS},
+        )
+        url = f"file://{rendered_page}" + ("?transpose=" + override if override else "")
+        d.get(url)
+        first = d.execute_script("return window.__firstVisibleMatrix")
+        insertion = d.execute_script("return window.__firstMatrixInsertion")
+        assert first is not None, "no report matrix became visible during initial rendering"
+        assert insertion is not None, "no original report table was observed when inserted"
+        assert first["kind"] == expected, f"first exposed matrix was {first}"
+        if expected == "transpose":
+            assert insertion["pending"] is True
+            assert insertion["originalDisplay"] == "none"
+            assert first["pending"] is False
+            assert first["transposeMode"] is True
+        else:
+            assert insertion["pending"] is False
+            assert insertion["originalDisplay"] != "none"
+            assert first["pending"] is False
+            assert first["transposeMode"] is False
+    finally:
+        d.quit()
 
 
 def test_transpose_builds_mirror_and_colors(driver):

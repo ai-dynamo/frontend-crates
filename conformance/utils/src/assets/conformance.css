@@ -676,6 +676,10 @@ th.case-sub .ttip { font-weight: 400; text-align: left; }
    compare engine (applyCtl) recolors it for free — the mirror lives in the same
    panel, so applyCtl's cell query already covers it. */
 .transpose-table { display: none; }
+/* The report view builds the original table before conformance.js creates its
+   transposed mirror. Hold that first table out of view when the URL requests the
+   default Transpose mode, then reveal the mirror once it is ready. */
+html.transpose-pending body:not(.transpose-mode) .tab-panel.active table[data-parity-table]:not([data-transpose-table]) { display: none; }
 body.transpose-mode .tab-panel.active table[data-parity-table]:not([data-transpose-table]) { display: none; }
 body.transpose-mode .tab-panel.active .transpose-table { display: table; }
 /* Bottom-up vertical model headers (rotated CCW). Keep the container horizontal
