@@ -8491,14 +8491,13 @@ cases:
         arguments:
           count: 42
   schema_declared_array:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_array
     description: 'Schema probe declared_array: independently authored value [1, 2] under {"type": "array"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_array
+    display_id: UNIFIED.7-17.declared_array
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
       init:
@@ -8531,14 +8530,13 @@ cases:
           - 1
           - 2
   schema_declared_boolean:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_boolean
     description: 'Schema probe declared_boolean: independently authored value true under {"type": "boolean"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_boolean
+    display_id: UNIFIED.7-17.declared_boolean
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:true}<tool_call|>
       init:
@@ -8569,14 +8567,13 @@ cases:
         arguments:
           value: true
   schema_declared_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_integer
     description: 'Schema probe declared_integer: independently authored value 42 under {"type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_integer
+    display_id: UNIFIED.7-17.declared_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -8607,14 +8604,13 @@ cases:
         arguments:
           value: 42
   schema_declared_null:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_null
     description: 'Schema probe declared_null: independently authored value null under {"type": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_null
+    display_id: UNIFIED.7-17.declared_null
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -8645,14 +8641,13 @@ cases:
         arguments:
           value: null
   schema_declared_number:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_number
     description: 'Schema probe declared_number: independently authored value 3.5 under {"type": "number"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_number
+    display_id: UNIFIED.7-17.declared_number
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
       init:
@@ -8683,14 +8678,13 @@ cases:
         arguments:
           value: 3.5
   schema_declared_object:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_object
     description: 'Schema probe declared_object: independently authored value {"x": 1} under {"type": "object"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_object
+    display_id: UNIFIED.7-17.declared_object
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
       init:
@@ -8722,14 +8716,13 @@ cases:
           value:
             x: 1
   schema_declared_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_declared_string
     description: 'Schema probe declared_string: independently authored value "plain" under {"type": "string"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.declared_string
+    display_id: UNIFIED.7-17.declared_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>plain<|"|>}<tool_call|>
       init:
@@ -8764,14 +8757,13 @@ cases:
         arguments:
           value: plain
   schema_id_direct_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_id_direct_integer
     description: 'Schema probe id_direct_integer: independently authored value 42 under {"$id": "https://example.test/schema", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-17.id_direct_integer
+    display_id: UNIFIED.7-17.id_direct_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -8803,14 +8795,13 @@ cases:
         arguments:
           value: 42
   schema_const_array_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_array_allof
     description: 'Schema probe const_array_allof: independently authored value "[1,2]" under {"allOf": [{"const": "[1,2]"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_array_allof
+    display_id: UNIFIED.7-18.const_array_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
       init:
@@ -8847,14 +8838,13 @@ cases:
         arguments:
           value: '[1,2]'
   schema_const_array_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_array_bare
     description: 'Schema probe const_array_bare: independently authored value "[1,2]" under {"const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_array_bare
+    display_id: UNIFIED.7-18.const_array_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
       init:
@@ -8889,14 +8879,13 @@ cases:
         arguments:
           value: '[1,2]'
   schema_const_array_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_array_ref
     description: 'Schema probe const_array_ref: independently authored value "[1,2]" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_array_ref
+    display_id: UNIFIED.7-18.const_array_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
       init:
@@ -8934,14 +8923,13 @@ cases:
         arguments:
           value: '[1,2]'
   schema_const_array_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_array_typed
     description: 'Schema probe const_array_typed: independently authored value "[1,2]" under {"type": "string", "const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_array_typed
+    display_id: UNIFIED.7-18.const_array_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
       init:
@@ -8977,14 +8965,13 @@ cases:
         arguments:
           value: '[1,2]'
   schema_const_boolean_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_boolean_allof
     description: 'Schema probe const_boolean_allof: independently authored value "true" under {"allOf": [{"const": "true"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_boolean_allof
+    display_id: UNIFIED.7-18.const_boolean_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
       init:
@@ -9021,14 +9008,13 @@ cases:
         arguments:
           value: 'true'
   schema_const_boolean_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_boolean_bare
     description: 'Schema probe const_boolean_bare: independently authored value "true" under {"const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_boolean_bare
+    display_id: UNIFIED.7-18.const_boolean_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
       init:
@@ -9063,14 +9049,13 @@ cases:
         arguments:
           value: 'true'
   schema_const_boolean_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_boolean_ref
     description: 'Schema probe const_boolean_ref: independently authored value "true" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_boolean_ref
+    display_id: UNIFIED.7-18.const_boolean_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
       init:
@@ -9108,14 +9093,13 @@ cases:
         arguments:
           value: 'true'
   schema_const_boolean_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_boolean_typed
     description: 'Schema probe const_boolean_typed: independently authored value "true" under {"type": "string", "const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_boolean_typed
+    display_id: UNIFIED.7-18.const_boolean_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
       init:
@@ -9151,14 +9135,13 @@ cases:
         arguments:
           value: 'true'
   schema_const_entity_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_entity_allof
     description: 'Schema probe const_entity_allof: independently authored value "&lt;" under {"allOf": [{"const": "&lt;"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_entity_allof
+    display_id: UNIFIED.7-18.const_entity_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
       init:
@@ -9195,14 +9178,13 @@ cases:
         arguments:
           value: '&lt;'
   schema_const_entity_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_entity_bare
     description: 'Schema probe const_entity_bare: independently authored value "&lt;" under {"const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_entity_bare
+    display_id: UNIFIED.7-18.const_entity_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
       init:
@@ -9237,14 +9219,13 @@ cases:
         arguments:
           value: '&lt;'
   schema_const_entity_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_entity_ref
     description: 'Schema probe const_entity_ref: independently authored value "&lt;" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_entity_ref
+    display_id: UNIFIED.7-18.const_entity_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
       init:
@@ -9282,14 +9263,13 @@ cases:
         arguments:
           value: '&lt;'
   schema_const_entity_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_entity_typed
     description: 'Schema probe const_entity_typed: independently authored value "&lt;" under {"type": "string", "const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_entity_typed
+    display_id: UNIFIED.7-18.const_entity_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
       init:
@@ -9325,14 +9305,13 @@ cases:
         arguments:
           value: '&lt;'
   schema_const_null_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_null_allof
     description: 'Schema probe const_null_allof: independently authored value "null" under {"allOf": [{"const": "null"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_null_allof
+    display_id: UNIFIED.7-18.const_null_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
       init:
@@ -9369,14 +9348,13 @@ cases:
         arguments:
           value: 'null'
   schema_const_null_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_null_bare
     description: 'Schema probe const_null_bare: independently authored value "null" under {"const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_null_bare
+    display_id: UNIFIED.7-18.const_null_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
       init:
@@ -9411,14 +9389,13 @@ cases:
         arguments:
           value: 'null'
   schema_const_null_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_null_ref
     description: 'Schema probe const_null_ref: independently authored value "null" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_null_ref
+    display_id: UNIFIED.7-18.const_null_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
       init:
@@ -9456,14 +9433,13 @@ cases:
         arguments:
           value: 'null'
   schema_const_null_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_null_typed
     description: 'Schema probe const_null_typed: independently authored value "null" under {"type": "string", "const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_null_typed
+    display_id: UNIFIED.7-18.const_null_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
       init:
@@ -9499,14 +9475,13 @@ cases:
         arguments:
           value: 'null'
   schema_const_number_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_number_allof
     description: 'Schema probe const_number_allof: independently authored value "42" under {"allOf": [{"const": "42"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_number_allof
+    display_id: UNIFIED.7-18.const_number_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -9543,14 +9518,13 @@ cases:
         arguments:
           value: '42'
   schema_const_number_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_number_bare
     description: 'Schema probe const_number_bare: independently authored value "42" under {"const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_number_bare
+    display_id: UNIFIED.7-18.const_number_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -9585,14 +9559,13 @@ cases:
         arguments:
           value: '42'
   schema_const_number_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_number_ref
     description: 'Schema probe const_number_ref: independently authored value "42" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_number_ref
+    display_id: UNIFIED.7-18.const_number_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -9630,14 +9603,13 @@ cases:
         arguments:
           value: '42'
   schema_const_number_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_number_typed
     description: 'Schema probe const_number_typed: independently authored value "42" under {"type": "string", "const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_number_typed
+    display_id: UNIFIED.7-18.const_number_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -9673,14 +9645,13 @@ cases:
         arguments:
           value: '42'
   schema_const_object_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_object_allof
     description: 'Schema probe const_object_allof: independently authored value "{\"x\":1}" under {"allOf": [{"const": "{\"x\":1}"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_object_allof
+    display_id: UNIFIED.7-18.const_object_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
       init:
@@ -9717,14 +9688,13 @@ cases:
         arguments:
           value: '{"x":1}'
   schema_const_object_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_object_bare
     description: 'Schema probe const_object_bare: independently authored value "{\"x\":1}" under {"const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_object_bare
+    display_id: UNIFIED.7-18.const_object_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
       init:
@@ -9759,14 +9729,13 @@ cases:
         arguments:
           value: '{"x":1}'
   schema_const_object_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_object_ref
     description: 'Schema probe const_object_ref: independently authored value "{\"x\":1}" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_object_ref
+    display_id: UNIFIED.7-18.const_object_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
       init:
@@ -9804,14 +9773,13 @@ cases:
         arguments:
           value: '{"x":1}'
   schema_const_object_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_object_typed
     description: 'Schema probe const_object_typed: independently authored value "{\"x\":1}" under {"type": "string", "const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_object_typed
+    display_id: UNIFIED.7-18.const_object_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
       init:
@@ -9847,14 +9815,13 @@ cases:
         arguments:
           value: '{"x":1}'
   schema_const_plain_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_plain_allof
     description: 'Schema probe const_plain_allof: independently authored value "auto" under {"allOf": [{"const": "auto"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_plain_allof
+    display_id: UNIFIED.7-18.const_plain_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -9891,14 +9858,13 @@ cases:
         arguments:
           value: auto
   schema_const_plain_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_plain_bare
     description: 'Schema probe const_plain_bare: independently authored value "auto" under {"const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_plain_bare
+    display_id: UNIFIED.7-18.const_plain_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -9933,14 +9899,13 @@ cases:
         arguments:
           value: auto
   schema_const_plain_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_plain_ref
     description: 'Schema probe const_plain_ref: independently authored value "auto" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_plain_ref
+    display_id: UNIFIED.7-18.const_plain_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -9978,14 +9943,13 @@ cases:
         arguments:
           value: auto
   schema_const_plain_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_plain_typed
     description: 'Schema probe const_plain_typed: independently authored value "auto" under {"type": "string", "const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_plain_typed
+    display_id: UNIFIED.7-18.const_plain_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10021,14 +9985,13 @@ cases:
         arguments:
           value: auto
   schema_const_quoted_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_quoted_allof
     description: 'Schema probe const_quoted_allof: independently authored value "\"hello\"" under {"allOf": [{"const": "\"hello\""}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_quoted_allof
+    display_id: UNIFIED.7-18.const_quoted_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
       init:
@@ -10065,14 +10028,13 @@ cases:
         arguments:
           value: '"hello"'
   schema_const_quoted_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_quoted_bare
     description: 'Schema probe const_quoted_bare: independently authored value "\"hello\"" under {"const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_quoted_bare
+    display_id: UNIFIED.7-18.const_quoted_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
       init:
@@ -10107,14 +10069,13 @@ cases:
         arguments:
           value: '"hello"'
   schema_const_quoted_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_quoted_ref
     description: 'Schema probe const_quoted_ref: independently authored value "\"hello\"" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_quoted_ref
+    display_id: UNIFIED.7-18.const_quoted_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
       init:
@@ -10152,14 +10113,13 @@ cases:
         arguments:
           value: '"hello"'
   schema_const_quoted_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_quoted_typed
     description: 'Schema probe const_quoted_typed: independently authored value "\"hello\"" under {"type": "string", "const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_quoted_typed
+    display_id: UNIFIED.7-18.const_quoted_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
       init:
@@ -10195,14 +10155,13 @@ cases:
         arguments:
           value: '"hello"'
   schema_const_space_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_space_allof
     description: 'Schema probe const_space_allof: independently authored value "  spaced  " under {"allOf": [{"const": "  spaced  "}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_space_allof
+    display_id: UNIFIED.7-18.const_space_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
       init:
@@ -10239,14 +10198,13 @@ cases:
         arguments:
           value: '  spaced  '
   schema_const_space_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_space_bare
     description: 'Schema probe const_space_bare: independently authored value "  spaced  " under {"const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_space_bare
+    display_id: UNIFIED.7-18.const_space_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
       init:
@@ -10281,14 +10239,13 @@ cases:
         arguments:
           value: '  spaced  '
   schema_const_space_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_space_ref
     description: 'Schema probe const_space_ref: independently authored value "  spaced  " under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_space_ref
+    display_id: UNIFIED.7-18.const_space_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
       init:
@@ -10326,14 +10283,13 @@ cases:
         arguments:
           value: '  spaced  '
   schema_const_space_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_space_typed
     description: 'Schema probe const_space_typed: independently authored value "  spaced  " under {"type": "string", "const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_space_typed
+    display_id: UNIFIED.7-18.const_space_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
       init:
@@ -10369,14 +10325,13 @@ cases:
         arguments:
           value: '  spaced  '
   schema_const_unicode_allof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_unicode_allof
     description: 'Schema probe const_unicode_allof: independently authored value "café" under {"allOf": [{"const": "café"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_unicode_allof
+    display_id: UNIFIED.7-18.const_unicode_allof
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
       init:
@@ -10413,14 +10368,13 @@ cases:
         arguments:
           value: café
   schema_const_unicode_bare:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_unicode_bare
     description: 'Schema probe const_unicode_bare: independently authored value "café" under {"const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_unicode_bare
+    display_id: UNIFIED.7-18.const_unicode_bare
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
       init:
@@ -10455,14 +10409,13 @@ cases:
         arguments:
           value: café
   schema_const_unicode_ref:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_unicode_ref
     description: 'Schema probe const_unicode_ref: independently authored value "café" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_unicode_ref
+    display_id: UNIFIED.7-18.const_unicode_ref
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
       init:
@@ -10500,14 +10453,13 @@ cases:
         arguments:
           value: café
   schema_const_unicode_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_const_unicode_typed
     description: 'Schema probe const_unicode_typed: independently authored value "café" under {"type": "string", "const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-18.const_unicode_typed
+    display_id: UNIFIED.7-18.const_unicode_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
       init:
@@ -10543,14 +10495,13 @@ cases:
         arguments:
           value: café
   schema_union_anyof_array_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_array_reverse_string
     description: 'Schema probe union_anyOf_array_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_array_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_array_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10587,14 +10538,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_array_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_array_reverse_typed
     description: 'Schema probe union_anyOf_array_reverse_typed: independently authored value [1, 2] under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_array_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_array_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
       init:
@@ -10629,14 +10579,13 @@ cases:
           - 1
           - 2
   schema_union_anyof_array_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_array_string
     description: 'Schema probe union_anyOf_array_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_array_string
+    display_id: UNIFIED.7-19.union_anyOf_array_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10673,14 +10622,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_array_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_array_typed
     description: 'Schema probe union_anyOf_array_typed: independently authored value [1, 2] under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_array_typed
+    display_id: UNIFIED.7-19.union_anyOf_array_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
       init:
@@ -10715,14 +10663,13 @@ cases:
           - 1
           - 2
   schema_union_anyof_boolean_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_boolean_reverse_string
     description: 'Schema probe union_anyOf_boolean_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_boolean_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_boolean_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10759,14 +10706,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_boolean_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_boolean_reverse_typed
     description: 'Schema probe union_anyOf_boolean_reverse_typed: independently authored value true under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_boolean_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_boolean_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:true}<tool_call|>
       init:
@@ -10799,14 +10745,13 @@ cases:
         arguments:
           value: true
   schema_union_anyof_boolean_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_boolean_string
     description: 'Schema probe union_anyOf_boolean_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_boolean_string
+    display_id: UNIFIED.7-19.union_anyOf_boolean_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10843,14 +10788,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_boolean_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_boolean_typed
     description: 'Schema probe union_anyOf_boolean_typed: independently authored value true under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_boolean_typed
+    display_id: UNIFIED.7-19.union_anyOf_boolean_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:true}<tool_call|>
       init:
@@ -10883,14 +10827,13 @@ cases:
         arguments:
           value: true
   schema_union_anyof_integer_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_integer_reverse_string
     description: 'Schema probe union_anyOf_integer_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_integer_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_integer_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -10927,14 +10870,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_integer_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_integer_reverse_typed
     description: 'Schema probe union_anyOf_integer_reverse_typed: independently authored value 42 under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_integer_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_integer_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -10967,14 +10909,13 @@ cases:
         arguments:
           value: 42
   schema_union_anyof_integer_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_integer_string
     description: 'Schema probe union_anyOf_integer_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_integer_string
+    display_id: UNIFIED.7-19.union_anyOf_integer_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11011,14 +10952,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_integer_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_integer_typed
     description: 'Schema probe union_anyOf_integer_typed: independently authored value 42 under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_integer_typed
+    display_id: UNIFIED.7-19.union_anyOf_integer_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -11051,14 +10991,13 @@ cases:
         arguments:
           value: 42
   schema_union_anyof_null_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_null_reverse_string
     description: 'Schema probe union_anyOf_null_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_null_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_null_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11095,14 +11034,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_null_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_null_reverse_typed
     description: 'Schema probe union_anyOf_null_reverse_typed: independently authored value null under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_null_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_null_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -11135,14 +11073,13 @@ cases:
         arguments:
           value: null
   schema_union_anyof_null_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_null_string
     description: 'Schema probe union_anyOf_null_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_null_string
+    display_id: UNIFIED.7-19.union_anyOf_null_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11179,14 +11116,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_null_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_null_typed
     description: 'Schema probe union_anyOf_null_typed: independently authored value null under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_null_typed
+    display_id: UNIFIED.7-19.union_anyOf_null_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -11219,14 +11155,13 @@ cases:
         arguments:
           value: null
   schema_union_anyof_number_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_number_reverse_string
     description: 'Schema probe union_anyOf_number_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_number_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_number_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11263,14 +11198,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_number_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_number_reverse_typed
     description: 'Schema probe union_anyOf_number_reverse_typed: independently authored value 3.5 under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_number_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_number_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
       init:
@@ -11303,14 +11237,13 @@ cases:
         arguments:
           value: 3.5
   schema_union_anyof_number_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_number_string
     description: 'Schema probe union_anyOf_number_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_number_string
+    display_id: UNIFIED.7-19.union_anyOf_number_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11347,14 +11280,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_number_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_number_typed
     description: 'Schema probe union_anyOf_number_typed: independently authored value 3.5 under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_number_typed
+    display_id: UNIFIED.7-19.union_anyOf_number_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
       init:
@@ -11387,14 +11319,13 @@ cases:
         arguments:
           value: 3.5
   schema_union_anyof_object_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_object_reverse_string
     description: 'Schema probe union_anyOf_object_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_object_reverse_string
+    display_id: UNIFIED.7-19.union_anyOf_object_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11431,14 +11362,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_object_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_object_reverse_typed
     description: 'Schema probe union_anyOf_object_reverse_typed: independently authored value {"x": 1} under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_object_reverse_typed
+    display_id: UNIFIED.7-19.union_anyOf_object_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
       init:
@@ -11472,14 +11402,13 @@ cases:
           value:
             x: 1
   schema_union_anyof_object_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_object_string
     description: 'Schema probe union_anyOf_object_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_object_string
+    display_id: UNIFIED.7-19.union_anyOf_object_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11516,14 +11445,13 @@ cases:
         arguments:
           value: auto
   schema_union_anyof_object_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_anyOf_object_typed
     description: 'Schema probe union_anyOf_object_typed: independently authored value {"x": 1} under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-19.union_anyOf_object_typed
+    display_id: UNIFIED.7-19.union_anyOf_object_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
       init:
@@ -11557,14 +11485,13 @@ cases:
           value:
             x: 1
   schema_union_oneof_array_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_array_reverse_string
     description: 'Schema probe union_oneOf_array_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_array_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_array_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11601,14 +11528,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_array_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_array_reverse_typed
     description: 'Schema probe union_oneOf_array_reverse_typed: independently authored value [1, 2] under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_array_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_array_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
       init:
@@ -11643,14 +11569,13 @@ cases:
           - 1
           - 2
   schema_union_oneof_array_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_array_string
     description: 'Schema probe union_oneOf_array_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_array_string
+    display_id: UNIFIED.7-20.union_oneOf_array_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11687,14 +11612,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_array_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_array_typed
     description: 'Schema probe union_oneOf_array_typed: independently authored value [1, 2] under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_array_typed
+    display_id: UNIFIED.7-20.union_oneOf_array_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
       init:
@@ -11729,14 +11653,13 @@ cases:
           - 1
           - 2
   schema_union_oneof_boolean_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_boolean_reverse_string
     description: 'Schema probe union_oneOf_boolean_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_boolean_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_boolean_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11773,14 +11696,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_boolean_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_boolean_reverse_typed
     description: 'Schema probe union_oneOf_boolean_reverse_typed: independently authored value true under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_boolean_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_boolean_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:true}<tool_call|>
       init:
@@ -11813,14 +11735,13 @@ cases:
         arguments:
           value: true
   schema_union_oneof_boolean_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_boolean_string
     description: 'Schema probe union_oneOf_boolean_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_boolean_string
+    display_id: UNIFIED.7-20.union_oneOf_boolean_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11857,14 +11778,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_boolean_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_boolean_typed
     description: 'Schema probe union_oneOf_boolean_typed: independently authored value true under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_boolean_typed
+    display_id: UNIFIED.7-20.union_oneOf_boolean_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:true}<tool_call|>
       init:
@@ -11897,14 +11817,13 @@ cases:
         arguments:
           value: true
   schema_union_oneof_integer_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_integer_reverse_string
     description: 'Schema probe union_oneOf_integer_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_integer_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_integer_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -11941,14 +11860,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_integer_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_integer_reverse_typed
     description: 'Schema probe union_oneOf_integer_reverse_typed: independently authored value 42 under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_integer_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_integer_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -11981,14 +11899,13 @@ cases:
         arguments:
           value: 42
   schema_union_oneof_integer_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_integer_string
     description: 'Schema probe union_oneOf_integer_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_integer_string
+    display_id: UNIFIED.7-20.union_oneOf_integer_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12025,14 +11942,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_integer_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_integer_typed
     description: 'Schema probe union_oneOf_integer_typed: independently authored value 42 under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_integer_typed
+    display_id: UNIFIED.7-20.union_oneOf_integer_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -12065,14 +11981,13 @@ cases:
         arguments:
           value: 42
   schema_union_oneof_null_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_null_reverse_string
     description: 'Schema probe union_oneOf_null_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_null_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_null_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12109,14 +12024,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_null_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_null_reverse_typed
     description: 'Schema probe union_oneOf_null_reverse_typed: independently authored value null under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_null_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_null_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -12149,14 +12063,13 @@ cases:
         arguments:
           value: null
   schema_union_oneof_null_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_null_string
     description: 'Schema probe union_oneOf_null_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_null_string
+    display_id: UNIFIED.7-20.union_oneOf_null_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12193,14 +12106,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_null_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_null_typed
     description: 'Schema probe union_oneOf_null_typed: independently authored value null under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_null_typed
+    display_id: UNIFIED.7-20.union_oneOf_null_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -12233,14 +12145,13 @@ cases:
         arguments:
           value: null
   schema_union_oneof_number_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_number_reverse_string
     description: 'Schema probe union_oneOf_number_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_number_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_number_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12277,14 +12188,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_number_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_number_reverse_typed
     description: 'Schema probe union_oneOf_number_reverse_typed: independently authored value 3.5 under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_number_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_number_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
       init:
@@ -12317,14 +12227,13 @@ cases:
         arguments:
           value: 3.5
   schema_union_oneof_number_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_number_string
     description: 'Schema probe union_oneOf_number_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_number_string
+    display_id: UNIFIED.7-20.union_oneOf_number_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12361,14 +12270,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_number_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_number_typed
     description: 'Schema probe union_oneOf_number_typed: independently authored value 3.5 under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_number_typed
+    display_id: UNIFIED.7-20.union_oneOf_number_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
       init:
@@ -12401,14 +12309,13 @@ cases:
         arguments:
           value: 3.5
   schema_union_oneof_object_reverse_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_object_reverse_string
     description: 'Schema probe union_oneOf_object_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_object_reverse_string
+    display_id: UNIFIED.7-20.union_oneOf_object_reverse_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12445,14 +12352,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_object_reverse_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_object_reverse_typed
     description: 'Schema probe union_oneOf_object_reverse_typed: independently authored value {"x": 1} under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_object_reverse_typed
+    display_id: UNIFIED.7-20.union_oneOf_object_reverse_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
       init:
@@ -12486,14 +12392,13 @@ cases:
           value:
             x: 1
   schema_union_oneof_object_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_object_string
     description: 'Schema probe union_oneOf_object_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_object_string
+    display_id: UNIFIED.7-20.union_oneOf_object_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12530,14 +12435,13 @@ cases:
         arguments:
           value: auto
   schema_union_oneof_object_typed:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_union_oneOf_object_typed
     description: 'Schema probe union_oneOf_object_typed: independently authored value {"x": 1} under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-20.union_oneOf_object_typed
+    display_id: UNIFIED.7-20.union_oneOf_object_typed
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
       init:
@@ -12571,14 +12475,13 @@ cases:
           value:
             x: 1
   schema_escaped_ref_const:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_escaped_ref_const
     description: 'Schema probe escaped_ref_const: independently authored value "\"hello\"" under {"$ref": "#/$defs/A~1B~0C"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.escaped_ref_const
+    display_id: UNIFIED.7-21.escaped_ref_const
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
       init:
@@ -12616,14 +12519,13 @@ cases:
         arguments:
           value: '"hello"'
   schema_percent_ref_const:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_percent_ref_const
     description: 'Schema probe percent_ref_const: independently authored value "42" under {"$ref": "#/$defs/Caf%C3%A9"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.percent_ref_const
+    display_id: UNIFIED.7-21.percent_ref_const
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -12661,14 +12563,13 @@ cases:
         arguments:
           value: '42'
   schema_ref_sibling_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_ref_sibling_integer
     description: 'Schema probe ref_sibling_integer: independently authored value 42 under {"$ref": "#/$defs/Choice", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.ref_sibling_integer
+    display_id: UNIFIED.7-21.ref_sibling_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -12705,14 +12606,13 @@ cases:
         arguments:
           value: 42
   schema_ref_union_anyof_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_ref_union_anyOf_integer
     description: 'Schema probe ref_union_anyOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.ref_union_anyOf_integer
+    display_id: UNIFIED.7-21.ref_union_anyOf_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:-7}<tool_call|>
       init:
@@ -12750,14 +12650,13 @@ cases:
         arguments:
           value: -7
   schema_ref_union_anyof_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_ref_union_anyOf_string
     description: 'Schema probe ref_union_anyOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.ref_union_anyOf_string
+    display_id: UNIFIED.7-21.ref_union_anyOf_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12799,14 +12698,13 @@ cases:
         arguments:
           value: auto
   schema_ref_union_oneof_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_ref_union_oneOf_integer
     description: 'Schema probe ref_union_oneOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.ref_union_oneOf_integer
+    display_id: UNIFIED.7-21.ref_union_oneOf_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:-7}<tool_call|>
       init:
@@ -12844,14 +12742,13 @@ cases:
         arguments:
           value: -7
   schema_ref_union_oneof_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_ref_union_oneOf_string
     description: 'Schema probe ref_union_oneOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-21.ref_union_oneOf_string
+    display_id: UNIFIED.7-21.ref_union_oneOf_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
       init:
@@ -12893,14 +12790,13 @@ cases:
         arguments:
           value: auto
   schema_intersection_anyof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_intersection_anyOf
     description: 'Schema probe intersection_anyOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-22.intersection_anyOf
+    display_id: UNIFIED.7-22.intersection_anyOf
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -12935,14 +12831,13 @@ cases:
         arguments:
           value: 42
   schema_intersection_oneof:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_intersection_oneOf
     description: 'Schema probe intersection_oneOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-22.intersection_oneOf
+    display_id: UNIFIED.7-22.intersection_oneOf
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -12977,14 +12872,13 @@ cases:
         arguments:
           value: 42
   schema_enum_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_enum_integer
     description: 'Schema probe enum_integer: independently authored value 42 under {"type": "integer", "enum": [7, 42]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-23.enum_integer
+    display_id: UNIFIED.7-23.enum_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -13018,14 +12912,13 @@ cases:
         arguments:
           value: 42
   schema_enum_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_enum_string
     description: 'Schema probe enum_string: independently authored value "42" under {"type": "string", "enum": ["auto", "42"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-23.enum_string
+    display_id: UNIFIED.7-23.enum_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -13063,14 +12956,13 @@ cases:
         arguments:
           value: '42'
   schema_nullable_string:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_nullable_string
     description: 'Schema probe nullable_string: independently authored value null under {"type": "string", "nullable": true}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-24.nullable_string
+    display_id: UNIFIED.7-24.nullable_string
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -13102,14 +12994,13 @@ cases:
         arguments:
           value: null
   schema_type_array_integer_null:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_type_array_integer_null
     description: 'Schema probe type_array_integer_null: independently authored value 42 under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-24.type_array_integer_null
+    display_id: UNIFIED.7-24.type_array_integer_null
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:42}<tool_call|>
       init:
@@ -13142,14 +13033,13 @@ cases:
         arguments:
           value: 42
   schema_type_array_integer_null_null:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_type_array_integer_null_null
     description: 'Schema probe type_array_integer_null_null: independently authored value null under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-24.type_array_integer_null_null
+    display_id: UNIFIED.7-24.type_array_integer_null_null
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -13182,14 +13072,13 @@ cases:
         arguments:
           value: null
   schema_type_array_string_integer:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_type_array_string_integer
     description: 'Schema probe type_array_string_integer: independently authored value "42" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-24.type_array_string_integer
+    display_id: UNIFIED.7-24.type_array_string_integer
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -13226,14 +13115,13 @@ cases:
         arguments:
           value: '42'
   schema_integer_const_ambiguous:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_integer_const_ambiguous
     description: 'Schema probe integer_const_ambiguous: independently authored value "42" under {"anyOf": [{"const": "42"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-25.integer_const_ambiguous
+    display_id: UNIFIED.7-25.integer_const_ambiguous
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
       init:
@@ -13270,14 +13158,13 @@ cases:
         arguments:
           value: '42'
   schema_null_union_ambiguous:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_null_union_ambiguous
     description: 'Schema probe null_union_ambiguous: independently authored value null under {"anyOf": [{"const": "null"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-25.null_union_ambiguous
+    display_id: UNIFIED.7-25.null_union_ambiguous
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:null}<tool_call|>
       init:
@@ -13310,14 +13197,13 @@ cases:
         arguments:
           value: null
   schema_object_const_union:
-    lifecycle: retired
+    lifecycle: active
     scenario: schema_object_const_union
     description: 'Schema probe object_const_union: independently authored value "{\"x\":1}" under {"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: null
-    historical_ids:
-    - UNIFIED.7-25.object_const_union
+    display_id: UNIFIED.7-25.object_const_union
+    historical_ids: []
     request:
       input: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
       init:
