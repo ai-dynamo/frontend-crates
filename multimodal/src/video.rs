@@ -24,17 +24,43 @@ use crate::{MmError, Result};
 ///
 /// `fps` wins over `num_frames`; `max_frames` caps either. With none set, every
 /// frame is requested, still capped by `max_frames`.
+///
+/// Each field defaults to unset (`None`), which is what vLLM spells `-1`: all
+/// frames, at the source frame rate. A literal `-1` in the request is accepted
+/// and read as unset, so vLLM-shaped payloads deserialize unchanged.
 #[derive(Clone, Debug, Default, PartialEq, serde::Deserialize)]
 pub struct VideoOptions {
     /// Sample this many frames per second of video.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "unset_if_minus_one_f64")]
     pub fps: Option<f64>,
     /// Upper bound on the number of sampled frames.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
     pub max_frames: Option<u64>,
     /// Sample exactly this many frames, evenly spaced.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "unset_if_minus_one_u64")]
     pub num_frames: Option<u64>,
+}
+
+/// vLLM's `-1` (and JSON `null`) as unset; any other negative count is an error.
+fn unset_if_minus_one_u64<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<Option<u64>, D::Error> {
+    use serde::de::Error;
+    match <Option<i64> as serde::Deserialize>::deserialize(deserializer)? {
+        None | Some(-1) => Ok(None),
+        Some(n) => u64::try_from(n)
+            .map(Some)
+            .map_err(|_| D::Error::custom(format!("expected a frame count or -1, got {n}"))),
+    }
+}
+
+/// vLLM's `-1` (and JSON `null`) as unset; other values are checked by
+/// [`VideoOptions::validate`].
+fn unset_if_minus_one_f64<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<Option<f64>, D::Error> {
+    let value = <Option<f64> as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(value.filter(|v| *v != -1.0))
 }
 
 /// Pixel budgets (`mm_processor_kwargs`), both optional.
@@ -240,6 +266,30 @@ mod tests {
         .unwrap();
         assert_eq!(b.total_pixels, Some(16_777_216));
         assert_eq!(b.max_pixels_per_frame, None);
+    }
+
+    #[test]
+    fn vllm_minus_one_means_unset() {
+        let o: VideoOptions =
+            serde_json::from_str(r#"{"fps": -1, "num_frames": -1, "max_frames": -1}"#).unwrap();
+        assert_eq!(o, VideoOptions::default());
+        let o: VideoOptions = serde_json::from_str(r#"{"fps": -1.0, "num_frames": null}"#).unwrap();
+        assert_eq!(o, VideoOptions::default());
+        // Unset everywhere means every frame, as vLLM's -1 does.
+        assert_eq!(resolve_num_frames(&o, 10.0, 300).unwrap(), 300);
+        // A real value next to a -1 still counts.
+        let o: VideoOptions = serde_json::from_str(r#"{"fps": 2, "num_frames": -1}"#).unwrap();
+        assert_eq!(o, opts(Some(2.0), None, None));
+    }
+
+    #[test]
+    fn other_negative_counts_are_errors() {
+        for bad in [r#"{"num_frames": -2}"#, r#"{"max_frames": -5}"#] {
+            assert!(serde_json::from_str::<VideoOptions>(bad).is_err(), "{bad}");
+        }
+        // A negative fps other than -1 deserializes but fails validation.
+        let o: VideoOptions = serde_json::from_str(r#"{"fps": -2}"#).unwrap();
+        assert!(o.validate().is_err());
     }
 
     #[test]
