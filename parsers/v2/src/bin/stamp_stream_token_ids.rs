@@ -237,10 +237,8 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
 /// Encode the full concatenated text for a case and align the resulting token
 /// ids back to individual chunks using a decoded-byte cursor.
 ///
-/// Each token is assigned to the chunk whose cumulative byte boundary it first
-/// crosses. A token that spans a chunk boundary (common for character-split
-/// fixtures) is assigned entirely to the earlier chunk, giving that chunk a
-/// slightly longer token span, but the total token sequence is valid.
+/// Each token is assigned to the chunk containing its final decoded byte. A token
+/// that spans a chunk boundary stays with the later chunk where it becomes complete.
 fn align_tokens_to_chunks(chunks: &[Chunk]) -> anyhow::Result<Vec<Vec<u32>>> {
     // Cumulative byte lengths for each chunk.
     let cumulative_bytes: Vec<usize> = chunks
@@ -297,42 +295,54 @@ fn ids_to_yaml_flow(ids: &[u32]) -> String {
 mod tests {
     use super::*;
 
-    fn assert_each_case_decodes_to_its_text(src: &str) {
+    fn assert_case_token_streams_decode_to_text(src: &str) {
         let stamped = stamp_token_ids(src).expect("stamp fixture");
         let fixture: serde_yaml::Value =
             serde_yaml::from_str(&stamped).expect("parse stamped fixture");
         let cases = fixture["cases"].as_mapping().expect("cases mapping");
         for (case_id, case) in cases {
             let chunks = case["chunks"].as_sequence().expect("chunks sequence");
-            for chunk in chunks {
-                let text = chunk["delta_text"].as_str().unwrap_or_default();
-                let ids = chunk["delta_token_ids"]
-                    .as_sequence()
-                    .expect("stamped token IDs")
-                    .iter()
-                    .map(|id| id.as_u64().expect("numeric token ID") as u32)
-                    .collect::<Vec<_>>();
-                assert_eq!(
-                    decode_harmony(&ids).expect("decode token IDs"),
-                    text,
-                    "{case_id:?}"
-                );
-            }
+            let text = chunks
+                .iter()
+                .map(|chunk| chunk["delta_text"].as_str().unwrap_or_default())
+                .collect::<String>();
+            let ids = chunks
+                .iter()
+                .flat_map(|chunk| {
+                    chunk["delta_token_ids"]
+                        .as_sequence()
+                        .expect("stamped token IDs")
+                        .iter()
+                        .map(|id| id.as_u64().expect("numeric token ID") as u32)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                decode_harmony(&ids).expect("decode token IDs"),
+                text,
+                "{case_id:?}"
+            );
         }
         assert_eq!(stamp_token_ids(&stamped).expect("restamp fixture"), stamped);
     }
 
     #[test]
     fn stamps_cases_in_yaml_order_even_when_ids_are_unsorted() {
-        assert_each_case_decodes_to_its_text(
+        assert_case_token_streams_decode_to_text(
             "family: harmony\nmode: streamv1\ncases:\n  z:\n    chunks:\n    - delta_text: Hello\n  a:\n    chunks:\n    - delta_text: World\n",
         );
     }
 
     #[test]
     fn preserves_multiline_chunk_text_when_stamping() {
-        assert_each_case_decodes_to_its_text(
+        assert_case_token_streams_decode_to_text(
             "family: harmony\nmode: streamv1\ncases:\n  one:\n    chunks:\n    - delta_text: |-\n        hello\n        world\n",
+        );
+    }
+
+    #[test]
+    fn keeps_token_stream_valid_when_tokens_span_chunk_boundaries() {
+        assert_case_token_streams_decode_to_text(
+            "cases:\n  one:\n    chunks:\n    - delta_text: H\n    - delta_text: e\n    - delta_text: l\n    - delta_text: l\n    - delta_text: o\n",
         );
     }
 

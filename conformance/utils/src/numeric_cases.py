@@ -3,11 +3,16 @@
 """Authored decimal tokens; never construct the oracle through binary floats."""
 
 import json
-from decimal import Decimal
+import re
+from decimal import Decimal, DecimalException
 
 
 class NumericLiteral(str):
     """Native numeric token, distinct from a quoted string argument."""
+
+
+class _JsonNumberToken(str):
+    """Valid JSON number whose exponent is outside Decimal's supported range."""
 
 
 NUMERIC_DESCRIPTIONS = {
@@ -103,11 +108,90 @@ def _reject_json_constant(value):
     raise ValueError(f"non-JSON numeric constant: {value}")
 
 
+def _decimal_or_token(token):
+    try:
+        return Decimal(token)
+    except DecimalException:
+        return _JsonNumberToken(token)
+
+
+def _signed_integer(value):
+    sign = -1 if value.startswith("-") else 1
+    digits = value.lstrip("+-").lstrip("0") or "0"
+    return (0 if digits == "0" else sign), digits
+
+
+def _add_magnitudes(left, right):
+    result = []
+    carry = 0
+    for offset in range(1, max(len(left), len(right)) + 1):
+        total = carry
+        if offset <= len(left):
+            total += ord(left[-offset]) - ord("0")
+        if offset <= len(right):
+            total += ord(right[-offset]) - ord("0")
+        result.append(chr(ord("0") + total % 10))
+        carry = total // 10
+    if carry:
+        result.append(chr(ord("0") + carry))
+    return "".join(reversed(result))
+
+
+def _subtract_magnitudes(larger, smaller):
+    result = []
+    borrow = 0
+    for offset in range(1, len(larger) + 1):
+        digit = ord(larger[-offset]) - ord("0") - borrow
+        if offset <= len(smaller):
+            digit -= ord(smaller[-offset]) - ord("0")
+        borrow = digit < 0
+        result.append(chr(ord("0") + digit + (10 if borrow else 0)))
+    return "".join(reversed(result)).lstrip("0") or "0"
+
+
+def _add_signed_integers(left, right):
+    left_sign, left_digits = _signed_integer(left)
+    right_sign, right_digits = _signed_integer(right)
+    if left_sign == 0:
+        return ("-" if right_sign < 0 else "") + right_digits
+    if right_sign == 0:
+        return ("-" if left_sign < 0 else "") + left_digits
+    if left_sign == right_sign:
+        digits = _add_magnitudes(left_digits, right_digits)
+        return ("-" if left_sign < 0 else "") + digits
+    if len(left_digits) == len(right_digits) and left_digits == right_digits:
+        return "0"
+    left_larger = (len(left_digits), left_digits) > (len(right_digits), right_digits)
+    larger, smaller = (left_digits, right_digits) if left_larger else (right_digits, left_digits)
+    sign = left_sign if left_larger else right_sign
+    digits = _subtract_magnitudes(larger, smaller)
+    return ("-" if sign < 0 else "") + digits
+
+
+def _canonical_json_number(token):
+    match = re.fullmatch(r"(-?)(0|[1-9][0-9]*)(?:\.([0-9]+))?(?:[eE]([+-]?[0-9]+))?", token)
+    if match is None:
+        raise ValueError(f"invalid JSON number token: {token}")
+    sign, integer, fraction, exponent = match.groups()
+    fraction = fraction or ""
+    digits = (integer + fraction).lstrip("0")
+    if not digits:
+        return ["number", 0, [], 0]
+    trailing_zeroes = len(digits) - len(digits.rstrip("0"))
+    if trailing_zeroes:
+        digits = digits[:-trailing_zeroes]
+    exponent = _add_signed_integers(exponent or "0", str(trailing_zeroes - len(fraction)))
+    exponent_digits = exponent.lstrip("-")
+    if len(exponent_digits) <= 18:
+        exponent = int(exponent)
+    return ["number", -1 if sign else 1, [int(digit) for digit in digits], exponent]
+
+
 def canonical_arguments(arguments):
     """Typed decimal comparison without conflating JSON strings and numbers."""
     if isinstance(arguments, str):
         try:
-            arguments = json.loads(arguments, parse_float=Decimal, parse_int=Decimal,
+            arguments = json.loads(arguments, parse_float=_decimal_or_token, parse_int=_decimal_or_token,
                                    parse_constant=_reject_json_constant)
         except ValueError:
             return ["invalid_json", arguments]
@@ -119,6 +203,8 @@ def canonical_value(value):
         return ["object", [[key, canonical_value(item)] for key, item in sorted(value.items())]]
     if isinstance(value, list):
         return ["array", [canonical_value(item) for item in value]]
+    if isinstance(value, _JsonNumberToken):
+        return _canonical_json_number(value)
     if isinstance(value, bool) or value is None or isinstance(value, str):
         return [type(value).__name__, value]
     number = Decimal(str(value))
