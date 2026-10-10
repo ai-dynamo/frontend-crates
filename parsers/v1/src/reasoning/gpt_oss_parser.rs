@@ -60,6 +60,18 @@ pub struct GptOssReasoningParser {
     /// would otherwise lose the channel/recipient. Cleared once the call is emitted.
     last_directed_channel: Option<String>,
     last_directed_recipient: Option<String>,
+    /// Content harmony decoded and attributed to a channel this parser does not
+    /// recognize, e.g. the `finalx` of a mistyped `<|channel|>finalx<|message|>`
+    /// header. Harmony itself is happy — it is in `Content` and hands over
+    /// deltas — but no visible-channel arm claims them, so without this buffer
+    /// they are dropped and the turn answers with `content: null`. Surfaced by
+    /// `finish_reasoning_stream` as normal text.
+    unattributed_text: String,
+    /// Set by the first `finish_reasoning_stream` call. `process_eos()` is not
+    /// repeatable (it mutates harmony state) and the recovery below is not
+    /// naturally idempotent, so a second finalize must return nothing rather
+    /// than re-emit text the caller already has.
+    parser_finished: bool,
 }
 
 /// Implement Debug for GptOssReasoningParser separately because StreamableParser does not implement Debug
@@ -98,6 +110,8 @@ impl GptOssReasoningParser {
             insert_normal_separator: false,
             last_directed_channel: None,
             last_directed_recipient: None,
+            unattributed_text: String::new(),
+            parser_finished: false,
         })
     }
 }
@@ -243,7 +257,13 @@ fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut Stri
         Some("commentary") if msg.recipient.is_none() => {
             append_text_content(normal_text, &msg.content)
         }
-        _ => {}
+        // A directed analysis/commentary payload is handed to the tool parser
+        // elsewhere and must not also become content.
+        Some("analysis") | Some("commentary") | None => {}
+        // Unknown channel name: a malformed header harmony still parsed. Treat
+        // the content as the answer rather than dropping it, matching what the
+        // streaming path recovers via `unattributed_text`.
+        Some(_) => append_text_content(normal_text, &msg.content),
     }
 }
 
@@ -257,7 +277,10 @@ fn append_current_by_channel(
         Some("analysis") => append_separated(reasoning_text, &current),
         Some("final") => append_separated(normal_text, &current),
         Some("commentary") => append_separated(normal_text, &current),
-        _ => {}
+        None => {}
+        // See `append_message_by_channel`: an unrecognized channel is a
+        // malformed header, not a reason to discard the model's output.
+        Some(_) => append_separated(normal_text, &current),
     }
 }
 
@@ -315,27 +338,168 @@ fn reconstruct_directed_envelope(
     }
 }
 
+/// Harmony channel names this parser knows how to attribute.
+const HARMONY_KNOWN_CHANNELS: &[&str] = &["analysis", "commentary", "final"];
+
+/// Role names harmony may leave at the head of an unterminated header.
+const HARMONY_ROLE_NAMES: &[&str] = &["assistant", "system", "developer", "user", "tool"];
+
+/// Strip harmony control markup so recovered text cannot leak raw protocol
+/// tokens into assistant `content`.
+fn strip_harmony_special_tokens(text: &str) -> String {
+    let mut cleaned = text.to_string();
+    for token in HARMONY_SPECIAL_TOKENS {
+        if cleaned.contains(token) {
+            cleaned = cleaned.replace(token, "");
+        }
+    }
+    cleaned
+}
+
+/// Recover the message a malformed harmony header stranded in `StreamState::Header`.
+///
+/// When a gpt-oss model emits `<|channel|>final` followed by anything other than
+/// `<|message|>` — the observed shape is a stray token where `<|message|>` was
+/// expected — `StreamableParser` never leaves `Header`. Every later token is
+/// pushed onto `header_tokens` instead of becoming a content delta, and
+/// `process_eos()` then fails with "Unexpected EOS while waiting for message
+/// header to complete". The model's entire final message is in that buffer and
+/// is otherwise dropped, which is what surfaces to the client as
+/// `content: null` with `finish_reason: "stop"`.
+///
+/// Decoding is deliberately scoped to the header tokens alone, read back from
+/// `state_json()`, rather than to `parser.tokens()`: the cumulative buffer also
+/// holds every message already streamed to the caller, so recovering from it
+/// would re-emit them. Header tokens have by definition never been emitted, so
+/// this cannot double-emit.
+///
+/// Returns `None` when the parser is not stranded, when the state cannot be
+/// read, or when nothing but markup remains.
+fn recover_stranded_header_text(parser: &StreamableParser) -> Option<String> {
+    #[derive(serde::Deserialize)]
+    #[serde(tag = "state")]
+    enum HarmonyStreamState {
+        Header {
+            header_tokens: Vec<u32>,
+        },
+        #[serde(other)]
+        Other,
+    }
+
+    let state_json = parser.state_json().ok()?;
+    let HarmonyStreamState::Header { header_tokens } =
+        serde_json::from_str::<HarmonyStreamState>(&state_json).ok()?
+    else {
+        return None;
+    };
+    if header_tokens.is_empty() {
+        return None;
+    }
+
+    let enc = get_harmony_encoding().as_ref().ok()?;
+    let decoded = enc.tokenizer().decode_utf8(&header_tokens).ok()?;
+
+    // `<|start|>assistant<|channel|>final*)__Hello!` arrives here as
+    // `assistant<|channel|>final*)__Hello!`, because `<|start|>` is what moved
+    // harmony into `Header` and is not itself retained.
+    let remainder = match decoded.rfind("<|channel|>") {
+        Some(idx) => {
+            let after = &decoded[idx + "<|channel|>".len()..];
+            // Drop the channel name the model did manage to emit. Without a
+            // `<|message|>` delimiter there is no separator to split on, so only
+            // an exact known-channel prefix is removed; anything else is left in
+            // place rather than guessed at and truncated.
+            HARMONY_KNOWN_CHANNELS
+                .iter()
+                .find_map(|channel| after.strip_prefix(channel))
+                .unwrap_or(after)
+        }
+        // No channel marker at all: the header never got past the role name.
+        None => HARMONY_ROLE_NAMES
+            .iter()
+            .find_map(|role| decoded.strip_prefix(role))
+            .unwrap_or(decoded.as_str()),
+    };
+
+    let recovered = strip_harmony_special_tokens(remainder);
+    (!recovered.trim().is_empty()).then_some(recovered)
+}
+
 impl ReasoningParser for GptOssReasoningParser {
+    /// Finalize the stream, recovering anything harmony is still holding.
+    ///
+    /// Idempotent: a second call returns an empty result. The first call
+    /// consumes `process_eos()`, which cannot be repeated.
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         self.pending_tool_call_text.clear();
         self.last_directed_channel = None;
         self.last_directed_recipient = None;
-        let pending = std::mem::take(&mut self.pending_text);
-        if pending.is_empty() {
+        if self.parser_finished {
             return ParserResult::default();
         }
+        self.parser_finished = true;
 
-        match self.parser.current_channel().as_deref() {
-            Some("analysis") => ParserResult {
-                normal_text: String::new(),
-                reasoning_text: pending,
-            },
-            Some("final") | Some("commentary") => ParserResult {
-                normal_text: pending,
-                reasoning_text: String::new(),
-            },
-            _ => ParserResult::default(),
+        // Existing behaviour, unchanged: a held partial special-token suffix
+        // belongs to whatever channel the parser is currently in.
+        let pending = std::mem::take(&mut self.pending_text);
+        let mut result = if pending.is_empty() {
+            ParserResult::default()
+        } else {
+            match self.parser.current_channel().as_deref() {
+                Some("analysis") => ParserResult {
+                    normal_text: String::new(),
+                    reasoning_text: pending,
+                },
+                Some("final") | Some("commentary") => ParserResult {
+                    normal_text: pending,
+                    reasoning_text: String::new(),
+                },
+                _ => ParserResult::default(),
+            }
+        };
+
+        // Content harmony decoded under a channel name this parser does not
+        // recognize. It is real model output that no arm claimed, so surface it
+        // as the answer rather than dropping the turn.
+        if !self.unattributed_text.is_empty() {
+            append_separated(
+                &mut result.normal_text,
+                &std::mem::take(&mut self.unattributed_text),
+            );
         }
+
+        // Finalize harmony itself. On a well-formed stream `process_eos()`
+        // merely closes the message whose content was already streamed token by
+        // token, so there is deliberately nothing to collect on the `Ok` path —
+        // re-reading `messages()` here would duplicate text the caller already
+        // received. The error path is the one that matters: it means harmony
+        // ended in `Header`, holding a message it never handed over.
+        if self.parser.process_eos().is_err()
+            && let Some(recovered) = recover_stranded_header_text(&self.parser)
+        {
+            tracing::warn!(
+                "Harmony parser ended in a non-terminal state; returning the recovered raw output."
+            );
+            // vLLM's `harmony.py::flush()` attributes recovered text to the
+            // `final` channel. Match that, so the same generation is reported
+            // identically whichever frontend served it.
+            append_separated(&mut result.normal_text, &recovered);
+        }
+
+        result
+    }
+
+    fn has_unflushed_state(&self) -> bool {
+        if self.parser_finished {
+            return false;
+        }
+        !self.pending_text.is_empty()
+            || !self.unattributed_text.is_empty()
+            // `current_channel()` is `None` exactly when harmony is in
+            // `ExpectStart` or `Header`; the latter is the stranded-header case
+            // this parser recovers, and the former is a cheap false positive
+            // between messages.
+            || self.parser.current_channel().is_none()
     }
 
     fn detect_and_parse_reasoning(&mut self, text: &str, token_ids: &[u32]) -> ParserResult {
@@ -398,6 +562,16 @@ impl ReasoningParser for GptOssReasoningParser {
             // tool parser. Keep directed commentary envelopes intact so tool
             // calls are not silently dropped.
             normal_text = strip_analysis_blocks_for_tool_handoff(&raw_input_text);
+        }
+
+        // Batch parity with the streaming path: a header the model never closed
+        // with `<|message|>` leaves harmony in `Header` holding the whole final
+        // message, which neither `messages()` nor `current_content()` exposes.
+        if let Some(recovered) = recover_stranded_header_text(parser) {
+            tracing::warn!(
+                "Harmony parser ended in a non-terminal state; returning the recovered raw output."
+            );
+            append_separated(&mut normal_text, &recovered);
         }
 
         tracing::debug!(
@@ -571,7 +745,18 @@ impl ReasoningParser for GptOssReasoningParser {
                         normal_delta.push_str(&delta);
                         self.emitted_normal_text = true;
                     }
-                    _ => {}
+                    // `analysis`/`commentary` WITH a recipient is a directed
+                    // tool call; its payload is reconstructed as a whole
+                    // envelope on the `<|call|>` chunk, so dropping the delta
+                    // here is correct.
+                    "analysis" | "commentary" => {}
+                    // Any other channel name is not harmony: the model
+                    // mistyped the header (`finalx`) or invented a channel.
+                    // Harmony still decoded real content for it, so hold it
+                    // and surface it at EOF instead of losing the message.
+                    _ => {
+                        self.unattributed_text.push_str(&delta);
+                    }
                 }
             }
         }
@@ -1090,6 +1275,188 @@ mod tests {
         assert!(
             normal_text_incr.ends_with("<|call|>"),
             "terminator must be present: {normal_text_incr:?}"
+        );
+    }
+
+    // Malformed-harmony recovery (plan §5 cases A–D).
+    //
+    // A gpt-oss model that emits `<|channel|>final` followed by anything other
+    // than `<|message|>` used to lose its entire final message: the frontend
+    // answered `content: null` with `finish_reason: "stop"`, indistinguishable
+    // from a legitimately empty answer. The four fixtures below are the control
+    // (A), the two malformed shapes (B, C), and the contrast case where empty
+    // content is genuinely correct (D).
+
+    const ANALYSIS_PREFIX: &str =
+        "<|channel|>analysis<|message|>User says hi. Answer briefly.<|end|><|start|>assistant";
+    const EXPECTED_REASONING: &str = "User says hi. Answer briefly.";
+    /// Case A: well-formed.
+    const CASE_A: &str = "<|channel|>analysis<|message|>User says hi. Answer briefly.<|end|><|start|>assistant<|channel|>final<|message|>Hello!";
+    /// Case B: stray token where `<|message|>` belongs. Mimics the observed
+    /// token `164797` (`*)__`) in place of `200008` (`<|message|>`), which
+    /// strands harmony in `StreamState::Header`.
+    const CASE_B: &str = "<|channel|>analysis<|message|>User says hi. Answer briefly.<|end|><|start|>assistant<|channel|>final*)__Hello!";
+    /// Case C: mistyped channel name, delimiter intact. Harmony parses this
+    /// happily into `Content`; the loss is this parser refusing the channel.
+    const CASE_C: &str = "<|channel|>analysis<|message|>User says hi. Answer briefly.<|end|><|start|>assistant<|channel|>finalx<|message|>Hello!";
+    /// Case D: no final message at all. Empty content is the correct answer.
+    const CASE_D: &str = "<|channel|>analysis<|message|>User says hi. Answer briefly.";
+
+    /// Stream `text` in `chunk_size`-character chunks (0 = one whole chunk),
+    /// finalize, and return the accumulated `(normal_text, reasoning_text)`.
+    fn stream_with_finish(text: &str, chunk_size: usize) -> (String, String) {
+        let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+        let mut normal = String::new();
+        let mut reasoning = String::new();
+        let chars: Vec<char> = text.chars().collect();
+        let chunks: Vec<String> = if chunk_size == 0 {
+            vec![text.to_string()]
+        } else {
+            chars
+                .chunks(chunk_size)
+                .map(|c| c.iter().collect::<String>())
+                .collect()
+        };
+        for chunk in chunks {
+            let result = parser.parse_reasoning_streaming_incremental(&chunk, &[]);
+            normal.push_str(&result.normal_text);
+            reasoning.push_str(&result.reasoning_text);
+        }
+        let finished = parser.finish_reasoning_stream();
+        normal.push_str(&finished.normal_text);
+        reasoning.push_str(&finished.reasoning_text);
+        (normal, reasoning)
+    }
+
+    #[test] // REASONING.stream.5.a
+    fn test_gpt_oss_finish_recovers_final_without_message_delimiter() {
+        // Every chunk size must recover: a chunk boundary inside the malformed
+        // header must not change the outcome.
+        for chunk_size in [1usize, 20, 0] {
+            let (normal, reasoning) = stream_with_finish(CASE_B, chunk_size);
+            assert!(
+                normal.contains("Hello!"),
+                "chunk_size={chunk_size}: final message must be recovered, got {normal:?}"
+            );
+            assert!(
+                !normal.contains("<|"),
+                "chunk_size={chunk_size}: recovery must not leak harmony markup, got {normal:?}"
+            );
+            assert_eq!(
+                reasoning, EXPECTED_REASONING,
+                "chunk_size={chunk_size}: reasoning must be unaffected"
+            );
+        }
+    }
+
+    #[test] // REASONING.stream.5.b
+    fn test_gpt_oss_finish_recovers_malformed_channel() {
+        // Case C is a distinct failure mode from case B: harmony reaches
+        // `Content` and decodes the text fine, but the channel name is one this
+        // parser does not recognize, so no arm claimed the delta.
+        for chunk_size in [1usize, 20, 0] {
+            let (normal, reasoning) = stream_with_finish(CASE_C, chunk_size);
+            assert_eq!(
+                normal.trim(),
+                "Hello!",
+                "chunk_size={chunk_size}: content under an unknown channel must not be dropped"
+            );
+            assert_eq!(reasoning, EXPECTED_REASONING, "chunk_size={chunk_size}");
+        }
+    }
+
+    #[test] // REASONING.stream.5.c
+    fn test_gpt_oss_finish_is_noop_for_analysis_only() {
+        // The contrast case: the model really did stop after reasoning. An
+        // empty `content` is the honest answer and recovery must not invent one.
+        for chunk_size in [1usize, 20, 0] {
+            let (normal, reasoning) = stream_with_finish(CASE_D, chunk_size);
+            assert_eq!(
+                normal, "",
+                "chunk_size={chunk_size}: must not fabricate content, got {normal:?}"
+            );
+            assert_eq!(reasoning, EXPECTED_REASONING, "chunk_size={chunk_size}");
+        }
+    }
+
+    #[test] // REASONING.stream.5.d
+    fn test_gpt_oss_finish_does_not_duplicate_already_emitted_final() {
+        // `process_eos()` closes the `final` message on a well-formed stream.
+        // Collecting from `messages()` there would re-emit text the caller has
+        // already been handed, so the `Ok` path must contribute nothing.
+        for chunk_size in [1usize, 20, 0] {
+            let (normal, reasoning) = stream_with_finish(CASE_A, chunk_size);
+            assert_eq!(
+                normal, "Hello!",
+                "chunk_size={chunk_size}: finish must add nothing already streamed"
+            );
+            assert_eq!(reasoning, EXPECTED_REASONING, "chunk_size={chunk_size}");
+        }
+    }
+
+    #[test] // REASONING.stream.5.e
+    fn test_gpt_oss_finish_is_idempotent() {
+        // The dynamo preprocessor finalizes from more than one path now, so a
+        // second call must be inert rather than re-emitting recovered text.
+        for text in [CASE_A, CASE_B, CASE_C, CASE_D] {
+            let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+            let _ = parser.parse_reasoning_streaming_incremental(text, &[]);
+            let _first = parser.finish_reasoning_stream();
+            let second = parser.finish_reasoning_stream();
+            assert_eq!(
+                second.normal_text, "",
+                "second finish must be empty: {text:?}"
+            );
+            assert_eq!(
+                second.reasoning_text, "",
+                "second finish must be empty: {text:?}"
+            );
+        }
+    }
+
+    #[test] // REASONING.stream.5.f, REASONING.batch.7
+    fn test_gpt_oss_malformed_header_batch_matches_streaming() {
+        for text in [CASE_A, CASE_B, CASE_C, CASE_D] {
+            let (stream_normal, stream_reasoning) = stream_with_finish(text, 0);
+            let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+            let batch = parser.detect_and_parse_reasoning(text, &[]);
+            assert_eq!(
+                batch.normal_text, stream_normal,
+                "batch/stream normal_text parity for {text:?}"
+            );
+            assert_eq!(
+                batch.reasoning_text, stream_reasoning,
+                "batch/stream reasoning_text parity for {text:?}"
+            );
+        }
+    }
+
+    #[test] // REASONING.stream.5.g
+    fn test_gpt_oss_has_unflushed_state_tracks_stranded_header() {
+        // The preprocessor uses this to decide whether an end-of-stream flush
+        // envelope is worth retaining, so a stranded header must report `true`.
+        let mut stranded = GptOssReasoningParser::new().expect("Failed to create parser");
+        let _ = stranded.parse_reasoning_streaming_incremental(CASE_B, &[]);
+        assert!(
+            stranded.has_unflushed_state(),
+            "a stranded malformed header still holds the final message"
+        );
+        let _ = stranded.finish_reasoning_stream();
+        assert!(
+            !stranded.has_unflushed_state(),
+            "nothing is left to flush once finalized"
+        );
+
+        // Mid-`final`-message, harmony is in `Content` and everything decoded so
+        // far has already been emitted.
+        let mut mid = GptOssReasoningParser::new().expect("Failed to create parser");
+        let _ = mid.parse_reasoning_streaming_incremental(
+            &format!("{ANALYSIS_PREFIX}<|channel|>final<|message|>Hel"),
+            &[],
+        );
+        assert!(
+            !mid.has_unflushed_state(),
+            "a well-formed in-flight message holds nothing unflushed"
         );
     }
 }

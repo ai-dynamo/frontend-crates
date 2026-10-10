@@ -315,6 +315,10 @@ impl ReasoningParser for GraniteReasoningParser {
         }
     }
 
+    fn has_unflushed_state(&self) -> bool {
+        !self.buffer.is_empty()
+    }
+
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         if self.buffer.is_empty() {
             return ParserResult::default();
