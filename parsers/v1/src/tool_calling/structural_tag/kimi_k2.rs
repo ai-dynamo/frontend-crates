@@ -1,122 +1,41 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Kimi K2 native structural-tag generation.
-//!
-//! K2 emits tool calls inside a special-token section rather than as the raw
-//! JSON array used by the legacy forced-tool path. The numeric suffix belongs
-//! to the model-generated call ID and must remain dynamic for parallel calls.
-//!
-//! This builder supports K2-Instruct and K2.5/K2.6 reasoning prompts. The
-//! K2.5/K2.6 chat template injects `<think>` into the generation prompt, and
-//! the model later emits `</think>`. It does not support original K2-Thinking,
-//! whose chat template leaves the opening `<think>` for the model to generate.
-
-use serde_json::{Value, json};
-
 use super::builder::{
     ToolCallFormatBuildContext, resolve_tools_to_include, uses_declared_tool_schema,
 };
-use super::format::{
-    ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, RegexFormat, SequenceFormat,
-    StructuralTag, TagFormat, TagsWithSeparatorFormat, TriggeredTagsFormat,
-};
-use crate::tool_calling::{ToolChoice, ToolDefinition};
+use super::format::*;
+use crate::tool_calling::ToolChoice;
+#[cfg(test)]
+use crate::tool_calling::ToolDefinition;
+#[cfg(test)]
+use dynamo_structural_tag::kimi_k2::*;
 
-const TOOL_CALL_BEGIN_PREFIX: &str = "<|tool_call_begin|>functions.";
-const TOOL_CALL_ARGUMENT_BEGIN: &str = "<|tool_call_argument_begin|>";
-const TOOL_CALL_END: &str = "<|tool_call_end|>";
-const TOOL_CALLS_SECTION_BEGIN: &str = "<|tool_calls_section_begin|>";
-const TOOL_CALLS_SECTION_END: &str = "<|tool_calls_section_end|>";
-
-fn tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
-    // Match vLLM/xgrammar: use the declared parameters unless the request
-    // explicitly opts out with strict=false. Global strict mode overrides the
-    // opt-out. Xgrammar uses `true` for unconstrained but valid JSON.
-    if uses_declared_tool_schema(tool, strict_schema) {
-        tool.parameters.clone().unwrap_or_else(|| json!(true))
-    } else {
-        json!(true)
-    }
-}
-
-fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
-    TagFormat {
-        begin: format!("{TOOL_CALL_BEGIN_PREFIX}{}:", tool.name),
-        content: Box::new(Format::Sequence(SequenceFormat {
-            elements: vec![
-                Format::Regex(RegexFormat {
-                    pattern: r"\d+".to_string(),
-                }),
-                Format::ConstString(ConstStringFormat {
-                    value: TOOL_CALL_ARGUMENT_BEGIN.to_string(),
-                }),
-                Format::JsonSchema(JsonSchemaFormat {
-                    json_schema: tool_schema(tool, strict_schema),
-                    style: JsonSchemaStyle::Json,
-                }),
-            ],
-        })),
-        end: TOOL_CALL_END.to_string(),
-    }
-}
-
-/// Build Kimi K2's native tool-call section.
 pub(crate) fn build_kimi_k2(
     ctx: &ToolCallFormatBuildContext<'_>,
 ) -> anyhow::Result<Option<StructuralTag>> {
-    let (tools, outer_at_least_one) = resolve_tools_to_include(ctx)?;
+    let (tools, _) = resolve_tools_to_include(ctx)?;
     if tools.is_empty() {
         return Ok(None);
     }
-
-    let calls: Vec<TagFormat> = tools
-        .into_iter()
-        .map(|tool| call_tag(tool, ctx.strict_schema()))
+    let relaxed = serde_json::Value::Bool(true);
+    let selected: Vec<_> = tools
+        .iter()
+        .map(|tool| dynamo_structural_tag::Tool {
+            name: &tool.name,
+            parameters: if uses_declared_tool_schema(tool, ctx.strict_schema()) {
+                tool.parameters.as_ref().unwrap_or(&relaxed)
+            } else {
+                &relaxed
+            },
+        })
         .collect();
-
-    let calls_format = if matches!(ctx.tool_choice, ToolChoice::Named(_)) {
-        Format::Tag(
-            calls
-                .into_iter()
-                .next()
-                .ok_or_else(|| anyhow::anyhow!("named tool choice resolved no tool"))?,
-        )
-    } else {
-        Format::TagsWithSeparator(TagsWithSeparatorFormat {
-            tags: calls,
-            separator: String::new(),
-            at_least_one: true,
-            stop_after_first: ctx.stop_after_first(),
-        })
-    };
-
-    let format = if matches!(ctx.tool_choice, ToolChoice::Auto) {
-        Format::TriggeredTags(TriggeredTagsFormat {
-            triggers: vec![TOOL_CALLS_SECTION_BEGIN.to_string()],
-            tags: vec![TagFormat {
-                begin: TOOL_CALLS_SECTION_BEGIN.to_string(),
-                content: Box::new(calls_format),
-                end: TOOL_CALLS_SECTION_END.to_string(),
-            }],
-            at_least_one: outer_at_least_one,
-            stop_after_first: ctx.stop_after_first(),
-        })
-    } else {
-        Format::Sequence(SequenceFormat {
-            elements: vec![
-                Format::ConstString(ConstStringFormat {
-                    value: TOOL_CALLS_SECTION_BEGIN.to_string(),
-                }),
-                calls_format,
-                Format::ConstString(ConstStringFormat {
-                    value: TOOL_CALLS_SECTION_END.to_string(),
-                }),
-            ],
-        })
-    };
-
-    Ok(Some(StructuralTag { format }))
+    Ok(Some(dynamo_structural_tag::kimi_k2::build(
+        &selected,
+        matches!(ctx.tool_choice, ToolChoice::Auto),
+        matches!(ctx.tool_choice, ToolChoice::Named(_)),
+        ctx.stop_after_first(),
+    )))
 }
 
 #[cfg(test)]
