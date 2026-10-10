@@ -92,6 +92,11 @@ those are atomic in BPE, so the merge is exact:
 `encode(prefix) + encode(suffix) == encode(prefix + suffix)`. There is no
 whitespace/punctuation fallback; the cache prefers a miss over a corrupt split.
 
+Segmented inputs (`encode_segments`) are cached at segment ends instead. Their
+keys frame each segment with its `allow_special` flag and length under a separate
+hash context, so the same flattened text with a different trust layout, a
+different split, or a plain-text encode never shares an entry.
+
 ```rust
 use dynamo_tokenizers::{CachedTokenizer, HuggingFaceTokenizer};
 use dynamo_tokenizers::traits::{Encoder, Tokenizer};
@@ -102,7 +107,7 @@ let hf = HuggingFaceTokenizer::from_file("/path/to/tokenizer.json")
 let inner: Arc<dyn Tokenizer> = Arc::new(hf);
 
 // The atomic special tokens the model uses as turn delimiters.
-// An empty list disables caching: encode/encode_batch pass straight through.
+// An empty list disables caching: encode/encode_batch/encode_segments pass straight through.
 let specials = vec!["<|im_start|>".to_string(), "<|im_end|>".to_string()];
 
 let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024)
