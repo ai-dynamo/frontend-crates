@@ -484,9 +484,14 @@ impl TryFrom<RawQwen3VlVideo> for Qwen3VlVideo {
                 "video processor patch, merge and temporal patch sizes must be at least 1",
             ));
         }
-        if raw.patch_size.checked_mul(raw.merge_size).is_none() {
+        // `smart_video_resize` refuses factors above u32::MAX; refuse them here
+        // so a config that loads can always be resized.
+        let factor = raw.patch_size.checked_mul(raw.merge_size);
+        if factor.is_none_or(|f| f > u32::MAX as usize)
+            || raw.temporal_patch_size > u32::MAX as usize
+        {
             return Err(MmError::invalid_input(
-                "video processor patch_size * merge_size overflows",
+                "video processor patch_size * merge_size and temporal_patch_size must fit in 32 bits",
             ));
         }
         let size = raw.size;
@@ -824,6 +829,10 @@ mod tests {
             ),
             with("merge_size", 0.into()),
             with("patch_size", usize::MAX.into()),
+            // No overflow, but past the 32 bits smart_video_resize accepts:
+            // the config would load and then never resize.
+            with("patch_size", (1u64 << 31).into()),
+            with("temporal_patch_size", (1u64 << 32).into()),
             // Settings that change HF's sizing in ways not implemented here.
             with("do_resize", false.into()),
             with("cap_pixels_per_frame", true.into()),
