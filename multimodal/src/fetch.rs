@@ -17,11 +17,10 @@
 //!   [`MmError::Unsupported`](crate::MmError::Unsupported). They are not a
 //!   security boundary; do not call them on untrusted input.
 //!
-//! The crate itself reads no environment variables: on-prem opt-ins are plain
-//! [`FetchPolicy`] fields ([`FetchPolicy::with_internal_access`]) that the
-//! consumer sets from its own configuration. The proxy variables are honoured
-//! only when [`FetchPolicy::use_system_proxy`] is set, and then reqwest reads
-//! them, not this crate.
+//! Nothing here reads environment variables, the HTTP client included: the
+//! on-prem opt-ins and the proxy are plain [`FetchPolicy`] fields
+//! ([`FetchPolicy::with_internal_access`], [`FetchPolicy::proxy`]) that the
+//! consumer sets from its own configuration.
 
 /// Intended cap on any single resolved payload — HTTP, file, or base64.
 pub const MAX_FETCH_BYTES: u64 = 64 << 20;
@@ -277,14 +276,18 @@ pub struct FetchPolicy {
     /// Cap on a `data:` URL's payload, in bytes. The payload is decoded inline
     /// on the calling task, so this cap is what bounds that work.
     pub max_data_url_bytes: usize,
-    /// Honour the proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`,
-    /// `ALL_PROXY`, `NO_PROXY`). Off by default: behind a proxy the proxy
-    /// resolves the destination, so the DNS filter that guards redirects and
-    /// rebinding never runs, and [`MediaFetcher::fetch`] skips its local DNS
-    /// check (it would refuse hosts only the proxy can resolve). The URL policy
-    /// checks still apply. Enable only when egress must go through a proxy you
-    /// trust to enforce its own destination policy.
-    pub use_system_proxy: bool,
+    /// Send every request through this `http`/`https` proxy, e.g.
+    /// `http://proxy.corp:3128`. `None` (the default) connects directly.
+    ///
+    /// Every request goes through the proxy, with no `NO_PROXY` exceptions, so
+    /// nothing connects directly without the DNS filter. The proxy resolves
+    /// destinations, so [`MediaFetcher::fetch`] skips its local DNS check (it
+    /// would refuse hosts only the proxy can resolve); the URL policy checks
+    /// still apply. Only the proxy's own hostname is resolved without the
+    /// private-range filter, since a proxy usually sits on a private address.
+    /// Set it only for a proxy you trust to enforce its own destination
+    /// policy. The proxy environment variables are never read.
+    pub proxy: Option<String>,
 }
 
 impl Default for FetchPolicy {
@@ -298,7 +301,7 @@ impl Default for FetchPolicy {
             timeout: Some(DEFAULT_HTTP_TIMEOUT),
             max_bytes: MAX_FETCH_BYTES,
             max_data_url_bytes: DEFAULT_MAX_DATA_URL_BYTES,
-            use_system_proxy: false,
+            proxy: None,
         }
     }
 }
@@ -419,7 +422,7 @@ pub struct MediaFetcher {
 impl MediaFetcher {
     /// Build a fetcher that enforces `policy`.
     pub fn new(policy: FetchPolicy) -> crate::Result<Self> {
-        let client = client_builder(&policy).build().map_err(|e| {
+        let client = client_builder(&policy)?.build().map_err(|e| {
             crate::MmError::internal_with_source("could not build the http client", e)
         })?;
         Ok(Self { policy, client })
@@ -495,7 +498,7 @@ impl MediaFetcher {
         };
         // Behind a proxy the proxy resolves the destination; a local lookup
         // would refuse hosts only it can resolve.
-        if self.policy.use_system_proxy {
+        if self.policy.proxy.is_some() {
             self.policy.check(&url)?;
         } else {
             self.preflight(&url).await?;
@@ -617,11 +620,12 @@ fn over_cap(cap: u64) -> crate::MmError {
 }
 
 /// The reqwest client that enforces `policy`: redirect revalidation, a DNS
-/// resolver that drops blocked addresses, the user agent and the request
-/// timeout. System proxies are off unless the policy opts in. No `Referer` is
+/// resolver that drops blocked addresses, the user agent, the request timeout
+/// and the policy's proxy (system proxies are never used). No `Referer` is
 /// sent on redirects: reqwest's would carry the previous URL's query string,
 /// which can hold a presigned token, to the redirect target.
-fn client_builder(policy: &FetchPolicy) -> reqwest::ClientBuilder {
+fn client_builder(policy: &FetchPolicy) -> crate::Result<reqwest::ClientBuilder> {
+    let proxy = policy.proxy.as_deref().map(parse_proxy).transpose()?;
     let for_redirects = policy.clone();
     let redirects = Policy::custom(move |attempt| {
         match for_redirects.check_redirect(attempt.previous().len(), attempt.url()) {
@@ -635,14 +639,35 @@ fn client_builder(policy: &FetchPolicy) -> reqwest::ClientBuilder {
         .referer(false)
         .dns_resolver(Arc::new(BlocklistResolver {
             allow_private_ips: policy.allow_private_ips,
+            proxy_host: proxy.as_ref().map(|(host, _)| host.clone()),
         }));
     if let Some(timeout) = policy.timeout {
         builder = builder.timeout(timeout);
     }
-    if !policy.use_system_proxy {
-        builder = builder.no_proxy();
+    // An explicit proxy also turns off reqwest's environment lookup, and
+    // `Proxy::all` has no `NO_PROXY` exceptions.
+    Ok(match proxy {
+        Some((_, proxy)) => builder.proxy(proxy),
+        None => builder.no_proxy(),
+    })
+}
+
+/// The policy's proxy URL and its hostname, lowercased without a trailing dot.
+/// Errors leave the URL out: it can carry proxy credentials.
+fn parse_proxy(proxy: &str) -> crate::Result<(String, reqwest::Proxy)> {
+    let invalid =
+        || crate::MmError::invalid_input("the fetch policy's proxy is not a valid http(s) URL");
+    let url = url::Url::parse(proxy).map_err(|_| invalid())?;
+    if !matches!(url.scheme(), "http" | "https") {
+        return Err(invalid());
     }
-    builder
+    let host = url
+        .host_str()
+        .ok_or_else(invalid)?
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
+    let proxy = reqwest::Proxy::all(proxy).map_err(|_| invalid())?;
+    Ok((host, proxy))
 }
 
 /// Turn a reqwest failure into the crate's taxonomy, recovering a policy
@@ -700,14 +725,26 @@ async fn resolve_filtered(
 /// DNS resolver that drops blocked addresses before reqwest sees them.
 /// reqwest calls it for every hostname it connects to, redirect targets
 /// included, so DNS rebinding cannot slip a blocked address past the policy.
+/// Behind a proxy it only ever resolves the proxy, which may be private.
 struct BlocklistResolver {
     allow_private_ips: bool,
+    proxy_host: Option<String>,
+}
+
+impl BlocklistResolver {
+    fn allows_private(&self, host: &str) -> bool {
+        self.allow_private_ips
+            || self
+                .proxy_host
+                .as_deref()
+                .is_some_and(|proxy| host.trim_end_matches('.').eq_ignore_ascii_case(proxy))
+    }
 }
 
 impl Resolve for BlocklistResolver {
     fn resolve(&self, name: Name) -> Resolving {
         let host = name.as_str().to_string();
-        let allow_private = self.allow_private_ips;
+        let allow_private = self.allows_private(&host);
         Box::pin(async move {
             let addrs = resolve_filtered(&host, allow_private).await?;
             Ok(Box::new(addrs.into_iter()) as Addrs)
@@ -838,7 +875,6 @@ mod fetcher_tests {
             allow_direct_port: true,
             ..FetchPolicy::default()
         };
-        // Public literals and ports are then fine; private ones are still refused.
         assert!(direct.check(&url("http://8.8.8.8:8080/a")).is_ok());
         assert!(refused(direct.check(&url("http://10.0.0.1/a"))));
         assert!(refused(
@@ -1168,6 +1204,84 @@ mod fetcher_tests {
     }
 
     #[tokio::test]
+    async fn a_proxy_on_a_private_address_carries_every_request() {
+        // The proxy records the request target it is asked for.
+        let asked = Arc::new(Mutex::new(Vec::<String>::new()));
+        let record = Arc::clone(&asked);
+        let (addr, _) = serve(move |target| {
+            record.lock().unwrap().push(target.to_string());
+            ok(b"via proxy")
+        })
+        .await;
+        // A default policy: private addresses refused, yet the proxy at
+        // localhost is reached, and the target (a `.test` name, which no
+        // resolver answers) is resolved by the proxy, not locally.
+        let f = fetcher(FetchPolicy {
+            proxy: Some(format!("http://localhost:{}", addr.port())),
+            ..FetchPolicy::default()
+        });
+        let r = f.fetch("http://media.example.test/clip.mp4").await;
+        assert_eq!(r.unwrap(), b"via proxy");
+        assert_eq!(
+            *asked.lock().unwrap(),
+            ["http://media.example.test/clip.mp4"]
+        );
+    }
+
+    #[tokio::test]
+    async fn behind_a_proxy_the_url_policy_still_applies() {
+        let (addr, connections) = serve(|_| ok(b"via proxy")).await;
+        let f = fetcher(FetchPolicy {
+            proxy: Some(format!("http://localhost:{}", addr.port())),
+            ..FetchPolicy::default()
+        });
+        for blocked in ["http://localhost/x", "http://169.254.169.254/x"] {
+            let r = f.fetch(blocked).await;
+            assert!(
+                matches!(r, Err(MmError::InvalidInput { .. })),
+                "{blocked}: {r:?}"
+            );
+        }
+        assert_eq!(connections.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn only_the_proxy_host_may_resolve_to_a_private_address() {
+        let resolver = BlocklistResolver {
+            allow_private_ips: false,
+            proxy_host: Some("proxy.corp".to_string()),
+        };
+        assert!(resolver.allows_private("proxy.corp"));
+        assert!(resolver.allows_private("PROXY.corp."));
+        assert!(!resolver.allows_private("other.corp"));
+        assert!(!resolver.allows_private("proxy.corp.evil.example"));
+        let direct = BlocklistResolver {
+            allow_private_ips: false,
+            proxy_host: None,
+        };
+        assert!(!direct.allows_private("proxy.corp"));
+    }
+
+    #[test]
+    fn an_invalid_proxy_is_refused_without_echoing_it() {
+        for proxy in [
+            "not a url",
+            "ftp://user:SENTINEL_SECRET@proxy.corp",
+            "http://",
+        ] {
+            let r = MediaFetcher::new(FetchPolicy {
+                proxy: Some(proxy.to_string()),
+                ..FetchPolicy::default()
+            });
+            let Err(err) = r else {
+                panic!("{proxy} was accepted");
+            };
+            assert!(matches!(err, MmError::InvalidInput { .. }), "{err:?}");
+            assert!(!format!("{err} {err:?}").contains("SENTINEL_SECRET"));
+        }
+    }
+
+    #[tokio::test]
     async fn redirects_do_not_send_a_referer() {
         // The redirect target, on another host name, records each request.
         let target = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -1338,7 +1452,10 @@ mod fetcher_tests {
         // directly: the DNS hook alone must refuse a name that resolves to
         // loopback, without ever connecting.
         let (addr, connections) = serve(|_| ok(b"secret")).await;
-        let client = client_builder(&FetchPolicy::default()).build().unwrap();
+        let client = client_builder(&FetchPolicy::default())
+            .unwrap()
+            .build()
+            .unwrap();
         let err = client
             .get(format!("http://localhost:{}/", addr.port()))
             .send()
@@ -1357,14 +1474,14 @@ mod fetcher_tests {
     fn default_policy_is_conservative() {
         let p = FetchPolicy::default();
         assert!(!p.allow_direct_ip && !p.allow_direct_port && !p.allow_private_ips);
-        assert!(!p.use_system_proxy);
+        assert!(p.proxy.is_none());
         assert_eq!(p.timeout, Some(Duration::from_secs(30)));
         assert_eq!(p.max_bytes, MAX_FETCH_BYTES);
         assert!(p.user_agent.starts_with("dynamo-multimodal/"));
         let on_prem = FetchPolicy::with_internal_access(true);
         assert!(on_prem.allow_direct_ip && on_prem.allow_direct_port && on_prem.allow_private_ips);
         assert!(
-            !on_prem.use_system_proxy,
+            on_prem.proxy.is_none(),
             "internal access does not imply a proxy"
         );
     }
