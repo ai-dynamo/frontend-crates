@@ -300,12 +300,25 @@ functions. Fixture settings are mathematical test inputs, not model defaults.
 ## 6. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. What remains:
+for `models::qwen_vl`. For video it has the request arithmetic, without
+decoding:
+
+- `video`: per-request options. `VideoOptions` (`fps`, `max_frames`,
+  `num_frames`, vLLM's `media_io_kwargs.video` keys) and `resolve_num_frames`
+  give the frame count; `VideoPixelBudget` (`total_pixels`,
+  `max_pixels_per_frame`, specific to this crate) carries pixel budgets.
+- `models::qwen_vl::Qwen3VlVideo`: Qwen3-VL video sizing, read from the
+  model's `video_preprocessor_config.json` (only `Qwen3VLVideoProcessor`), and
+  `smart_video_resize`, golden-tested against HF's own function.
+
+What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
    the feature currently exposes signatures only, and every call returns
    `MmError::Unsupported`.
-2. **Family coverage** — GLM and Kimi are the validated candidates after
+2. **Video decoding** — demuxing and decoding to sampled frames; the
+   arithmetic above takes the frame count and size from the consumer.
+3. **Family coverage** — GLM and Kimi are the validated candidates after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout
@@ -313,8 +326,9 @@ for `models::qwen_vl`. What remains:
 ```
 src/
   image/                 as today
+  video.rs               as today: request options, frame count, pixel budgets
   video/
-    sample.rs            frame-sampling policies (Qwen smart_nframes, GLM fps
+    sample.rs            further sampling policies (Qwen smart_nframes, GLM fps
                          windows) — pure index/timestamp math, no decoders
   audio/                 (feature `audio`)
     decode.rs            container decode + resample to mono f32 (symphonia)
