@@ -10,6 +10,7 @@ use crate::structural_tag::wire::{
     ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, SequenceFormat, TagFormat,
     TagsWithSeparatorFormat,
 };
+use serde_json::Value;
 
 /// Structural-tag grammar for flat, repeated tool-call formats.
 ///
@@ -22,6 +23,8 @@ use crate::structural_tag::wire::{
 ///     end: tool_call_end,
 /// }
 /// ```
+///
+/// For Qwen XML, a simple closed empty-object schema uses an exact empty body.
 ///
 /// The resulting structural-tag format depends on tool choice as follows
 /// (`tool_tags` is the set of tags above):
@@ -103,6 +106,31 @@ pub(super) struct TemplatedToolCallFormat {
     pub exclude_special_tokens: bool,
 }
 
+/// Only `{}` satisfies this schema, so Qwen XML needs no parameter elements.
+/// An exact empty body avoids XGrammar's empty-object conversion error in older
+/// versions and the unbounded whitespace branch observed with 0.2.7.
+fn is_closed_empty_object(schema: &Value) -> bool {
+    let Some(schema) = schema.as_object() else {
+        return false;
+    };
+    schema.get("type").and_then(Value::as_str) == Some("object")
+        && schema
+            .get("properties")
+            .and_then(Value::as_object)
+            .is_some_and(|p| p.is_empty())
+        && schema.get("additionalProperties") == Some(&Value::Bool(false))
+        && schema
+            .get("required")
+            .is_none_or(|r| r.as_array().is_some_and(|r| r.is_empty()))
+        // Other keywords may change validity or reference scope; retain their schema path.
+        && schema.keys().all(|key| {
+            matches!(
+                key.as_str(),
+                "type" | "properties" | "required" | "additionalProperties"
+            )
+        })
+}
+
 impl TemplatedToolCallFormat {
     fn tool_tag(
         &self,
@@ -122,13 +150,24 @@ impl TemplatedToolCallFormat {
         begin.push_str(&tool.name);
         begin.push_str(self.tool_call_begin_suffix);
 
-        TagFormat {
-            begin,
-            content: Box::new(Format::JsonSchema(JsonSchemaFormat {
-                json_schema: resolve_tool_schema(tool, policy.schema_mode),
+        let json_schema = resolve_tool_schema(tool, policy.schema_mode);
+        let content = if matches!(self.arguments_style, JsonSchemaStyle::QwenXml)
+            && is_closed_empty_object(&json_schema)
+        {
+            Format::ConstString(ConstStringFormat {
+                value: String::new(),
+            })
+        } else {
+            Format::JsonSchema(JsonSchemaFormat {
+                json_schema,
                 style: self.arguments_style,
                 any_order: tool_arguments_any_order,
-            })),
+            })
+        };
+
+        TagFormat {
+            begin,
+            content: Box::new(content),
             end: self.tool_call_end.to_string(),
         }
     }

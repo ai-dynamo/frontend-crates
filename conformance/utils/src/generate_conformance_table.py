@@ -1461,6 +1461,8 @@ def _attach_merged_cmp(cases: dict) -> None:
         if sob is not None:
             if sob.get("__known_divergence"):
                 case["__known_divergence"] = True
+            if sob.get("__baseline_defect"):
+                case["dynamo_note"] = sob["dynamo_note"]
             expected = _expected(sob)
             for impl in STREAM_IMPL_KEYS:
                 ver = stream_versions.get(impl)
@@ -1636,6 +1638,15 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             if isinstance(blk, dict) and "unavailable" not in blk:
                 blk["explanation"] = note
             cases[(family, sub)]["__known_divergence"] = True
+        defect = _known_divergence_note(family, cid, "baseline_defect")
+        if defect:
+            # A captured defect is not an intended difference. Keep unequal
+            # signatures and the existing research-needed marker visible; the
+            # diagnostic explains the exact baseline without granting a badge.
+            case = cases[(family, sub)]
+            prior = case.get("dynamo_note")
+            case["dynamo_note"] = f"{prior}\n{defect}" if prior else defect
+            case["__baseline_defect"] = True
     return cases
 
 

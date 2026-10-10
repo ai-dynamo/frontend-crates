@@ -32,6 +32,7 @@ import pytest  # noqa: E402
 import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
+from schema_cases import CONFORMANCE_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
@@ -789,15 +790,15 @@ def test_unified_case_counts_match_the_generator():
             "muse_glimmer": 117,
             "qwen3": 114,
         }[fam]
-        assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 925
+        assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
+    assert sum(per_family.values()) == 925 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 134
+    assert len(UNIFIED_TAX) == 134 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1389,7 +1390,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                         continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
-                    elif not matches_schema(value, schema, parameters):
+                    elif (not matches_schema(value, schema, parameters)
+                          or (family == "qwen3" and scenario in {
+                              "schema_integer_const_ambiguous", "schema_object_const_union",
+                              "schema_type_array_string_integer",
+                          })):
                         try:
                             decoded = json.loads(value)
                         except json.JSONDecodeError:
@@ -1474,6 +1479,14 @@ def _assert_cross_family_contract(corpus):
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _logical_events(scenario, family, case["golden"]))
+            if scenario in {"schema_integer_const_ambiguous", "schema_object_const_union", "schema_type_array_string_integer"}:
+                probe = next(probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}")
+                expected_events = [{"kind": "tool_call", "name": "schema_probe", "arguments": schema_arguments(family, probe)}]
+                assert json.dumps(events, sort_keys=True) == json.dumps(expected_events, sort_keys=True)
+                assert matches_schema(events[0]["arguments"], case["tools"][0]["parameters"])
+                # These native spellings are ambiguous. Validate each family's
+                # established interpretation, then compare the shared scenario.
+                events = [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": probe["value"]}}]
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
                 expected_type = "string" if value is not None else ["string", "null"]

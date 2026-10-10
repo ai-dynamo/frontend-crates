@@ -58,6 +58,8 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.j`** MiniMax M3 preserves nested integer values when an object wins a nullable union. Streaming regression for frontend-crates #270.
 - **`TOOLCALLING.streamv1.7.k`** GLM resolves local schema references before coercing string and integer arguments. This case does not distinguish sibling type intersections. Streaming regression for frontend-crates #271.
 - **`TOOLCALLING.streamv1.7.l`** MiniMax M3 resolves a local parameter reference before parsing object arguments. Streaming regression for frontend-crates #273.
+- **`TOOLCALLING.streamv1.7.m`** Single Family Test (MiniMax M3): whitespace between nested argument tags is formatting, not array items or `$text`. Streaming form of `TOOLCALLING.batch.7.m` (PR #360).
+- **`TOOLCALLING.streamv1.7.n`** Single Family Test (MiniMax M3): whitespace-only and padded string leaves inside nested arguments are kept verbatim. Streaming form of `TOOLCALLING.batch.7.n` (PR #360).
 - **`TOOLCALLING.streamv1.51.a`** Tool-only projection preserves caller-usable reasoning information around a tool call. Delimiter-preserving families retain their native framing; Unified-backed families retain the reasoning body in `normal_text`. Streaming regression for frontend-crates #253.
 - **`TOOLCALLING.streamv1.51.b`** DeepSeek tool-only selection accepts both DSML dialects in one stream. Streaming regression for frontend-crates #255.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
@@ -81,7 +83,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
-Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.l`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
+Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
 
 ## `TOOLCALLING.streamv1.50` — Partial-token chunking
 
@@ -91,3 +93,21 @@ boundary). Partial matches must return "keep buffering" rather than flushing as
 plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
+
+## Shared schema conformance probes
+
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.
+
+- **`TOOLCALLING.streamv1.7.o.*`** Declared JSON argument types.
+- **`TOOLCALLING.streamv1.7.p.*`** String constants retain their literal spelling.
+- **`TOOLCALLING.streamv1.7.q.*`** anyOf constant and typed alternatives in both orders.
+- **`TOOLCALLING.streamv1.7.r.*`** oneOf constant and typed alternatives in both orders.
+- **`TOOLCALLING.streamv1.7.s.*`** Local references and sibling type intersections.
+- **`TOOLCALLING.streamv1.7.t.*`** Composition intersects union type hints.
+- **`TOOLCALLING.streamv1.7.u.*`** Enums preserve declared argument types.
+- **`TOOLCALLING.streamv1.7.v.*`** Type arrays and nullable argument interpretation.
+- **`TOOLCALLING.streamv1.7.w.*`** Ambiguous native strings retain established preference.
+
+All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
+
+Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.

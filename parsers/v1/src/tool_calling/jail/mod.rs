@@ -32,9 +32,10 @@ use async_stream::stream;
 // `Nv{inner, nvext}` newtype and dynamo-runtime's `Annotated`, which dynamo
 // re-wraps at its own boundary after the move.
 use dynamo_protocols::types::{
-    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageToolCallChunk,
-    ChatCompletionStreamResponseDelta, ChatCompletionTokenLogprob,
-    CreateChatCompletionStreamResponse, FinishReason, FunctionCallStream, FunctionType, Role,
+    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageContent,
+    ChatCompletionMessageToolCallChunk, ChatCompletionStreamResponseDelta,
+    ChatCompletionTokenLogprob, CreateChatCompletionStreamResponse, FinishReason,
+    FunctionCallStream, FunctionType, Role,
 };
 use futures::{Stream, StreamExt};
 use serde_json::value::RawValue;
@@ -109,6 +110,144 @@ pub enum ChoiceEmission {
     Content(ChatChoiceStream),
     /// Emit trailing content after tool call end (choice has trailing after unjail)
     Trailing(ChatChoiceStream),
+}
+
+fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatChoiceLogprobs>) {
+    let Some(extra) = extra else {
+        return;
+    };
+    let Some(target) = target.as_mut() else {
+        *target = Some(extra);
+        return;
+    };
+    for (into, from) in [
+        (&mut target.content, extra.content),
+        (&mut target.refusal, extra.refusal),
+    ] {
+        if let Some(from) = from {
+            into.get_or_insert_with(Vec::new).extend(from);
+        }
+    }
+}
+
+/// Pack emissions into frames that hold each choice index at most once, in
+/// emission order. A same-index entry folds into the current frame when that
+/// loses nothing and crosses no boundary; otherwise it opens the next frame.
+fn pack_choices(emissions: Vec<ChoiceEmission>) -> Vec<Vec<ChatChoiceStream>> {
+    let mut frames: Vec<Vec<ChatChoiceStream>> = vec![Vec::new()];
+    for choice in emissions.into_iter().map(ChoiceEmission::into_choice) {
+        let frame = frames.last_mut().expect("frames is never empty");
+        match frame.iter_mut().find(|seen| seen.index == choice.index) {
+            None => frame.push(choice),
+            Some(seen) if choices_merge(seen, &choice) => merge_choice(seen, choice),
+            Some(_) => frames.push(vec![choice]),
+        }
+    }
+    frames
+}
+
+/// Whether two entries for one choice fold without losing anything or
+/// crossing a boundary. `Parts` content has no concatenation, and reasoning
+/// stays apart from the answer (content or tool calls) that follows it.
+/// Keep prose separate from tool calls so their relative order survives packing.
+fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
+    let parts = |c: &ChatChoiceStream| {
+        matches!(
+            c.delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        )
+    };
+    let both = |has: fn(&ChatChoiceStream) -> bool| has(a) && has(b);
+    let reasoning = |c: &ChatChoiceStream| c.delta.reasoning_content.is_some();
+    let tools = |c: &ChatChoiceStream| {
+        c.delta
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty())
+    };
+    let content = |c: &ChatChoiceStream| match c.delta.content.as_ref() {
+        Some(ChatCompletionMessageContent::Text(text)) => !text.is_empty(),
+        Some(ChatCompletionMessageContent::Parts(_)) => true,
+        None => false,
+    };
+    let answer = |c: &ChatChoiceStream| content(c) || tools(c);
+    #[allow(deprecated)]
+    let conflicts = (reasoning(a) && answer(b))
+        || (answer(a) && reasoning(b))
+        || (content(a) && tools(b))
+        || (tools(a) && content(b))
+        || (parts(a) && b.delta.content.is_some())
+        || (parts(b) && a.delta.content.is_some())
+        || both(|c| c.delta.refusal.is_some())
+        || both(|c| c.delta.function_call.is_some())
+        || both(|c| c.finish_reason.is_some());
+    !conflicts
+}
+
+fn merge_choice(base: &mut ChatChoiceStream, extra: ChatChoiceStream) {
+    let ChatChoiceStream {
+        index: _,
+        delta,
+        finish_reason,
+        logprobs,
+    } = extra;
+    #[allow(deprecated)]
+    let ChatCompletionStreamResponseDelta {
+        role,
+        content,
+        tool_calls,
+        function_call,
+        refusal,
+        reasoning_content,
+    } = delta;
+    let target = &mut base.delta;
+    target.content = match (target.content.take(), content) {
+        (
+            Some(ChatCompletionMessageContent::Text(mut text)),
+            Some(ChatCompletionMessageContent::Text(more)),
+        ) => {
+            text.push_str(&more);
+            Some(ChatCompletionMessageContent::Text(text))
+        }
+        (existing, added) => existing.or(added),
+    };
+    target.reasoning_content = match (target.reasoning_content.take(), reasoning_content) {
+        (Some(mut text), Some(more)) => {
+            text.push_str(&more);
+            Some(text)
+        }
+        (existing, added) => existing.or(added),
+    };
+    if let Some(calls) = tool_calls {
+        let merged = target.tool_calls.get_or_insert_with(Vec::new);
+        for call in calls {
+            // A nameless entry continues the call already at its index.
+            let continues =
+                call.id.is_none() && call.function.as_ref().is_none_or(|f| f.name.is_none());
+            match merged
+                .iter_mut()
+                .find(|seen| continues && seen.index == call.index)
+                .and_then(|seen| seen.function.as_mut())
+            {
+                Some(function) => {
+                    let more = call.function.and_then(|f| f.arguments).unwrap_or_default();
+                    function
+                        .arguments
+                        .get_or_insert_with(String::new)
+                        .push_str(&more);
+                }
+                None => merged.push(call),
+            }
+        }
+    }
+    target.role = target.role.or(role);
+    target.refusal = target.refusal.take().or(refusal);
+    #[allow(deprecated)]
+    {
+        target.function_call = target.function_call.take().or(function_call);
+    }
+    base.finish_reason = base.finish_reason.or(finish_reason);
+    append_logprobs(&mut base.logprobs, logprobs);
 }
 
 impl ChoiceEmission {
@@ -489,24 +628,7 @@ impl ChoiceJailState {
         if self.is_jailed {
             self.accumulated_content.push_str(content);
             // Accumulate logprobs so they are preserved across jailed chunks.
-            if let Some(lp) = logprobs {
-                let state_lps = self.accumulated_logprobs.get_or_insert(ChatChoiceLogprobs {
-                    content: None,
-                    refusal: None,
-                });
-                if let Some(content_lps) = &lp.content {
-                    state_lps
-                        .content
-                        .get_or_insert_with(Vec::new)
-                        .extend(content_lps.clone());
-                }
-                if let Some(refusal_lps) = &lp.refusal {
-                    state_lps
-                        .refusal
-                        .get_or_insert_with(Vec::new)
-                        .extend(refusal_lps.clone());
-                }
-            }
+            append_logprobs(&mut self.accumulated_logprobs, logprobs.cloned());
         }
     }
 
@@ -708,9 +830,25 @@ impl ChoiceJailState {
 
         let mut chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
         for delta in deltas {
+            let index = (self.emitted_tool_calls_count + delta.tool_index) as u32;
+            // The cursor commits a call's opener and releases its first fragment in the
+            // same advance. Two entries for one index in one chunk is not valid OpenAI
+            // streaming, and a client keeping the last entry per index loses the name.
+            if delta.name.is_none()
+                && let Some(function) = chunks
+                    .last_mut()
+                    .filter(|chunk| chunk.index == index)
+                    .and_then(|chunk| chunk.function.as_mut())
+            {
+                function
+                    .arguments
+                    .get_or_insert_with(String::new)
+                    .push_str(&delta.arguments);
+                continue;
+            }
             let first = delta.name.is_some();
             chunks.push(ChatCompletionMessageToolCallChunk {
-                index: (self.emitted_tool_calls_count + delta.tool_index) as u32,
+                index,
                 id: first.then(|| format!("call-{}", uuid::Uuid::new_v4())),
                 r#type: first.then_some(FunctionType::Function),
                 function: Some(FunctionCallStream {
@@ -722,7 +860,7 @@ impl ChoiceJailState {
 
         emissions.push(ChoiceEmission::ToolCall(create_choice_stream(
             choice.index,
-            None,
+            choice.delta.role,
             "",
             Some(chunks),
             None,
@@ -1646,17 +1784,30 @@ impl JailedStream {
 
         match self.emission_mode {
             EmissionMode::Packed => {
-                // Pack all choices into a single response
-                let mut response = base_response.clone();
-                response.choices = emissions.into_iter().map(|e| e.into_choice()).collect();
-
-                vec![Annotated {
-                    data: Some(response),
-                    id,
-                    event,
-                    comment,
-                    error: None,
-                }]
+                // Pack all choices into as few responses as possible. One pass can emit
+                // several entries for one choice, and two for one index in one response
+                // is not valid at n = 1; entries that must stay apart get their own.
+                let frames = pack_choices(emissions);
+                let last = frames.len() - 1;
+                frames
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, choices)| {
+                        let mut response = base_response.clone();
+                        response.choices = choices;
+                        // Usage describes the whole chunk; count it once.
+                        if i != last {
+                            response.usage = None;
+                        }
+                        Annotated {
+                            data: Some(response),
+                            id: id.clone(),
+                            event: event.clone(),
+                            comment: comment.clone(),
+                            error: None,
+                        }
+                    })
+                    .collect()
             }
             EmissionMode::SingleChoicePerChunk => {
                 // Emit each choice in a separate response
@@ -3042,6 +3193,43 @@ mod tests {
         .collect()
         .await;
         collect_tool_calls(&responses)
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_streamed_turns_do_not_reuse_tool_ids() {
+        let payload = kimi_k3_tool_call("Bash");
+        let mut turn_ids = Vec::new();
+        for _ in 0..2 {
+            let chunks: Vec<_> = payload
+                .chars()
+                .map(|ch| text_chunk(&ch.to_string()))
+                .collect();
+            let responses: Vec<_> = apply_tool_calling_jail(
+                Some("kimi_k3".to_string()),
+                None,
+                None,
+                false,
+                stream::iter(chunks),
+            )
+            .collect()
+            .await;
+            let calls = collect_tool_calls(&responses);
+            assert_eq!(
+                calls,
+                vec![("Bash".to_string(), r#"{"city":"Berlin"}"#.to_string())]
+            );
+            let ids: Vec<_> = responses
+                .iter()
+                .filter_map(|response| response.data.as_ref())
+                .flat_map(|response| &response.choices)
+                .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                .flatten()
+                .filter_map(|call| call.id.clone())
+                .collect();
+            assert_eq!(ids.len(), 1, "a streamed call emits its ID once");
+            turn_ids.push(ids[0].clone());
+        }
+        assert_ne!(turn_ids[0], turn_ids[1]);
     }
 
     #[tokio::test]
@@ -4507,5 +4695,209 @@ mod tests {
             }),
             "terminal chunks must follow the early empty response and precede the final usage response"
         );
+    }
+
+    fn packed_call(
+        index: u32,
+        name: Option<&str>,
+        args: &str,
+    ) -> ChatCompletionMessageToolCallChunk {
+        ChatCompletionMessageToolCallChunk {
+            index,
+            id: name.map(|_| "call-1".to_string()),
+            r#type: name.map(|_| FunctionType::Function),
+            function: Some(FunctionCallStream {
+                name: name.map(str::to_string),
+                arguments: Some(args.to_string()),
+            }),
+        }
+    }
+
+    fn logprobs_of(tokens: &[&str]) -> Option<ChatChoiceLogprobs> {
+        Some(ChatChoiceLogprobs {
+            content: Some(
+                tokens
+                    .iter()
+                    .map(
+                        |token| dynamo_protocols::types::ChatCompletionTokenLogprob {
+                            token: token.to_string(),
+                            logprob: -0.5,
+                            token_id: None,
+                            bytes: None,
+                            top_logprobs: Vec::new(),
+                        },
+                    )
+                    .collect(),
+            ),
+            refusal: None,
+        })
+    }
+
+    /// A completed jail's non-empty remainder beside this pass's guided fragment
+    /// for the same call: one entry, the arguments in order, nothing dropped.
+    #[test]
+    fn pack_choices_folds_a_remainder_into_the_same_choice() {
+        let fragment = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "{\"a\": ")]),
+            None,
+            logprobs_of(&["t0"]),
+        );
+        let remainder = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "1}")]),
+            Some(FinishReason::ToolCalls),
+            logprobs_of(&["t1"]),
+        );
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::ToolCall(fragment),
+            ChoiceEmission::ToolCall(remainder),
+        ]);
+
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
+        assert_eq!(packed.len(), 1);
+        let calls = packed[0].delta.tool_calls.as_ref().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.as_ref().unwrap().arguments.as_deref(),
+            Some("{\"a\": 1}")
+        );
+        assert_eq!(packed[0].delta.role, Some(Role::Assistant));
+        assert_eq!(packed[0].finish_reason, Some(FinishReason::ToolCalls));
+        let tokens: Vec<_> = packed[0]
+            .logprobs
+            .as_ref()
+            .unwrap()
+            .content
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|t| t.token.as_str())
+            .collect();
+        assert_eq!(tokens, ["t0", "t1"]);
+    }
+
+    /// A second call opening at the same choice stays its own tool-call entry.
+    #[test]
+    fn pack_choices_keeps_distinct_calls_apart() {
+        let first = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(0, Some("a"), "{}")]),
+            None,
+            None,
+        );
+        let second = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(1, Some("b"), "{}")]),
+            None,
+            None,
+        );
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::ToolCall(first),
+            ChoiceEmission::ToolCall(second),
+        ]);
+
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
+        assert_eq!(packed.len(), 1);
+        let names: Vec<_> = packed[0]
+            .delta
+            .tool_calls
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|c| (c.index, c.function.as_ref().unwrap().name.clone().unwrap()))
+            .collect();
+        assert_eq!(names, [(0, "a".to_string()), (1, "b".to_string())]);
+    }
+
+    /// An entry that cannot fold without losing data opens the next frame, so no
+    /// frame carries one index twice; other choices are untouched.
+    #[test]
+    fn pack_choices_moves_unmergeable_entries_to_the_next_frame() {
+        let mut parts = create_choice_stream(0, None, "", None, None, None);
+        parts.delta.content = Some(ChatCompletionMessageContent::Parts(Vec::new()));
+        let text = create_choice_stream(0, None, "after", None, None, None);
+        let other = create_choice_stream(1, None, "other", None, None, None);
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::PassThrough(parts),
+            ChoiceEmission::PassThrough(other),
+            ChoiceEmission::PassThrough(text),
+        ]);
+
+        let indices: Vec<Vec<u32>> = frames
+            .iter()
+            .map(|frame| frame.iter().map(|c| c.index).collect())
+            .collect();
+        assert_eq!(indices, [vec![0, 1], vec![0]]);
+        assert!(matches!(
+            frames[0][0].delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        ));
+    }
+
+    /// Pending reasoning and a call finalized at EOF for the same choice arrive as
+    /// separate, ordered frames, each holding the choice index once. Kimi K3 is
+    /// the parser that emits the reasoning as its own entry, so it drives this.
+    #[tokio::test]
+    async fn reasoning_and_tool_call_are_separate_frames_at_eof() {
+        let mut chunk = text_chunk(concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>323",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+        ));
+        chunk.data.as_mut().expect("response").choices[0]
+            .delta
+            .reasoning_content = Some("Compute it.".to_string());
+
+        let responses = apply_kimi_k3(vec![chunk]).await;
+        let frames: Vec<&Vec<ChatChoiceStream>> = responses
+            .iter()
+            .filter_map(|response| response.data.as_ref())
+            .map(|response| &response.choices)
+            .filter(|choices| !choices.is_empty())
+            .collect();
+
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("calc".to_string(), r#"{"x":323}"#.to_string())]
+        );
+        for frame in &frames {
+            let indices: Vec<u32> = frame.iter().map(|c| c.index).collect();
+            assert!(
+                indices
+                    .iter()
+                    .enumerate()
+                    .all(|(i, x)| !indices[..i].contains(x)),
+                "duplicate choice index in {indices:?}"
+            );
+        }
+        let choices: Vec<&ChatChoiceStream> = frames.iter().flat_map(|f| f.iter()).collect();
+        assert!(choices.iter().all(|c| {
+            c.delta.reasoning_content.is_none()
+                || c.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+        }));
+        let reasoning_at = choices
+            .iter()
+            .position(|c| c.delta.reasoning_content.is_some())
+            .expect("reasoning emitted");
+        let call_at = choices
+            .iter()
+            .position(|c| c.delta.tool_calls.as_ref().is_some_and(|t| !t.is_empty()))
+            .expect("call emitted");
+        assert!(reasoning_at < call_at, "reasoning must precede the call");
     }
 }

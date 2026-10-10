@@ -1,13 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Stream parser on BATCH samples: feed each batch fixture's full
-//! `model_text` to the streaming parser and assert the assembled tool calls match
-//! the BATCH parser's `expected.dynamo_v1`. This is the streaming-vs-batch
-//! consistency check — the stream parser, given the complete output, must land on
-//! the same calls as the batch parser.
+//! Live stream-on-batch output must match its pinned v2 capture exactly.
+//! Differences from v1 additionally require a triaged parity note or an exact
+//! baseline-defect observation. Neither kind changes the authored golden oracle.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 mod common;
 use common::{collect_yaml, fixture_name};
@@ -33,9 +31,6 @@ struct Case {
     model_text: Option<String>,
     #[serde(default)]
     expected: Option<Expected>,
-    // The schema-dependent parsers (glm47, kimi_k2, qwen3_coder, minimax_m2, …)
-    // need the tool schema to coerce argument types the way the v1 batch parser
-    // did; the batch fixture carries it per case.
     #[serde(default)]
     tools: Vec<Tool>,
 }
@@ -60,181 +55,277 @@ struct ExpCall {
     arguments: Value,
 }
 
+impl From<&EngineExpected> for EngineResult {
+    fn from(expected: &EngineExpected) -> Self {
+        Self {
+            calls: expected
+                .calls
+                .iter()
+                .map(|c| (c.name.clone(), c.arguments.clone()))
+                .collect(),
+            normal_text: expected.normal_text.clone(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct StreamCapture {
+    family: String,
+    captured_with: BTreeMap<String, String>,
+    cases: BTreeMap<String, StreamCaptureCase>,
+}
+
+#[derive(Deserialize)]
+struct StreamCaptureCase {
+    #[serde(default)]
+    dynamo_v2: Option<Value>,
+}
+
+#[derive(Deserialize)]
+struct PinnedExpected {
+    calls: Vec<ExpCall>,
+    normal_text: String,
+}
+
+fn pinned_result(block: &Value) -> Option<EngineResult> {
+    let expected: PinnedExpected = serde_json::from_value(block.clone()).ok()?;
+    Some(EngineResult {
+        calls: expected
+            .calls
+            .into_iter()
+            .map(|call| (call.name, call.arguments))
+            .collect(),
+        normal_text: expected.normal_text,
+    })
+}
+
+#[derive(Debug)]
+enum Exception {
+    Parity,
+    BaselineDefect(EngineResult),
+}
+
+type Notes = BTreeMap<String, BTreeMap<String, BTreeMap<String, String>>>;
+
+fn exceptions(notes: &Notes) -> Result<BTreeMap<String, Exception>, String> {
+    let mut result = BTreeMap::new();
+    for (family, cases) in notes {
+        for (cid, keys) in cases {
+            let id = format!("{family}:{cid}");
+            let parity = keys.get("stream_vs_batch");
+            let defect = keys.get("baseline_defect");
+            if parity.is_some() && defect.is_some() {
+                return Err(format!(
+                    "{id}: a baseline defect cannot also be an intended parity difference"
+                ));
+            }
+            if let Some(note) = parity.or(defect)
+                && note.trim().is_empty()
+            {
+                return Err(format!("{id}: empty divergence note"));
+            }
+            let exception = if let Some(note) = defect {
+                if !note.starts_with("FIXME (v2 defect):") {
+                    return Err(format!(
+                        "{id}: baseline_defect must identify the v2 defect with a FIXME prefix"
+                    ));
+                }
+                let actual = keys
+                    .get("baseline_defect_actual")
+                    .ok_or_else(|| format!("{id}: baseline defect lacks its exact observation"))?;
+                let expected: Value = serde_json::from_str(actual)
+                    .map_err(|e| format!("{id}: invalid baseline_defect_actual: {e}"))?;
+                let result = pinned_result(&expected).ok_or_else(|| {
+                    format!("{id}: baseline_defect_actual requires calls and normal_text")
+                })?;
+                Some(Exception::BaselineDefect(result))
+            } else if parity.is_some() {
+                Some(Exception::Parity)
+            } else {
+                None
+            };
+            if keys.contains_key("baseline_defect_actual") && defect.is_none() {
+                return Err(format!("{id}: baseline_defect_actual has no defect note"));
+            }
+            if let Some(exception) = exception {
+                result.insert(id, exception);
+            }
+        }
+    }
+    Ok(result)
+}
+
+fn check_result(
+    got: &EngineResult,
+    batch: &EngineResult,
+    pinned: Option<&EngineResult>,
+    exception: Option<&Exception>,
+) -> Result<(), String> {
+    let pinned = pinned.ok_or("missing pinned v2 batch-on-stream expectation")?;
+    if got != pinned {
+        return Err(format!(
+            "live v2 output changed: got {got:?}, pinned {pinned:?}"
+        ));
+    }
+    if let Some(Exception::BaselineDefect(actual)) = exception
+        && got != actual
+    {
+        return Err(format!(
+            "baseline defect changed: got {got:?}, observed {actual:?}"
+        ));
+    }
+    if got == batch {
+        if exception.is_some() {
+            return Err("stale divergence entry: stream now agrees with batch".into());
+        }
+    } else if exception.is_none() {
+        return Err(format!(
+            "undocumented parity difference: stream {got:?}, batch {batch:?}"
+        ));
+    }
+    Ok(())
+}
+
+fn reconcile(known: &BTreeMap<String, Exception>, observed: &BTreeSet<String>) -> Vec<String> {
+    known
+        .keys()
+        .filter(|id| !observed.contains(*id))
+        .map(|id| format!("{id}: unvisited divergence entry"))
+        .collect()
+}
+
+fn capture_matches_version(capture: &StreamCapture, family: &str) -> Result<(), String> {
+    let version = common::STREAM_DYNAMO_V2_CURRENT_CAPTURE
+        .strip_prefix("dynamo_v2-")
+        .unwrap();
+    if capture.family != family
+        || capture.captured_with.get("dynamo_v2").map(String::as_str) != Some(version)
+    {
+        return Err(format!(
+            "pinned v2 capture must identify {family} at {version}"
+        ));
+    }
+    Ok(())
+}
+
 #[test]
 fn toolcalling_batch_via_stream_parity() {
-    // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
-    // Dynamo v1's `expected.dynamo_v1` from the dynamo_v1-<version>/ dirs back in,
-    // ASCENDING — old version dirs are capture history, the latest wins per case.
-    let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
+    let fixture_root = common::ensure_fixtures().join("toolcalling");
+    let batch_root = fixture_root.join("fixtures-batch-v1");
+    let capture_root = fixture_root.join("fixtures-batch-on-stream-v1");
     let inputs_root = batch_root.join("inputs");
     let dyn_dirs = common::version_dirs_ascending(&batch_root, "dynamo_v1-");
-    assert!(
-        !dyn_dirs.is_empty(),
-        "no dynamo_v1-<version> dir under fixtures-batch-v1"
-    );
+    assert!(!dyn_dirs.is_empty(), "no v1 batch captures");
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
 
-    // Batch samples where the v2 STREAMING parser deliberately differs from the
-    // v1 BATCH parser. This compares BOTH calls and normal_text; the HTML
-    // batch-on-stream tab compares calls only, so the `normal_text`-only entries
-    // below still render green there. Removing an entry asserts stream and batch
-    // now agree.
-    //
-    // v1 and v2 are INDEPENDENT parsers with NO shared code (v2 owns its
-    // extraction in `parsers/v2/.../v1core`; v1 is unchanged from its release and
-    // slated for deletion). They differ BY DESIGN on how much text around a tool
-    // call survives:
-    //   * v2 (streaming) preserves the model's text AROUND tool calls VERBATIM —
-    //     the prose BEFORE the first call, BETWEEN consecutive calls, and AFTER the
-    //     last one, plus bare whitespace-only and un-framed bare-prose answers.
-    //   * v1 (batch), unchanged, drops most of that surrounding/inter-call text and
-    //     trims boundary whitespace.
-    // So the divergences below are almost all `normal_text`-only, and are the
-    // expected v1-vs-v2 difference — NOT a regression. The dominant families of
-    // entry:
-    //   *:2.b/2.c/2.d (multi-call): v2 keeps the inter-call / trailing prose
-    //        ("Both:  Done."), v1 keeps only the leading fragment ("Both:").
-    //   *:8.b/8.c/8.d (call then trailing prose): v2 keeps "... Let me know if you
-    //        need more.", v1 returns "".
-    //   *:5.f/5.g (bare call recovery): v2 recovers the bare invoke and keeps the
-    //        separator/prefix space; v1's strict batch path drops or trims it.
-    //   *:9.b (whitespace-only input): v2 passes the bare whitespace through; v1
-    //        returns "".
-    //   harmony 3 (un-framed whole answer, whole-answer-drop class): v2 passes the answer
-    //        through; v1 returns "". Text loss is the worse failure.
-    //   The streaming peers (vLLM/SGLang) stream surrounding text the same way v2
-    //   does, and the HTML batch-on-stream tab compares calls only, so all of these
-    //   render green there.
-    // The allowlist lives in conformance/toolcalling/known-divergences.yaml (the
-    // same file the HTML renderer reads): every `stream_vs_batch:` entry is one
-    // allowed `family:case` divergence, and its note is what the batch-on-stream
-    // tab shows on the cell. An entry with an empty note fails here, so a new
-    // divergence can only be allowed WITH its documentation.
     let kd_path =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("toolcalling/known-divergences.yaml");
-    let kd: BTreeMap<String, BTreeMap<String, BTreeMap<String, String>>> =
-        serde_yaml::from_str(&std::fs::read_to_string(&kd_path).unwrap()).unwrap();
-    let known_divergences: std::collections::BTreeSet<String> = kd
-        .iter()
-        .flat_map(|(fam, cases)| {
-            cases.iter().filter_map(move |(cid, keys)| {
-                let note = keys.get("stream_vs_batch")?;
-                assert!(
-                    !note.trim().is_empty(),
-                    "{fam}:{cid}: empty stream_vs_batch note in known-divergences.yaml"
-                );
-                Some(format!("{fam}:{cid}"))
-            })
-        })
-        .collect();
-    assert!(
-        !known_divergences.is_empty(),
-        "no stream_vs_batch entries parsed from {}",
-        kd_path.display()
-    );
-
+    let notes: Notes = serde_yaml::from_str(&std::fs::read_to_string(kd_path).unwrap()).unwrap();
+    let known = exceptions(&notes).unwrap();
+    let mut observed = BTreeSet::new();
+    let mut failures = Vec::new();
     let mut total = 0usize;
     let mut consistent = 0usize;
-    let mut diverged = 0usize;
-    let mut failures: Vec<String> = Vec::new();
-    let mut unexpected_match: Vec<String> = Vec::new();
+    let mut documented = 0usize;
+    let mut defects = 0usize;
 
     for path in &files {
-        let yaml = std::fs::read_to_string(path).unwrap();
-        let mut fx: Fixture = match serde_yaml::from_str(&yaml) {
-            Ok(f) => f,
-            Err(e) => {
-                failures.push(format!("{}: YAML parse error: {e}", path.display()));
-                continue;
-            }
-        };
-        if fx.mode != "batch" {
-            continue;
-        }
-        // Data-driven coverage (reuse the family registry, no hardcoded list):
-        // harmony runs the token/text Harmony path; every other family is
-        // exercised iff `create_tool_parser_for_family` can build a v2 parser for
-        // it. Registering a new family there auto-adds it to this stream-on-batch
-        // consistency check.
-        if fx.family != "harmony" && create_tool_parser_for_family(&fx.family, &[]).is_err() {
+        let mut fx: Fixture =
+            serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        if fx.mode != "batch"
+            || (fx.family != "harmony" && create_tool_parser_for_family(&fx.family, &[]).is_err())
+        {
             continue;
         }
         let rel = path.strip_prefix(&inputs_root).unwrap();
         for dyn_dir in &dyn_dirs {
-            let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
+            if let Some(dfx) = std::fs::read_to_string(dyn_dir.join(rel))
                 .ok()
-                .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
-            if let Some(dfx) = dyn_fx {
+                .and_then(|text| serde_yaml::from_str::<Fixture>(&text).ok())
+            {
                 for (cid, dcase) in dfx.cases {
-                    if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
-                        c.expected = Some(exp);
+                    if let (Some(case), Some(expected)) = (fx.cases.get_mut(&cid), dcase.expected) {
+                        case.expected = Some(expected);
                     }
                 }
             }
         }
+        let capture_path = capture_root.join(rel);
+        let capture = std::fs::read_to_string(&capture_path)
+            .map_err(|e| e.to_string())
+            .and_then(|text| {
+                serde_yaml::from_str::<StreamCapture>(&text).map_err(|e| e.to_string())
+            })
+            .and_then(|capture| capture_matches_version(&capture, &fx.family).map(|()| capture));
+        let capture = match capture {
+            Ok(capture) => Some(capture),
+            Err(e) => {
+                // Placeholder files contain no executed v1 batch samples.
+                if fx
+                    .cases
+                    .values()
+                    .any(|case| case.model_text.is_some() && case.expected.is_some())
+                {
+                    failures.push(format!("{}: {e}", capture_path.display()));
+                }
+                None
+            }
+        };
         eprintln!("fixture {}", fixture_name(path));
-
         for (cid, case) in &fx.cases {
-            let (Some(text), Some(expected)) = (case.model_text.as_ref(), case.expected.as_ref())
-            else {
-                continue; // placeholder case
+            let (Some(text), Some(expected)) = (&case.model_text, &case.expected) else {
+                continue;
             };
             total += 1;
-
-            let got = parse_stream_result(&fx.family, text, &case.tools).unwrap();
-            let want = EngineResult {
-                calls: expected
-                    .dynamo_v1
-                    .calls
-                    .iter()
-                    .map(|c| (c.name.clone(), c.arguments.clone()))
-                    .collect(),
-                normal_text: expected.dynamo_v1.normal_text.clone(),
+            let id = format!("{}:{cid}", fx.family);
+            let got = match parse_stream_result(&fx.family, text, &case.tools) {
+                Ok(result) => result,
+                Err(e) => {
+                    failures.push(format!("{id}: parser error: {e}"));
+                    continue;
+                }
             };
-
-            let known_id = format!("{}:{cid}", fx.family);
-            let known = known_divergences.contains(known_id.as_str());
-            if got == want {
+            let batch = EngineResult::from(&expected.dynamo_v1);
+            let pinned = capture
+                .as_ref()
+                .and_then(|capture| capture.cases.get(cid))
+                .and_then(|case| case.dynamo_v2.as_ref())
+                .and_then(pinned_result);
+            let exception = known.get(&id);
+            if exception.is_some() {
+                observed.insert(id.clone());
+            }
+            if got == batch {
                 consistent += 1;
-                if known {
-                    // It now agrees — the allowlist entry is stale.
-                    unexpected_match.push(known_id);
+            }
+            match exception {
+                Some(Exception::Parity) => documented += 1,
+                Some(Exception::BaselineDefect(_)) => {
+                    defects += 1;
+                    eprintln!(
+                        "KNOWN BASELINE DEFECT {id}: {}",
+                        notes[&fx.family][cid]["baseline_defect"]
+                    );
                 }
-            } else {
-                diverged += 1;
-                if !known {
-                    failures.push(format!(
-                        "{} {cid}:\n        stream got {got:?}\n        batch want {want:?}",
-                        fx.family
-                    ));
-                }
+                None => {}
+            }
+            if let Err(e) = check_result(&got, &batch, pinned.as_ref(), exception) {
+                failures.push(format!("{id}: {e}"));
             }
         }
     }
-
+    failures.extend(reconcile(&known, &observed));
     eprintln!(
-        "Dynamo stream-on-batch: {consistent}/{total} consistent, {diverged} diverged \
-         ({} are known/documented)",
-        diverged - failures.len(),
+        "Dynamo stream-on-batch: {total} exact-capture checks; {consistent} agree with v1, {documented} documented differences, {defects} baseline defects"
     );
-    for f in &failures {
-        eprintln!("UNEXPECTED DIVERGENCE {f}");
-    }
-    for c in &unexpected_match {
-        eprintln!("STALE ALLOWLIST (now agrees, drop it): {c}");
-    }
+    assert!(total > 0, "no batch-on-stream cases executed");
     assert!(
         failures.is_empty(),
-        "{} batch samples newly diverged between stream and batch (not in the \
-         known-divergence allowlist)",
-        failures.len()
-    );
-    assert!(
-        unexpected_match.is_empty(),
-        "{} allowlist entries now agree — remove them",
-        unexpected_match.len()
+        "{} stream-on-batch gate failures:\n{}",
+        failures.len(),
+        failures.join("\n")
     );
 }
 
@@ -304,4 +395,132 @@ fn assemble_trait_calls(result: ToolParseResult) -> Vec<(String, Value)> {
             Some((name, value))
         })
         .collect()
+}
+
+#[cfg(test)]
+mod gate_tests {
+    use super::*;
+    fn result(value: Value, text: &str) -> EngineResult {
+        EngineResult {
+            calls: vec![("probe".into(), value)],
+            normal_text: text.into(),
+        }
+    }
+
+    #[test]
+    fn documented_difference_still_rejects_changed_arguments_and_text() {
+        let pinned = result(serde_json::json!({"value": 42}), "after");
+        let batch = result(serde_json::json!({"value": "42"}), "");
+        assert!(check_result(&pinned, &batch, Some(&pinned), Some(&Exception::Parity)).is_ok());
+        for changed in [
+            result(serde_json::json!({"value": "42"}), "after"),
+            result(serde_json::json!({"value": 42}), "lost"),
+        ] {
+            assert!(
+                check_result(&changed, &batch, Some(&pinned), Some(&Exception::Parity))
+                    .unwrap_err()
+                    .contains("live v2 output changed")
+            );
+        }
+    }
+
+    #[test]
+    fn pinned_output_does_not_permit_unlisted_parity_difference() {
+        let pinned = result(Value::from(42), "");
+        let batch = result(Value::from("42"), "");
+        assert!(
+            check_result(&pinned, &batch, Some(&pinned), None)
+                .unwrap_err()
+                .contains("undocumented parity difference")
+        );
+        assert!(
+            check_result(&pinned, &batch, None, Some(&Exception::Parity))
+                .unwrap_err()
+                .contains("missing pinned")
+        );
+        for partial in [
+            serde_json::json!({}),
+            serde_json::json!({"calls": []}),
+            serde_json::json!({"normal_text": ""}),
+        ] {
+            assert!(
+                pinned_result(&partial).is_none(),
+                "partial capture became an empty expectation"
+            );
+        }
+    }
+
+    #[test]
+    fn exact_baseline_defect_cannot_change_with_recaptured_expectations() {
+        let actual = result(Value::from(1), "");
+        let defect = Exception::BaselineDefect(result(Value::from(1), ""));
+        let batch = EngineResult {
+            calls: vec![],
+            normal_text: String::new(),
+        };
+        assert!(check_result(&actual, &batch, Some(&actual), Some(&defect)).is_ok());
+        let changed = result(Value::from(2), "");
+        assert!(
+            check_result(&changed, &batch, Some(&changed), Some(&defect))
+                .unwrap_err()
+                .contains("baseline defect changed")
+        );
+    }
+
+    #[test]
+    fn stale_and_unvisited_exceptions_fail() {
+        let result = result(Value::from(42), "");
+        assert!(
+            check_result(&result, &result, Some(&result), Some(&Exception::Parity))
+                .unwrap_err()
+                .contains("stale")
+        );
+        let known = BTreeMap::from([("family:case".into(), Exception::Parity)]);
+        assert_eq!(
+            reconcile(&known, &BTreeSet::new()),
+            ["family:case: unvisited divergence entry"]
+        );
+    }
+
+    #[test]
+    fn empty_unpinned_or_misclassified_notes_fail() {
+        for keys in [
+            BTreeMap::from([("stream_vs_batch".into(), " ".into())]),
+            BTreeMap::from([(
+                "baseline_defect".into(),
+                "FIXME (v2 defect): empty name".into(),
+            )]),
+            BTreeMap::from([("baseline_defect_actual".into(), "{}".into())]),
+            BTreeMap::from([
+                ("stream_vs_batch".into(), "intended".into()),
+                (
+                    "baseline_defect".into(),
+                    "FIXME (v2 defect): empty name".into(),
+                ),
+            ]),
+        ] {
+            assert!(
+                exceptions(&BTreeMap::from([(
+                    "family".into(),
+                    BTreeMap::from([("case".into(), keys)])
+                )]))
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn capture_version_and_family_must_match() {
+        let mut capture = StreamCapture {
+            family: "glm47".into(),
+            captured_with: BTreeMap::from([("dynamo_v2".into(), "0.7.20".into())]),
+            cases: BTreeMap::new(),
+        };
+        assert!(capture_matches_version(&capture, "glm47").is_ok());
+        assert!(capture_matches_version(&capture, "qwen3_coder").is_err());
+        capture
+            .captured_with
+            .insert("dynamo_v2".into(), "0.7.19".into());
+        assert!(capture_matches_version(&capture, "glm47").is_err());
+    }
 }
