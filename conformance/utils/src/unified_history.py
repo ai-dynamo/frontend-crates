@@ -1168,8 +1168,10 @@ def materialize_store(
     *,
     include_current_inputs: bool = True,
     derived_release_versions: dict[str, str] | None = None,
+    store: Store | None = None,
 ) -> None:
-    store = load_store(root)
+    if store is None:
+        store = load_store(root)
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     written: set[Path] = set()

@@ -35,6 +35,8 @@ if str(UTILS / "src") not in sys.path:
 
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from case_variants import leaf_cells
+from schema_cases import ARGUMENT_SECTIONS, schema_fold
+import unified_taxonomy
 from validate_conformance_status import cell_state
 from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
@@ -94,6 +96,73 @@ def _tab(model: dict, tab_id: str) -> dict:
         if t["id"] == tab_id:
             return t
     raise AssertionError(f"tab {tab_id!r} missing; have {[t['id'] for t in model['tabs']]}")
+
+
+def test_case_schema_extraction_omits_absent_and_shared_defaults():
+    schema = {"type": "object", "properties": {"query": {"type": "string"}}}
+    tools = [{"name": "search", "parameters": schema, "description": "Search"}]
+    shared_signature = table._schema_signature(table._explicit_case_schemas(tools))
+    assert table._explicit_case_schemas(tools) == [{"name": "search", "parameters": schema}]
+    assert table._explicit_case_schemas(None) is None
+    assert table._explicit_case_schemas([]) is None
+    assert table._explicit_case_schemas([{"name": "search"}]) is None
+    assert table._explicit_case_schemas(tools, shared_signature=shared_signature) is None
+    assert table._unified_case_schemas({"request": {"tools": tools}}, "[]") == [
+        {"name": "search", "parameters": schema}
+    ]
+    assert table._unified_case_schemas({"tools": tools}, "[]") == [
+        {"name": "search", "parameters": schema}
+    ]
+    assert table._unified_case_schemas({"request": {"tools": tools}}, shared_signature) is None
+    assert table._unified_case_schemas({"request": {"tools": [{"name": "search"}]}}, "[]") is None
+
+
+def test_unified_schema_defaults_are_loaded_once(monkeypatch):
+    calls = []
+    original = table.unified_tools
+
+    def tools():
+        calls.append(None)
+        return original()
+
+    monkeypatch.setattr(table, "unified_tools", tools)
+    result = table._load_unified_fixtures(_cache_root() / "unified")
+    assert result is not None
+    assert len(calls) == 1
+
+
+def test_case_schema_variants_deduplicate_and_keep_family_labels():
+    first = [{"name": "search", "parameters": {"type": "object", "required": ["q"]}}]
+    same = [{"parameters": {"required": ["q"], "type": "object"}, "name": "search"}]
+    other = [{"name": "search", "parameters": {"type": "object", "required": ["query"]}}]
+    assert table._schema_variants_by_family({"alpha": first, "beta": same}) == [
+        {"families": ["alpha", "beta"], "tools": first}
+    ]
+    assert table._schema_variants_by_family({"alpha": first, "beta": other}) == [
+        {"families": ["alpha"], "tools": first},
+        {"families": ["beta"], "tools": other},
+    ]
+
+
+def test_case_schema_metadata_survives_model_serialization():
+    schemas = [{"families": ["alpha"], "tools": [{"name": "search", "parameters": {"type": "string"}}]}]
+    tab = {"id": "schema-test", "kind": "toolcalling", "label": "schema", "rows": [],
+           "columns": [{"sub": "1", "schemas": schemas}], "candidates": [], "stats": {}}
+    raw = model_mod.to_script_json(model_mod.build_page({}, [tab]))
+    decoded = json.loads(raw)
+    assert decoded["tabs"][0]["columns"][0]["schemas"] == schemas
+
+
+def test_rendered_model_carries_only_explicit_unified_case_schemas(model_v2):
+    columns = {column["sub"]: column for column in _tab(model_v2, "tab-unified")["columns"]}
+    assert "schemas" not in columns["tool_only"]
+    assert columns["schema_declared_integer"]["schemas"]
+    assert columns["schema_declared_integer"]["schemas"][0]["tools"][0]["name"]
+
+
+def test_rendered_toolcalling_tabs_carry_case_tool_schemas(model_v2):
+    for tab_id in ("tab-toolcalling-batch", "tab-toolcalling-streamv1"):
+        assert any(column.get("schemas") for column in _tab(model_v2, tab_id)["columns"]), tab_id
 
 
 def _iter_cells(tab: dict):
@@ -1474,3 +1543,33 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
                 mismatches += differs
     assert checked > 0, "no independently authored schema probes were checked"
     print(f"Preserved {mismatches} visible authored-golden disagreements across {checked} current schema captures; {hidden_mismatches} additional hidden alias disagreements remain in the fixtures")
+
+
+def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    sections = [group for group in tab["column_groups"] if group["key"].startswith("unified_g7_")]
+    assert [group["label"] for group in sections] == list(ARGUMENT_SECTIONS.values())
+    assert [group["span"] for group in sections] == [3, 10, 6, 10, 17, 14]
+    columns = [column for column in tab["columns"] if column["group_key"].startswith("unified_g7_")]
+    assert len(columns) == 60
+    assert [column["display_number"] for column in columns] == list(range(1, 61))
+    expected = {scenario for scenario in unified_taxonomy.UNIFIED_TAX if unified_taxonomy.tax(scenario)[0] == 7}
+    assert len(expected) == 139
+    found = set()
+    for row in tab["rows"]:
+        if row.get("section"):
+            continue
+        for column in tab["columns"]:
+            assert row["cells"][column["sub"]]["col_group"] == column["group_key"]
+        leaves = leaf_cells(row)
+        found.update(set(leaves) & expected)
+        for column in columns:
+            fold = schema_fold(column["sub"])
+            if not fold:
+                continue
+            cell = row["cells"][column["sub"]]
+            assert {leaf["sub"] for leaf in cell["variants"]} == {
+                scenario for scenario in expected if schema_fold(scenario) and schema_fold(scenario)[0] == fold[0]}
+            assert len(cell["variants"]) == 4
+            assert column["schemas"]
+    assert found == expected

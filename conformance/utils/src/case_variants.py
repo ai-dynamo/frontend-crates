@@ -7,6 +7,7 @@ import hashlib
 import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
+from schema_cases import schema_fold
 import unified_taxonomy
 
 
@@ -19,16 +20,19 @@ def aggregate_cells(cells, parent, description):
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
-    candidates = set().union(*((cell.get("cmp") or {}) for cell in cells))
+    applicable = [cell for cell in cells if cell.get("status") != "na"]
+    if not applicable:
+        result["status"] = "na"
+    candidates = set().union(*((cell.get("cmp") or {}) for cell in applicable))
     comparisons = {}
     for key in sorted(candidates):
-        entries = [(cell.get("cmp") or {}).get(key, {"na": 1}) for cell in cells]
+        entries = [(cell.get("cmp") or {}).get(key, {"na": 1}) for cell in applicable]
         missing = any(entry.get("na") for entry in entries)
         failure = any(
             not entry.get("na") and (entry.get("err") or entry.get("leak") or (
                 "golden" in (cell.get("cmp") or {})
                 and entry["sig"] != cell["cmp"]["golden"]["sig"]
-            )) for cell, entry in zip(cells, entries)
+            )) for cell, entry in zip(applicable, entries)
         )
         signatures = [None if entry.get("na") else entry["sig"] for entry in entries]
         comparisons[key] = {
@@ -107,6 +111,9 @@ def group_null_variants(tab: dict) -> None:
             mixed.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
         referenced = members + (mixed if parent == "7-5" else [])
         root["desc"] = description
+        root_schemas = folded_schemas(referenced)
+        if root_schemas:
+            root["schemas"] = root_schemas
         for row in tab["rows"]:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
@@ -128,10 +135,35 @@ def group_null_variants(tab: dict) -> None:
     for row in tab["rows"]:
         for sub in hidden:
             row["cells"].pop(sub, None)
+    refresh_variant_stats(tab, len(hidden))
+    for group in tab.get("glossary", []):
+        group["rows"] = [(display_labels.get(label, label),
+                          NULL_DESCRIPTIONS.get(null_parent(label), desc))
+                         for label, desc in group["rows"]
+                         if null_parent(label) is None or label in display_labels]
+
+
+def folded_schemas(columns):
+    """One JSON block per schema, with every case/family association retained."""
+    schemas = {}
+    for column in columns:
+        for variant in column.get("schemas", []):
+            key = json.dumps(variant["tools"], sort_keys=True, separators=(",", ":"))
+            merged = schemas.setdefault(key, {"tools": variant["tools"], "families": [], "cases": []})
+            for family in variant["families"]:
+                if family not in merged["families"]:
+                    merged["families"].append(family)
+            merged["cases"].append({"label": column.get("variant_label", column["label"]),
+                                    "case_id": column.get("case_id", "UNIFIED." + column["label"]),
+                                    "families": variant["families"]})
+    return list(schemas.values())
+
+
+def refresh_variant_stats(tab, hidden_count):
     for group in tab["column_groups"]:
         group["span"] = sum(column["group_key"] == group["key"] for column in tab["columns"])
     tab["column_groups"] = [group for group in tab["column_groups"] if group["span"]]
-    tab["stats"]["variant_columns"] = len(hidden)
+    tab["stats"]["variant_columns"] = tab["stats"].get("variant_columns", 0) + hidden_count
     tab["stats"]["sub_cases"] = len(tab["columns"])
     cells = [cell for row in tab["rows"] for cell in row["cells"].values()]
     tab["stats"]["fixture_cases"] = sum(
@@ -142,8 +174,52 @@ def group_null_variants(tab: dict) -> None:
                          real=sum(cell.get("kind") == "cell" and cell.get("status") != "na" for cell in cells),
                          na=sum(cell.get("status") == "na" for cell in cells),
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
+
+
+def group_schema_variants(tab):
+    if tab["id"] != "tab-unified":
+        return
+    groups = {}
+    for column in tab["columns"]:
+        fold = schema_fold(column["sub"])
+        if fold:
+            parent, label = fold
+            column["variant_label"] = label
+            groups.setdefault(parent, []).append(column)
+    hidden = set()
+    for parent, members in groups.items():
+        members.sort(key=lambda column: {
+            "Direct": 0, "Explicit string type": 1, "allOf": 2, "Reference": 3,
+            "String / Forward": 0, "Typed value / Forward": 1,
+            "String / Reversed": 2, "Typed value / Reversed": 3,
+        }[column["variant_label"]])
+        # Partial corpora keep the identity of an available fixture.
+        root = next((column for column in members if column["sub"] == parent), members[0])
+        labels = {column["sub"]: column["variant_label"] for column in members}
+        description = ("String constant: Direct, Explicit string type, allOf, and Reference."
+                       if "const_" in parent else
+                       "Union alternatives: String / Typed value x Forward / Reversed branch order.")
+        root["desc"] = description
+        root["schemas"] = folded_schemas(members)
+        for row in tab["rows"]:
+            if row.get("section"):
+                continue
+            children = [row["cells"][column["sub"]] for column in members if column["sub"] in row["cells"]]
+            if children:
+                aggregated = aggregate_cells(children, unified_taxonomy.case_label(root["sub"]), description)
+                aggregated["sub"] = root["sub"]
+                for child in aggregated["variants"]:
+                    if child.get("tooltip"):
+                        child["tooltip"]["head"] = labels[child["sub"]] + " — " + child["tooltip"]["head"]
+                row["cells"][root["sub"]] = aggregated
+        hidden.update(column["sub"] for column in members if column is not root)
+    hidden_labels = {column["label"] for column in tab["columns"] if column["sub"] in hidden}
+    tab["columns"] = [column for column in tab["columns"] if column["sub"] not in hidden]
+    for row in tab["rows"]:
+        for sub in hidden:
+            row["cells"].pop(sub, None)
+    descriptions = {column["label"]: column["desc"] for column in tab["columns"]}
     for group in tab.get("glossary", []):
-        group["rows"] = [(display_labels.get(label, label),
-                          NULL_DESCRIPTIONS.get(null_parent(label), desc))
-                         for label, desc in group["rows"]
-                         if null_parent(label) is None or label in display_labels]
+        group["rows"] = [(label, descriptions.get(label, desc))
+                         for label, desc in group["rows"] if label not in hidden_labels]
+    refresh_variant_stats(tab, len(hidden))

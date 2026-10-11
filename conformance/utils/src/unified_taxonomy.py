@@ -20,13 +20,12 @@ that value — `finish()` takes no argument).
 """
 
 import re
-from functools import lru_cache
 
 import yaml
 
 import markers
 from null_cases import NULL_VARIANTS
-from schema_cases import CONFORMANCE_CASES, SCHEMA_GROUPS, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_group
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -216,10 +215,19 @@ def display_tax(scenario):
     return _DISPLAY_GROUP.get(scenario, group), sub
 
 
+def display_section(scenario):
+    group, _ = display_tax(scenario)
+    if group == 7:
+        section = argument_section(scenario)
+        return f"unified_g7_{section}", ARGUMENT_SECTIONS[section]
+    return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
+
+
 def display_sort_key(scenario):
     group, _ = display_tax(scenario)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
-    return group_key, case_description(scenario), scenario
+    section_rank = list(ARGUMENT_SECTIONS).index(argument_section(scenario)) if group == 7 else 0
+    return group_key, section_rank, case_description(scenario), scenario
 
 
 DISPLAY_PREFIXES = {"deepseek": ("deepseek_v41", "ds41"),
@@ -264,13 +272,10 @@ GROUP_DESCRIPTION_PREFIXES = {
     "deepseek": ("deepseek_v41_",),
     "muse": ("muse_",),
 }
-DESCRIPTION_OVERRIDES = {}
 
 
 def case_description(scenario):
     """The tested behavior, independent of its ordering and display placement."""
-    if scenario in DESCRIPTION_OVERRIDES:
-        return DESCRIPTION_OVERRIDES[scenario]
     if scenario.startswith("schema_"):
         return scenario.removeprefix("schema_")
     for prefix in GROUP_DESCRIPTION_PREFIXES.get(tax(scenario)[0], ()):
@@ -353,15 +358,20 @@ LEGACY_CASE_LABELS = {
 }
 
 
-@lru_cache(maxsize=16)
-def _label_owners(description_overrides):
+def _label_owners(scenario_labels, historical_labels):
     owners = {}
-    for scenario in UNIFIED_TAX:
-        for label in (case_label(scenario), legacy_case_label(scenario)):
+    for scenario, labels in scenario_labels.items():
+        for label in labels:
             owners.setdefault(label, set()).add(scenario)
-    for label, scenario in LEGACY_CASE_LABELS.items():
+    for label, scenario in historical_labels.items():
         owners.setdefault(label, set()).add(scenario)
     return owners
+
+
+_LABEL_OWNERS = _label_owners(
+    {scenario: (case_label(scenario), legacy_case_label(scenario)) for scenario in UNIFIED_TAX},
+    LEGACY_CASE_LABELS,
+)
 
 
 def scenario_for_label(label, family=None, scenario=None):
@@ -376,7 +386,7 @@ def scenario_for_label(label, family=None, scenario=None):
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"
-    owners = _label_owners(tuple(sorted(DESCRIPTION_OVERRIDES.items()))).get(label, set())
+    owners = _LABEL_OWNERS.get(label, set())
     if len(owners) > 1 and scenario in owners:
         return scenario
     if len(owners) > 1:

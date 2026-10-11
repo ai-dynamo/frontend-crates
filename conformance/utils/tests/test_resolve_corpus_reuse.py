@@ -103,17 +103,36 @@ RESOLVERS = {
 
 
 @pytest.mark.parametrize("kind", sorted(RESOLVERS))
-def test_shared_corpus_matches_a_fresh_parse(tmp_path, kind):
+@pytest.mark.parametrize("indexed", [False, True])
+def test_shared_corpus_matches_a_fresh_parse(tmp_path, kind, indexed):
     """resolve_docs(corpus=<shared>) == resolve_docs(corpus=None), for every selection."""
     mod, make_tree, name, sel_a, sel_b = RESOLVERS[kind]
     root = tmp_path / kind
     make_tree(root)
     corpus = load_corpus(root)
+    if not indexed:
+        corpus = dict(corpus)
 
     for select in (sel_a, sel_b):
         shared, _ = mod.resolve_docs(root, select, corpus=corpus)
         fresh, _ = mod.resolve_docs(root, select)
         assert shared == fresh, f"{kind} {select}: shared-corpus resolve diverged"
+
+
+@pytest.mark.parametrize("kind", sorted(RESOLVERS))
+def test_indexed_resolution_does_not_rediscover_directories(tmp_path, kind, monkeypatch):
+    mod, make_tree, _name, sel_a, sel_b = RESOLVERS[kind]
+    root = tmp_path / kind
+    make_tree(root)
+    corpus = load_corpus(root)
+
+    def unexpected_discovery(_path, *_args):
+        pytest.fail("resolution rediscovered an indexed corpus")
+
+    monkeypatch.setattr(Path, "iterdir", unexpected_discovery)
+    monkeypatch.setattr(Path, "glob", unexpected_discovery)
+    for select in (sel_a, sel_b):
+        mod.resolve_docs(root, select, corpus=corpus)
 
 
 @pytest.mark.parametrize("kind", sorted(RESOLVERS))

@@ -488,6 +488,43 @@ td.cell, td.parser { cursor: pointer; }
 .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
 .ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
+.case-schema { display: inline; }
+.ttip:has(.case-schema[open]) { overflow: auto; }
+.case-schema-toggle {
+    display: inline-block;
+    list-style: none;
+    margin-left: 7px;
+    padding: 1px 5px;
+    border: 1px solid #64748b;
+    border-radius: 10px;
+    background: transparent;
+    color: #bfdbfe;
+    font: 600 10px/1.4 -apple-system, system-ui, sans-serif;
+    cursor: pointer;
+    vertical-align: 1px;
+}
+.case-schema-toggle::-webkit-details-marker { display: none; }
+.case-schema-toggle:hover, .case-schema[open] > summary { background: #1e293b; }
+.case-schema-content { margin: 5px 0 7px; font-weight: 400; }
+.case-schema-json {
+    margin: 2px 0 5px;
+    padding: 6px;
+    max-height: 45vh;
+    overflow: auto;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    background: #0b1220;
+    color: #e5e7eb;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 11px/1.4 ui-monospace, monospace;
+}
+.schema-variant-label { margin: 5px 0 2px; color: #93c5fd; font: 600 10px/1.4 -apple-system, system-ui, sans-serif; }
+:root[data-theme="light"] .case-schema-toggle { color: #1d4ed8; }
+:root[data-theme="light"] .case-schema-toggle:hover,
+:root[data-theme="light"] .case-schema[open] > summary { background: #eaf2ff; }
+:root[data-theme="light"] .case-schema-json { border-color: #cbd5e1; background: #f8fafc; color: #1f2937; }
+:root[data-theme="light"] .schema-variant-label { color: #1d4ed8; }
 /* Inline description after the popup id: prose, so sans-serif (mono is for the code/id),
    normal weight, and the normal tooltip text color — not the loud section blue. */
 .ttip-head-desc { font-family: -apple-system, system-ui, sans-serif; font-weight: normal; color: #e5e7eb; }
@@ -1097,3 +1134,7 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 /* Case-description glossary: the ID column is an identifier (mono, inherited from the
  * `table` base), the description beside it is a sentence and reads as one. */
 table.glossary td.gloss-desc { font-family: -apple-system, system-ui, sans-serif; }
+
+.case-schema-indicator { display: none; margin-left: 0.25em; color: #8a8f98; font: 0.72em ui-monospace, monospace; }
+body.view-details .case-schema-indicator { display: inline; }
+:root[data-theme="dark"] .case-schema-indicator { color: #94a3b8; }

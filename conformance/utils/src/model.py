@@ -45,7 +45,9 @@ tab = {
   "captured_note": str,              # "captured against ..." provenance line
   "candidates": [ candidate, ... ],  # compare-bar rows (ordered)
   "column_groups": [ {"key","label","span"} ],   # top header row
-  "columns": [ {"sub","group_key","band","label","desc"} ],  # sub-case header row
+  "columns": [ {"sub","group_key","band","label","desc","schemas"?} ],
+                                     # sub-case headers; optional schemas are
+                                     # deduplicated {families, tools} variants
   "rows": [ row, ... ],
   "glossary": [ {"label": str, "rows": [[sub, desc], ...]} ],
   "stats": { ... },                  # families/sub_cases/slots/real/parity/... counts

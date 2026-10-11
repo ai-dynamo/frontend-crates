@@ -543,6 +543,25 @@
       + (model.family ? ' — ' + escapeHtml(model.family) : '');
   }
 
+  function schemaDisclosureHtml(column) {
+    const variants = (column && column.schemas) || [];
+    if (!variants.length) { return ''; }
+    const multiple = variants.length > 1;
+    const content = variants.map(function (variant) {
+      const associations = variant.cases
+        ? variant.cases.map(item => item.label + ' (' + (item.families || []).join(', ') + ')').join('; ')
+        : (variant.families || []).join(', ');
+      const label = multiple || variant.cases
+        ? '<div class="schema-variant-label">' + escapeHtml(associations) + '</div>'
+        : '';
+      return label + '<pre class="case-schema-json">'
+        + escapeHtml(JSON.stringify(variant.tools || [], null, 2)) + '</pre>';
+    }).join('');
+    return '<details class="case-schema"><summary class="case-schema-toggle">'
+      + '<span aria-hidden="true">{ }</span> Schema</summary>'
+      + '<div class="case-schema-content">' + content + '</div></details>';
+  }
+
   // --- Tooltip content (built lazily into the empty .ttip) -------------------
   function buildTooltipHtml(m) {
     if (m && m.grammar) { return buildGrammarHtml(m); }
@@ -797,6 +816,7 @@
     // Id + description on ONE line: the id keeps its accent color, the description follows
     // inline in the normal tooltip text color (not the loud section blue).
     var h = '<div class="ttip-head">' + popupCaseHeadingHtml(m)
+      + schemaDisclosureHtml(m.popupCase)
       + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
     h += buildConfigHtml(m.init);
@@ -869,6 +889,12 @@
       + '<th>input</th>' + header + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
 
+  function schemaIndicatorHtml(column) {
+    return column.schemas && column.schemas.length
+      ? '<span class="case-schema-indicator" role="img" aria-label="Has explicit schema.">{}</span>'
+      : '';
+  }
+
   function subHeadersHtml(tab) {
     var cols = tab.columns || [];
     var href = escapeAttr(tab.case_docs_href || '');
@@ -888,7 +914,7 @@
         + '<span class="case-label-full">' + escapeHtml(label) + '</span> '
         + '<span class="case-label-short' + (c.display_number != null ? ' case-label-reference' : '')
         + '" aria-hidden="true">' + shortLabel + '</span>'
-        + '</a><div class="ttip"></div></th>';
+        + schemaIndicatorHtml(c) + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {

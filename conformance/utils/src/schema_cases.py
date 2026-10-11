@@ -49,6 +49,51 @@ def schema_group(name: str) -> str:
     return "ambiguous"
 
 
+# Report sections reuse the schema classification without changing fixture IDs.
+ARGUMENT_SECTIONS = {
+    "text": "Text preservation",
+    "declared": "Declared types and enums",
+    "nullable": "Type arrays and null interpretation",
+    "const": "String constants",
+    "union": "Unions, intersections, and ambiguous values",
+    "reference": "References and schema IDs",
+}
+_SCHEMA_SECTION = {
+    "declared": "declared", "enum": "declared", "nullable": "nullable",
+    "const": "const", "anyof": "union", "oneof": "union",
+    "intersection": "union", "ambiguous": "union", "reference": "reference",
+}
+
+
+def argument_section(scenario: str) -> str:
+    if scenario.startswith("schema_"):
+        return _SCHEMA_SECTION[schema_group(scenario.removeprefix("schema_"))]
+    if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string"}:
+        return "text"
+    if scenario.startswith("arg_"):
+        return "nullable"
+    return "reference"
+
+
+def schema_fold(scenario: str) -> tuple[str, str] | None:
+    """Existing fixture parent plus the child's display dimension, never a new ID."""
+    name = scenario.removeprefix("schema_")
+    if not scenario.startswith("schema_"):
+        return None
+    if schema_group(name) == "const":
+        literal, form = name.removeprefix("const_").rsplit("_", 1)
+        return f"schema_const_{literal}_bare", {
+            "bare": "Direct", "typed": "Explicit string type",
+            "allof": "allOf", "ref": "Reference",
+        }[form]
+    if schema_group(name) in {"anyof", "oneof"}:
+        _, keyword, alternative, *dimensions = name.split("_")
+        value = "Typed value" if dimensions[-1] == "typed" else "String"
+        order = "Reversed" if "reverse" in dimensions else "Forward"
+        return f"schema_union_{keyword}_{alternative}_string", f"{value} / {order}"
+    return None
+
+
 def schema_case_label(case: dict[str, Any]) -> str:
     """Legacy tool-calling label; Unified IDs are owned by unified_taxonomy."""
     letter, _number, _description = SCHEMA_GROUPS[schema_group(case["name"])]

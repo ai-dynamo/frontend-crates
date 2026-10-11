@@ -423,7 +423,20 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 ## Shared schema conformance probes
 
-Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 139 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
+
+| Behavior section | Visible entries |
+|---|---:|
+| Text preservation | 3 |
+| Declared types and enums | 10 |
+| Type arrays and null interpretation | 6 |
+| String constants | 10 |
+| Unions, intersections, and ambiguous values | 17 |
+| References and schema IDs | 14 |
+
+String constants fold by literal into ten entries: Direct, Explicit string type, allOf, and Reference. anyOf and oneOf stay separate, each with six entries by alternative type; their variants cross String / Typed value with Forward / Reversed branch order. Existing null groups retain their variants. Each popup lists the child's input, initialization, applicable family, capture, and comparison. A failing child keeps its parent failing; missing captures remain distinguishable from inapplicable cases.
+
+Detailed matrix labels show a small `{}` when the entry or any child has an explicit schema. Overview hides it. Clicking the existing label opens the popup; its `{ } Schema` disclosure expands inline. Identical schema JSON appears once with every associated variant and applicable family. Shared fallback schemas do not get an indicator.
 
 Historical schema-subgroup aliases below retain their original meaning. Active IDs use the probe name directly, for example `UNIFIED.7-declared_array` and `UNIFIED.7-const_array_allof`; subgroup headings and ordering remain separate metadata.
 

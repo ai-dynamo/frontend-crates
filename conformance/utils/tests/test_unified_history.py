@@ -119,6 +119,27 @@ def _store(root: Path) -> Path:
     return root
 
 
+def test_materialization_reuses_supplied_store_without_mutating_it(tmp_path, monkeypatch):
+    root = _store(tmp_path / "store")
+    store = unified_history.load_store(root)
+    before = copy.deepcopy(store)
+    default = tmp_path / "default"
+    supplied = tmp_path / "supplied"
+    unified_history.materialize_store(root, default)
+
+    def unexpected_load(_root):
+        pytest.fail("materialization reread an already supplied store")
+
+    monkeypatch.setattr(unified_history, "load_store", unexpected_load)
+    unified_history.materialize_store(root, supplied, store=store)
+    assert {
+        path.relative_to(default): path.read_bytes() for path in default.rglob("*.yaml")
+    } == {
+        path.relative_to(supplied): path.read_bytes() for path in supplied.rglob("*.yaml")
+    }
+    assert store == before
+
+
 def test_schema_v3_carries_a_missing_checkpoint_forward(tmp_path):
     history = unified_history.load_store(_store(tmp_path)).histories[("gemma4", "dynamo_v2")]
 

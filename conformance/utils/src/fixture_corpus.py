@@ -41,7 +41,36 @@ def split_sel(sel: str):
     return impl, ver
 
 
-def load_corpus(root) -> dict[tuple[str, str, str], dict]:
+class FixtureCorpus(dict):
+    """Parsed documents with discovery metadata owned by the same snapshot."""
+
+    def __init__(self, root, documents):
+        super().__init__(documents)
+        self.by_directory = {}
+        for (top, family, name), doc in self.items():
+            self.by_directory.setdefault(top, {})[(family, name)] = doc
+        self.version_dirs = {}
+        self.families_by_directory = {}
+        for directory in Path(root).iterdir():
+            if not directory.is_dir() or directory.name == "inputs" or "-" not in directory.name:
+                continue
+            impl, version = split_sel(directory.name)
+            self.version_dirs.setdefault(impl, []).append((version_key(version), version, directory))
+            self.families_by_directory[directory.name] = {
+                path.name for path in directory.iterdir() if path.is_dir()
+            }
+        for versions in self.version_dirs.values():
+            versions.sort(key=lambda item: item[0])
+
+
+def index_corpus(root, corpus=None) -> FixtureCorpus:
+    """Accept legacy document mappings while reusing an already indexed corpus."""
+    if corpus is None:
+        return load_corpus(root)
+    return corpus if isinstance(corpus, FixtureCorpus) else FixtureCorpus(root, corpus)
+
+
+def load_corpus(root) -> FixtureCorpus:
     """Parse every fixture under <root> ONCE: {(top_dir, family, filename): doc}.
 
     `top_dir` is "inputs" or an "<impl>-<version>" dir. A caller resolving many version
@@ -50,7 +79,7 @@ def load_corpus(root) -> dict[tuple[str, str, str], dict]:
     all ~1700 source files per selection.
     """
     root = Path(root)
-    return {
+    return FixtureCorpus(root, {
         (fp.parent.parent.name, fp.parent.name, fp.name): yaml.safe_load(fp.read_text())
         for fp in root.glob("*/*/*.yaml")
-    }
+    })

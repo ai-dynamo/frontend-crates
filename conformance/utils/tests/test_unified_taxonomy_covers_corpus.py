@@ -81,10 +81,16 @@ def test_descriptive_ids_and_all_published_aliases():
 def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
     with pytest.raises(ValueError, match="conflicting Unified scenario ownership"):
         historical_case_label("7-1", scenario="arg_marker_in_string")
-    monkeypatch.setitem(taxonomy.DESCRIPTION_OVERRIDES, "arg_marker_in_string", "arg_unicode")
+    owners = taxonomy._label_owners(
+        {"arg_marker_in_string": ("7-arg_unicode",), "arg_unicode": ("7-arg_unicode",)},
+        {"7-1": "arg_unicode"},
+    )
+    assert owners["7-arg_unicode"] == {"arg_marker_in_string", "arg_unicode"}
+    assert owners["7-1"] == {"arg_unicode"}
+    monkeypatch.setattr(taxonomy, "_LABEL_OWNERS", owners)
     with pytest.raises(ValueError, match="conflicting Unified alias ownership"):
         historical_case_label("7-arg_unicode")
-    assert historical_case_label("7-arg_unicode", scenario="arg_marker_in_string") == "7-arg_unicode"
+    assert taxonomy.scenario_for_label("7-arg_unicode", scenario="arg_marker_in_string") == "arg_marker_in_string"
 
 
 def corpus_scenarios() -> list[str]:
@@ -915,7 +921,7 @@ def _scenario_of(cid: str, fam: str) -> str:
     return cid
 
 
-def _packed_layer(root: Path, directory: str, fam: str, field_map):
+def _packed_layer(root: Path, directory: str, fam: str, field_map, scenarios):
     """Case records from a PACKAGED shard, keyed by scenario.
 
     The shards are tracked LFS artifacts, so this layer exists in a clean checkout. They
@@ -928,7 +934,7 @@ def _packed_layer(root: Path, directory: str, fam: str, field_map):
     for path in sorted((root / directory / fam).glob("*.yaml")):
         doc = yaml.safe_load(path.read_bytes()) or {}
         for cid, case in (doc.get("cases") or {}).items():
-            scenario = case.get("scenario") or _taxonomy_scenarios(fam).get(cid)
+            scenario = case.get("scenario") or scenarios.get(cid)
             if scenario is None:
                 continue
             out.setdefault(scenario, {}).update(
@@ -937,31 +943,23 @@ def _packed_layer(root: Path, directory: str, fam: str, field_map):
     return out
 
 
-def _materialized_unified_root(tmp_path: Path) -> Path:
+def _materialized_unified_root(tmp_path: Path, store) -> Path:
     root = tmp_path / "unified"
-    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root)
+    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root, store=store)
     return root
 
 
-def _taxonomy_scenarios(fam: str):
+def _taxonomy_scenarios(fam: str, store):
     """Taxonomy id (`UNIFIED.34-guided_json_bare_tool_header_recovers_inside_a_thought`) -> scenario slug, from packaged input layers.
 
     The golden shard keys by taxonomy id and carries no scenario field, so the mapping
     comes from the one shard holding both. A key JOIN, not a value normalization.
     """
-    cached = _taxonomy_scenarios._cache.get(fam)
-    if cached is not None:
-        return cached
     out = {}
-    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
     for case in store.families[fam].cases.values():
         if case["scenario"] and case["display_id"]:
             out[case["display_id"]] = case["scenario"]
-    _taxonomy_scenarios._cache[fam] = out
     return out
-
-
-_taxonomy_scenarios._cache = {}
 
 
 def test_every_case_triple_is_identical_at_every_layer(tmp_path):
@@ -984,11 +982,13 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path):
     wrong.
     """
     checked = 0
-    materialized = _materialized_unified_root(tmp_path)
+    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+    materialized = _materialized_unified_root(tmp_path, store)
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
-        packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"})
-        packed_gold = _packed_layer(materialized, "golden", fam, {"golden": "assembled"})
+        scenarios = _taxonomy_scenarios(fam, store)
+        packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
+        packed_gold = _packed_layer(materialized, "golden", fam, {"golden": "assembled"}, scenarios)
 
         for cid, case in build_cases(fam).items():
             scenario = _scenario_of(cid, fam)
@@ -1691,7 +1691,11 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     for scenario in sorted(scenarios, key=taxonomy.display_sort_key):
         groups[taxonomy.display_tax(scenario)[0]].append(scenario)
     for members in groups.values():
-        assert [taxonomy.case_description(s) for s in members] == sorted(taxonomy.case_description(s) for s in members)
+        sections = defaultdict(list)
+        for scenario in members:
+            sections[taxonomy.display_section(scenario)[0]].append(scenario)
+        for section in sections.values():
+            assert [taxonomy.case_description(s) for s in section] == sorted(taxonomy.case_description(s) for s in section)
         assert [labels[s]["display_number"] for s in members] == list(range(1, len(members) + 1))
     v4 = labels["guided_response_rejected_header_quote_ownership"]
     assert v4["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
