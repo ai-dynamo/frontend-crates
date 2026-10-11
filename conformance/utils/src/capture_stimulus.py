@@ -176,8 +176,7 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
             raise ValueError(f"current capture did not succeed: {ident}")
         if "error" in record:
             known = yaml.safe_load((Path(__file__).resolve().parents[2] / "unified-known-divergences.yaml").read_text())
-            scenario_id = f"UNIFIED.{current.get('scenario', '')}.{ident[0]}"
-            expected_error = known.get(ident[0], {}).get(scenario_id, {}).get("golden", {}).get("actual")
+            expected_error = known.get(ident[0], {}).get(ident[1], {}).get("golden", {}).get("actual")
             if expected_error != f"ERROR: {record['error']}" or "assembled" in record or "chunks" in record:
                 raise ValueError(f"current capture did not succeed (unexpected error): {ident}")
     families = {}

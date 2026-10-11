@@ -11,6 +11,7 @@ on Reasoning (which has no vLLM Rust column).
 Skips when Selenium or headless Chrome aren't available, so it adds no hard test
 dependency — it runs where a browser exists and is a no-op otherwise.
 """
+import re
 import shutil
 import time
 
@@ -21,6 +22,7 @@ from selenium import webdriver  # noqa: E402
 from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
 from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not any(shutil.which(b) for b in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")),
@@ -46,6 +48,39 @@ window.matchMedia = function (q) {
 """
 
 
+_RECORD_FIRST_VISIBLE_MATRIX_JS = """
+window.__firstVisibleMatrix = null;
+window.__firstMatrixInsertion = null;
+function recordFirstVisibleMatrix() {
+  const panel = document.querySelector('.tab-panel.active');
+  if (!panel) return;
+  const original = panel.querySelector('table[data-parity-table]:not([data-transpose-table])');
+  if (!window.__firstMatrixInsertion && original) {
+    window.__firstMatrixInsertion = {
+      pending: document.documentElement.classList.contains('transpose-pending'),
+      transposeMode: document.body.classList.contains('transpose-mode'),
+      originalDisplay: getComputedStyle(original).display
+    };
+  }
+  if (window.__firstVisibleMatrix) return;
+  const table = Array.from(panel.querySelectorAll(
+    'table[data-parity-table], table[data-transpose-table]'
+  )).find(function (candidate) {
+    return getComputedStyle(candidate).display !== 'none';
+  });
+  if (table) {
+    window.__firstVisibleMatrix = {
+      kind: table.hasAttribute('data-transpose-table') ? 'transpose' : 'horizontal',
+      pending: document.documentElement.classList.contains('transpose-pending'),
+      transposeMode: document.body.classList.contains('transpose-mode')
+    };
+  }
+}
+const observer = new MutationObserver(recordFirstVisibleMatrix);
+observer.observe(document, {childList: true, subtree: true, attributes: true});
+"""
+
+
 def _chrome(rendered_page, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
@@ -56,7 +91,7 @@ def _chrome(rendered_page, force_hover):
         pytest.skip(f"could not start Chrome webdriver: {exc}")
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    d.get(f"file://{rendered_page}")
+    d.get(f"file://{rendered_page}?transpose=0")
     d.implicitly_wait(2)
     return d
 
@@ -643,6 +678,193 @@ def _set_transpose(driver, on):
     time.sleep(0.2)
 
 
+@pytest.mark.parametrize("override,expected", [("", False), ("1", True), ("true", True),
+                                               ("0", False), ("false", False)])
+def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_page, override, expected):
+    url = f"file://{rendered_page}?tab=tab-unified"
+    try:
+        driver.get(url + ("&transpose=" + override if override else ""))
+        toggle = driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]')
+        assert toggle.is_selected() == expected
+        assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == expected
+        toggle.click()
+        selected = not expected
+        assert toggle.is_selected() == selected
+        assert driver.execute_script("return new URL(location.href).searchParams.get('transpose')") == ("1" if selected else None)
+        driver.refresh()
+        assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
+        for tab in ("tab-toolcalling-batch", "tab-unified"):
+            _click_tab(driver, tab)
+            assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
+            assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == selected
+    finally:
+        driver.get(f"file://{rendered_page}?transpose=0")
+
+
+@pytest.mark.parametrize("override,expected", [("", "horizontal"), ("1", "transpose"),
+                                               ("true", "transpose"), ("0", "horizontal"),
+                                               ("false", "horizontal")])
+def test_first_visible_matrix_matches_transpose_url(rendered_page, override, expected):
+    d = _chrome(rendered_page, force_hover=False)
+    try:
+        d.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS},
+        )
+        url = f"file://{rendered_page}" + ("?transpose=" + override if override else "")
+        d.get(url)
+        first = d.execute_script("return window.__firstVisibleMatrix")
+        insertion = d.execute_script("return window.__firstMatrixInsertion")
+        assert first is not None, "no report matrix became visible during initial rendering"
+        assert insertion is not None, "no original report table was observed when inserted"
+        assert first["kind"] == expected, f"first exposed matrix was {first}"
+        if expected == "transpose":
+            assert insertion["pending"] is True
+            assert insertion["originalDisplay"] == "none"
+            assert first["pending"] is False
+            assert first["transposeMode"] is True
+        else:
+            assert insertion["pending"] is False
+            assert insertion["originalDisplay"] != "none"
+            assert first["pending"] is False
+            assert first["transposeMode"] is False
+    finally:
+        d.quit()
+
+
+def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rendered_page):
+    try:
+        driver.get(f"file://{rendered_page}?tab=tab-unified")
+        header = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a")
+        full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
+        short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
+        assert full_label.startswith("1-")
+        assert short_label == "1-1"
+        placeholder = header.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
+        assert placeholder.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert float(placeholder.value_of_css_property("font-size")[:-2]) < float(
+            header.value_of_css_property("font-size")[:-2]
+        )
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        group_heading = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group .col-toggle-label")
+        assert group_heading.text.startswith("TC ")
+        assert group_heading.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        group_cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group")
+        assert group_cell.value_of_css_property("text-align") == "left"
+        assert group_cell.value_of_css_property("padding-left") == "8px"
+        assert 8 <= group_heading.rect["x"] - group_cell.rect["x"] < 35
+        label_pairs = driver.execute_script(
+            "return Array.from(document.querySelectorAll('#tab-unified th.case-sub a')).map(a=>["
+            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
+            "Boolean(a.querySelector('.case-label-placeholder'))]);"
+        )
+        assert label_pairs
+        has_model_specific_label = False
+        for full, short, has_placeholder in label_pairs:
+            group_name, separator, description = full.partition("-")
+            assert separator
+            if description:
+                compact_prefix = {"deepseek_v4": "ds4", "deepseek_v41": "ds41"}.get(group_name, group_name)
+                assert re.fullmatch(re.escape(compact_prefix) + r"-[1-9]\d*", short)
+                assert has_placeholder
+                has_model_specific_label = has_model_specific_label or not group_name.isdigit()
+            else:
+                assert short == full
+                assert not has_placeholder
+        assert has_model_specific_label
+        by_prefix = {}
+        for full, short, _ in label_pairs:
+            prefix, number = short.split("-", 1)
+            by_prefix.setdefault(prefix, []).append((full.split("-", 1)[1], int(number)))
+        for pairs in by_prefix.values():
+            assert [desc for desc, _ in pairs] == sorted(desc for desc, _ in pairs)
+            assert [number for _, number in pairs] == list(range(1, len(pairs) + 1))
+        assert by_prefix["ds4"][0][1] == by_prefix["ds41"][0][1] == 1
+
+        ActionChains(driver).move_to_element(header).perform()
+        driver.execute_script(
+            "const h=arguments[0].closest('th.case-sub');"
+            "h.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
+            "h.dispatchEvent(new PointerEvent('pointerenter'));",
+            header,
+        )
+        deadline = time.time() + 3
+        tip = None
+        while time.time() < deadline:
+            tips = driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible")
+            if tips:
+                tip = tips[0]
+                break
+            time.sleep(0.1)
+        assert tip is not None, "case description tooltip did not open on hover"
+        assert tip.find_element(By.CSS_SELECTOR, ".ttip-head > span[title]").get_attribute("title") == header.get_attribute("aria-label")
+        assert f"{full_label} ({short_label})" in tip.find_element(By.CSS_SELECTOR, ".ttip-head").text
+        assert full_label in tip.text
+        assert tip.find_element(By.CSS_SELECTOR, ".ttip-head-desc").text
+
+        driver.execute_script("document.documentElement.setAttribute('data-theme', 'dark')")
+        _set_transpose(driver, True)
+        transposed = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-transpose-table] th.trow-case a")
+        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") != "none"
+        reference = transposed.find_element(By.CSS_SELECTOR, ".case-label-short")
+        assert reference.value_of_css_property("display") == "inline-block"
+        assert reference.text == short_label
+        assert transposed.text == f"{full_label} {short_label}"
+        assert float(reference.value_of_css_property("margin-left")[:-2]) > 0
+        full_bounds = transposed.find_element(By.CSS_SELECTOR, ".case-label-full").rect
+        assert reference.rect["x"] > full_bounds["x"] + full_bounds["width"]
+        reference_number = reference.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
+        assert reference_number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert float(reference_number.value_of_css_property("font-size")[:-2]) < float(
+            transposed.value_of_css_property("font-size")[:-2]
+        )
+        transpose_labels = driver.execute_script(
+            "return Array.from(document.querySelectorAll('#tab-unified .transpose-table th.trow-case a')).map(a=>["
+            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
+            "getComputedStyle(a.querySelector('.case-label-short')).display]);"
+        )
+        assert [(full, short) for full, short, _ in transpose_labels] == [(full, short) for full, short, _ in label_pairs]
+        assert all(display == "inline-block" for _, _, display in transpose_labels)
+        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
+        model_header = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table thead .tcol-model")
+        assert model_header.value_of_css_property("background-color") == "rgba(15, 23, 42, 1)"
+        transpose_group = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table tr.section td")
+        assert transpose_group.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+        assert transpose_group.value_of_css_property("text-align") == "left"
+        assert transpose_group.value_of_css_property("padding-left") == "8px"
+        text_inset = driver.execute_script(
+            "const e=arguments[0],range=document.createRange();range.selectNodeContents(e);"
+            "return range.getBoundingClientRect().left-e.getBoundingClientRect().left;", transpose_group
+        )
+        assert 8 <= text_inset <= 10
+
+        _set_transpose(driver, False)
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
+        assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
+        expanded_width = group_cell.rect["width"]
+        ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+        WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+        group_toggle = group_cell.find_element(By.CSS_SELECTOR, ".col-toggle")
+        group_toggle.click()
+        assert "col-collapsed" in group_cell.get_attribute("class").split()
+        assert group_cell.value_of_css_property("padding-left") == "2px"
+        assert group_cell.rect["width"] < expanded_width
+        group_toggle.click()
+        assert group_cell.value_of_css_property("padding-left") == "8px"
+        assert abs(group_cell.rect["width"] - expanded_width) <= 1
+        _click_tab(driver, "tab-toolcalling-batch")
+        _set_transpose(driver, True)
+        other_header = driver.find_element(By.CSS_SELECTOR, "#tab-toolcalling-batch .transpose-table th.trow-case a")
+        assert not other_header.find_elements(By.CSS_SELECTOR, ".case-label-reference")
+        assert other_header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") == "none"
+        for cell in driver.find_elements(By.CSS_SELECTOR, "#tab-toolcalling-batch .transpose-table tr.section td"):
+            assert cell.value_of_css_property("text-align") == "left"
+            assert cell.value_of_css_property("padding-left") == "8px"
+    finally:
+        driver.get(f"file://{rendered_page}?transpose=0")
+
+
 def test_transpose_builds_mirror_and_colors(driver):
     """Toggling Transpose builds a mirror in the active panel: models become rotated
     columns (th.tcol-model), cases become rows (th.trow-case), and the cloned cells
@@ -1083,7 +1305,7 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
 def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
-    driver.get(f"file://{rendered_page}?view=details")
+    driver.get(f"file://{rendered_page}?view=details&transpose=0")
     if transposed:
         toggled = driver.execute_script(
             """
@@ -1137,3 +1359,44 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transpo
         assert result["labelWidth"] > 0 and result["headerWidth"] > 0
     finally:
         driver.get(f"file://{rendered_page}")
+
+
+def test_popup_headings_include_compact_references(driver, rendered_page):
+    try:
+        for transpose in ("0", "1"):
+            driver.get(f"file://{rendered_page}?tab=tab-unified&transpose={transpose}")
+            table = "#tab-unified table[data-transpose-table]" if transpose == "1" else "#tab-unified table:not([data-transpose-table])"
+            header_selector = "th.trow-case" if transpose == "1" else "th.case-sub"
+            for prefix in ("1-", "deepseek_v41-", "7-arg_json_null"):
+                header = driver.execute_script(
+                    "return Array.from(document.querySelectorAll(arguments[0])).find(e=>"
+                    "e.querySelector('.case-label-full').textContent.startsWith(arguments[1]));",
+                    f"{table} {header_selector}", prefix,
+                )
+                full = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
+                short = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
+                cell = driver.execute_script(
+                    "const h=arguments[0], t=h.closest('table');"
+                    "return t.hasAttribute('data-transpose-table') ? h.parentElement.querySelector('td[data-ttip-id]') : "
+                    "Array.from(t.querySelectorAll('tbody tr')).map(r=>r.querySelectorAll('td.cell')[Array.from(t.querySelectorAll('th.case-sub')).indexOf(h)]).find(e=>e && e.hasAttribute('data-ttip-id'));",
+                    header,
+                )
+                assert cell is not None
+                for target in (header, cell):
+                    ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+                    WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", target)
+                    ActionChains(driver).move_to_element(target).perform()
+                    driver.execute_script(
+                        "arguments[0].dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
+                        "arguments[0].dispatchEvent(new PointerEvent('pointerenter'));", target,
+                    )
+                    popup = WebDriverWait(driver, 5).until(lambda d: d.find_element(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+                    heading = popup.find_element(By.CSS_SELECTOR, ".ttip-head")
+                    assert heading.text.startswith(f"{full} ({short})")
+                    number = heading.find_element(By.CSS_SELECTOR, ".popup-case-reference .case-label-placeholder")
+                    assert number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
+                    assert float(number.value_of_css_property("font-size")[:-2]) < float(heading.value_of_css_property("font-size")[:-2])
+                    assert heading.find_element(By.CSS_SELECTOR, "span[title]").get_attribute("title").startswith("UNIFIED.")
+    finally:
+        driver.get(f"file://{rendered_page}?tab=tab-unified&transpose=0")

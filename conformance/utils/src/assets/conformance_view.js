@@ -530,6 +530,38 @@
     return '<ul class="ttip-config">' + items.join('') + '</ul>';
   }
 
+  function compactCaseLabelHtml(col) {
+    return escapeHtml(col.compact_prefix) + '-<span class="case-label-placeholder">'
+      + escapeHtml(String(col.display_number)) + '</span>';
+  }
+
+  function popupCaseHeadingHtml(model) {
+    const col = model.popupCase;
+    if (!col || col.display_number == null) { return escapeHtml(model.head || ''); }
+    return '<span title="' + escapeAttr(model.head || '') + '">' + escapeHtml(col.label)
+      + ' (<span class="popup-case-reference">' + compactCaseLabelHtml(col) + '</span>)</span>'
+      + (model.family ? ' — ' + escapeHtml(model.family) : '');
+  }
+
+  function schemaDisclosureHtml(column) {
+    const variants = (column && column.schemas) || [];
+    if (!variants.length) { return ''; }
+    const multiple = variants.length > 1;
+    const content = variants.map(function (variant) {
+      const associations = variant.cases
+        ? variant.cases.map(item => item.label + ' (' + (item.families || []).join(', ') + ')').join('; ')
+        : (variant.families || []).join(', ');
+      const label = multiple || variant.cases
+        ? '<div class="schema-variant-label">' + escapeHtml(associations) + '</div>'
+        : '';
+      return label + '<pre class="case-schema-json">'
+        + escapeHtml(JSON.stringify(variant.tools || [], null, 2)) + '</pre>';
+    }).join('');
+    return '<details class="case-schema"><summary class="case-schema-toggle">'
+      + '<span aria-hidden="true">{ }</span> Schema</summary>'
+      + '<div class="case-schema-content">' + content + '</div></details>';
+  }
+
   // --- Tooltip content (built lazily into the empty .ttip) -------------------
   function buildTooltipHtml(m) {
     if (m && m.grammar) { return buildGrammarHtml(m); }
@@ -538,7 +570,7 @@
     // accent color, the description follows inline in the normal tooltip text color (not
     // the loud section blue). Falls back to its own line only when there is no id/head.
     if (m.head) {
-      h += '<div class="ttip-head">' + escapeHtml(m.head)
+      h += '<div class="ttip-head">' + popupCaseHeadingHtml(m)
         + (m.description ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span>' : '')
         + '</div>';
     } else if (m.description) {
@@ -715,7 +747,7 @@
 
   function columnGrammarModel(tab, col) {
     var rows = [];
-    var caseId = null;   // numbered id (e.g. "UNIFIED.7-2") — the cells' own id, not the slug
+    var caseId = null;   // canonical ID from the cell, independent of its scenario slug
     var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
     (tab.rows || []).forEach(function (row) {
       if (!row || row.section) { return; }              // section banners are not families
@@ -764,7 +796,8 @@
       });
       });
     });
-    return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', init: col.init,
+    const caseHead = caseId || fullCaseId(tab, col);
+    return { head: caseHead, popupCase: col, desc: col.desc || '', init: col.init,
              grammar: rows, cands: colDefs || [] };
   }
 
@@ -782,7 +815,8 @@
   function buildGrammarHtml(m) {
     // Id + description on ONE line: the id keeps its accent color, the description follows
     // inline in the normal tooltip text color (not the loud section blue).
-    var h = '<div class="ttip-head">' + escapeHtml(m.head || '')
+    var h = '<div class="ttip-head">' + popupCaseHeadingHtml(m)
+      + schemaDisclosureHtml(m.popupCase)
       + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
     h += buildConfigHtml(m.init);
@@ -855,17 +889,32 @@
       + '<th>input</th>' + header + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
 
+  function schemaIndicatorHtml(column) {
+    return column.schemas && column.schemas.length
+      ? '<span class="case-schema-indicator" role="img" aria-label="Has explicit schema.">{}</span>'
+      : '';
+  }
+
   function subHeadersHtml(tab) {
     var cols = tab.columns || [];
     var href = escapeAttr(tab.case_docs_href || '');
     var h = '';
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
+      var label = String(c.label || '');
+      var shortLabel = c.display_number != null
+        ? compactCaseLabelHtml(c)
+        : escapeHtml(label);
+      var prefix = tab.case_prefix || '';
+      var fullId = c.case_id || (label.indexOf(prefix) === 0 ? label : prefix + label);
       // The rich grammar popup replaces the old native `title` tooltip (which could
       // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
-        + escapeAttr(c.group_key) + '"><a href="' + href + '">'
-        + escapeHtml(c.label) + '</a><div class="ttip"></div></th>';
+        + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
+        + '<span class="case-label-full">' + escapeHtml(label) + '</span> '
+        + '<span class="case-label-short' + (c.display_number != null ? ' case-label-reference' : '')
+        + '" aria-hidden="true">' + shortLabel + '</span>'
+        + schemaIndicatorHtml(c) + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {
@@ -1165,6 +1214,7 @@
     (page.tabs || []).forEach(function (tab) {
       var meta = tab.cand_meta || {};
       var base = tab.fixture_href_base || '';
+      const columnsBySub = new Map((tab.columns || []).map(col => [col.sub, col]));
       (tab.rows || []).forEach(function (row) {
         var cells = row.cells || {};
         Object.keys(cells).forEach(function (sub) {
@@ -1173,6 +1223,8 @@
           (cell.facts || []).forEach(function (f) { S(f, 'reason'); });
           var tip = cell.tooltip;
           if (!tip) { return; }
+          tip.popupCase = columnsBySub.get(sub);
+          tip.family = cell.family;
           S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
           if (tip.input) { S(tip.input, 'text'); }
           (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });

@@ -66,6 +66,26 @@ def _write_family(root: Path) -> None:
     )
 
 
+def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):
+    _write_family(tmp_path)
+    family_path = tmp_path / "families/gemma4/inputs_and_golden.yaml"
+    before = unified_history.load_yaml(family_path)
+    before["cases"]["text_only"]["display_id"] = "UNIFIED.3-1"
+    family_path.write_text(unified_history.dump_yaml(before))
+    capture = _write_capture(tmp_path, "0.6.0", {"text_only": {
+        **_change(), "case_key": "UNIFIED.3-1",
+    }})
+    capture_bytes = capture.read_bytes()
+    assert unified_history.migrate_descriptive_ids(tmp_path) == [family_path]
+    after = unified_history.load_yaml(family_path)
+    expected = copy.deepcopy(before)
+    expected["cases"]["text_only"]["display_id"] = "UNIFIED.3-text_only"
+    expected["cases"]["text_only"]["historical_ids"] = ["UNIFIED.3-1"]
+    assert after == expected
+    assert capture.read_bytes() == capture_bytes
+    assert unified_history.migrate_descriptive_ids(tmp_path) == []
+
+
 def _write_capture(
     root: Path,
     version: str,
@@ -97,6 +117,27 @@ def _store(root: Path) -> Path:
     _write_capture(root, "0.5.0", {"text_only": _change()})
     _write_capture(root, "0.5.2", {})
     return root
+
+
+def test_materialization_reuses_supplied_store_without_mutating_it(tmp_path, monkeypatch):
+    root = _store(tmp_path / "store")
+    store = unified_history.load_store(root)
+    before = copy.deepcopy(store)
+    default = tmp_path / "default"
+    supplied = tmp_path / "supplied"
+    unified_history.materialize_store(root, default)
+
+    def unexpected_load(_root):
+        pytest.fail("materialization reread an already supplied store")
+
+    monkeypatch.setattr(unified_history, "load_store", unexpected_load)
+    unified_history.materialize_store(root, supplied, store=store)
+    assert {
+        path.relative_to(default): path.read_bytes() for path in default.rglob("*.yaml")
+    } == {
+        path.relative_to(supplied): path.read_bytes() for path in supplied.rglob("*.yaml")
+    }
+    assert store == before
 
 
 def test_schema_v3_carries_a_missing_checkpoint_forward(tmp_path):

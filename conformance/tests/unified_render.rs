@@ -492,7 +492,7 @@ fn render_unified_conformance_html() {
     let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
         let froot = common::ensure_fixtures().join("unified");
         let mut m = BTreeMap::new();
-        // Shards key by TAXONOMY id (`UNIFIED.30-1`); the golden keys by SCENARIO
+        // Shards key by TAXONOMY id (`UNIFIED.30-guided_json_named_tool`); the golden keys by SCENARIO
         // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
         // it is the bridge — without it every cell reads NO-DATA while the capture
         // sits right there, which is how this first went wrong.
@@ -809,7 +809,7 @@ struct CaptureChunk {
 }
 
 /// The scenario slug for each committed case key, read from the `inputs/` shard
-/// (the numbered `UNIFIED.<group>-<sub>` key lives only in the Python taxonomy).
+/// (the numbered `UNIFIED.<group>-<description>` key lives only in the Python taxonomy).
 #[derive(Deserialize)]
 struct InputDoc {
     family: String,

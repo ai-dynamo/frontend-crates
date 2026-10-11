@@ -22,7 +22,7 @@ from pathlib import Path
 import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 # Re-exported: callers import load/version_key/split_sel from this module by name.
-from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
+from fixture_corpus import index_corpus, load, load_corpus, split_sel, version_key  # noqa: F401
 
 def resolve_docs(fixtures_root, select, corpus=None):
     """Resolve one version selection entirely in memory.
@@ -37,11 +37,10 @@ def resolve_docs(fixtures_root, select, corpus=None):
     Pass `corpus` (from fixture_corpus.load_corpus) to resolve several selections out
     of one parse of the source tree."""
     root = Path(fixtures_root)
-    if corpus is None:
-        corpus = load_corpus(root)
+    corpus = index_corpus(root, corpus)
 
     # 1) shared inputs are the base every impl folds into.
-    docs = {key[1:]: copy.deepcopy(doc) for key, doc in corpus.items() if key[0] == "inputs"}
+    docs = {key: copy.deepcopy(doc) for key, doc in corpus.by_directory.get("inputs", {}).items()}
 
     # 2) for each selected impl, apply its version dirs ascending up to the target,
     #    merging expected.<impl>. Lowest applied dir is the full anchor.
@@ -49,19 +48,14 @@ def resolve_docs(fixtures_root, select, corpus=None):
     for sel in select:
         impl, target = split_sel(sel)
         target_k = version_key(target)
-        vdirs = sorted(
-            ((version_key(split_sel(d.name)[1]), d) for d in root.glob(f"{impl}-*") if d.is_dir()),
-            key=lambda t: t[0],
-        )
+        vdirs = [(key, directory) for key, _version, directory in corpus.version_dirs.get(impl, [])]
         applied = [(k, d) for k, d in vdirs if k <= target_k]
         if not applied:
             print(f"resolve_fixtures: no version dirs for {impl} <= {target}, skipping", file=sys.stderr)
             continue
         for _, vdir in applied:
-            for key, src_ov in corpus.items():
-                if key[0] != vdir.name:
-                    continue
-                base_doc = docs.get(key[1:])
+            for key, src_ov in corpus.by_directory.get(vdir.name, {}).items():
+                base_doc = docs.get(key)
                 if base_doc is None:
                     continue
                 # deepcopy the WHOLE overlay doc in one call: expected blocks are
@@ -77,7 +71,7 @@ def resolve_docs(fixtures_root, select, corpus=None):
                     bc.setdefault("expected", {})
                     for k, val in oc["expected"].items():
                         bc["expected"][k] = val
-                folded.add(key[1:])
+                folded.add(key)
 
     return docs, folded
 

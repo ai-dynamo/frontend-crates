@@ -335,7 +335,7 @@ splits along four type-handling axes:
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
 
-Null coercion probes remain in the capture archive and are displayed only in Unified (`UNIFIED.7-4` and `UNIFIED.7-5`). The legacy batch and stream matrices omit those columns.
+Null coercion probes remain in the capture archive and are displayed only in Unified (`UNIFIED.7-arg_json_null` and `UNIFIED.7-arg_string_null`). The legacy batch and stream matrices omit those columns.
 
 The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
 

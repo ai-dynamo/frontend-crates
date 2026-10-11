@@ -68,8 +68,44 @@ pub fn load() -> KnownDivergences {
     let path =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("unified-known-divergences.yaml");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let known: KnownDivergences =
+    let published: KnownDivergences =
         serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let mut known = KnownDivergences::new();
+    for (family, cases) in published {
+        let inputs_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("fixtures-unified-v2/families")
+            .join(&family)
+            .join("inputs_and_golden.yaml");
+        let inputs: serde_yaml::Value = serde_yaml::from_str(
+            &std::fs::read_to_string(&inputs_path)
+                .unwrap_or_else(|e| panic!("{}: {e}", inputs_path.display())),
+        )
+        .unwrap_or_else(|e| panic!("{}: {e}", inputs_path.display()));
+        let authored = inputs["cases"].as_mapping().expect("family cases mapping");
+        let mut projected = BTreeMap::new();
+        for (case_id, divergence) in cases {
+            let owner = authored.values().find(|case| {
+                case["display_id"].as_str() == Some(case_id.as_str())
+                    || case["historical_ids"].as_sequence().is_some_and(|ids| {
+                        ids.iter().any(|id| id.as_str() == Some(case_id.as_str()))
+                    })
+            });
+            // Tests still address internal scenario names; the store owns the
+            // mapping from published labels, so Rust does not duplicate taxonomy.
+            let internal_id = owner.map_or(case_id, |case| {
+                format!(
+                    "UNIFIED.{}.{}",
+                    case["scenario"].as_str().expect("scenario"),
+                    family
+                )
+            });
+            assert!(
+                projected.insert(internal_id, divergence).is_none(),
+                "duplicate divergence owner"
+            );
+        }
+        known.insert(family, projected);
+    }
     for (family, cases) in &known {
         for (case_id, divergence) in cases {
             assert!(

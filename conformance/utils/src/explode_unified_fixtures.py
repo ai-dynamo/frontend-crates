@@ -46,7 +46,7 @@ def _dump(doc, path):
 
 
 def _case_key(case_id):
-    # "UNIFIED.arg_marker_in_string.gemma4" -> numbered id "UNIFIED.7-2", family, slug
+    # Internal scenario keys stay stable while the taxonomy owns published labels.
     fam = case_id.rsplit(".", 1)[1]
     scenario = case_id[len("UNIFIED."):].rsplit(".", 1)[0]
     return numbered_id(scenario), fam, scenario

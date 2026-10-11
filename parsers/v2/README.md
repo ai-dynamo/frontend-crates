@@ -158,7 +158,8 @@ For a new streaming parser family, add or update these files:
 - `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
 
-New conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
+New legacy tool-calling conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
+Unified IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; numeric Unified forms are historical aliases.
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v1/README.md` only if the fixture schema or capture convention changes.
 

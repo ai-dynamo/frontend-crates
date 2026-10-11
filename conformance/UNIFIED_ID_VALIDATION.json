@@ -1,0 +1,75 @@
+{
+  "base": "497dcf0d57e0d017a1cb9ad2f04da2b7f9b6af72",
+  "default_branch": "origin/main",
+  "mapping": "UNIFIED_ID_MAPPING.json",
+  "shared_owner": "conformance/utils/src/unified_taxonomy.py",
+  "consumers": [
+    "fixture_disposition",
+    "schema probes",
+    "unified_history",
+    "case_variants",
+    "report generator",
+    "E2E manifest",
+    "status validators",
+    "Rust divergence reader via store metadata"
+  ],
+  "searches": [
+    "repo-wide Unified numeric and dotted labels",
+    "schema_case_label callers",
+    "taxonomy label and alias callers",
+    "Transpose URL, checkbox, popup and comparison owners",
+    "changed divergence IDs and retired numeric naming assumptions"
+  ],
+  "non_generated_diff": {
+    "excluded": [
+      "family generated store YAML",
+      "fixtures-manifest.json",
+      "e2e_cases.json"
+    ],
+    "added": 598,
+    "deleted": 364,
+    "net": 234
+  },
+  "preservation": {
+    "active_cases": 1837,
+    "retired_cases": 69,
+    "capture_yaml_files_byte_identical": 125,
+    "case_records_unchanged_except_active_display_id_and_historical_ids": true,
+    "migration_idempotent": true
+  },
+  "report": {
+    "path": "CONFORMANCE_v2.html",
+    "families": 8,
+    "visible_columns": 235,
+    "grouped_variants": 13,
+    "applicable_fixtures": 1837,
+    "na_slots": 127,
+    "missing_unified_fixtures": 0,
+    "model_tab_pairs": 82,
+    "baseline_empty_reference_cells": 951,
+    "baseline_red_reference_cells": 68,
+    "ordering_groups_and_status_counts_preserved": true
+  },
+  "tests": {
+    "python_passed": 839,
+    "chromium_passed": 53,
+    "rust_passed": 43,
+    "canonical_served_chromium": {
+      "default_and_overrides": [
+        "absent",
+        "1",
+        "true",
+        "0",
+        "false"
+      ],
+      "toggle_refresh_and_tabs": "passed",
+      "descriptive_labels": "passed"
+    }
+  },
+  "independent_audit": "No actionable findings; ordering, subgroups, comparisons, counts, active labels, and divergence ownership independently verified.",
+  "exceptions": [
+    "Retired IDs and historical capture bytes remain unchanged.",
+    "Historical-only materialized captures were retained separately because old releases omit families; current inputs/goldens were packaged with --unified-only.",
+    "951 empty and 68 red Reference cells are unchanged baseline results."
+  ]
+}

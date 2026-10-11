@@ -737,6 +737,10 @@
     // gutter's worth of usable room on top of the two real gutters.)
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
+    // An expanded schema may fit on neither side; scroll it within the larger space.
+    ttip.style.maxHeight = ttip.querySelector('.case-schema[open]')
+      ? Math.max(0, cellRect.top - margin, window.innerHeight - cellRect.bottom - margin) + 'px'
+      : '';
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
     let shiftX = 0;
@@ -744,17 +748,18 @@
     if (overflowRight > 0) shiftX = -overflowRight;
     const absLeft = cellRect.left + shiftX;
     if (absLeft < margin) shiftX += (margin - absLeft);
+    const placeAbove = cellRect.bottom + tipRect.height > vh - margin
+      && cellRect.top - tipRect.height >= margin;
     if (isPortalled) {
       ttip.style.left = (cellRect.left + window.scrollX + shiftX) + 'px';
       ttip.style.top = (cellRect.bottom + window.scrollY) + 'px';
-      if (cellRect.bottom + tipRect.height > vh - margin && cellRect.top - tipRect.height > margin) {
+      if (placeAbove) {
         ttip.style.top = (cellRect.top + window.scrollY - tipRect.height) + 'px';
       }
     } else {
       ttip.style.left = shiftX + 'px';
     }
-    if (!isPortalled && cellRect.bottom + tipRect.height > vh - margin
-        && cellRect.top - tipRect.height > margin) {
+    if (!isPortalled && placeAbove) {
       ttip.style.top = 'auto';
       ttip.style.bottom = '100%';
     }
@@ -780,6 +785,13 @@
   }
   window.addEventListener('scroll', repositionPortalledTooltips, true);
   window.addEventListener('resize', repositionPortalledTooltips);
+  document.addEventListener('toggle', function (event) {
+    if (!event.target.matches('.case-schema')) return;
+    const ttip = event.target.closest('.ttip');
+    if (ttip && ttip._ttipOwner && ttip.classList.contains('ttip-visible')) {
+      place(ttip._ttipOwner);
+    }
+  }, true);
 
   // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
   // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
@@ -955,6 +967,8 @@
     }
 
     function scheduleHide() {
+      // A portalled disclosure still belongs to this popup while it owns focus.
+      if (ttip.contains(document.activeElement)) { return; }
       isActive = false;
       if (showTimer !== null) {
         window.clearTimeout(showTimer);
@@ -1053,10 +1067,18 @@
         scheduleShow();
       }
     });
-    cell.addEventListener('focusout', function () {
+    const focusWithinTooltip = function (target) {
+      return target && (cell.contains(target) || ttip.contains(target));
+    };
+    const onFocusOut = function (event) {
+      if (focusWithinTooltip(event.relatedTarget)) { return; }
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
       cell._focusTooltip = false;
-    });
+    };
+    cell.addEventListener('focusout', onFocusOut);
+    // Portal placement changes ancestry, so the popup owns its own focus events.
+    ttip.addEventListener('focusin', keepTooltipOpen);
+    ttip.addEventListener('focusout', onFocusOut);
     ttip.addEventListener('pointerenter', keepTooltipOpen);
     ttip.addEventListener('mouseenter', keepTooltipOpen);
     ttip.addEventListener('pointerleave', onLeave);
@@ -1338,6 +1360,7 @@
     if (enabled) {
       document.querySelectorAll('.tab-panel').forEach(ensureTransposed);
     }
+    document.documentElement.classList.remove('transpose-pending');
     if (shouldUpdateUrl) {
       updateTransposeUrl(Boolean(enabled));
     }

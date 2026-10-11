@@ -32,21 +32,7 @@ import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 # Re-exported: test_render_invariants.py and the generator import version_key/load
 # from this module by name.
-from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
-
-
-def _impl_version_dirs(root: Path) -> dict[str, list[tuple]]:
-    """{impl: [(version_key, version, dir), ...] ascending} discovered from the
-    <impl>-<version>/ dirs (no hardcoded anchor)."""
-    out: dict[str, list[tuple]] = {}
-    for d in root.iterdir():
-        if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
-            continue
-        impl, ver = split_sel(d.name)
-        out.setdefault(impl, []).append((version_key(ver), ver, d))
-    for impl in out:
-        out[impl].sort(key=lambda t: t[0])
-    return out
+from fixture_corpus import index_corpus, load, load_corpus, split_sel, version_key  # noqa: F401
 
 
 def _merge_impl(base_doc, vdoc, impl):
@@ -105,7 +91,7 @@ def _merge_impl(base_doc, vdoc, impl):
                 bchunks[i]["normal_text"].pop(impl, None)
 
 
-def resolve_docs(sv1_root, select, corpus=None):
+def resolve_docs(sv1_root, select, corpus=None, *, implementations=None):
     """Resolve one version selection entirely in memory.
 
     Returns `(docs, folded)`: `docs` is {(family, filename): doc} for the whole staged
@@ -114,20 +100,24 @@ def resolve_docs(sv1_root, select, corpus=None):
     back, once per impl per version layer — which meant every output file was parsed
     and re-emitted several times per run. Keeping the accumulator in memory does the
     identical merge with one parse of each source file and at most one dump.
+    `implementations` limits overlays, retaining every shared input case; omitted
+    filters retain the lowest-version defaults for all implementations.
     """
     root = Path(sv1_root)
-    if corpus is None:
-        corpus = load_corpus(root)
+    corpus = index_corpus(root, corpus)
 
     # 1) the shared inputs tree is the base every impl folds into.
-    docs = {key[1:]: copy.deepcopy(doc) for key, doc in corpus.items() if key[0] == "inputs"}
+    docs = {key: copy.deepcopy(doc) for key, doc in corpus.by_directory.get("inputs", {}).items()}
 
     # 2) per-impl target: default = that impl's lowest version; --select bumps it.
-    dirs = _impl_version_dirs(root)
-    targets = {impl: vers[0][1] for impl, vers in dirs.items()}  # lowest by default
+    dirs = corpus.version_dirs
+    targets = {
+        impl: vers[0][1] for impl, vers in dirs.items()
+        if implementations is None or impl in implementations
+    }  # lowest by default
     for sel in select:
         impl, ver = split_sel(sel)
-        if impl in dirs:
+        if impl in targets:
             targets[impl] = ver
 
     # 3) fold each impl's version dirs ascending up to its target into the base tree.
@@ -145,10 +135,8 @@ def resolve_docs(sv1_root, select, corpus=None):
         for k, _v, vdir in dirs[impl]:
             if k > tk:
                 continue
-            for key, vdoc in corpus.items():
-                if key[0] != vdir.name:
-                    continue
-                doc = docs.get(key[1:])
+            for key, vdoc in corpus.by_directory.get(vdir.name, {}).items():
+                doc = docs.get(key)
                 if doc is None:
                     continue
                 # deepcopy: _merge_impl grafts the overlay's own lists/dicts into the
@@ -156,7 +144,7 @@ def resolve_docs(sv1_root, select, corpus=None):
                 # same objects into every resolved selection.
                 _merge_impl(doc, copy.deepcopy(vdoc), impl)
                 doc.setdefault("captured_with", {})[impl] = target
-                folded.add(key[1:])
+                folded.add(key)
     return docs, folded
 
 
