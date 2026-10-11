@@ -757,11 +757,11 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         label_pairs = driver.execute_script(
             "return Array.from(document.querySelectorAll('#tab-unified th.case-sub a')).map(a=>["
             "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
-            "Boolean(a.querySelector('.case-label-placeholder'))]);"
+            "Boolean(a.querySelector('.case-label-placeholder')),a.closest('th.case-sub').dataset.colHideGroup]);"
         )
         assert label_pairs
         has_model_specific_label = False
-        for full, short, has_placeholder in label_pairs:
+        for full, short, has_placeholder, _group_key in label_pairs:
             group_name, separator, description = full.partition("-")
             assert separator
             if description:
@@ -774,23 +774,16 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
                 assert not has_placeholder
         assert has_model_specific_label
         by_prefix = {}
-        for full, short, _ in label_pairs:
+        by_section = {}
+        for full, short, _, group_key in label_pairs:
             prefix, number = short.split("-", 1)
-            by_prefix.setdefault(prefix, []).append((full.split("-", 1)[1], int(number)))
-        for pairs in by_prefix.values():
-            assert [number for _, number in pairs] == list(range(1, len(pairs) + 1))
-        section_descriptions = driver.execute_script("""
-            const sections = new Map();
-            for (const header of document.querySelectorAll('#tab-unified th.case-sub')) {
-                const key = header.dataset.colHideGroup;
-                const label = header.querySelector('.case-label-full').textContent;
-                if (!sections.has(key)) sections.set(key, []);
-                sections.get(key).push(label.slice(label.indexOf('-') + 1));
-            }
-            return [...sections.values()];
-        """)
-        assert all(descriptions == sorted(descriptions) for descriptions in section_descriptions)
-        assert by_prefix["ds4"][0][1] == by_prefix["ds41"][0][1] == 1
+            by_prefix.setdefault(prefix, []).append(int(number))
+            by_section.setdefault((prefix, group_key), []).append(full.split("-", 1)[1])
+        for descriptions in by_section.values():
+            assert descriptions == sorted(descriptions)
+        for numbers in by_prefix.values():
+            assert numbers == list(range(1, len(numbers) + 1))
+        assert by_prefix["ds4"][0] == by_prefix["ds41"][0] == 1
 
         ActionChains(driver).move_to_element(header).perform()
         driver.execute_script(
@@ -834,7 +827,9 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
             "getComputedStyle(a.querySelector('.case-label-short')).display]);"
         )
-        assert [(full, short) for full, short, _ in transpose_labels] == [(full, short) for full, short, _ in label_pairs]
+        assert [(full, short) for full, short, _ in transpose_labels] == [
+            (full, short) for full, short, _, _ in label_pairs
+        ]
         assert all(display == "inline-block" for _, _, display in transpose_labels)
         assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
         model_header = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table thead .tcol-model")
