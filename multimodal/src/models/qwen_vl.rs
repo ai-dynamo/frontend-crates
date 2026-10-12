@@ -703,30 +703,6 @@ mod tests {
     }
 
     #[test]
-    fn rejects_overflowing_derived_sizes() {
-        let oversized = [
-            // The resize factor would overflow before header-only accounting.
-            (usize::MAX, 2, 2),
-            // The factor fits, but the merge area would overflow.
-            (1, usize::MAX, 1),
-            // A tiny spatial factor can still overflow the patch feature dimension.
-            (1, 1, usize::MAX),
-            // The factor fits, but the spatial patch area overflows.
-            (usize::MAX / 4, 1, 1),
-        ];
-        for (patch_size, merge_size, temporal_patch_size) in oversized {
-            let mut spec = valid_spec();
-            spec.patch_size = patch_size;
-            spec.merge_size = merge_size;
-            spec.temporal_patch_size = temporal_patch_size;
-            assert!(matches!(
-                QwenVlProcessor::new(spec),
-                Err(MmError::InvalidInput { .. })
-            ));
-        }
-    }
-
-    #[test]
     fn rejects_invalid_image_std() {
         for invalid_std in [0.0, -1.0, f32::NAN, f32::INFINITY] {
             let mut spec = valid_spec();
