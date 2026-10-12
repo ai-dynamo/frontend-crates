@@ -244,8 +244,9 @@ fn rejected(message: impl Into<String>) -> Rejected {
 
 /// What a [`MediaFetcher`] may reach and how much it may read. Plain data: set
 /// the fields, then build the fetcher; changing a policy afterwards does not
-/// affect a fetcher that already exists.
-#[derive(Clone, Debug)]
+/// affect a fetcher that already exists. Its `Debug` output redacts `proxy`,
+/// which can hold credentials.
+#[derive(Clone)]
 #[non_exhaustive]
 pub struct FetchPolicy {
     pub user_agent: String,
@@ -268,13 +269,15 @@ pub struct FetchPolicy {
     /// Whole-fetch timeout, DNS pre-flight included. `None` disables it. The
     /// system resolver runs on Tokio's blocking pool, and a lookup already in
     /// flight keeps running after the timeout fires; a stalled resolver can
-    /// therefore still occupy blocking threads. A `data:` URL involves no
-    /// waiting and is not bounded by it; see `max_data_url_bytes`.
+    /// therefore still occupy blocking threads. A `data:` URL is decoded on
+    /// the same pool, so it can queue behind such lookups, and a decode in
+    /// flight likewise finishes after the timeout fires; its size is bounded
+    /// by `max_data_url_bytes`.
     pub timeout: Option<Duration>,
     /// Cap on a downloaded body, in bytes.
     pub max_bytes: u64,
-    /// Cap on a `data:` URL's payload, in bytes. The payload is decoded inline
-    /// on the calling task, so this cap is what bounds that work.
+    /// Cap on a `data:` URL's payload, in bytes, which bounds the work of
+    /// decoding it on Tokio's blocking pool.
     pub max_data_url_bytes: usize,
     /// Send every request through this `http`/`https` proxy, e.g.
     /// `http://proxy.corp:3128`. `None` (the default) connects directly.
@@ -288,6 +291,34 @@ pub struct FetchPolicy {
     /// Set it only for a proxy you trust to enforce its own destination
     /// policy. The proxy environment variables are never read.
     pub proxy: Option<String>,
+}
+
+impl std::fmt::Debug for FetchPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Destructured so that a new field must be added here to compile.
+        let Self {
+            user_agent,
+            allow_direct_ip,
+            allow_direct_port,
+            allow_private_ips,
+            allowed_media_domains,
+            timeout,
+            max_bytes,
+            max_data_url_bytes,
+            proxy,
+        } = self;
+        f.debug_struct("FetchPolicy")
+            .field("user_agent", user_agent)
+            .field("allow_direct_ip", allow_direct_ip)
+            .field("allow_direct_port", allow_direct_port)
+            .field("allow_private_ips", allow_private_ips)
+            .field("allowed_media_domains", allowed_media_domains)
+            .field("timeout", timeout)
+            .field("max_bytes", max_bytes)
+            .field("max_data_url_bytes", max_data_url_bytes)
+            .field("proxy", &proxy.as_ref().map(|_| "<redacted>"))
+            .finish()
+    }
 }
 
 impl Default for FetchPolicy {
@@ -411,8 +442,8 @@ impl FetchPolicy {
 /// check that gives an early, clear refusal resolves the name once more than the
 /// connection does.
 ///
-/// Blocking is CPU-light but async: call [`fetch`](Self::fetch) from a Tokio
-/// runtime.
+/// Call [`fetch`](Self::fetch) from a Tokio runtime: it is async, and decodes
+/// `data:` URLs on Tokio's blocking pool.
 #[derive(Clone, Debug)]
 pub struct MediaFetcher {
     policy: FetchPolicy,
@@ -478,11 +509,11 @@ impl MediaFetcher {
 
     /// Fetch one media URL into raw bytes.
     ///
-    /// `data:` URLs must be base64 and are decoded inline, up to
-    /// `max_data_url_bytes`; `http(s)` bodies are streamed and stop at
-    /// `max_bytes`. An empty payload is an error. An `http(s)` fetch, DNS
-    /// pre-flight included, is bounded by `timeout`.
-    pub async fn fetch(&self, src: &str) -> crate::Result<Vec<u8>> {
+    /// `data:` URLs must be base64, up to `max_data_url_bytes`; they are
+    /// decoded on Tokio's blocking pool, which `src` moves to without a copy.
+    /// `http(s)` bodies are streamed and stop at `max_bytes`. An empty payload
+    /// is an error. The whole fetch is bounded by `timeout`.
+    pub async fn fetch(&self, src: String) -> crate::Result<Vec<u8>> {
         match self.policy.timeout {
             Some(limit) => tokio::time::timeout(limit, self.fetch_inner(src))
                 .await
@@ -491,9 +522,16 @@ impl MediaFetcher {
         }
     }
 
-    async fn fetch_inner(&self, src: &str) -> crate::Result<Vec<u8>> {
-        let url = match Source::read(src)? {
-            Source::Data(src) => return self.decode_data_url(src),
+    async fn fetch_inner(&self, src: String) -> crate::Result<Vec<u8>> {
+        let url = match Source::read(&src)? {
+            Source::Data(range) => {
+                let limit = self.policy.max_data_url_bytes;
+                return tokio::task::spawn_blocking(move || decode_data_url(&src[range], limit))
+                    .await
+                    .map_err(|e| {
+                        crate::MmError::internal_with_source("data URL decode failed", e)
+                    })?;
+            }
             Source::Url(url) => url,
         };
         // Behind a proxy the proxy resolves the destination; a local lookup
@@ -504,36 +542,6 @@ impl MediaFetcher {
             self.preflight(&url).await?;
         }
         self.download(&url).await
-    }
-
-    fn decode_data_url(&self, src: &str) -> crate::Result<Vec<u8>> {
-        // Look for the comma only within the allowed header, so a long run with
-        // no comma costs a bounded scan.
-        let window = &src.as_bytes()[..src.len().min(MAX_DATA_URL_HEADER + 1)];
-        let (header, payload) = window
-            .iter()
-            .position(|&b| b == b',')
-            .map(|comma| (&src[..comma], &src[comma + 1..]))
-            .ok_or_else(|| crate::MmError::invalid_input("invalid media data URL"))?;
-        if !header.ends_with(";base64") && !header.to_ascii_lowercase().ends_with(";base64") {
-            return Err(crate::MmError::invalid_input(
-                "media data URLs must be base64-encoded",
-            ));
-        }
-        if payload.len() > self.policy.max_data_url_bytes {
-            return Err(crate::MmError::limit_exceeded(format!(
-                "data URL payload of {} bytes exceeds the {} byte limit",
-                payload.len(),
-                self.policy.max_data_url_bytes
-            )));
-        }
-        let bytes = BASE64.decode(payload).map_err(|e| {
-            crate::MmError::invalid_input_with_source("invalid base64 in data URL", e)
-        })?;
-        if bytes.is_empty() {
-            return Err(crate::MmError::invalid_input("media data URL is empty"));
-        }
-        Ok(bytes)
     }
 
     async fn download(&self, url: &url::Url) -> crate::Result<Vec<u8>> {
@@ -578,22 +586,56 @@ impl MediaFetcher {
     }
 }
 
+/// Decode a base64 `data:` URL whose payload is at most `limit` bytes.
+fn decode_data_url(src: &str, limit: usize) -> crate::Result<Vec<u8>> {
+    // Look for the comma only within the allowed header, so a long run with
+    // no comma costs a bounded scan.
+    let window = &src.as_bytes()[..src.len().min(MAX_DATA_URL_HEADER + 1)];
+    let (header, payload) = window
+        .iter()
+        .position(|&b| b == b',')
+        .map(|comma| (&src[..comma], &src[comma + 1..]))
+        .ok_or_else(|| crate::MmError::invalid_input("invalid media data URL"))?;
+    if !header.ends_with(";base64") && !header.to_ascii_lowercase().ends_with(";base64") {
+        return Err(crate::MmError::invalid_input(
+            "media data URLs must be base64-encoded",
+        ));
+    }
+    if payload.len() > limit {
+        return Err(crate::MmError::limit_exceeded(format!(
+            "data URL payload of {} bytes exceeds the {limit} byte limit",
+            payload.len()
+        )));
+    }
+    let bytes = BASE64
+        .decode(payload)
+        .map_err(|e| crate::MmError::invalid_input_with_source("invalid base64 in data URL", e))?;
+    if bytes.is_empty() {
+        return Err(crate::MmError::invalid_input("media data URL is empty"));
+    }
+    Ok(bytes)
+}
+
 /// A media URL read without copying a payload of any size.
-enum Source<'a> {
-    /// A `data:` URL, checked and decoded on the borrowed string.
-    Data(&'a str),
+enum Source {
+    /// A `data:` URL: the byte range of the trimmed URL in the source string,
+    /// decoded later from that string.
+    Data(std::ops::Range<usize>),
     Url(url::Url),
 }
 
-impl<'a> Source<'a> {
-    fn read(src: &'a str) -> crate::Result<Self> {
+impl Source {
+    fn read(src: &str) -> crate::Result<Self> {
         // Like `Url::parse`, ignore leading and trailing C0 controls and spaces.
-        let src = src.trim_matches(|c: char| c <= ' ');
+        let blank = |c: char| c <= ' ';
+        let start = src.len() - src.trim_start_matches(blank).len();
+        let end = src.trim_end_matches(blank).len().max(start);
+        let src = &src[start..end];
         if src
             .get(..5)
             .is_some_and(|scheme| scheme.eq_ignore_ascii_case("data:"))
         {
-            return Ok(Self::Data(src));
+            return Ok(Self::Data(start..end));
         }
         // Refuse before `Url::parse` copies the input.
         if src.len() > MAX_URL_BYTES {
@@ -604,8 +646,8 @@ impl<'a> Source<'a> {
         let url = url::Url::parse(src)
             .map_err(|e| crate::MmError::invalid_input_with_source("invalid media url", e))?;
         // `Url::parse` ignores tabs and newlines inside the scheme, so `da\tta:`
-        // gets here as a data URL; only the borrowed-string path decodes those,
-        // so refuse it rather than hand it to the HTTP client.
+        // gets here as a data URL; only a literal `data:` prefix reaches the
+        // bounded decoder, so refuse it rather than hand it to the HTTP client.
         if url.scheme() == "data" {
             return Err(crate::MmError::invalid_input(
                 "data URLs must start with \"data:\"",
@@ -1045,12 +1087,16 @@ mod fetcher_tests {
     async fn data_urls_decode_and_are_bounded() {
         let f = fetcher(FetchPolicy::default());
         assert_eq!(
-            f.fetch("data:image/png;base64,dGVzdA==").await.unwrap(),
+            f.fetch("data:image/png;base64,dGVzdA==".to_string())
+                .await
+                .unwrap(),
             b"test"
         );
         // Leading and trailing spaces are ignored, as `Url::parse` ignores them.
         assert_eq!(
-            f.fetch("  DATA:image/png;BASE64,dGVzdA==\n").await.unwrap(),
+            f.fetch("  DATA:image/png;BASE64,dGVzdA==\n".to_string())
+                .await
+                .unwrap(),
             b"test"
         );
         let too_long_header = format!("data:{};base64,dGVzdA==", "x".repeat(MAX_DATA_URL_HEADER));
@@ -1061,7 +1107,7 @@ mod fetcher_tests {
             "data:image/png;base64",      // no comma
             too_long_header.as_str(),     // header far past the limit
         ] {
-            let r = f.fetch(bad).await;
+            let r = f.fetch(bad.to_string()).await;
             assert!(
                 matches!(r, Err(MmError::InvalidInput { .. })),
                 "{bad:.40}: {r:?}"
@@ -1071,7 +1117,9 @@ mod fetcher_tests {
             max_data_url_bytes: 4,
             ..FetchPolicy::default()
         });
-        let r = small.fetch("data:image/png;base64,dGVzdA==").await;
+        let r = small
+            .fetch("data:image/png;base64,dGVzdA==".to_string())
+            .await;
         assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
     }
 
@@ -1087,12 +1135,12 @@ mod fetcher_tests {
         .await;
         let f = internal();
         let get = |p: &str| format!("http://{addr}{p}");
-        assert_eq!(f.fetch(&get("/ok")).await.unwrap(), b"payload");
-        let r = f.fetch(&get("/missing")).await;
+        assert_eq!(f.fetch(get("/ok")).await.unwrap(), b"payload");
+        let r = f.fetch(get("/missing")).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "404: {r:?}");
-        let r = f.fetch(&get("/boom")).await;
+        let r = f.fetch(get("/boom")).await;
         assert!(matches!(r, Err(MmError::Internal { .. })), "500: {r:?}");
-        let r = f.fetch(&get("/empty")).await;
+        let r = f.fetch(get("/empty")).await;
         assert!(
             matches!(r, Err(MmError::InvalidInput { .. })),
             "empty: {r:?}"
@@ -1103,9 +1151,9 @@ mod fetcher_tests {
     async fn policy_refusal_makes_no_connection() {
         let (addr, connections) = serve(|_| ok(b"secret")).await;
         let f = fetcher(FetchPolicy::default());
-        let r = f.fetch(&format!("http://{addr}/ok")).await;
+        let r = f.fetch(format!("http://{addr}/ok")).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
-        let r = f.fetch("http://user:pw@example.com/").await;
+        let r = f.fetch("http://user:pw@example.com/".to_string()).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert_eq!(connections.load(Ordering::SeqCst), 0);
@@ -1131,7 +1179,7 @@ mod fetcher_tests {
             ..FetchPolicy::with_internal_access(true)
         });
         for p in ["/declared", "/streamed"] {
-            let r = f.fetch(&format!("http://{addr}{p}")).await;
+            let r = f.fetch(format!("http://{addr}{p}")).await;
             assert!(
                 matches!(r, Err(MmError::LimitExceeded { .. })),
                 "{p}: {r:?}"
@@ -1143,7 +1191,7 @@ mod fetcher_tests {
         });
         assert_eq!(
             roomy
-                .fetch(&format!("http://{addr}/declared"))
+                .fetch(format!("http://{addr}/declared"))
                 .await
                 .unwrap(),
             big
@@ -1165,7 +1213,7 @@ mod fetcher_tests {
             ..FetchPolicy::with_internal_access(true)
         });
         let started = std::time::Instant::now();
-        let r = f.fetch(&format!("http://{addr}/slow")).await;
+        let r = f.fetch(format!("http://{addr}/slow")).await;
         assert!(matches!(r, Err(MmError::Internal { .. })), "{r:?}");
         let waited = started.elapsed();
         assert!(
@@ -1188,10 +1236,10 @@ mod fetcher_tests {
         .await;
         let f = internal();
         assert_eq!(
-            f.fetch(&format!("http://{addr}/a3")).await.unwrap(),
+            f.fetch(format!("http://{addr}/a3")).await.unwrap(),
             b"arrived"
         );
-        let r = f.fetch(&format!("http://{addr}/b4")).await;
+        let r = f.fetch(format!("http://{addr}/b4")).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
         assert!(format!("{r:?}").contains("too many redirects"), "{r:?}");
     }
@@ -1212,7 +1260,9 @@ mod fetcher_tests {
             proxy: Some(format!("http://localhost:{}", addr.port())),
             ..FetchPolicy::default()
         });
-        let r = f.fetch("http://media.example.test/clip.mp4").await;
+        let r = f
+            .fetch("http://media.example.test/clip.mp4".to_string())
+            .await;
         assert_eq!(r.unwrap(), b"via proxy");
         assert_eq!(
             *asked.lock().unwrap(),
@@ -1228,7 +1278,7 @@ mod fetcher_tests {
             ..FetchPolicy::default()
         });
         for blocked in ["http://localhost/x", "http://169.254.169.254/x"] {
-            let r = f.fetch(blocked).await;
+            let r = f.fetch(blocked.to_string()).await;
             assert!(
                 matches!(r, Err(MmError::InvalidInput { .. })),
                 "{blocked}: {r:?}"
@@ -1273,6 +1323,30 @@ mod fetcher_tests {
         }
     }
 
+    #[test]
+    fn debug_output_does_not_print_proxy_credentials() {
+        let policy = FetchPolicy {
+            proxy: Some("http://proxy-user:SENTINEL_SECRET@proxy.corp:3128".to_string()),
+            ..FetchPolicy::default()
+        };
+        let f = MediaFetcher::new(policy.clone()).unwrap();
+        for printed in [
+            format!("{policy:?}"),
+            format!("{policy:#?}"),
+            format!("{f:?}"),
+            format!("{f:#?}"),
+        ] {
+            assert!(printed.contains("<redacted>"), "{printed}");
+            assert!(!printed.contains("SENTINEL_SECRET"), "{printed}");
+            assert!(!printed.contains("proxy-user"), "{printed}");
+            // `proxy-user:SENTINEL_SECRET` as a Basic auth header would carry it.
+            assert!(
+                !printed.contains("cHJveHktdXNlcjpTRU5USU5FTF9TRUNSRVQ="),
+                "{printed}"
+            );
+        }
+    }
+
     #[tokio::test]
     async fn redirects_do_not_send_a_referer() {
         // The redirect target, on another host name, records each request.
@@ -1299,7 +1373,7 @@ mod fetcher_tests {
         });
         let (addr, _) = serve(move |_| redirect(&format!("http://localhost:{port}/media"))).await;
         let r = internal()
-            .fetch(&format!("http://{addr}/start?token=SENTINEL_SECRET"))
+            .fetch(format!("http://{addr}/start?token=SENTINEL_SECRET"))
             .await;
         assert_eq!(r.unwrap(), b"arrived");
         let seen = seen.lock().unwrap();
@@ -1313,7 +1387,7 @@ mod fetcher_tests {
         // reqwest will not follow a non-HTTP target: it returns the 302, which is
         // reported as the caller's problem, and nothing is decoded or requested.
         let (addr, connections) = serve(|_| redirect("data:image/png;base64,dGVzdA==")).await;
-        let r = internal().fetch(&format!("http://{addr}/x")).await;
+        let r = internal().fetch(format!("http://{addr}/x")).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
         assert!(format!("{r:?}").contains("302"), "{r:?}");
         assert_eq!(connections.load(Ordering::SeqCst), 1);
@@ -1359,7 +1433,7 @@ mod fetcher_tests {
             ..FetchPolicy::with_internal_access(true)
         });
         let r = guarded
-            .fetch(&format!("http://127.0.0.1:{port}/start"))
+            .fetch(format!("http://127.0.0.1:{port}/start"))
             .await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -1369,7 +1443,7 @@ mod fetcher_tests {
         );
         // Sanity: the same fetcher without the allowlist does follow the redirect.
         let r = internal()
-            .fetch(&format!("http://127.0.0.1:{port}/start"))
+            .fetch(format!("http://127.0.0.1:{port}/start"))
             .await;
         assert_eq!(r.unwrap(), b"secret");
         assert_eq!(hits.lock().unwrap().len(), 1);
@@ -1381,7 +1455,7 @@ mod fetcher_tests {
         let port = probe.local_addr().unwrap().port();
         drop(probe);
         let err = internal()
-            .fetch(&format!("http://127.0.0.1:{port}/m?token=SENTINEL_SECRET"))
+            .fetch(format!("http://127.0.0.1:{port}/m?token=SENTINEL_SECRET"))
             .await
             .unwrap_err();
         assert!(matches!(err, MmError::Internal { .. }), "{err:?}");
@@ -1403,7 +1477,7 @@ mod fetcher_tests {
             "da\tta:image/png;base64,AAAA",
             "d\na\rta:image/png;base64,AAAA",
         ] {
-            let r = f.fetch(bad).await;
+            let r = f.fetch(bad.to_string()).await;
             assert!(
                 matches!(r, Err(MmError::InvalidInput { .. })),
                 "{bad:?}: {r:?}"
@@ -1412,7 +1486,7 @@ mod fetcher_tests {
         // An absurdly long http URL is refused before it is parsed, by the
         // public checks too.
         let long = format!("http://example.com/{}", "a".repeat(MAX_URL_BYTES));
-        let r = f.fetch(&long).await;
+        let r = f.fetch(long.clone()).await;
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
         let r = f.check_url(&long);
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
@@ -1434,7 +1508,7 @@ mod fetcher_tests {
             ..FetchPolicy::with_internal_access(true)
         });
         // The body never arrives; the point is no panic and no giant reservation.
-        let r = f.fetch(&format!("http://{addr}/x")).await;
+        let r = f.fetch(format!("http://{addr}/x")).await;
         assert!(r.is_err(), "{r:?}");
     }
 
