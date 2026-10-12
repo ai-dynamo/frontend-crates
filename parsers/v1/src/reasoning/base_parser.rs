@@ -108,6 +108,9 @@ pub struct BasicReasoningParser {
     /// delimiters inside these regions are literal argument data, not markup.
     tool_parameter_tokens: Option<(String, String)>,
     in_tool_parameter: bool,
+    // A tool marker inside reasoning is ambiguous until an explicit reasoning
+    // close or EOF. Retain the candidate, but scan each byte only once.
+    pending_tool_scan: Option<(usize, bool)>,
 }
 
 impl BasicReasoningParser {
@@ -130,6 +133,7 @@ impl BasicReasoningParser {
             tool_start_tokens: Vec::new(),
             tool_parameter_tokens: None,
             in_tool_parameter: false,
+            pending_tool_scan: None,
         }
     }
 
@@ -151,71 +155,118 @@ impl BasicReasoningParser {
         self
     }
 
-    /// Forward-only XML-aware scan. Only a possible delimiter suffix survives
-    /// between chunks; no full-suffix searches or copies occur per parameter.
+    /// Forward-only XML-aware scan. Outside an ambiguous tool candidate, only
+    /// a possible delimiter suffix survives between chunks. Inside reasoning,
+    /// buffer a tool candidate until a real close or EOF: eager recovery cannot
+    /// distinguish an example from a call whose reasoning close is missing.
+    /// Recovery without a close therefore happens at EOF, not at tool start.
+    /// Parameter contents shield literal reasoning markers in either mode.
     /// Missing parameter closers recover at the same function/wrapper boundary
     /// as the downstream v1 XML parser, so later reasoning is not shielded.
     fn scan_tool_parameters(&mut self, text: &str, flush: bool) -> ParserResult {
         self._buffer.push_str(text);
-        let input = std::mem::take(&mut self._buffer);
-        let (parameter_start, parameter_end) = self.tool_parameter_tokens.as_ref().unwrap();
         let mut result = ParserResult::default();
-        let mut cursor = 0;
-        let mut span = 0;
-        while cursor < input.len() {
-            let tail = &input[cursor..];
-            // The small, fixed delimiter set is checked only at the cursor.
-            // Function/wrapper closes end shielding but remain tool-parser input.
-            let markers: &[&str] = if self.in_tool_parameter {
-                &[parameter_end, "</function>", "</tool_call>"]
-            } else if self._in_reasoning {
-                &[
-                    &self.think_start_token,
-                    &self.think_end_token,
-                    "<tool_call>",
-                ]
-            } else {
-                &[
-                    &self.think_start_token,
-                    &self.think_end_token,
-                    parameter_start,
-                ]
-            };
-            if let Some(marker) = markers.iter().find(|marker| tail.starts_with(**marker)) {
-                if self._in_reasoning {
-                    result.reasoning_text.push_str(&input[span..cursor]);
-                } else {
-                    result.normal_text.push_str(&input[span..cursor]);
+        'scan: loop {
+            if let Some((mut cursor, mut in_parameter)) = self.pending_tool_scan.take() {
+                let (parameter_start, parameter_end) = self.tool_parameter_tokens.as_ref().unwrap();
+                let mut close = None;
+                while cursor < self._buffer.len() {
+                    let tail = &self._buffer[cursor..];
+                    let markers: &[&str] = if in_parameter {
+                        &[parameter_end, "</function>", "</tool_call>"]
+                    } else {
+                        &[parameter_start, &self.think_end_token]
+                    };
+                    if let Some(marker) = markers.iter().find(|marker| tail.starts_with(**marker)) {
+                        if !in_parameter && *marker == self.think_end_token {
+                            close = Some(cursor);
+                            break;
+                        }
+                        in_parameter = !in_parameter && *marker == parameter_start;
+                        cursor += marker.len();
+                    } else if !flush && markers.iter().any(|marker| marker.starts_with(tail)) {
+                        break;
+                    } else {
+                        cursor += tail.chars().next().unwrap().len_utf8();
+                    }
                 }
-                if self.in_tool_parameter {
-                    result.normal_text.push_str(marker);
-                    self.in_tool_parameter = false;
-                } else if *marker == self.think_start_token {
-                    self._in_reasoning = true;
-                } else if *marker == self.think_end_token {
+                if let Some(close) = close {
+                    result.reasoning_text.push_str(&self._buffer[..close]);
+                    self._buffer.drain(..close + self.think_end_token.len());
                     self._in_reasoning = false;
+                } else if !flush {
+                    self.pending_tool_scan = Some((cursor, in_parameter));
+                    return result;
                 } else {
-                    result.normal_text.push_str(marker);
+                    // No explicit close: retain the existing missing-close recovery.
                     self._in_reasoning = false;
-                    self.in_tool_parameter = *marker == parameter_start;
                 }
-                cursor += marker.len();
-                span = cursor;
-            } else if !flush && markers.iter().any(|marker| marker.starts_with(tail)) {
-                // At most max(delimiter length)-1 bytes are retained. Partial
-                // markers are never emitted into the wrong channel.
-                break;
-            } else {
-                cursor += tail.chars().next().unwrap().len_utf8();
             }
+            let input = std::mem::take(&mut self._buffer);
+            let (parameter_start, parameter_end) = self.tool_parameter_tokens.as_ref().unwrap();
+            let mut cursor = 0;
+            let mut span = 0;
+            while cursor < input.len() {
+                let tail = &input[cursor..];
+                // The small, fixed delimiter set is checked only at the cursor.
+                // Function/wrapper closes end shielding but remain tool-parser input.
+                let markers: &[&str] = if self.in_tool_parameter {
+                    &[parameter_end, "</function>", "</tool_call>"]
+                } else if self._in_reasoning {
+                    &[
+                        &self.think_start_token,
+                        &self.think_end_token,
+                        "<tool_call>",
+                    ]
+                } else {
+                    &[
+                        &self.think_start_token,
+                        &self.think_end_token,
+                        parameter_start,
+                    ]
+                };
+                if let Some(marker) = markers.iter().find(|marker| tail.starts_with(**marker)) {
+                    if self._in_reasoning && !self.in_tool_parameter && *marker == "<tool_call>" {
+                        result.reasoning_text.push_str(&input[span..cursor]);
+                        self._buffer.push_str(tail);
+                        self.pending_tool_scan = Some((0, false));
+                        continue 'scan;
+                    }
+                    if self._in_reasoning {
+                        result.reasoning_text.push_str(&input[span..cursor]);
+                    } else {
+                        result.normal_text.push_str(&input[span..cursor]);
+                    }
+                    if self.in_tool_parameter {
+                        result.normal_text.push_str(marker);
+                        self.in_tool_parameter = false;
+                    } else if *marker == self.think_start_token {
+                        self._in_reasoning = true;
+                    } else if *marker == self.think_end_token {
+                        self._in_reasoning = false;
+                    } else {
+                        result.normal_text.push_str(marker);
+                        self._in_reasoning = false;
+                        self.in_tool_parameter = *marker == parameter_start;
+                    }
+                    cursor += marker.len();
+                    span = cursor;
+                } else if !flush && markers.iter().any(|marker| marker.starts_with(tail)) {
+                    // At most max(delimiter length)-1 bytes are retained. Partial
+                    // markers are never emitted into the wrong channel.
+                    break;
+                } else {
+                    cursor += tail.chars().next().unwrap().len_utf8();
+                }
+            }
+            if self._in_reasoning {
+                result.reasoning_text.push_str(&input[span..cursor]);
+            } else {
+                result.normal_text.push_str(&input[span..cursor]);
+            }
+            self._buffer.push_str(&input[cursor..]);
+            return result;
         }
-        if self._in_reasoning {
-            result.reasoning_text.push_str(&input[span..cursor]);
-        } else {
-            result.normal_text.push_str(&input[span..cursor]);
-        }
-        self._buffer.push_str(&input[cursor..]);
-        result
     }
 
     /// Enables streaming dangling-close recovery.
@@ -262,6 +313,7 @@ impl ReasoningParser for BasicReasoningParser {
             let mut parser = self.clone();
             parser._buffer.clear();
             parser.in_tool_parameter = false;
+            parser.pending_tool_scan = None;
             return parser.scan_tool_parameters(text, true);
         }
         let has_think_tag = text.contains(&self.think_start_token);

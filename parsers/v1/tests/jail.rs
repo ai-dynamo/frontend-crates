@@ -997,6 +997,87 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn nemotron_captured_reasoning_examples_do_not_execute() {
+        use dynamo_parsers::ReasoningParser;
+        // Captured Super NVFP4 output, not a reconstructed tool-call example.
+        // The model transport EOS is not part of the parser's decoded input.
+        let input = include_str!("common/nemotron_reasoning_example.txt")
+            .trim_end()
+            .strip_suffix("<|im_end|>")
+            .unwrap();
+        let expected_reasoning = input.split_once("</think>").unwrap().0;
+        for alias in ["nemotron3", "nemotron_v3"] {
+            let mut batch_parser =
+                dynamo_parsers::ReasoningParserType::get_reasoning_parser_from_name(alias);
+            let batch = batch_parser.detect_and_parse_reasoning(input, &[]);
+            assert_eq!(batch.reasoning_text, expected_reasoning);
+            let (batch_calls, _) = dynamo_parsers::detect_and_parse_tool_call(
+                &batch.normal_text,
+                Some("qwen3_coder"),
+                None,
+            )
+            .await
+            .unwrap();
+            assert_eq!(batch_calls.len(), 2);
+            let mut partitions: Vec<Vec<&str>> = (0..=input.len())
+                .filter(|i| input.is_char_boundary(*i))
+                .map(|split| vec![&input[..split], &input[split..]])
+                .collect();
+            partitions.push(
+                input
+                    .char_indices()
+                    .map(|(i, c)| &input[i..i + c.len_utf8()])
+                    .collect(),
+            );
+            for partition in partitions {
+                let mut parser =
+                    dynamo_parsers::ReasoningParserType::get_reasoning_parser_from_name(alias);
+                let mut chunks = Vec::new();
+                let mut reasoning = String::new();
+                for text in partition {
+                    let parsed = parser.parse_reasoning_streaming_incremental(text, &[]);
+                    reasoning.push_str(&parsed.reasoning_text);
+                    chunks.push(create_mock_response_chunk(parsed.normal_text, 0));
+                }
+                let tail = parser.finish_reasoning_stream();
+                reasoning.push_str(&tail.reasoning_text);
+                chunks.push(create_mock_response_chunk(tail.normal_text, 0));
+                chunks.push(create_final_response_chunk(0));
+                let jail = JailedStream::builder()
+                    .tool_call_parser("qwen3_coder")
+                    .build();
+                let results: Vec<_> = jail
+                    .apply_with_finish_reason(stream::iter(chunks))
+                    .collect()
+                    .await;
+                let mut content = String::new();
+                let mut calls = Vec::new();
+                for result in results {
+                    assert!(result.error.is_none());
+                    if let Some(response) = result.data {
+                        for choice in response.choices {
+                            if let Some(text) = choice.delta.content {
+                                content.push_str(test_utils::extract_text(&text));
+                            }
+                            calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                        }
+                    }
+                }
+                assert_eq!(reasoning, expected_reasoning);
+                assert!(content.trim().is_empty(), "reasoning leaked: {content:?}");
+                assert_eq!(calls.len(), 2);
+                for (call, name) in calls.iter().zip(["lookup_weather", "lookup_time"]) {
+                    let function = call.function.as_ref().unwrap();
+                    assert_eq!(function.name.as_deref(), Some(name));
+                    let args: serde_json::Value =
+                        serde_json::from_str(function.arguments.as_deref().unwrap()).unwrap();
+                    assert_eq!(args, serde_json::json!({"city":"Paris"}));
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn nemotron_missing_parameter_close_preserves_private_reasoning() {
         use dynamo_parsers::ReasoningParser;
         for alias in ["nemotron3", "nemotron_v3"] {

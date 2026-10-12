@@ -399,6 +399,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn nemotron_tool_examples_inside_reasoning_are_not_calls() {
+        let tool =
+            "<tool_call><function=read><parameter=path>café.txt</parameter></function></tool_call>";
+        let reasoning = format!("For example: {tool}\nNow emit the actual call.");
+        for alias in ["nemotron3", "nemotron_v3"] {
+            for opener in ["", "<think>"] {
+                let input = format!("{opener}{reasoning}</think>{tool}");
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                let batch = parser.detect_and_parse_reasoning(&input, &[]);
+                assert_eq!(batch.reasoning_text, reasoning);
+                assert_eq!(batch.normal_text, tool);
+                for split in (0..=input.len()).filter(|i| input.is_char_boundary(*i)) {
+                    let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                    let mut actual_reasoning = String::new();
+                    let mut actual_content = String::new();
+                    for chunk in [&input[..split], &input[split..]] {
+                        let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                        actual_reasoning.push_str(&result.reasoning_text);
+                        actual_content.push_str(&result.normal_text);
+                    }
+                    let tail = parser.finish_reasoning_stream();
+                    actual_reasoning.push_str(&tail.reasoning_text);
+                    actual_content.push_str(&tail.normal_text);
+                    assert_eq!(actual_reasoning, reasoning, "{alias}: split {split}");
+                    assert_eq!(actual_content, tool, "{alias}: split {split}");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn nemotron_implicit_tool_boundary_batch_and_every_stream_split() {
         assert_nemotron_tool_boundary("");
     }
@@ -460,7 +491,13 @@ mod tests {
     #[test]
     fn nemotron_strips_stray_close_outside_tool_arguments() {
         let tool = "<tool_call><function=echo_payload><parameter=text>literal </think></parameter></function></tool_call>";
-        assert_nemotron_parameter_regions(&format!("{tool}</think>done"), &format!("{tool}done"));
+        // A close is stray only after an established reasoning boundary. With
+        // no prior close, the same tool block may be an example in reasoning.
+        assert_nemotron_parameter_regions_with_closers(
+            &format!("{tool}</think>done"),
+            &format!("{tool}done"),
+            &["</think>"],
+        );
     }
 
     #[test]
@@ -544,27 +581,37 @@ mod tests {
     #[tokio::test]
     async fn nemotron_parameter_markers_survive_downstream_tool_parsing() {
         let value = "café </think> and <think>";
-        let input = format!(
-            "inspect<tool_call><function=echo_payload><parameter=text>{value}</parameter></function></tool_call></think>"
-        );
-        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("nemotron_v3");
-        let parsed = parser.detect_and_parse_reasoning(&input, &[]);
-        let (calls, content) =
-            crate::detect_and_parse_tool_call(&parsed.normal_text, Some("qwen3_coder"), None)
-                .await
-                .unwrap();
-        assert_eq!(calls.len(), 1);
-        assert_eq!(calls[0].function.name, "echo_payload");
-        let arguments: serde_json::Value =
-            serde_json::from_str(&calls[0].function.arguments).unwrap();
-        assert_eq!(arguments["text"], value);
-        assert!(content.unwrap_or_default().is_empty());
+        for (close, trailing) in [("", ""), ("</think>", "</think>")] {
+            let input = format!(
+                "inspect{close}<tool_call><function=echo_payload><parameter=text>{value}</parameter></function></tool_call>{trailing}"
+            );
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name("nemotron_v3");
+            let parsed = parser.detect_and_parse_reasoning(&input, &[]);
+            let (calls, content) =
+                crate::detect_and_parse_tool_call(&parsed.normal_text, Some("qwen3_coder"), None)
+                    .await
+                    .unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].function.name, "echo_payload");
+            let arguments: serde_json::Value =
+                serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(arguments["text"], value);
+            assert!(content.unwrap_or_default().is_empty());
+        }
     }
 
     fn assert_nemotron_parameter_regions(tool: &str, expected: &str) {
+        assert_nemotron_parameter_regions_with_closers(tool, expected, &["", "</think>"]);
+    }
+
+    fn assert_nemotron_parameter_regions_with_closers(
+        tool: &str,
+        expected: &str,
+        closers: &[&str],
+    ) {
         for alias in ["nemotron3", "nemotron_v3"] {
             for opener in ["", "<think>"] {
-                for closer in ["", "</think>"] {
+                for closer in closers {
                     let input = format!("{opener}inspect{closer}{tool}");
                     let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
                     let batch = parser.detect_and_parse_reasoning(&input, &[]);
