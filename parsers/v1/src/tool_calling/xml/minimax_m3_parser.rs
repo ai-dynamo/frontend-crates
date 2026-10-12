@@ -522,9 +522,10 @@ fn get_arguments_config<'a>(
 }
 
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
+// Values are literal text: the chat template renders `{{ val }}` unescaped.
 fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> Value {
     let mut schemas = SchemaWalker::new(root_schema);
-    let value = html_unescape(raw);
+    let value = raw.to_string();
     let trimmed = value.trim();
 
     // Without a schema, preserve the literal text instead of inventing a type.
@@ -855,16 +856,6 @@ impl<'a> SchemaWalker<'a> {
     }
 }
 
-// Decodes common XML/HTML entities so tool arguments receive the intended literal text.
-fn html_unescape(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&#39;", "'")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -909,6 +900,37 @@ mod tests {
         assert_eq!(calls.len(), 1);
         let (_, args) = call_name_and_args(&calls[0]);
         assert_eq!(args, serde_json::json!({"pattern": "null", "path": null}));
+    }
+
+    #[test]
+    fn literal_entities_remain_argument_data() {
+        let tools = vec![ToolDefinition {
+            name: "inspect".into(),
+            parameters: Some(serde_json::json!({
+                "properties": {"text": {"type": "string"}, "payload": {"type": "object"}}
+            })),
+            strict: None,
+        }];
+        let input = concat!(
+            "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"inspect\">",
+            "]<]minimax[>[<text>a &amp; b &lt;div&gt; &amp;quot;]<]minimax[>[</text>",
+            "]<]minimax[>[<payload>{\"text\":\"&quot; &amp;\"}]<]minimax[>[</payload>",
+            "]<]minimax[>[<note>&lt;b&gt; &#39;x&#39;]<]minimax[>[</note>",
+            "]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_minimax_m3(input, &MiniMaxM3ParserConfig::default(), Some(&tools))
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let (_, args) = call_name_and_args(&calls[0]);
+        assert_eq!(
+            args,
+            serde_json::json!({
+                "text": "a &amp; b &lt;div&gt; &amp;quot;",
+                "payload": {"text": "&quot; &amp;"},
+                "note": "&lt;b&gt; &#39;x&#39;"
+            })
+        );
     }
 
     #[test]

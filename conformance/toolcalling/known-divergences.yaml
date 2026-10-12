@@ -314,6 +314,9 @@ qwen3_coder:
     stream_vs_batch: *svb-literal-entity
   TOOLCALLING.batch.7.p.const_entity_typed:
     stream_vs_batch: *svb-literal-entity
+  TOOLCALLING.batch.7.y:
+    stream_vs_batch: >-
+      FIXME (v1 defect): v1 entity-decodes argument text, decoding "&amp;quot;" twice into a quote, and the decoded object text is no longer valid JSON, so the object argument degrades to a string. v2 preserves every entity spelling the template rendered.
   TOOLCALLING.batch.7.p.const_null_allof:
     stream_vs_batch: *svb-literal-null
   TOOLCALLING.batch.7.p.const_null_bare:

@@ -533,9 +533,10 @@ fn get_arguments_config<'a>(
 }
 
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
+// Values are literal text: the chat template renders `{{ val }}` unescaped.
 fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> Value {
     let mut schemas = SchemaWalker::new(root_schema);
-    let value = html_unescape(raw);
+    let value = raw.to_string();
     let trimmed = value.trim();
 
     // Without a schema we cannot know the intended type, so preserve the literal
@@ -893,16 +894,6 @@ impl<'a> SchemaWalker<'a> {
     }
 }
 
-// Decodes common XML/HTML entities so tool arguments receive the intended literal text.
-fn html_unescape(s: &str) -> String {
-    s.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&#39;", "'")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1116,6 +1107,36 @@ mod tests {
         assert_eq!(
             convert_scalar_value("null", None, &Value::Null),
             json!("null")
+        );
+    }
+
+    #[test]
+    fn literal_entities_remain_argument_data() {
+        let tools = vec![ToolDefinition {
+            name: "inspect".into(),
+            parameters: Some(json!({
+                "properties": {"text": {"type": "string"}, "payload": {"type": "object"}}
+            })),
+        }];
+        let raw = format!(
+            "{TOK}<text>a &amp; b &lt;div&gt; &amp;quot;{TOK}</text>\
+             {TOK}<payload>{{\"text\":\"&quot; &amp;\"}}{TOK}</payload>\
+             {TOK}<note>&lt;b&gt; &#39;x&#39;{TOK}</note>"
+        );
+        let actual = parse_parameters(
+            "inspect",
+            &raw,
+            &MiniMaxM3ParserConfig::default(),
+            Some(&tools),
+        )
+        .unwrap();
+        assert_eq!(
+            Value::Object(actual),
+            json!({
+                "text": "a &amp; b &lt;div&gt; &amp;quot;",
+                "payload": {"text": "&quot; &amp;"},
+                "note": "&lt;b&gt; &#39;x&#39;"
+            })
         );
     }
 

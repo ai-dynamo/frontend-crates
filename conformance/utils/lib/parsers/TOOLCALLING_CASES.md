@@ -356,6 +356,10 @@ The nested-whitespace cases below are Single Family Tests on constructed native 
 - **`TOOLCALLING.batch.7.m`** Pretty-printed nested containers. Newlines and indentation between nested tags are formatting, so an `array<integer>` parses to `[1, 50]` without whitespace items and a nested object gains no `$text` member.
 - **`TOOLCALLING.batch.7.n`** Whitespace-only and padded string leaves inside nested containers are values. The chat template emits leaf text verbatim, so `<sep>  </sep>` stays two spaces and a newline-only `<item>` stays a newline.
 
+The literal-entity case below is authored for every registered family by `utils/src/gen_literal_entity_cases.py`, in each family's native grammar.
+
+- **`TOOLCALLING.batch.7.y`** Entity spellings in argument values are data, not markup to decode. A string, an object member, and an argument the schema does not declare keep `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, and the double-encoded `&amp;quot;` exactly as the chat template rendered them. A parser that decodes changes the text the tool receives, and decoding `&quot;` inside object JSON can make it unparseable.
+
 Streaming-only parser regressions for argument schemas, entities, and string boundaries are listed in `TOOLCALLING_STREAMING_V1_CASES.md` with their source PRs.
 
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
