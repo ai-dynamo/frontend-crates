@@ -8,6 +8,11 @@ license = "Apache-2.0"
 description = "Runs the vendored Dynamo parity fixtures against dynamo-parsers"
 publish = false
 
+# Its unit tests run with the crate's tests; conformance/utils/src/parser_roundtrip drives it.
+[[example]]
+name = "parser_roundtrip"
+test = true
+
 [dev-dependencies]
 anyhow = { workspace = true }
 dynamo-parsers = { workspace = true }
