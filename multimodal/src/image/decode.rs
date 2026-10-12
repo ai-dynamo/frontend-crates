@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{MmError, Result};
-use image::ImageFormat;
+use image::metadata::Orientation;
+use image::{ImageDecoder, ImageFormat};
 
 /// Header-checked limits enforced before pixel decoding. `None` means unbounded.
 #[derive(Clone, Copy, Debug, Default)]
@@ -58,6 +59,111 @@ pub fn decode_rgb(data: &[u8], limits: &DecodeLimits) -> Result<(Vec<u8>, usize,
         }
     };
     Ok((rgb, h, w))
+}
+
+/// Like [`decode_rgb`], but apply EXIF orientation as in
+/// `PIL.ImageOps.exif_transpose(Image.open(...)).convert("RGB")`.
+///
+/// Limits apply to the transposed dimensions and are checked before decoding
+/// pixels. Pair this with [`dimensions_exif_transposed`] for token accounting;
+/// the existing raw APIs deliberately retain their `Image.open` semantics.
+pub fn decode_rgb_exif_transposed(
+    data: &[u8],
+    limits: &DecodeLimits,
+) -> Result<(Vec<u8>, usize, usize)> {
+    let (h, w) = dimensions(data)?;
+    let orientation = exif_orientation(data)?;
+    let (out_h, out_w) = oriented_dimensions(h, w, orientation);
+    limits.check(out_h, out_w)?;
+    let (rgb, _, _) = decode_rgb(data, &DecodeLimits::default())?;
+    if orientation == Orientation::NoTransforms {
+        return Ok((rgb, h, w));
+    }
+    // The dimensions originate in encoded u32 headers. The decoder's RGB
+    // buffer must agree with them before an orientation can be applied.
+    let rgb = image::RgbImage::from_raw(w as u32, h as u32, rgb)
+        .ok_or_else(|| MmError::invalid_input("image dimensions disagree with RGB buffer"))?;
+    let mut img = image::DynamicImage::ImageRgb8(rgb);
+    img.apply_orientation(orientation);
+    Ok((img.into_rgb8().into_raw(), out_h, out_w))
+}
+
+/// Header-only dimensions after EXIF orientation, matching
+/// `PIL.ImageOps.exif_transpose(Image.open(...)).size` without decoding pixels.
+///
+/// JPEG, PNG and WebP EXIF is supported. Missing or malformed TIFF orientation
+/// tags are ignored; image/container errors still propagate. Encoded bytes are
+/// neither rewritten nor re-encoded, so callers can retain their existing
+/// raw-content identity.
+pub fn dimensions_exif_transposed(data: &[u8]) -> Result<(usize, usize)> {
+    let (h, w) = dimensions(data)?;
+    Ok(oriented_dimensions(h, w, exif_orientation(data)?))
+}
+
+fn oriented_dimensions(h: usize, w: usize, orientation: Orientation) -> (usize, usize) {
+    match orientation {
+        Orientation::Rotate90
+        | Orientation::Rotate270
+        | Orientation::Rotate90FlipH
+        | Orientation::Rotate270FlipH => (w, h),
+        _ => (h, w),
+    }
+}
+
+fn exif_orientation(data: &[u8]) -> Result<Orientation> {
+    let exif = match format(data)? {
+        // Keep Pillow-matching libjpeg-turbo for pixels. Reading APP1 requires
+        // no second JPEG pixel decoder or additional dependency.
+        ImageFormat::Jpeg => {
+            return Ok(jpeg_exif(data)
+                .and_then(Orientation::from_exif_chunk)
+                .unwrap_or(Orientation::NoTransforms));
+        }
+        fmt @ (ImageFormat::Png | ImageFormat::WebP) => {
+            let mut reader = image::ImageReader::new(std::io::Cursor::new(data));
+            reader.set_format(fmt);
+            reader
+                .into_decoder()
+                .map_err(invalid("image metadata probe failed"))?
+                .exif_metadata()
+                .map_err(invalid("image EXIF probe failed"))?
+        }
+        // GIF uses its first-frame canvas dimensions and has no EXIF.
+        _ => None,
+    };
+    Ok(exif
+        .as_deref()
+        .and_then(|bytes| {
+            // Pillow accepts both TIFF-only and JPEG-style EXIF WebP chunks.
+            Orientation::from_exif_chunk(bytes.strip_prefix(b"Exif\0\0").unwrap_or(bytes))
+        })
+        .unwrap_or(Orientation::NoTransforms))
+}
+
+fn jpeg_exif(data: &[u8]) -> Option<&[u8]> {
+    let mut remaining = data.strip_prefix(&[0xff, 0xd8])?;
+    loop {
+        // JPEG allows repeated 0xff fill bytes before a marker.
+        remaining = remaining.strip_prefix(&[0xff])?;
+        while remaining.first() == Some(&0xff) {
+            remaining = &remaining[1..];
+        }
+        let (&marker, rest) = remaining.split_first()?;
+        remaining = rest;
+        match marker {
+            0xda | 0xd9 => return None, // SOS/EOI: never inspect compressed pixels.
+            0x01 | 0xd0..=0xd8 => continue, // Standalone markers have no length.
+            _ => {}
+        }
+        let len = usize::from(u16::from_be_bytes(remaining.get(..2)?.try_into().ok()?));
+        let payload = remaining.get(2..len)?;
+        if marker == 0xe1
+            && let Some(exif) = payload.strip_prefix(b"Exif\0\0")
+        {
+            return Some(exif);
+        }
+        remaining = remaining.get(len..)?;
+    }
 }
 
 fn decode_jpeg(data: &[u8]) -> Result<Vec<u8>> {
@@ -198,6 +304,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use image::ImageEncoder;
 
     const JPEG: &[u8] = include_bytes!("../../tests/fixtures/decode/pillow_noise_13x9.jpg");
     /// `PIL.Image.open(JPEG).convert("RGB")`, Pillow 12 on libjpeg-turbo.
@@ -346,5 +453,202 @@ mod tests {
             max_pixels: Some(9 * 13),
         };
         assert!(decode_rgb(JPEG, &exact).is_ok());
+    }
+
+    fn exif(orientation: u16, big_endian: bool) -> Vec<u8> {
+        let mut tiff = if big_endian {
+            b"MM\0*\0\0\0\x08\0\x01\x01\x12\0\x03\0\0\0\x01".to_vec()
+        } else {
+            b"II*\0\x08\0\0\0\x01\0\x12\x01\x03\0\x01\0\0\0".to_vec()
+        };
+        tiff.extend(if big_endian {
+            orientation.to_be_bytes()
+        } else {
+            orientation.to_le_bytes()
+        });
+        tiff.extend([0; 6]);
+        tiff
+    }
+
+    fn with_exif(fmt: ImageFormat, exif: Vec<u8>) -> Vec<u8> {
+        let pixels = (0..4)
+            .flat_map(|y| (0..6).flat_map(move |x| [x * 40, y * 60, x + y * 10]))
+            .collect::<Vec<u8>>();
+        let mut bytes = Vec::new();
+        match fmt {
+            ImageFormat::Jpeg => {
+                // Add metadata without re-encoding the existing JPEG fixture.
+                bytes.extend(&JPEG[..2]);
+                bytes.extend([0xff, 0xe1]);
+                bytes.extend(((exif.len() + 8) as u16).to_be_bytes());
+                bytes.extend(b"Exif\0\0");
+                bytes.extend(exif);
+                bytes.extend(&JPEG[2..]);
+            }
+            ImageFormat::Png => {
+                let mut encoder = image::codecs::png::PngEncoder::new(&mut bytes);
+                encoder.set_exif_metadata(exif).unwrap();
+                encoder
+                    .write_image(&pixels, 6, 4, image::ExtendedColorType::Rgb8)
+                    .unwrap();
+            }
+            ImageFormat::WebP => {
+                let mut encoder = image::codecs::webp::WebPEncoder::new_lossless(&mut bytes);
+                encoder.set_exif_metadata(exif).unwrap();
+                encoder
+                    .write_image(&pixels, 6, 4, image::ExtendedColorType::Rgb8)
+                    .unwrap();
+            }
+            _ => unreachable!(),
+        }
+        bytes
+    }
+
+    #[test]
+    fn exif_dimensions_and_pixels_match_pillow_without_changing_raw_apis() {
+        for fmt in [ImageFormat::Jpeg, ImageFormat::Png, ImageFormat::WebP] {
+            let (h, w, golden): (_, _, &[u8]) = if fmt == ImageFormat::Jpeg {
+                (
+                    9,
+                    13,
+                    include_bytes!("../../tests/fixtures/decode/pillow_exif_jpeg.rgb"),
+                )
+            } else {
+                (
+                    4,
+                    6,
+                    include_bytes!("../../tests/fixtures/decode/pillow_exif_lossless.rgb"),
+                )
+            };
+            for big_endian in [false, true] {
+                for tag in 0..=9 {
+                    let bytes = with_exif(fmt, exif(tag, big_endian));
+                    let original = bytes.clone();
+                    let hash = crate::content_hash_bytes(&bytes);
+                    let expected_dimensions = if (5..=8).contains(&tag) {
+                        (w, h)
+                    } else {
+                        (h, w)
+                    };
+                    let (rgb, out_h, out_w) =
+                        decode_rgb_exif_transposed(&bytes, &DecodeLimits::default()).unwrap();
+                    let index = if (1..=8).contains(&tag) { tag - 1 } else { 0 } as usize;
+                    assert_eq!(
+                        rgb,
+                        golden[index * h * w * 3..(index + 1) * h * w * 3],
+                        "{fmt:?}, tag={tag}, big_endian={big_endian}"
+                    );
+                    assert_eq!((out_h, out_w), expected_dimensions);
+                    assert_eq!(
+                        dimensions_exif_transposed(&bytes).unwrap(),
+                        expected_dimensions
+                    );
+                    assert_eq!(dimensions(&bytes).unwrap(), (h, w));
+                    assert_eq!(
+                        decode_rgb(&bytes, &DecodeLimits::default()).unwrap().0,
+                        &golden[..h * w * 3]
+                    );
+                    assert_eq!(bytes, original);
+                    assert_eq!(crate::content_hash_bytes(&bytes), hash);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn prefixed_webp_and_malformed_exif() {
+        let mut prefixed = b"Exif\0\0".to_vec();
+        prefixed.extend(exif(6, false));
+        assert_eq!(
+            dimensions_exif_transposed(&with_exif(ImageFormat::WebP, prefixed)).unwrap(),
+            (6, 4)
+        );
+        let mut bad_offset = exif(6, false);
+        bad_offset[4..8].copy_from_slice(&u32::MAX.to_le_bytes());
+        for fmt in [ImageFormat::Jpeg, ImageFormat::Png, ImageFormat::WebP] {
+            for exif in [vec![], b"not TIFF".to_vec(), bad_offset.clone()] {
+                let bytes = with_exif(fmt, exif);
+                assert_eq!(
+                    dimensions_exif_transposed(&bytes).unwrap(),
+                    dimensions(&bytes).unwrap()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn oriented_limits_are_checked_before_pixels_are_decoded() {
+        let mut bytes = with_exif(ImageFormat::Png, exif(6, false));
+        let idat = bytes.windows(4).position(|chunk| chunk == b"IDAT").unwrap();
+        bytes[idat + 4] = 0; // Broken compressed pixels; dimensions still work.
+        assert!(decode_rgb(&bytes, &DecodeLimits::default()).is_err());
+        assert_eq!(dimensions_exif_transposed(&bytes).unwrap(), (6, 4));
+        for limits in [
+            DecodeLimits {
+                max_height: Some(5),
+                ..DecodeLimits::default()
+            },
+            DecodeLimits {
+                max_width: Some(3),
+                ..DecodeLimits::default()
+            },
+            DecodeLimits {
+                max_pixels: Some(23),
+                ..DecodeLimits::default()
+            },
+        ] {
+            assert!(matches!(
+                decode_rgb_exif_transposed(&bytes, &limits),
+                Err(MmError::LimitExceeded { .. })
+            ));
+        }
+        let valid = with_exif(ImageFormat::Png, exif(6, false));
+        let limits = DecodeLimits {
+            max_width: Some(4),
+            max_height: Some(6),
+            max_pixels: Some(24),
+        };
+        // The raw width is six; limits intentionally apply to the output width.
+        assert!(decode_rgb_exif_transposed(&valid, &limits).is_ok());
+    }
+
+    #[test]
+    fn jpeg_orientation_probe_stops_before_compressed_pixels() {
+        let bytes = with_exif(ImageFormat::Jpeg, exif(6, false));
+        let sos = bytes
+            .windows(2)
+            .position(|marker| marker == [0xff, 0xda])
+            .unwrap();
+        let len = usize::from(u16::from_be_bytes(
+            bytes[sos + 2..sos + 4].try_into().unwrap(),
+        ));
+        let header = &bytes[..sos + 2 + len];
+        assert_eq!(dimensions_exif_transposed(header).unwrap(), (13, 9));
+        assert!(decode_rgb(header, &DecodeLimits::default()).is_err());
+        assert!(jpeg_exif(&[0xff, 0xd8, 0xff, 0xe1, 0, 1]).is_none());
+        assert!(jpeg_exif(&[0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff]).is_none());
+        // APP1-looking bytes after SOS are image data, not metadata.
+        let mut data = vec![0xff, 0xd8, 0xff, 0xda];
+        data.extend(&bytes[2..]);
+        assert!(jpeg_exif(&data).is_none());
+    }
+
+    #[test]
+    fn images_without_exif_keep_existing_semantics() {
+        let gif = include_bytes!("../../tests/fixtures/decode/pillow_expanded_6x6.gif");
+        let bmp = encode(
+            &image::DynamicImage::ImageRgb8(image::RgbImage::new(6, 4)),
+            ImageFormat::Bmp,
+        );
+        for bytes in [JPEG, gif.as_slice(), bmp.as_slice()] {
+            assert_eq!(
+                dimensions_exif_transposed(bytes).unwrap(),
+                dimensions(bytes).unwrap()
+            );
+            assert_eq!(
+                decode_rgb_exif_transposed(bytes, &DecodeLimits::default()).unwrap(),
+                decode_rgb(bytes, &DecodeLimits::default()).unwrap()
+            );
+        }
     }
 }

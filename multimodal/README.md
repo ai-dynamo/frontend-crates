@@ -241,6 +241,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
+| `image::decode::decode_rgb_exif_transposed` | `PIL.ImageOps.exif_transpose(Image.open(...)).convert("RGB")` | opt-in EXIF orientation; caps checked against transposed dimensions before pixel decoding |
+| `image::decode::dimensions_exif_transposed` | `PIL.ImageOps.exif_transpose(Image.open(...)).size` | header-only oriented geometry for JPEG, PNG and WebP, without pixel decoding |
 | `fetch::fetch_bytes` *(signatures only so far)* | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
 | `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
 | `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
@@ -248,6 +250,14 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
+
+Hosts whose worker applies EXIF orientation should pair
+`dimensions_exif_transposed` for token accounting with
+`decode_rgb_exif_transposed` for pixels. The raw APIs remain unchanged for
+workers that use `Image.open` without transposition. Neither dimension probe
+rewrites encoded bytes; forwarding and `content_hash_bytes` continue to use the
+original content. This matters for planners with row-dependent counts: a
+90-degree orientation changes the row count even when the pixel count agrees.
 
 
 ## 4. Testing
