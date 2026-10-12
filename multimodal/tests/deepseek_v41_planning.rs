@@ -55,22 +55,19 @@ fn resolves_flat_and_nested_configs_for_both_model_aliases() {
 #[test]
 fn layouts_include_boundaries_and_keep_adjacent_items_distinct() {
     let processor = build_processor(ProcessorSpec::DeepseekV41(spec(&config()))).unwrap();
-    let media = [MediaMetadata::Image {
-        width: 84,
-        height: 126,
-    }; 2];
+    let media = [(84, 126), (42, 42)].map(|(width, height)| MediaMetadata::Image { width, height });
     let counts = media
         .iter()
         .map(|item| processor.num_media_tokens(item).unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(counts, [11, 11]);
+    assert_eq!(counts, [11, 4]);
     for (ids, expected, offsets) in [
         (
             vec![7, 100, 8, 100, 9],
-            [vec![7], vec![100; 11], vec![8], vec![100; 11], vec![9]].concat(),
-            vec![(1, 11), (13, 23)],
+            [vec![7], vec![100; 11], vec![8], vec![100; 4], vec![9]].concat(),
+            vec![(1, 11), (13, 16)],
         ),
-        (vec![100, 100], vec![100; 22], vec![(0, 10), (11, 21)]),
+        (vec![100, 100], vec![100; 15], vec![(0, 10), (11, 14)]),
     ] {
         let layout = processor.layout_from_metadata(&ids, &media).unwrap();
         let expanded = apply_layout(&ids, &layout, &counts, expected.len()).unwrap();
