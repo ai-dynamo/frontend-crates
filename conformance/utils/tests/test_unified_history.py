@@ -66,6 +66,26 @@ def _write_family(root: Path) -> None:
     )
 
 
+def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):
+    _write_family(tmp_path)
+    family_path = tmp_path / "families/gemma4/inputs_and_golden.yaml"
+    before = unified_history.load_yaml(family_path)
+    before["cases"]["text_only"]["display_id"] = "UNIFIED.3-1"
+    family_path.write_text(unified_history.dump_yaml(before))
+    capture = _write_capture(tmp_path, "0.6.0", {"text_only": {
+        **_change(), "case_key": "UNIFIED.3-1",
+    }})
+    capture_bytes = capture.read_bytes()
+    assert unified_history.migrate_descriptive_ids(tmp_path) == [family_path]
+    after = unified_history.load_yaml(family_path)
+    expected = copy.deepcopy(before)
+    expected["cases"]["text_only"]["display_id"] = "UNIFIED.3-text_only"
+    expected["cases"]["text_only"]["historical_ids"] = ["UNIFIED.3-1"]
+    assert after == expected
+    assert capture.read_bytes() == capture_bytes
+    assert unified_history.migrate_descriptive_ids(tmp_path) == []
+
+
 def _write_capture(
     root: Path,
     version: str,
@@ -97,6 +117,27 @@ def _store(root: Path) -> Path:
     _write_capture(root, "0.5.0", {"text_only": _change()})
     _write_capture(root, "0.5.2", {})
     return root
+
+
+def test_materialization_reuses_supplied_store_without_mutating_it(tmp_path, monkeypatch):
+    root = _store(tmp_path / "store")
+    store = unified_history.load_store(root)
+    before = copy.deepcopy(store)
+    default = tmp_path / "default"
+    supplied = tmp_path / "supplied"
+    unified_history.materialize_store(root, default)
+
+    def unexpected_load(_root):
+        pytest.fail("materialization reread an already supplied store")
+
+    monkeypatch.setattr(unified_history, "load_store", unexpected_load)
+    unified_history.materialize_store(root, supplied, store=store)
+    assert {
+        path.relative_to(default): path.read_bytes() for path in default.rglob("*.yaml")
+    } == {
+        path.relative_to(supplied): path.read_bytes() for path in supplied.rglob("*.yaml")
+    }
+    assert store == before
 
 
 def test_schema_v3_carries_a_missing_checkpoint_forward(tmp_path):
@@ -297,9 +338,10 @@ def test_schema_v3_new_observation_drops_inherited_capture_provenance_override(t
     assert latest["document"]["parser_path"] == "split"
 
 
-def test_schema_v3_records_source_origin_for_unchanged_output(tmp_path):
+def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose" / "dynamo_v2-0.5.3" / "gemma4"
+    unified_history.materialize_store(root, tmp_path / "loose")
     loose.mkdir(parents=True)
     source = tmp_path / "before" / "dynamo_v2-0.5.0"
     unified_history.materialize_store(root, tmp_path / "before", include_current_inputs=False)
@@ -318,14 +360,16 @@ def test_schema_v3_records_source_origin_for_unchanged_output(tmp_path):
         root, tmp_path / "loose", complete_snapshot=False
     )
 
-    capture_path = root / "families/gemma4/dynamo_v2-0.5.3.yaml"
-    assert changed == [capture_path]
+    assert changed == []
+    assert not (root / "families/gemma4/dynamo_v2-0.5.3.yaml").exists()
     history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
-    assert history.captures["dynamo_v2-0.5.3"]["provenance"]["origin"] == {
-        "crate_version": "0.5.3",
-        "source_sha256": "c" * 64,
-        "git_commit": "d" * 40,
-    }
+    assert history.ordered_capture_ids() == ["dynamo_v2-0.5.0", "dynamo_v2-0.5.2"]
+    output = tmp_path / "after"
+    unified_history.materialize_store(root, output, derived_release_versions={"dynamo_v2": "0.5.3"})
+    inherited = unified_history.load_yaml(output / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml")
+    assert inherited["cases"] == document["cases"]
+    assert inherited["inherited_from"] == "0.5.0"
+    assert inherited["captured_with"] == {"dynamo_v2": "0.5.0"}
 
 
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
@@ -434,36 +478,6 @@ def test_schema_v3_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_pa
     assert changed == []
     assert {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")} == before
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
-
-
-def test_schema_v3_retains_a_new_captured_version_when_all_results_match(tmp_path):
-    root = _store(tmp_path / "store")
-    loose = tmp_path / "loose"
-    unified_history.materialize_store(root, loose)
-    source = loose / "dynamo_v2-0.5.2/gemma4/UNIFIED.1-1.yaml"
-    document = unified_history.load_yaml(source)
-    document["captured_with"] = {"dynamo_v2": "0.5.3"}
-    document["capture_origin"] = {
-        "crate_version": "0.5.3",
-        "source_sha256": "a" * 64,
-        "git_commit": "b" * 40,
-    }
-    target = loose / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml"
-    target.parent.mkdir(parents=True)
-    target.write_text(unified_history.dump_yaml(document), encoding="utf-8")
-
-    changed = unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
-
-    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
-    assert changed == [history.capture_path("dynamo_v2-0.5.3")]
-    assert history.captures["dynamo_v2-0.5.3"]["provenance"] == {
-        "status": "captured",
-        "origin": {
-        "crate_version": "0.5.3",
-        "source_sha256": "a" * 64,
-        "git_commit": "b" * 40,
-        },
-    }
 
 
 def test_schema_v3_ignores_generated_oracle_directories_but_rejects_malformed_captures(tmp_path):

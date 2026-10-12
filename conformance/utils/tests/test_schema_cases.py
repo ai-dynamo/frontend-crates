@@ -15,6 +15,7 @@ sys.path.insert(0, str(SRC))
 
 import gen_schema_fixtures as legacy
 import gen_unified_golden as unified
+from unified_taxonomy import numbered_id
 from schema_cases import CONFORMANCE_CASES, SCHEMA_GROUPS, schema_case_label, schema_tools
 
 pytestmark = []
@@ -45,7 +46,7 @@ def test_every_unified_family_covers_every_schema_group(family: str) -> None:
 
 def test_schema_variants_have_unique_stable_identities() -> None:
     assert len({schema_case_label(case) for case in CONFORMANCE_CASES}) == len(CONFORMANCE_CASES)
-    assert len({schema_case_label(case, unified=True) for case in CONFORMANCE_CASES}) == len(CONFORMANCE_CASES)
+    assert len({numbered_id("schema_" + case["name"]) for case in CONFORMANCE_CASES}) == len(CONFORMANCE_CASES)
     identities = [json.dumps({key: case.get(key) for key in ("schema", "defs", "value", "raw")}, sort_keys=True)
                   for case in CONFORMANCE_CASES]
     assert len(set(identities)) == len(identities)

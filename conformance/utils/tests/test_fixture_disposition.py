@@ -53,7 +53,7 @@ def test_replace_stream_case_rejects_malformed_case_labels(case_id):
 
 def test_canonicalize_unified_inputs_rejects_duplicate_scenario_owners():
     records = {
-        ("gemma4", "UNIFIED.1-1"): {"scenario": "text_only"},
+        ("gemma4", "UNIFIED.3-1"): {"scenario": "text_only"},
         ("gemma4", "UNIFIED.9-9"): {"scenario": "text_only"},
     }
 
@@ -64,8 +64,8 @@ def test_canonicalize_unified_inputs_rejects_duplicate_scenario_owners():
 def test_canonicalize_unified_inputs_allows_one_historical_alias_rename():
     scenario = "gemma4_guided_json_visible_call_prose_before_reasoning"
     records = {
-        ("gemma4", "UNIFIED.31-29"): {"scenario": scenario, "input": "old"},
-        ("gemma4", "UNIFIED.g4-1"): {"scenario": scenario, "input": "new"},
+        ("gemma4", "UNIFIED.31-29"): {"scenario": scenario, "input": "same"},
+        ("gemma4", "UNIFIED.g4-1"): {"scenario": scenario, "input": "same"},
     }
 
     canonical, aliases = fixture_disposition.canonicalize_unified_inputs(records)
@@ -2297,14 +2297,14 @@ def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_pa
 
 
 @pytest.mark.parametrize(("family", "old", "new"), [
-    ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-1"),
-    ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-2"),
-    ("qwen3", "UNIFIED.31.a", "UNIFIED.31-1"),
-    ("gemma4", "UNIFIED.31.x", "UNIFIED.34-6"),
+    ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-guided_json_visible_call_prose_before_reasoning"),
+    ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-guided_json_malformed_call_prefix_before_reasoning"),
+    ("qwen3", "UNIFIED.31.a", "UNIFIED.31-guided_json_invalid_call"),
+    ("gemma4", "UNIFIED.31.x", "UNIFIED.34-guided_json_unterminated_reasoning_then_wrapped_payload"),
     ("qwen3", "UNIFIED.31-29", "UNIFIED.31-29"),
-    ("qwen3", "UNIFIED.30.m", "UNIFIED.30-13"),
-    ("qwen3", "UNIFIED.1.a", "UNIFIED.1-1"),
-    ("muse_glimmer", "UNIFIED.31-26", "UNIFIED.muse-1"),
+    ("qwen3", "UNIFIED.30.m", "UNIFIED.30-guided_json_gt_in_argument_bare_opener"),
+    ("qwen3", "UNIFIED.1.a", "UNIFIED.1-tool_only"),
+    ("muse_glimmer", "UNIFIED.31-26", "UNIFIED.muse-guided_json_quoted_bare_tool_header_in_answer"),
     ("gemma4", "UNIFIED.31.y", "UNIFIED.31.y"),
 ])
 def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
