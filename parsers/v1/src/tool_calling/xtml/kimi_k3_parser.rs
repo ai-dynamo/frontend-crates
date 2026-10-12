@@ -20,6 +20,7 @@
 use std::borrow::Cow;
 
 use serde_json::Value;
+use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::{KimiK3ParserConfig, TerminalMarkerPolicy};
@@ -404,7 +405,8 @@ fn parse_call_at(
         return Some((None, consumed));
     }
 
-    let id = tool_call_id(name, attr_value(&attrs, "index"));
+    // XTML indices restart on every response and are not conversation-wide IDs.
+    let id = format!("call-{}", Uuid::new_v4());
     Some((
         Some(ToolCallResponse {
             id,
@@ -555,16 +557,6 @@ fn attr_value<'a>(attrs: &'a [(String, String)], key: &str) -> Option<&'a str> {
         .map(|(_, value)| value.as_str())
 }
 
-fn tool_call_id(name: &str, index: Option<&str>) -> String {
-    match index.filter(|index| !index.is_empty()) {
-        None => name.to_string(),
-        Some(raw) => match raw.parse::<i64>() {
-            Ok(one_based) => format!("{name}:{}", one_based - 1),
-            Err(_) => format!("{name}:{raw}"),
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
@@ -612,7 +604,6 @@ mod tests {
 
         assert_eq!(normal, "I'll check.");
         assert_eq!(calls.len(), 1);
-        assert_eq!(calls[0].id, "get_weather:0");
         assert_eq!(calls[0].function.name, "get_weather");
         assert_eq!(
             calls[0].function.arguments,
@@ -626,7 +617,6 @@ mod tests {
         let json = format!("{JSON_OPEN_PREFIX} type=\"object\"{SEP}{raw}{JSON_CLOSE}");
         let (calls, _) = parse(&tools(&call("tool=\"run\" index=\"2\"", &json)));
 
-        assert_eq!(calls[0].id, "run:1");
         assert_eq!(calls[0].function.arguments, raw);
     }
 
@@ -668,9 +658,45 @@ mod tests {
         let (calls, _) = parse(&input);
 
         assert_eq!(calls.len(), 3);
-        assert_eq!(calls[0].id, "first:2");
-        assert_eq!(calls[1].id, "second:raw");
-        assert_eq!(calls[2].id, "third");
+        assert_eq!(calls[0].function.name, "first");
+        assert_eq!(calls[1].function.name, "second");
+        assert_eq!(calls[2].function.name, "third");
+        let ids: std::collections::HashSet<_> = calls.iter().map(|call| &call.id).collect();
+        assert_eq!(ids.len(), calls.len());
+    }
+
+    #[test]
+    fn repeated_tool_and_index_get_unique_ids_across_turns() {
+        let input = tools(&call(
+            "tool=\"Bash\" index=\"1\"",
+            &arg("command", Some("string"), "echo ok"),
+        ));
+        let (first, _) = parse(&input);
+        let (second, _) = parse(&input);
+
+        assert_eq!(first.len(), 1);
+        assert_eq!(second.len(), 1);
+        assert_eq!(first[0].function.name, second[0].function.name);
+        assert_eq!(first[0].function.arguments, second[0].function.arguments);
+        assert_ne!(first[0].id, second[0].id);
+        for call in first.iter().chain(&second) {
+            let id = call.id.strip_prefix("call-").unwrap();
+            assert_eq!(Uuid::parse_str(id).unwrap().get_version_num(), 4);
+        }
+    }
+
+    #[test]
+    fn repeated_indices_within_response_get_unique_ids() {
+        for attrs in [
+            "tool=\"Bash\" index=\"1\"",
+            "tool=\"Bash\" index=\"raw\"",
+            "tool=\"Bash\"",
+        ] {
+            let input = tools(&[call(attrs, ""), call(attrs, "")].concat());
+            let (calls, _) = parse(&input);
+            assert_eq!(calls.len(), 2);
+            assert_ne!(calls[0].id, calls[1].id, "{attrs}");
+        }
     }
 
     #[test]

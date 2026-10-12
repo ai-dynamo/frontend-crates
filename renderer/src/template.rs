@@ -188,6 +188,13 @@ struct HfTokenizerConfigJsonFormatter {
     /// True if the `tool_use` template natively references `reasoning_content`.
     /// See `default_template_handles_reasoning` for rationale.
     tool_use_template_handles_reasoning: bool,
+    /// True if the `default` template renders a string `reasoning_content` but
+    /// not the segment array sent with interleaved tool calls (MiniMax-M2 and
+    /// Qwen3 read it only when it `is string`). When true and rendering through
+    /// `default`, join the segments into the string the template expects.
+    default_template_requires_reasoning_string: bool,
+    /// See `default_template_requires_reasoning_string` for rationale.
+    tool_use_template_requires_reasoning_string: bool,
     /// Per-family placeholder template for image content parts when flattening
     /// mixed text+image content arrays into a single string (`preserve_arrays`
     /// = false path). `{n}` in the template is substituted with the 1-based

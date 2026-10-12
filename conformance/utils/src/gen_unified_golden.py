@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
@@ -2334,6 +2335,25 @@ for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|st
         OnlyFamilies({"muse_glimmer": (r_tool("muse_glimmer", "get_weather", "city", _value, 0), V_MUSE, M)}),
     ))
 
+
+
+# Shared schema cases are part of the same scenario inventory as every other case.
+_SCHEMA_CASES_BY_FAMILY = {
+    family: unified_schema_cases(family, r_tool_arguments) for family in FAMILIES
+}
+for _schema_probe in CONFORMANCE_CASES:
+    _scenario = f"schema_{_schema_probe['name']}"
+    _prototype = _SCHEMA_CASES_BY_FAMILY[FAMILIES[0]][f"UNIFIED.{_scenario}.{FAMILIES[0]}"]
+    EDGE.append((
+        _scenario, _prototype["description"], _prototype["policy"], _prototype["golden"],
+        _prototype["init"], {"finish_reason": "stop"},
+        OnlyFamilies({family: (
+            _SCHEMA_CASES_BY_FAMILY[family][f"UNIFIED.{_scenario}.{family}"]["input"],
+            _prototype["expect"]["vllm"], M,
+            _SCHEMA_CASES_BY_FAMILY[family][f"UNIFIED.{_scenario}.{family}"]["golden"],
+        ) for family in FAMILIES}),
+        _prototype["tools"],
+    ))
 
 
 def build_cases(fam):

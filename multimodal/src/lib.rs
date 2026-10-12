@@ -32,11 +32,13 @@
 pub mod execution;
 #[cfg(feature = "fetch")]
 pub mod fetch;
+pub mod frames;
 pub mod image;
 pub mod models;
 pub mod processor;
 pub mod registry;
 pub mod token_layout;
+pub mod video;
 
 /// A multimodal preprocessing failure.
 #[derive(Debug)]

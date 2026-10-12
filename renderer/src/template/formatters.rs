@@ -3,7 +3,9 @@
 
 use std::sync::Arc;
 
-use super::tokcfg::{ChatTemplate, fromjson, raise_exception, strftime_now, tojson};
+use super::tokcfg::{
+    ChatTemplate, fromjson, python_formatter, python_string, raise_exception, strftime_now, tojson,
+};
 use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
 use minijinja::{Environment, Value, context};
@@ -145,6 +147,58 @@ fn detect_tool_calls_arguments_string(
     template
         .render(&ctx)
         .is_ok_and(|rendered| rendered.contains(arguments))
+}
+
+/// Detects whether a template renders a string `reasoning_content` but not the
+/// segment array (`segments[i]` precedes `tool_calls[i]`) that interleaved
+/// reasoning arrives as, so `render` should join the segments first.
+///
+/// MiniMax-M2 and Qwen3 read `reasoning_content` only when it `is string` and
+/// otherwise render an empty think block; a template that prints the field
+/// as-is would emit the array's repr. The control-char sentinels survive
+/// neither, while a template that reads the segments emits at least one.
+/// `arguments_string` matches the tool-call arguments shape `render` sends.
+fn detect_reasoning_string_requirement(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    arguments_string: bool,
+) -> bool {
+    const FIRST: &str = "\u{1}dynamo_reasoning_probe_first\u{1}";
+    const LAST: &str = "\u{1}dynamo_reasoning_probe_last\u{1}";
+    let Ok(template) = env.get_template(template_name) else {
+        return false;
+    };
+    let arguments = if arguments_string {
+        json!("{}")
+    } else {
+        json!({})
+    };
+    let render = |reasoning: serde_json::Value| {
+        let ctx = context! {
+            messages => json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "reasoning_content": reasoning, "tool_calls": [{
+                    "id": "call_probe",
+                    "type": "function",
+                    "function": {"name": "probe", "arguments": arguments}
+                }]},
+                {"role": "tool", "tool_call_id": "call_probe", "content": "r"}
+            ]),
+            add_generation_prompt => true,
+            tools => tools,
+            bos_token => tok.bos,
+            eos_token => tok.eos,
+            unk_token => tok.unk,
+        };
+        template.render(&ctx).unwrap_or_default()
+    };
+    if !render(json!(FIRST)).contains(FIRST) {
+        return false;
+    }
+    let array_out = render(json!([FIRST, LAST]));
+    !(array_out.contains(FIRST) || array_out.contains(LAST))
 }
 
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
@@ -531,6 +585,8 @@ impl HfTokenizerConfigJsonFormatter {
         env.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
 
         env.add_filter("tojson", tojson);
+        env.add_filter("string", python_string);
+        env.set_formatter(python_formatter);
 
         // Templates that round-trip tool call `arguments` (a JSON string) back into an
         // object need this; minijinja has no builtin. Both spellings are in the wild.
@@ -649,6 +705,22 @@ impl HfTokenizerConfigJsonFormatter {
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
         let tool_use_system_normalization =
             detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
+        let default_template_requires_reasoning_string = default_template_handles_reasoning
+            && detect_reasoning_string_requirement(
+                &env,
+                "default",
+                &default_probe_tools,
+                &probe_tokens,
+                default_template_handles_tool_calls_arguments_string,
+            );
+        let tool_use_template_requires_reasoning_string = tool_use_template_handles_reasoning
+            && detect_reasoning_string_requirement(
+                &env,
+                "tool_use",
+                &tool_use_probe_tools,
+                &probe_tokens,
+                tool_use_template_handles_tool_calls_arguments_string,
+            );
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,
@@ -659,6 +731,8 @@ impl HfTokenizerConfigJsonFormatter {
             exclude_tools_when_tool_choice_none,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
+            default_template_requires_reasoning_string,
+            tool_use_template_requires_reasoning_string,
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,
@@ -844,5 +918,56 @@ mod tests {
             .unwrap();
 
         assert_eq!(result, "tool_reference 1.5.10");
+    }
+
+    fn render_hf(template: &str, ctx: Value) -> String {
+        let chat_template: ChatTemplate =
+            serde_json::from_value(json!({ "chat_template": template })).unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+        let template = formatter.env.get_template("default").unwrap();
+        template.render(ctx).unwrap()
+    }
+
+    /// HF's `tojson` is `json.dumps`, which writes floats as Python `repr`.
+    #[test]
+    fn test_tojson_formats_floats_like_python() {
+        let obj = json!({"a": 1e-6, "b": 0.00001, "c": 1e16, "d": 1.5e-7, "e": 0.1, "f": 1.0, "g": 123.456});
+        assert_eq!(
+            render_hf("{{ v | tojson }}", context! { v => obj }),
+            r#"{"a": 1e-06, "b": 1e-05, "c": 1e+16, "d": 1.5e-07, "e": 0.1, "f": 1.0, "g": 123.456}"#
+        );
+        assert_eq!(
+            render_hf(
+                "{{ v | tojson(indent=2) }}",
+                context! { v => json!({"a": 1e-6, "b": [1e16, 2]}) }
+            ),
+            "{\n  \"a\": 1e-06,\n  \"b\": [\n    1e+16,\n    2\n  ]\n}"
+        );
+    }
+
+    /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
+    #[test]
+    fn test_output_formats_floats_like_python() {
+        let values = vec![
+            Value::from(1e-6),
+            Value::from(1e16),
+            Value::from(f64::NAN),
+            Value::from(f64::INFINITY),
+            Value::from(f64::NEG_INFINITY),
+            Value::from(1.0),
+            Value::from(3),
+            Value::from("a<b&c"),
+            Value::from(true),
+        ];
+        for template in [
+            "{% for v in vs %}{{ v }}|{% endfor %}",
+            "{% for v in vs %}{{ v | string }}|{% endfor %}",
+        ] {
+            assert_eq!(
+                render_hf(template, context! { vs => values.clone() }),
+                "1e-06|1e+16|nan|inf|-inf|1.0|3|a<b&c|True|"
+            );
+        }
     }
 }
