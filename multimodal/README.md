@@ -251,13 +251,9 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
-Hosts whose worker applies EXIF orientation should pair
-`dimensions_exif_transposed` for token accounting with
-`decode_rgb_exif_transposed` for pixels. The raw APIs remain unchanged for
-workers that use `Image.open` without transposition. Neither dimension probe
-rewrites encoded bytes; forwarding and `content_hash_bytes` continue to use the
-original content. This matters for planners with row-dependent counts: a
-90-degree orientation changes the row count even when the pixel count agrees.
+For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
+accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
+unchanged; forwarding and raw-content hashing still use the original bytes.
 
 
 ## 4. Testing
