@@ -176,6 +176,10 @@ Response is plain text, no tool-call grammar present.
 - Must return empty `Vec<ToolCall>` and the input as `normal_text`.
   Zero false positives.
 
+DSML family tests (DeepSeek V3.2 and V4) on constructed inputs. The shape applies to every family, but most other v1 batch parsers also trim leading whitespace; covering them belongs with their fixes.
+
+- **`TOOLCALLING.batch.3.a`** Leading and trailing whitespace around plain text is content. DeepSeek V4 in chat mode often starts its reply with `\n\n`; the reference parser and the chat template keep it, so `normal_text` must be the input byte for byte.
+
 ## `TOOLCALLING.batch.4` — Malformed / partial JSON args
 
 Truncated JSON, missing close brace, invalid syntax inside the
@@ -394,6 +398,10 @@ All four sub-cases share the same parser contract — `tool_calls` extracted,
 `normal_text` preserved by position. `.a`/`.b`/`.c` are single-call shapes
 that vary only in where the narration sits; `.d` is the multi-call
 interleaving shape. The assertion across all four is on `normal_text`.
+
+DSML family test (DeepSeek V3.2 and V4) on a constructed input:
+
+- **`TOOLCALLING.batch.8.e`** Leading whitespace before the narration is content: `\n\nI will check the weather. ` followed by a tool call keeps its leading `\n\n` in `normal_text`. The block follows a space, not the `\n\n` block separator, so the case does not depend on separator handling.
 
 ## `TOOLCALLING.batch.9` — Empty content / empty `tool_calls` array / null response
 

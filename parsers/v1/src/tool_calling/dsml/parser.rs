@@ -93,16 +93,11 @@ pub fn try_tool_call_parse_dsml(
     message: &str,
     config: &DsmlParserConfig,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
-    let trimmed = message.trim();
-
-    // Early exit if no content
-    if trimmed.is_empty() {
-        return Ok((vec![], Some(String::new())));
-    }
-
-    let Some(start_idx) = trimmed.find(&config.block_start) else {
-        if let Some(marker_idx) = first_orphan_dsml_marker_index(trimmed, config) {
-            let marker_tail = &trimmed[marker_idx..];
+    // Keep the model's whitespace: the chat template re-renders content verbatim
+    // (as DeepSeek's reference parser and vLLM assume), so trimming changes the next prompt.
+    let Some(start_idx) = message.find(&config.block_start) else {
+        if let Some(marker_idx) = first_orphan_dsml_marker_index(message, config) {
+            let marker_tail = &message[marker_idx..];
             if marker_tail.starts_with(config.invoke_start_prefix.as_str())
                 && (marker_tail.contains(config.block_end.as_str()) || config.allow_eof_recovery)
             {
@@ -117,29 +112,34 @@ pub fn try_tool_call_parse_dsml(
                     );
                     return Ok((
                         tool_calls,
-                        Some(trimmed[..marker_idx].trim_end().to_string()),
+                        Some(message[..marker_idx].trim_end().to_string()),
                     ));
                 }
             }
-            let stripped = &trimmed[marker_idx..];
+            let stripped = &message[marker_idx..];
             tracing::warn!(
                 why = "DSML tool-call marker found without the outer block_start; dropping orphan marker tail so wire tags do not leak into normal_text",
                 stripped_bytes = stripped.len(),
                 "DSML strip (orphan markers)"
             );
-            return Ok((vec![], Some(trimmed[..marker_idx].trim_end().to_string())));
+            return Ok((vec![], Some(message[..marker_idx].trim_end().to_string())));
         }
-        return Ok((vec![], Some(trimmed.to_string())));
+        return Ok((vec![], Some(message.to_string())));
     };
 
     // Extract tool calls blocks. Finalize paths can opt into EOF recovery so
     // a missing outer block end still yields any complete inner invokes.
-    let tool_calls = extract_tool_calls(trimmed, config)?;
+    let tool_calls = extract_tool_calls(message, config)?;
 
     // Whether or not invokes parsed, normal_text is the prefix before the
     // first block_start — mirrors vLLM's success path. On no-invokes the
-    // markup-leak warning still fires for the diagnostic trail.
-    let pre_block_span = &trimmed[..start_idx];
+    // markup-leak warning still fires for the diagnostic trail. A whitespace-only
+    // prefix is the block separator of a tool-only turn ("\n\n<｜DSML｜tool_calls>"),
+    // not content.
+    let pre_block_span = match &message[..start_idx] {
+        span if span.trim().is_empty() => "",
+        span => span,
+    };
     let pre_block_text = first_orphan_dsml_marker_index(pre_block_span, config)
         .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
         .map(|idx| pre_block_span[..idx].trim_end().to_string())
@@ -153,7 +153,7 @@ pub fn try_tool_call_parse_dsml(
         // Note: an unterminated block-start here means `block_regex` finds no
         // match at all, so any valid block *after* the unterminated one is
         // lost. This matches the pre-existing conservative P1-3 contract.
-        let failed = &trimmed[start_idx..];
+        let failed = &message[start_idx..];
         let prefix: String = failed.chars().take(120).collect();
         tracing::warn!(
             why = "no_invokes_parsed",
@@ -168,7 +168,7 @@ pub fn try_tool_call_parse_dsml(
     // onward (the block(s) themselves plus any inter-block / trailing narration)
     // is stripped from normal_text. Mirrors vLLM's
     // `content = model_output[:content_end]`.
-    let stripped = &trimmed[start_idx..];
+    let stripped = &message[start_idx..];
     if !stripped.is_empty() {
         let preview: String = stripped.chars().take(120).collect();
         tracing::debug!(
@@ -1341,14 +1341,9 @@ mod tests {
                 "Empty/whitespace input must yield no calls (input={:?})",
                 input
             );
-            // Empty input fast-path returns Some(""); other whitespace is
-            // trimmed before the search and the no-block branch returns the
-            // trimmed (also empty) string.
-            assert_eq!(
-                normal.as_deref(),
-                Some(""),
-                "Empty/whitespace input collapses to empty normal_text"
-            );
+            // No block: the message is content, returned verbatim as by vLLM,
+            // the reference parser, and the stream jail.
+            assert_eq!(normal.as_deref(), Some(*input));
         }
     }
 
@@ -1382,5 +1377,59 @@ mod tests {
         let (_, args1) = extract_name_and_args(calls[1].clone());
         assert_eq!(args0["city"], "NYC");
         assert_eq!(args1["city"], "LA");
+    }
+
+    const WEATHER_INVOKE: &str = "\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"city\" string=\"true\">SF</｜DSML｜parameter>\n</｜DSML｜invoke>\n";
+
+    /// Wraps one `get_weather` invoke in each dialect's outer block.
+    fn weather_blocks() -> [(DsmlParserConfig, String); 2] {
+        [get_test_config(), get_v4_test_config()].map(|config| {
+            let block = format!("{}{WEATHER_INVOKE}{}", config.block_start, config.block_end);
+            (config, block)
+        })
+    }
+
+    #[test] // TOOLCALLING.batch.8.e
+    fn test_parse_keeps_leading_whitespace_before_content_and_call() {
+        for (config, block) in weather_blocks() {
+            let input = format!("\n\nLet me check. {block}");
+            let (calls, normal) = try_tool_call_parse_dsml(&input, &config).unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(normal.as_deref(), Some("\n\nLet me check. "));
+        }
+    }
+
+    #[test] // TOOLCALLING.batch.3.a
+    fn test_parse_keeps_leading_whitespace_without_call() {
+        let config = get_v4_test_config();
+        for input in ["\n\nHello there.", " \tHello there.\n"] {
+            let (calls, normal) = try_tool_call_parse_dsml(input, &config).unwrap();
+            assert!(calls.is_empty());
+            assert_eq!(normal.as_deref(), Some(input));
+        }
+    }
+
+    #[test]
+    fn test_parse_tool_only_turn_has_empty_normal_text() {
+        // A tool-only turn is generated as "\n\n" + block; that whitespace is
+        // not content and must not surface as normal_text.
+        for (config, block) in weather_blocks() {
+            for prefix in ["", "\n\n", "\n"] {
+                let input = format!("{prefix}{block}");
+                let (calls, normal) = try_tool_call_parse_dsml(&input, &config).unwrap();
+                assert_eq!(calls.len(), 1, "prefix={prefix:?}");
+                assert_eq!(normal.as_deref(), Some(""), "prefix={prefix:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_keeps_separator_inside_content() {
+        for (config, block) in weather_blocks() {
+            let input = format!("First.\n\nSecond. {block}");
+            let (calls, normal) = try_tool_call_parse_dsml(&input, &config).unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(normal.as_deref(), Some("First.\n\nSecond. "));
+        }
     }
 }

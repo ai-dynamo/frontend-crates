@@ -4369,6 +4369,56 @@ fahrenheit
         }
     }
 
+    /// The jail streams text before a DSML block verbatim, so the batch parser
+    /// must return the same content, including whitespace the model wrote first.
+    #[tokio::test]
+    async fn test_dsml_leading_content_whitespace_matches_batch() {
+        use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        let invoke = "\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\n</｜DSML｜invoke>\n";
+        for (parser, block) in [
+            ("deepseek_v3_2", "function_calls"),
+            ("deepseek_v4", "tool_calls"),
+        ] {
+            let call = format!("<｜DSML｜{block}>{invoke}</｜DSML｜{block}>");
+            for (input, content, calls) in [
+                (format!("\n\nLet me check. {call}"), "\n\nLet me check. ", 1),
+                ("\n\nHello there.\n".to_string(), "\n\nHello there.\n", 0),
+            ] {
+                let (batch_calls, batch_content) =
+                    detect_and_parse_tool_call_with_recovery(&input, Some(parser), None)
+                        .await
+                        .unwrap();
+                assert_eq!(batch_calls.len(), calls, "{parser} batch {input:?}");
+                assert_eq!(
+                    batch_content.as_deref(),
+                    Some(content),
+                    "{parser} batch {input:?}"
+                );
+
+                let input_chunks: Vec<_> = input
+                    .chars()
+                    .map(|ch| test_utils::create_mock_response_chunk(ch.to_string(), 0))
+                    .collect();
+                let jail = JailedStream::builder().tool_call_parser(parser).build();
+                let results: Vec<_> = jail
+                    .apply_with_finish_reason(stream::iter(input_chunks))
+                    .collect()
+                    .await;
+                assert_eq!(
+                    tool_call_names(&results).len(),
+                    calls,
+                    "{parser} stream {input:?}"
+                );
+                assert_eq!(
+                    test_utils::reconstruct_content(&results),
+                    content,
+                    "{parser} stream {input:?}"
+                );
+            }
+        }
+    }
+
     /// GLM-4.7's bare-call marker starts at `<arg_key>`, after the function
     /// name. The stream jail therefore needs parser-aware tool-name patterns
     /// so a split between the function name and `<arg_key>` does not leak the

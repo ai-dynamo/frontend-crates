@@ -13090,3 +13090,160 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  text_leading_whitespace:
+    lifecycle: active
+    scenario: text_leading_whitespace
+    description: 'Plain answer that starts with blank lines, no reasoning and no tool call. The leading whitespace is content: chat templates re-render it verbatim, and DeepSeek V4 in chat mode often starts its reply with `\n\n`. This is also covered in: TOOLCALLING.streamv1.3.a.'
+    policy: []
+    display_id: UNIFIED.3-2
+    historical_ids: []
+    request:
+      input: '
+
+
+        The answer is 42, no tools needed.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+
+          The answer is 42, no tools needed.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          The answer is 42, no tools needed.'
+  leading_whitespace_text_before_tool:
+    lifecycle: active
+    scenario: leading_whitespace_text_before_tool
+    description: 'Visible text that starts with blank lines, then a single tool call, no reasoning. The leading whitespace is content and must survive in front of the call. This is also covered in: TOOLCALLING.streamv1.8.e.'
+    policy: []
+    display_id: UNIFIED.8-12
+    historical_ids: []
+    request:
+      input: '
+
+
+        On it: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+
+          On it: '
+      - delta_text: <｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜invoke name="get_weather">
+      - delta_text: <｜DSML｜parameter name="city" string="true">
+      - delta_text: Paris
+      - delta_text: </｜DSML｜parameter>
+      - delta_text: </｜DSML｜invoke>
+      - delta_text: </｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          On it: '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris

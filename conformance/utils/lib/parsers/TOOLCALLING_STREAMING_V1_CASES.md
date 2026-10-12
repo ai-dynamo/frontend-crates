@@ -23,6 +23,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.2.c`** With surrounding narration. Streaming form of `TOOLCALLING.batch.2.c`.
 - **`TOOLCALLING.streamv1.2.d`** Same-name twice. Streaming form of `TOOLCALLING.batch.2.d`.
 - **`TOOLCALLING.streamv1.3`** No tool call (bare text without final channel). Streaming form of `TOOLCALLING.batch.3`.
+- **`TOOLCALLING.streamv1.3.a`** DSML family test (DeepSeek V3.2 and V4): leading and trailing whitespace around plain text is content. Streaming form of `TOOLCALLING.batch.3.a`.
 - **`TOOLCALLING.streamv1.4.a`** Channel envelope with garbage body. Streaming form of `TOOLCALLING.batch.4.a`.
 - **`TOOLCALLING.streamv1.4.b`** Unterminated JSON in message body. Streaming form of `TOOLCALLING.batch.4.b`.
 - **`TOOLCALLING.streamv1.4.c`** No to=functions.X recipient. Streaming form of `TOOLCALLING.batch.4.c`.
@@ -66,6 +67,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.
 - **`TOOLCALLING.streamv1.8.d`** Narration between multiple tool calls. Streaming form of `TOOLCALLING.batch.8.d`.
+- **`TOOLCALLING.streamv1.8.e`** DSML family test (DeepSeek V3.2 and V4): leading whitespace before narration and a tool call is content. Streaming form of `TOOLCALLING.batch.8.e`.
 - **`TOOLCALLING.streamv1.9.a`** Empty model text. Streaming form of `TOOLCALLING.batch.9.a`.
 - **`TOOLCALLING.streamv1.9.b`** Blank / whitespace-only model text. Streaming form of `TOOLCALLING.batch.9.b`.
 - **`TOOLCALLING.streamv1.10`** Duplicate calls (same name twice). Streaming form of `TOOLCALLING.batch.10`.

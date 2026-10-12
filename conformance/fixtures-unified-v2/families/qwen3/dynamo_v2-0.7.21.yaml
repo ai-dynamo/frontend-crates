@@ -1,0 +1,98 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.21
+    git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+    source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+document:
+  mode: unified
+changes:
+  leading_whitespace_text_before_tool:
+    case_key: UNIFIED.8-12
+    stimulus:
+      ref: current
+      semantic_sha256: 9126f6c58eba2c26ddcd61c767a7fbd773ec105563d48f03bcead3ca859e8d08
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  text_leading_whitespace:
+    case_key: UNIFIED.3-2
+    stimulus:
+      ref: current
+      semantic_sha256: 639f19595c3d32b85dd7cf75853ef1b41e2233052f0a6c90fd81e51c35301816
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            The answer is 42, no tools needed.'
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              The answer is 42, no tools needed.'
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  leading_whitespace_text_before_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.21
+      capture_origin:
+        crate_version: 0.7.21
+        source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+        git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+      inherited_from: null
+  text_leading_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.21
+      capture_origin:
+        crate_version: 0.7.21
+        source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+        git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+      inherited_from: null

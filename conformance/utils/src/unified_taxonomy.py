@@ -33,7 +33,7 @@ UNIFIED_TAX = {
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
     # Group 3 — No call (streamv1.3)
-    "text_only": (3, "1"),
+    "text_only": (3, "1"), "text_leading_whitespace": (3, "2"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
     "tool_block_never_closed_then_text": (4, "1"),
     "tool_markup_only_emits_nothing": (4, "2"),
@@ -73,6 +73,7 @@ UNIFIED_TAX = {
     "native_quoted_control_in_reasoning": (40, "5"),
     "native_quoted_incomplete_header": (8, "10"),
     "native_single_quote_contraction_response": (8, "11"),
+    "leading_whitespace_text_before_tool": (8, "12"),
     "native_single_quote_contraction_reasoning": (40, "6"),
     "guided_quoted_reasoning_closer_named": (34, "8"),
     "guided_quoted_reasoning_closer_required": (34, "9"),

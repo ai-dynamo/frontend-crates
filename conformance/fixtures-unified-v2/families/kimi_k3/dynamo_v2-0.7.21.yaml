@@ -1,0 +1,110 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.21
+    git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+    source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+document:
+  mode: unified
+changes:
+  leading_whitespace_text_before_tool:
+    case_key: UNIFIED.8-12
+    stimulus:
+      ref: current
+      semantic_sha256: 9c134c19f6d5e4319d9ea1f3f1ef0570e201a9f960a8b3cb0ef20dd110b2a33c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+
+              On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  text_leading_whitespace:
+    case_key: UNIFIED.3-2
+    stimulus:
+      ref: current
+      semantic_sha256: 4a6348f66861841328444e80907c941ae810b4ae0caa293fb88f3a5406a981c1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            The answer is 42, no tools needed.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+
+              The answer is 42, no tools needed.'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  leading_whitespace_text_before_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.21
+      capture_origin:
+        crate_version: 0.7.21
+        source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+        git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+      inherited_from: null
+  text_leading_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.21
+      capture_origin:
+        crate_version: 0.7.21
+        source_sha256: 42fce250636f4edb445d023a0450505d394b941d5e9f6a783b772a4a3e517315
+        git_commit: ddeeef2afaa7cd63b3c4bc0fbcbcdd6f227ae586
+      inherited_from: null

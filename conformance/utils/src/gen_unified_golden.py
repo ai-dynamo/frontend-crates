@@ -602,6 +602,9 @@ CLEAN = [
     ("text_only",
      "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
      [], [("text", "The answer is 42, no tools needed.")], M, M),
+    ("text_leading_whitespace",
+     "Plain answer that starts with blank lines, no reasoning and no tool call. The leading whitespace is content: chat templates re-render it verbatim, and DeepSeek V4 in chat mode often starts its reply with `\\n\\n`. This is also covered in: TOOLCALLING.streamv1.3.a.",
+     [], [("text", "\n\nThe answer is 42, no tools needed.")], M, M),
 
     # --- Group 7: argument fidelity (TOOLCALLING.streamv1.7) ---
     ("arg_unicode",
@@ -612,6 +615,9 @@ CLEAN = [
     ("text_before_tool",
      "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.",
      [], [("text", "On it: "), ("tool", "get_weather", "city", "Paris")], M, M),
+    ("leading_whitespace_text_before_tool",
+     "Visible text that starts with blank lines, then a single tool call, no reasoning. The leading whitespace is content and must survive in front of the call. This is also covered in: TOOLCALLING.streamv1.8.e.",
+     [], [("text", "\n\nOn it: "), ("tool", "get_weather", "city", "Paris")], M, M),
     ("text_sandwich",
      "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.",
      [], [("text", "Before. "), ("tool", "get_weather", "city", "Paris"), ("text", " After.")], M, M),

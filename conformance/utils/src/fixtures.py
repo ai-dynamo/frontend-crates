@@ -260,7 +260,7 @@ def _build_family_to_rust_ref() -> dict[str, tuple[str, int]]:
 
 BATCH_SUB_CASE_GROUPS = [
     ("Single-call", ("1.a", "1.b", "1.c", "1.d")),
-    ("Core", ("1", "3", "9", "9.a", "9.b")),
+    ("Core", ("1", "3", "3.a", "9", "9.a", "9.b")),
     ("Multi-call", ("2.a", "2.b", "2.c", "2.d", "2.e", "10")),
     (
         "Malformed / recovery",
@@ -319,7 +319,7 @@ BATCH_SUB_CASE_GROUPS = [
             "7.o", "7.p", "7.q", "7.r", "7.s", "7.t", "7.u", "7.v", "7.w",
         ),
     ),
-    ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
+    ("Text interleaving", ("8.a", "8.b", "8.c", "8.d", "8.e")),
     ("Unknown tools", ("13", "13.a", "13.c")),
     (
         "String contents",

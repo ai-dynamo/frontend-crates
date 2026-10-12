@@ -79,6 +79,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
 - **`3-1`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
+- **`3-2`** (`text_leading_whitespace`) Plain content that starts with `\n\n`. The leading whitespace is content and survives byte for byte; DeepSeek V4 in chat mode often starts its reply this way. This is also covered in: TOOLCALLING.streamv1.3.a.
 
 ### Group 4 — TC Malformed envelope
 - **`4-1`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
@@ -121,6 +122,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`8-9`** (`native_unmatched_quote_then_call`) An unmatched quote before a real control marker cannot hide the following call.
 - **`8-10`** (`native_quoted_incomplete_header`) An incomplete native tool header inside quoted response text stays literal.
 - **`8-11`** (`native_single_quote_contraction_response`) A control marker inside a contraction-bearing single-quoted sentence stays literal prose.
+- **`8-12`** (`leading_whitespace_text_before_tool`) Visible text that starts with `\n\n`, then a call. The leading whitespace stays in the text event in front of the call. This is also covered in: TOOLCALLING.streamv1.8.e.
 
 ### Group 10 — Reasoning span (`REASONING.*`)
 - **`10-1`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
@@ -148,7 +150,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12-4`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 228 of the 248 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 230 of the 250 taxonomy cases for this family.
 - Generated cases include `30-13`, the single-family `deepseek-1` case, Guided Decoding cases `31-1` through `35-4` except `muse-1` and `35-5`, the marker-discriminating Response row `50-4`, and `40-1` through `40-6` plus `41-1` through `41-2`. The native prefilled cases `40-1`, `40-3`, and `40-4` retain explicit inputs and outputs even though other DSv4.1 rows exercise the same transitions.
 - The 20 omitted cases are `kimi-1` through `kimi-8`, `gemma-1` through `gemma-2`, `glm5-1` and `glm5-2`, `7-4.mixed_labels`, `7-4.ref`, `7-5.ref`, `35-5`, and `muse-1` through `muse-4`. Kimi and Muse rows require their family-specific grammars; Gemma rows require guided call-prefix syntax; GLM rows exercise GLM grammar or schema references; `35-5` tests DeepSeek V4's rejected-header quote ownership. The `muse-1` duplicate does not imply that quoted or malformed model output cannot occur.
 - `30-13` retains the historical bare header with no tool name. `34-1` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50-4` proves that Response treats reasoning markers as visible text.

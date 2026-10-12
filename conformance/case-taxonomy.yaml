@@ -56,6 +56,7 @@ suites:
         required: true
         cases:
           "": {desc: No tool call (plain text passthrough), required: true}
+          a: {desc: Leading and trailing whitespace around plain text is content, required: false}
       "4":
         title: Malformed call bodies
         required: true
@@ -245,6 +246,7 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          e: {desc: Leading whitespace before narration and a tool call is content, required: false}
       "9":
         title: Empty / blank input
         required: true
@@ -312,6 +314,7 @@ suites:
         required: true
         cases:
           "": {desc: No tool call (plain text passthrough), required: true}
+          a: {desc: Leading and trailing whitespace around plain text is content, required: false}
       "4":
         title: Malformed call bodies
         required: true
@@ -501,6 +504,7 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          e: {desc: Leading whitespace before narration and a tool call is content, required: false}
       "9":
         title: Empty / blank input
         required: true

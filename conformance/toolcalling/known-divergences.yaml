@@ -70,10 +70,6 @@ deepseek_v4:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
-  TOOLCALLING.batch.9.b:
-    stream_vs_batch: &svb-whitespace-only >-
-      Whitespace-only input: v2 passes the bare whitespace through as
-      normal_text; v1 batch returns "". Intended.
 
   TOOLCALLING.batch.11.b:
     baseline_defect: >-
@@ -112,7 +108,9 @@ gemma4:
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.9.b:
-    stream_vs_batch: *svb-whitespace-only
+    stream_vs_batch: &svb-whitespace-only >-
+      Whitespace-only input: v2 passes the bare whitespace through as
+      normal_text; v1 batch returns "". Intended.
 
 glm47:
   TOOLCALLING.batch.2.c:
