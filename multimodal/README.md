@@ -297,28 +297,10 @@ preprocessor config must be an object with no non-null processing overrides
 (the inert `processor_class` field is allowed). Preserve the checkpoint's
 original `model_type`: a config serialized as `deepseek_v3` is unsupported.
 
-```rust
-use dynamo_multimodal::{Result, registry, token_layout};
-use dynamo_multimodal::processor::MediaMetadata;
+Use `num_media_tokens` and `layout_from_metadata`, then pass the counts and
+layout to `token_layout::apply_layout` with the context limit.
+See the compiled example on [`DeepseekV41Processor`](src/models/deepseek_v41.rs).
 
-# fn example() -> Result<()> {
-// Synthetic mathematical settings, not checkpoint defaults.
-let family = registry::processor_from_spec(r#"{
-    "family": "deepseek_v41", "image_token_id": 100,
-    "vision_patch_size": 14, "vision_downsample_ratio": 3,
-    "vision_min_pixels": 0, "vision_max_n_token": 1024
-}"#)?;
-let media = [MediaMetadata::Image { width: 84, height: 126 }];
-let input_ids = [7, 100, 9];
-let counts = media.iter().map(|item| family.num_media_tokens(item))
-    .collect::<Result<Vec<_>>>()?;
-let layout = family.layout_from_metadata(&input_ids, &media)?;
-let expanded = token_layout::apply_layout(&input_ids, &layout, &counts, 13)?;
-assert_eq!(expanded.offsets, [(1, 11)]); // inclusive full spans
-assert_eq!(expanded.feature_ranges, [vec![1..12]]);
-# Ok(())
-# }
-```
 
 Every expanded position uses the same vocabulary `image_token_id`, including
 boundaries and row separators. The model supplies embeddings for the entire
