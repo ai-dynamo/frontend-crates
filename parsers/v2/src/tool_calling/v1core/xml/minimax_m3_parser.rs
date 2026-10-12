@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashMap;
+
 use percent_encoding::percent_decode_str;
 use serde_json::{Map, Number, Value};
 use uuid::Uuid;
@@ -253,6 +255,7 @@ fn parse_parameters(
         .get("properties")
         .filter(|value| value.is_object())
         .unwrap_or(root_schema);
+    let close_tags = match_close_tags(body, &config.namespace_token);
     let mut parameters = Map::new();
     let mut cursor = 0;
 
@@ -274,10 +277,13 @@ fn parse_parameters(
 
         let value_start = start + name_end_rel + 1;
         let parameter_end = format!("{}</{}>", config.namespace_token, parameter_name);
-        let Some(value_end_rel) = body[value_start..].find(parameter_end.as_str()) else {
+        let Some(value_end) = close_tags.get(&value_start).copied().or_else(|| {
+            body[value_start..]
+                .find(parameter_end.as_str())
+                .map(|rel| value_start + rel)
+        }) else {
             break;
         };
-        let value_end = value_start + value_end_rel;
         let raw_value = &body[value_start..value_end];
         let schema = param_config.get(parameter_name);
         let value = parse_parameter_value(raw_value, schema, root_schema, config);
@@ -287,6 +293,37 @@ fn parse_parameters(
     }
 
     Ok(parameters)
+}
+
+// Maps each tag's value start to its matching same-name close tag. Nested objects render
+// recursively, so a child may reuse its parent's tag name; a per-name stack pairs them in
+// one pass. Unbalanced openers have no entry, and callers fall back to the first close tag.
+fn match_close_tags(body: &str, namespace_token: &str) -> HashMap<usize, usize> {
+    let mut open: HashMap<&str, Vec<usize>> = HashMap::new();
+    let mut matched = HashMap::new();
+    let mut cursor = 0;
+    while let Some(tag_rel) = body[cursor..].find(namespace_token) {
+        let tag_start = cursor + tag_rel;
+        cursor = tag_start + namespace_token.len();
+        let Some(tag) = body[cursor..].strip_prefix('<') else {
+            continue;
+        };
+        let Some(name_end) = tag.find('>') else {
+            break;
+        };
+        match tag[..name_end].strip_prefix('/') {
+            Some(name) => {
+                if let Some(value_start) = open.get_mut(name).and_then(Vec::pop) {
+                    matched.insert(value_start, tag_start);
+                }
+            }
+            None => open
+                .entry(&tag[..name_end])
+                .or_default()
+                .push(cursor + 1 + name_end + 1),
+        }
+    }
+    matched
 }
 
 // Preserves duplicate XML tags by collecting repeated values into arrays.
@@ -1117,6 +1154,75 @@ mod tests {
             convert_scalar_value("null", None, &Value::Null),
             json!("null")
         );
+    }
+
+    // The chat template expands nested objects recursively, so a descendant may reuse the
+    // parameter's tag name: an Elasticsearch `query` parameter holds `multi_match.query`.
+    // The parameter ends at its own close tag at any nesting depth.
+    #[test]
+    fn same_name_nested_parameters_end_at_matching_close_tag() {
+        let multi_match_schema = json!({"type": "object", "properties": {
+            "query": {"type": "string"},
+            "fields": {"type": "array", "items": {"type": "string"}}
+        }});
+        let parameters = json!({"type": "object", "properties": {
+            "query": {"type": "object", "properties": {
+                "multi_match": multi_match_schema,
+                "nested": {"type": "object", "properties": {
+                    "path": {"type": "string"},
+                    "query": {"type": "object", "properties": {"multi_match": multi_match_schema}}
+                }}
+            }},
+            "size": {"type": "integer"}
+        }});
+        let multi_match = format!(
+            "{TOK}<multi_match>{TOK}<query>connection timeout{TOK}</query>{TOK}<fields>\
+             {TOK}<item>message{TOK}</item>{TOK}<item>error.reason{TOK}</item>{TOK}</fields>\
+             {TOK}</multi_match>"
+        );
+        let size = format!("{TOK}<size>20{TOK}</size>");
+        let matched = json!({"multi_match": {
+            "query": "connection timeout", "fields": ["message", "error.reason"]
+        }});
+        for (body, expected) in [
+            (
+                format!("{TOK}<query>{multi_match}{TOK}</query>{size}"),
+                json!({"query": matched, "size": 20}),
+            ),
+            (
+                format!(
+                    "{TOK}<query>{TOK}<nested>{TOK}<path>logs{TOK}</path>\
+                     {TOK}<query>{multi_match}{TOK}</query>{TOK}</nested>{TOK}</query>{size}"
+                ),
+                json!({"query": {"nested": {"path": "logs", "query": matched}}, "size": 20}),
+            ),
+            // A missing outer close falls back to the first close tag, so `fields` is promoted.
+            (
+                format!("{TOK}<query>{multi_match}{size}"),
+                json!({
+                    "query": {"multi_match": {"query": "connection timeout"}},
+                    "fields": {"item": ["message", "error.reason"]},
+                    "size": 20
+                }),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "search_logs".into(),
+                parameters: Some(parameters.clone()),
+            }];
+            let wire = format!(
+                "{TOK}<tool_call>\n{TOK}<invoke name=\"search_logs\">{body}{TOK}</invoke>\n{TOK}</tool_call>"
+            );
+            let (calls, _) = try_tool_call_parse_minimax_m3(
+                &wire,
+                &MiniMaxM3ParserConfig::default(),
+                Some(&tools),
+            )
+            .unwrap();
+            assert_eq!(calls.len(), 1);
+            let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+            assert_eq!(args, expected);
+        }
     }
 
     #[test]

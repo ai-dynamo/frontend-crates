@@ -513,14 +513,14 @@ mod gate_tests {
     fn capture_version_and_family_must_match() {
         let mut capture = StreamCapture {
             family: "glm47".into(),
-            captured_with: BTreeMap::from([("dynamo_v2".into(), "0.7.20".into())]),
+            captured_with: BTreeMap::from([("dynamo_v2".into(), "0.7.22".into())]),
             cases: BTreeMap::new(),
         };
         assert!(capture_matches_version(&capture, "glm47").is_ok());
         assert!(capture_matches_version(&capture, "qwen3_coder").is_err());
         capture
             .captured_with
-            .insert("dynamo_v2".into(), "0.7.19".into());
+            .insert("dynamo_v2".into(), "0.7.21".into());
         assert!(capture_matches_version(&capture, "glm47").is_err());
     }
 }

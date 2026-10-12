@@ -432,6 +432,46 @@ mod tests {
     }
 
     #[test]
+    fn same_name_nested_parameter_ends_at_matching_close_tag() {
+        // Template-rendered Elasticsearch `query` holding `multi_match.query`. The scanner buffers
+        // the whole invoke, so the split inner `</query>` reaches the batch parser intact, and the
+        // streamed call keeps `fields` inside `query` in source parameter order.
+        let tools = vec![Tool {
+            name: "search_logs".into(),
+            description: None,
+            parameters: serde_json::json!({"type": "object", "properties": {
+                "index": {"type": "string"},
+                "query": {"type": "object", "properties": {
+                    "multi_match": {"type": "object", "properties": {
+                        "query": {"type": "string"},
+                        "fields": {"type": "array", "items": {"type": "string"}}
+                    }}
+                }},
+                "size": {"type": "integer"}
+            }}),
+            strict: None,
+        }];
+        let out = parse_chunks(
+            &tools,
+            &[
+                "]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"search_logs\">",
+                "]<]minimax[>[<index>app-logs]<]minimax[>[</index>]<]minimax[>[<query>",
+                "]<]minimax[>[<multi_match>]<]minimax[>[<query>connection timeout]<]mini",
+                "max[>[</query>]<]minimax[>[<fields>]<]minimax[>[<item>message]<]minimax[>[</item>",
+                "]<]minimax[>[<item>error.reason]<]minimax[>[</item>]<]minimax[>[</fields>",
+                "]<]minimax[>[</multi_match>]<]minimax[>[</query>]<]minimax[>[<size>20]<]minimax[>[</size>",
+                "]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            ],
+        )
+        .coalesce_calls();
+        assert_eq!(out.calls.len(), 1);
+        assert_eq!(
+            out.calls[0].arguments,
+            r#"{"index":"app-logs","query":{"multi_match":{"query":"connection timeout","fields":["message","error.reason"]}},"size":20}"#
+        );
+    }
+
+    #[test]
     fn nested_union_child_values_follow_payload_shape() {
         let tools = vec![Tool {
             name: "list_notes".into(),

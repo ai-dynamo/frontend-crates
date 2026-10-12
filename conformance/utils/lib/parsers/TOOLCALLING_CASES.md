@@ -356,6 +356,10 @@ The nested-whitespace cases below are Single Family Tests on constructed native 
 - **`TOOLCALLING.batch.7.m`** Pretty-printed nested containers. Newlines and indentation between nested tags are formatting, so an `array<integer>` parses to `[1, 50]` without whitespace items and a nested object gains no `$text` member.
 - **`TOOLCALLING.batch.7.n`** Whitespace-only and padded string leaves inside nested containers are values. The chat template emits leaf text verbatim, so `<sep>  </sep>` stays two spaces and a newline-only `<item>` stays a newline.
 
+The same-name nesting case below is a Single Family Test on a constructed native MiniMax M3 input (PR #392), with a matching legacy-stream case. MiniMax M3 is the only registered grammar that closes a parameter with a tag named after it and nests argument elements inside it; the other families carry nested values as JSON or as one raw parameter value, so a nested key cannot end the parameter early.
+
+- **`TOOLCALLING.batch.7.y`** A nested argument reuses its parameter's name. An Elasticsearch `query` parameter holds `multi_match`, whose search text is also named `query`, so the parameter ends at its matching `</query>` and `fields` stays inside `multi_match` instead of becoming a top-level argument.
+
 Streaming-only parser regressions for argument schemas, entities, and string boundaries are listed in `TOOLCALLING_STREAMING_V1_CASES.md` with their source PRs.
 
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
