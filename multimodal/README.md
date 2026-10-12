@@ -284,8 +284,54 @@ the same resolved `DeepseekV41GeometrySpec` on the frontend and encoder.
 
 The pixel-free planner mirrors [pinned SGLang](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py).
 Invalid inputs/settings and unrepresentable `u32` output dimensions return
-errors. Full pixel processing, registry activation, and frontend/worker
-integration remain separate work.
+errors.
+
+The registry also exposes **metadata-only** DSV4.1 planning:
+`ProcessorSpec::DeepseekV41` / `{"family": "deepseek_v41", ...}` accept
+`image_token_id` and the geometry fields above. `spec_from_hf_configs` selects
+this family for `deepseek_v4` and `deepseek_v41`; it accepts flat `vision_*`
+fields or nested `vision_config` aliases (`patch_size`, `downsample_ratio`,
+`min_pixels`, `max_image_tokens`, `max_wh_ratio`). Required geometry fields
+and the image id must be present; there are no serving defaults. The
+preprocessor config must be an object with no non-null processing overrides
+(the inert `processor_class` field is allowed). Preserve the checkpoint's
+original `model_type`: a config serialized as `deepseek_v3` is unsupported.
+
+```rust
+use dynamo_multimodal::{Result, registry, token_layout};
+use dynamo_multimodal::processor::MediaMetadata;
+
+# fn example() -> Result<()> {
+// Synthetic mathematical settings, not checkpoint defaults.
+let family = registry::processor_from_spec(r#"{
+    "family": "deepseek_v41", "image_token_id": 100,
+    "vision_patch_size": 14, "vision_downsample_ratio": 3,
+    "vision_min_pixels": 0, "vision_max_n_token": 1024
+}"#)?;
+let media = [MediaMetadata::Image { width: 84, height: 126 }];
+let input_ids = [7, 100, 9];
+let counts = media.iter().map(|item| family.num_media_tokens(item))
+    .collect::<Result<Vec<_>>>()?;
+let layout = family.layout_from_metadata(&input_ids, &media)?;
+let expanded = token_layout::apply_layout(&input_ids, &layout, &counts, 13)?;
+assert_eq!(expanded.offsets, [(1, 11)]); // inclusive full spans
+assert_eq!(expanded.feature_ranges, [vec![1..12]]);
+# Ok(())
+# }
+```
+
+Every expanded position uses the same vocabulary `image_token_id`, including
+boundaries and row separators. The model supplies embeddings for the entire
+span, so `feature_ranges` includes those positions too.
+`DeepseekV41ImagePlan::token_types()` separately iterates the pinned processor's
+START/IMAGE/ROW_SEPARATOR/END types (0/1/2/3); these are not vocabulary ids.
+Adjacent images retain distinct item offsets even when their repeated ids
+form one contiguous run. Consumers must pass those offsets to workers rather
+than rediscovering items by scanning token ids.
+
+`process_item` and processed-item `layout` explicitly return `Unsupported`.
+Full pixel processing and frontend/worker integration remain separate work;
+this registration does not make a DSV4.1 image encoding pipeline available.
 
 Regenerate/check the Python-derived fixtures with:
 
