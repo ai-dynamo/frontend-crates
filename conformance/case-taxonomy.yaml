@@ -123,6 +123,7 @@ suites:
           "13": {desc: "Scalar references retain integer, number, and boolean types while intersecting sibling constraints", required: false}
           m: {desc: "MiniMax M3 treats whitespace between nested argument tags as formatting, not array items or mixed text", required: false}
           n: {desc: MiniMax M3 preserves whitespace-only and padded string leaves inside nested arguments, required: false}
+          x: {desc: "DSML keeps string=\"true\" values verbatim and trims string=\"false\" values before JSON parsing", required: false}
           o.declared_string: {desc: "Schema probe declared_string: independently authored value \"plain\" under {\"type\": \"string\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.declared_integer: {desc: "Schema probe declared_integer: independently authored value 42 under {\"type\": \"integer\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.declared_number: {desc: "Schema probe declared_number: independently authored value 3.5 under {\"type\": \"number\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
@@ -379,6 +380,7 @@ suites:
           l: {desc: MiniMax M3 resolves a local object reference before coercing arguments, required: false}
           m: {desc: "MiniMax M3 treats whitespace between nested argument tags as formatting, not array items or mixed text", required: false}
           n: {desc: MiniMax M3 preserves whitespace-only and padded string leaves inside nested arguments, required: false}
+          x: {desc: "DSML keeps string=\"true\" values verbatim and trims string=\"false\" values before JSON parsing", required: false}
           o.declared_string: {desc: "Schema probe declared_string: independently authored value \"plain\" under {\"type\": \"string\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.declared_integer: {desc: "Schema probe declared_integer: independently authored value 42 under {\"type\": \"integer\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.declared_number: {desc: "Schema probe declared_number: independently authored value 3.5 under {\"type\": \"number\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}

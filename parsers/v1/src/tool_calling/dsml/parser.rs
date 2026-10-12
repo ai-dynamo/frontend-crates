@@ -350,16 +350,17 @@ fn parse_parameters(
     for param_match in param_regex.captures_iter(content) {
         if let (Some(name_match), Some(value_match)) = (param_match.get(1), param_match.get(3)) {
             let param_name = name_match.as_str().trim();
-            let param_value = value_match.as_str().trim();
+            let param_value = value_match.as_str();
 
             // Parse value based on string attribute (if present).
-            // `string="true"` forces the String branch; every other case
-            // (`string="false"` or attribute omitted) tries JSON first and
-            // falls back to String.
+            // `string="true"` keeps the value verbatim, as DeepSeek's reference
+            // decoder does; every other case (`string="false"` or attribute
+            // omitted) trims, tries JSON first, and falls back to String.
             let string_attr = param_match.get(2).map(|m| m.as_str());
             let value = if string_attr == Some("true") {
                 serde_json::Value::String(param_value.to_string())
             } else {
+                let param_value = param_value.trim();
                 serde_json::from_str(param_value)
                     .unwrap_or_else(|_| serde_json::Value::String(param_value.to_string()))
             };
@@ -834,6 +835,27 @@ mod tests {
 
         let (_, args) = extract_name_and_args(calls[0].clone());
         assert_eq!(args["empty"], "");
+    }
+
+    #[test]
+    fn test_parse_string_parameters_preserve_whitespace() {
+        for config in [get_test_config(), get_v4_test_config()] {
+            for value in ["  café\n", "\t\r\n ", " ", "", "null"] {
+                let input = format!(
+                    "{}<｜DSML｜invoke name=\"edit\">\
+                     <｜DSML｜parameter name=\"text\" string=\"true\">{value}</｜DSML｜parameter>\
+                     <｜DSML｜parameter name=\"count\" string=\"false\"> 42 </｜DSML｜parameter>\
+                     </｜DSML｜invoke>{}",
+                    config.block_start, config.block_end
+                );
+                let (calls, normal) = try_tool_call_parse_dsml(&input, &config).unwrap();
+                assert_eq!(normal.as_deref(), Some(""));
+                assert_eq!(calls.len(), 1);
+                let args: serde_json::Value =
+                    serde_json::from_str(&calls[0].function.arguments).unwrap();
+                assert_eq!(args, serde_json::json!({"text": value, "count": 42}));
+            }
+        }
     }
 
     #[test]

@@ -88,15 +88,6 @@ deepseek_v4:
       FIXME (v1 defect): v1 mistakes native call/channel markers inside a string argument for structural delimiters and loses argument data or the call. v2 keeps those bytes inside the value and also preserves subsequent calls.
   TOOLCALLING.batch.31.a:
     stream_vs_batch: *svb-literal-markers
-  TOOLCALLING.batch.7.p.const_space_allof:
-    stream_vs_batch: &svb-literal-whitespace >-
-      FIXME (v1 defect): v1 trims the string constant from "  spaced  " to "spaced". v2 preserves its whitespace and satisfies the original const schema.
-  TOOLCALLING.batch.7.p.const_space_bare:
-    stream_vs_batch: *svb-literal-whitespace
-  TOOLCALLING.batch.7.p.const_space_ref:
-    stream_vs_batch: *svb-literal-whitespace
-  TOOLCALLING.batch.7.p.const_space_typed:
-    stream_vs_batch: *svb-literal-whitespace
 
 gemma4:
   TOOLCALLING.batch.2.c:
@@ -323,7 +314,8 @@ qwen3_coder:
   TOOLCALLING.batch.7.p.const_null_typed:
     stream_vs_batch: *svb-literal-null
   TOOLCALLING.batch.7.p.const_space_allof:
-    stream_vs_batch: *svb-literal-whitespace
+    stream_vs_batch: &svb-literal-whitespace >-
+      FIXME (v1 defect): v1 trims the string constant from "  spaced  " to "spaced". v2 preserves its whitespace and satisfies the original const schema.
   TOOLCALLING.batch.7.p.const_space_bare:
     stream_vs_batch: *svb-literal-whitespace
   TOOLCALLING.batch.7.p.const_space_ref:

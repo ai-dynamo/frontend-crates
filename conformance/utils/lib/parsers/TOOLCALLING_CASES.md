@@ -356,6 +356,10 @@ The nested-whitespace cases below are Single Family Tests on constructed native 
 - **`TOOLCALLING.batch.7.m`** Pretty-printed nested containers. Newlines and indentation between nested tags are formatting, so an `array<integer>` parses to `[1, 50]` without whitespace items and a nested object gains no `$text` member.
 - **`TOOLCALLING.batch.7.n`** Whitespace-only and padded string leaves inside nested containers are values. The chat template emits leaf text verbatim, so `<sep>  </sep>` stays two spaces and a newline-only `<item>` stays a newline.
 
+The DSML string-attribute case below uses constructed native DeepSeek V3.2 and DeepSeek V4 inputs, with a matching legacy-stream case. DSML is the only registered grammar that marks each parameter `string="true|false"`, so no other family has a per-parameter attribute that decides whether a value is trimmed. String-boundary whitespace for the other families is covered by `TOOLCALLING.streamv1.7.h` and Unified `7-3`.
+
+- **`TOOLCALLING.batch.7.x`** DSML `string="true"` values are kept verbatim, as DeepSeek's reference decoder keeps them: boundary whitespace, a single-space separator, an empty string, and literal `null` text survive unchanged. `string="false"` values are still trimmed before JSON parsing, so a padded integer stays an integer.
+
 Streaming-only parser regressions for argument schemas, entities, and string boundaries are listed in `TOOLCALLING_STREAMING_V1_CASES.md` with their source PRs.
 
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls

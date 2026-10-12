@@ -60,6 +60,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7.l`** MiniMax M3 resolves a local parameter reference before parsing object arguments. Streaming regression for frontend-crates #273.
 - **`TOOLCALLING.streamv1.7.m`** Single Family Test (MiniMax M3): whitespace between nested argument tags is formatting, not array items or `$text`. Streaming form of `TOOLCALLING.batch.7.m` (PR #360).
 - **`TOOLCALLING.streamv1.7.n`** Single Family Test (MiniMax M3): whitespace-only and padded string leaves inside nested arguments are kept verbatim. Streaming form of `TOOLCALLING.batch.7.n` (PR #360).
+- **`TOOLCALLING.streamv1.7.x`** DSML family test (DeepSeek V3.2, DeepSeek V4): `string="true"` values are kept verbatim and `string="false"` values are trimmed before JSON parsing, with whitespace values in their own chunks and a padded integer split across chunks. Streaming form of `TOOLCALLING.batch.7.x`. DeepSeek V3.2 has no Dynamo v2 parser, so its v2 cell is unavailable.
 - **`TOOLCALLING.streamv1.51.a`** Tool-only projection preserves caller-usable reasoning information around a tool call. Delimiter-preserving families retain their native framing; Unified-backed families retain the reasoning body in `normal_text`. Streaming regression for frontend-crates #253.
 - **`TOOLCALLING.streamv1.51.b`** DeepSeek tool-only selection accepts both DSML dialects in one stream. Streaming regression for frontend-crates #255.
 - **`TOOLCALLING.streamv1.8.a`** Narration before tool call only. Streaming form of `TOOLCALLING.batch.8.a`.
@@ -83,7 +84,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
-Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
+Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `7.x`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
 
 ## `TOOLCALLING.streamv1.50` — Partial-token chunking
 
