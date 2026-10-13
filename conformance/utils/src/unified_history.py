@@ -336,8 +336,10 @@ class History:
                     )
                 if metadata:
                     state[case_id]["_record_metadata"] = copy.deepcopy(metadata)
+                    state[case_id]["_record_metadata_capture_id"] = current
                 else:
                     state[case_id].pop("_record_metadata", None)
+                    state[case_id].pop("_record_metadata_capture_id", None)
             for case_id, override in capture["document_overrides"].items():
                 if case_id not in state:
                     raise ValueError(
@@ -355,6 +357,11 @@ class History:
         for case_id, change in state.items():
             record = copy.deepcopy(change)
             record_metadata = record.pop("_record_metadata", None)
+            metadata_capture_id = record.pop("_record_metadata_capture_id", None)
+            if record_metadata and metadata_capture_id != capture_id:
+                # Peer import and report readers must not treat an earlier recapture
+                # as a verified execution of a later sparse checkpoint.
+                record_metadata.pop("verified_recapture", None)
             overrides = record.pop("_document_overrides", {})
             origin_capture_id = record.pop("_origin_capture_id")
             origin_capture = self.captures[origin_capture_id]

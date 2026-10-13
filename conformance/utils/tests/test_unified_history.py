@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import unified_history
+from capture_stimulus import select_peer_observation
 
 
 def _request(text: str = "hello") -> dict:
@@ -1118,3 +1119,82 @@ def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_pat
         capture = unified_history.load_yaml(out / "dynamo_v2-0.7.4/gemma4" / (display + ".yaml"))
         assert capture["cases"][display]["assembled"][0]["arguments"]["city"] == value
     assert capture_path.read_bytes() == before
+
+
+@pytest.mark.parametrize("family", ["gemma4", "kimi_k2", "qwen3"])
+def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family):
+    store_root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
+    store = unified_history.load_store(store_root)
+    history = store.histories[(family, "vllm_rust")]
+    historical = history.resolve("vllm_rust-0.25.1")
+    recaptured = history.resolve("vllm_rust-0.26.0")
+    case_ids = [
+        case_id
+        for case_id, record in recaptured.items()
+        if record["document"].get("record_metadata", {}).get("verified_recapture", {}).get("resolution")
+        == "historical_request_not_retained"
+    ]
+
+    assert len(case_ids) == 39
+    for case_id in case_ids:
+        original = historical[case_id]
+        current = recaptured[case_id]
+        assert original["stimulus"] == {"unavailable": {"code": "original_request_not_retained"}}
+        assert next(iter(original["observation"])) in {"value", "error"}
+        assert current["stimulus"] == original["stimulus"]
+        assert current["observation"] == original["observation"]
+        case = store.families[family].cases[case_id]
+        record, document = unified_history.materialized_record(case, current)
+        record.update(document["record_metadata"])
+        selected = select_peer_observation(
+            record,
+            case["request"],
+            implementation="vllm_rust",
+            version="0.26.0",
+        )
+        assert selected["unavailable"]["code"].startswith("vllm_rust_")
+        assert "original observation is preserved in YAML" in selected["historical_capture_note"]
+
+
+@pytest.mark.parametrize("implementation", ["vllm_python", "vllm_rust", "sglang_python"])
+@pytest.mark.parametrize("observation_version", ["0.24.0", "0.25.1"])
+def test_sparse_checkpoint_does_not_inherit_version_scoped_recapture(tmp_path, implementation, observation_version):
+    _write_family(tmp_path)
+    change = _change("old output")
+    change["stimulus"] = {"unavailable": {"code": "original_request_not_retained"}}
+    _write_capture(tmp_path, observation_version, {"text_only": change}, implementation=implementation)
+    supplement = {
+        "result": {"capture_input": _request(), "assembled": [{"kind": "text", "text": "hello"}],
+                   "chunks": [{"expected": [{"kind": "text", "text": "hello"}]}]},
+        "provenance": {"implementation": implementation, "version": "0.25.1",
+                       "source_sha256": "a" * 64, "adapter_sha256": "b" * 64, "job_sha256": "c" * 64},
+        "resolution": "historical_request_not_retained",
+    }
+    _write_capture(tmp_path, "0.25.1", {"text_only": change} if observation_version == "0.25.1" else {},
+                   implementation=implementation,
+                   metadata_changes={"text_only": {"verified_recapture": supplement, "audit_note": "preserve me"}})
+    history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
+    prior = history.resolve(f"{implementation}-0.25.1")
+    _write_capture(tmp_path, "0.26.0", {}, implementation=implementation)
+    _write_capture(tmp_path, "0.27.0", {}, implementation=implementation)
+    history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
+    assert history.resolve(f"{implementation}-0.25.1") == prior
+    for version in ["0.25.1", "0.26.0", "0.27.0"]:
+        resolved = history.resolve(f"{implementation}-{version}")["text_only"]
+        assert resolved["observation"] == prior["text_only"]["observation"]
+        assert resolved["stimulus"] == prior["text_only"]["stimulus"]
+        metadata = resolved["document"]["record_metadata"]
+        assert metadata["audit_note"] == "preserve me"
+        assert ("verified_recapture" in metadata) == (version == "0.25.1")
+        record, document = unified_history.materialized_record(history.family.cases["text_only"], resolved)
+        record.update(document["record_metadata"])
+        selected = select_peer_observation(record, _request(), implementation=implementation, version=version)
+        expected = [{"kind": "text", "text": "hello"}] if version == "0.25.1" else [{"kind": "text", "text": "old output"}]
+        assert selected["assembled"] == expected
+    destination = tmp_path / "materialized"
+    unified_history.materialize_store(tmp_path, destination, store=unified_history.load_store(tmp_path))
+    later_files = list((destination / f"{implementation}-0.26.0/gemma4").glob("*.yaml"))
+    assert len(later_files) == 1
+    later_document = unified_history.load_yaml(later_files[0])
+    later_record = next(iter(later_document["cases"].values()))
+    assert "verified_recapture" not in later_record
